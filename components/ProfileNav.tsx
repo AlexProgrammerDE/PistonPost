@@ -5,7 +5,6 @@ import {useEffect, useState} from "react";
 
 interface UserData {
   name: string;
-  email: string;
   avatar: string;
 }
 
@@ -19,8 +18,7 @@ export default function ProfileNav() {
       axios.get("/userdata").then(res => {
         setUser({
           name: res.data.name,
-          email: res.data.email,
-          avatar: res.data.image
+          avatar: res.data.avatar
         })
       })
     }

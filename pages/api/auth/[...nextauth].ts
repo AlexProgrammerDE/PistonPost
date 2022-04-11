@@ -1,7 +1,7 @@
 import NextAuth from "next-auth"
 import EmailProvider from "next-auth/providers/email"
-import {MongoDBAdapter} from "@next-auth/mongodb-adapter";
 import clientPromise from "../../../lib/mongodb";
+import {MongoDBAdapter} from "../../../lib/mongo-adapter";
 
 // For more information on each option (and a full list of options) go to
 // https://next-auth.js.org/configuration/options
@@ -15,7 +15,7 @@ export default NextAuth({
   // Database optional. MySQL, Maria DB, Postgres and MongoDB are supported.
   // https://next-auth.js.org/configuration/databases
   //
-  adapter: MongoDBAdapter(clientPromise),
+  adapter: MongoDBAdapter(clientPromise, "pistonpost"),
 
   session: {
     // Choose how you want to save the user session.
@@ -54,14 +54,8 @@ export default NextAuth({
   callbacks: {
     // async signIn({ user, account, profile, email, credentials }) { return true },
     // async redirect({ url, baseUrl }) { return baseUrl },
-    async session({session, token, user}) {
-      console.log(session, token, user);
-      return session
-    },
-    async jwt({ token, user, account, profile, isNewUser }) {
-      console.log(token, user, account, profile, isNewUser);
-      return token
-    }
+    // async session({session, token, user}) {return session},
+    // async jwt({ token, user, account, profile, isNewUser }) {return token}
   },
 
   // Events are useful for logging

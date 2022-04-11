@@ -4,7 +4,7 @@ import {getToken} from "next-auth/jwt";
 
 // noinspection JSUnusedGlobalSymbols
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const token = await getToken({req: req});
+  const token = await getToken({req: req, raw: true});
 
   const path = req.query.path as string[];
   delete req.query.path;
