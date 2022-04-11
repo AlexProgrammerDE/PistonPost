@@ -9,6 +9,17 @@ const nextConfig = {
     locales: ["en-US"],
     defaultLocale: "en-US",
     domains: []
+  },
+  images: {
+    domains: ["www.gravatar.com"]
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/backend',
+        destination: 'http://localhost:5757'
+      }
+    ]
   }
 }
 

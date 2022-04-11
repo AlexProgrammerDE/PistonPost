@@ -18,3 +18,7 @@ a {
 * {
   box-sizing: border-box;
 }
+
+.container {
+  @apply max-w-screen-xl mx-auto;
+}
