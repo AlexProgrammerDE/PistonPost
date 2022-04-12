@@ -17,6 +17,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     params: req.query,
     data: req.body,
     headers: {
+      ...req.headers as any,
       Authorization: `Bearer ${token}`
     }
   })
@@ -24,6 +25,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       res.status(response.status).json(response.data);
     })
     .catch(error => {
-      res.status(502).send(error);
+      console.error(error)
+      res.status(error.response.status).send(error.response.statusText);
     });
 }
