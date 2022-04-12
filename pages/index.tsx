@@ -1,12 +1,9 @@
 import type {NextPage} from 'next'
-import Head from 'next/head'
 import Image from 'next/image'
 import Logo from '../public/logo.webp'
 import {GlobalHead} from "../components/GlobalHead";
 import {useSession} from "next-auth/react";
 import Layout from "../components/Layout";
-import axios from "axios";
-import cookieParser from "cookie-parser";
 
 const Home: NextPage = () => {
   const {data: session} = useSession()

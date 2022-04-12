@@ -1,10 +1,10 @@
-import type {NextPage} from 'next'
 import {useEffect, useState} from 'react';
 import LoadingView from "../../components/LoadingView";
 import {GlobalHead} from "../../components/GlobalHead";
 import Layout, {Theme} from "../../components/Layout";
 import axios from "../../lib/axios";
 import {signOut} from "next-auth/react";
+import {CustomNextPage} from "../../components/CustomNextPage";
 
 interface UserData {
   name: string;
@@ -49,15 +49,16 @@ function deleteAccount() {
   });
 }
 
-const Settings: NextPage = () => {
+const Settings: CustomNextPage = () => {
   const [userData, setUserData] = useState<UserData>()
 
   useEffect(() => {
-    axios.get('/settings').then(res => {
-      setUserData(res.data.userData)
-      console.log(res.data.userData)
-    })
-  }, [])
+    if (!userData) {
+      axios.get('/settings').then(res => {
+        setUserData(res.data.userData)
+      })
+    }
+  }, [userData])
 
   if (userData) {
     if (!userData.settings) {
@@ -70,14 +71,22 @@ const Settings: NextPage = () => {
           <Layout>
             <main className="container p-2">
               <h1 className="font-bold text-2xl">Settings</h1>
-              <form action="/api/backend/settings" method="POST">
+              <form action="/api/backend/settings" method="POST" /*onSubmit={async (e) => {
+                e.preventDefault();
+
+                const formData = new FormData(e.currentTarget);
+
+                formData.set()
+
+                console.log(formData);
+              }}*/>
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Your Email</span>
                   </label>
                   <label className="input-group">
                     <span>Email</span>
-                    <input disabled type="text" value={userData.email} placeholder="you@example.com"
+                    <input id="input-email" disabled type="text" value={userData.email} placeholder="you@example.com"
                            className="input input-bordered"/>
                   </label>
                 </div>
@@ -88,7 +97,8 @@ const Settings: NextPage = () => {
                   </label>
                   <label className="input-group">
                     <span>Name</span>
-                    <input type="text" value={userData.name} placeholder="SomeUsername"
+                    <input id="input-name" name="username" type="text" defaultValue={userData.name}
+                           placeholder="SomeUsername"
                            className="input input-bordered"/>
                   </label>
                 </div>
@@ -97,15 +107,17 @@ const Settings: NextPage = () => {
                   <label className="label">
                     <span className="label-text">Your bio</span>
                   </label>
-                  <textarea className="textarea textarea-bordered h-24" value={userData.settings.bio}
+                  <textarea id="input-bio" name="bio" className="textarea textarea-bordered h-24"
+                            defaultValue={userData.settings.bio}
                             placeholder="Write your bio here..."></textarea>
                 </div>
 
                 <div className="form-control">
                   <label className="label cursor-pointer max-w-[12rem]">
                     <span className="label-text">Email Notifications</span>
-                    <input type="checkbox" className="checkbox checkbox-primary"
-                           checked={userData.settings.emailNotifications}/>
+                    <input id="input-emailNotifications" name="emailNotifications" type="checkbox"
+                           className="checkbox checkbox-primary"
+                           defaultChecked={userData.settings.emailNotifications}/>
                   </label>
                 </div>
 
@@ -115,11 +127,12 @@ const Settings: NextPage = () => {
                         <label className="label">
                           <span className="label-text">Theme</span>
                         </label>
-                        <select className="select select-bordered" onChange={(event) => {
-                          setTheme(event.target.value)
-                        }}>
+                        <select id="input-theme" value={theme} name="theme" className="select select-bordered"
+                                onChange={(event) => {
+                                  setTheme(event.target.value)
+                                }}>
                           {themeData.map(({name, value}) => (
-                              <option selected={theme === value} key={value} value={value}>{name}</option>
+                              <option key={value} value={value}>{name}</option>
                           ))}
                         </select>
                       </div>
@@ -149,9 +162,11 @@ const Settings: NextPage = () => {
         </>
     )
   } else {
-    return (<LoadingView/>)
+    return <LoadingView/>
   }
 }
+
+Settings.auth = true
 
 // noinspection JSUnusedGlobalSymbols
 export default Settings

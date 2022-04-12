@@ -10,12 +10,11 @@ interface UserData {
 }
 
 export default function ProfileNav() {
-  // https://www.gravatar.com/avatar/00000000000000000000000000000000?d=retro
   const {data: session, status} = useSession()
   const [user, setUser] = useState<UserData>()
 
   useEffect(() => {
-    if (session && !user) {
+    if (status === "authenticated" && !user) {
       axios.get("/userdata").then(res => {
         setUser({
           name: res.data.name,
@@ -23,23 +22,33 @@ export default function ProfileNav() {
         })
       })
     }
-  }, [session, user])
+  }, [status, user])
 
-  if (user) {
-    return (
-        <li tabIndex={0}>
-          <a className="mx-1 flex flex-row">
-            <div className="avatar">
-              <Image width={28} height={28} className="rounded-full" src={user?.avatar!} alt=""/>
-            </div>
-            <span>{user.name}</span>
-          </a>
-          <ul className="p-2 bg-base-200 gap-1 left-0 top-full">
-            <li><Link href="/account/settings"><a>Settings</a></Link></li>
-            <li><a onClick={() => signOut()}>Sign out</a></li>
-          </ul>
-        </li>
-    )
+  if (status === "authenticated") {
+    if (user) {
+      return (
+          <li tabIndex={0}>
+            <a className="mx-1 flex flex-row">
+              <div className="avatar">
+                <Image width={28} height={28} className="rounded-full" src={user.avatar} alt=""/>
+              </div>
+              <span>{user.name}</span>
+            </a>
+            <ul className="p-2 bg-base-200 gap-1 left-0 top-full">
+              <li><Link href="/account/settings"><a>Settings</a></Link></li>
+              <li><a onClick={() => signOut()}>Sign out</a></li>
+            </ul>
+          </li>
+      )
+    } else {
+      return (
+          <li tabIndex={0}>
+            <a className="mx-1 flex flex-row">
+              <span>Loading</span>
+            </a>
+          </li>
+      )
+    }
   } else {
     return (
         <li>

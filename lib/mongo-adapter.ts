@@ -1,14 +1,9 @@
 // Copy of https://github.com/nextauthjs/next-auth/blob/main/packages/adapter-mongodb/src/index.ts
+import type {MongoClient} from "mongodb"
 // Adds option for custom DB
 import {ObjectId} from "mongodb"
 
-import type {
-  Adapter,
-  AdapterSession,
-  AdapterUser,
-  VerificationToken,
-} from "next-auth/adapters"
-import type {MongoClient} from "mongodb"
+import type {Adapter, AdapterSession, AdapterUser, VerificationToken,} from "next-auth/adapters"
 import type {Account} from "next-auth"
 
 export interface MongoDBAdapterOptions {

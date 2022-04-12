@@ -1,6 +1,5 @@
 import axios from 'axios';
 import {getSession} from "next-auth/react";
-import {getToken} from "next-auth/jwt";
 
 const instance = axios.create({
   baseURL: `/api/backend`,

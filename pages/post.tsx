@@ -1,8 +1,8 @@
-import type {NextPage} from 'next'
 import {GlobalHead} from "../components/GlobalHead";
 import Layout from "../components/Layout";
+import {CustomNextPage} from "../components/CustomNextPage";
 
-const Post: NextPage = () => {
+const Post: CustomNextPage = () => {
   return (
       <>
         <GlobalHead/>
@@ -11,6 +11,8 @@ const Post: NextPage = () => {
       </>
   )
 }
+
+Post.auth = true
 
 // noinspection JSUnusedGlobalSymbols
 export default Post

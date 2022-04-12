@@ -8,7 +8,8 @@ export default function LoadingView() {
         <Layout>
           <main className="h-full w-full text-center flex justify-center">
             <div className="m-auto">
-              <svg className="animate-spin h-12 w-12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none">
+              <svg className="animate-spin h-12 w-12" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"
+                   fill="none">
                 <title>Loading</title>
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor"

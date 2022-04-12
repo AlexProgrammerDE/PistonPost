@@ -1,4 +1,3 @@
-import { signIn } from "next-auth/react"
 import ProfileNav from "./ProfileNav";
 import Link from "next/link";
 

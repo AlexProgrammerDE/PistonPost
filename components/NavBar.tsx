@@ -1,4 +1,3 @@
-import {ReactNode} from "react";
 import Logo from "../public/logo.webp";
 import Image from "next/image";
 import NavOptions from "./NavOptions";
