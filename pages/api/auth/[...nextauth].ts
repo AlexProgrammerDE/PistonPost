@@ -62,6 +62,11 @@ export default NextAuth({
   // https://next-auth.js.org/configuration/events
   events: {},
 
+  theme: {
+    colorScheme: "auto",
+    logo: '/medium_logo.webp'
+  },
+
   // Enable debug messages in the console if you are having problems
   debug: false,
 })
