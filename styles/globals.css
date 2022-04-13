@@ -21,3 +21,8 @@ a {
 .container {
   @apply max-w-screen-xl mx-auto;
 }
+
+.break-text {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}

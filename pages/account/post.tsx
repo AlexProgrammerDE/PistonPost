@@ -101,10 +101,10 @@ const Post: CustomNextPage = () => {
                 <label className="label">
                   <span className="label-text">Tags</span>
                 </label>
-                <label className={tags.length > 0 ? "input-group" : ""}>
+                <label className={tags.length > 0 ? "md:input-group" : ""}>
                   {
                     tags.map(tag => <span onClick={() => setTags(tags.filter(tag2 => tag2 != tag))} key={tag}
-                                          className="btn hover:btn-error duration-500">{tag}</span>)
+                                          className="btn hover:btn-error duration-500 mb-1 md:mb-0">{tag}</span>)
                   }
                   <input type="text"
                          placeholder="Comedy"

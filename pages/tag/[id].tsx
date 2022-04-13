@@ -14,25 +14,28 @@ const Post: NextPage = () => {
   const [posts, setPosts] = useState<PostData[]>()
 
   useEffect(() => {
-    if (!posts && id) {
+    if (id) {
       axios.get(`/tag/${id}`)
           .then(res => {
             setPosts(res.data)
           })
     }
-  }, [posts, id])
+  }, [id])
 
   if (posts) {
     return (
         <>
           <GlobalHead/>
           <Layout>
-            <div className="p-6 container">
+            <div className="p-6 container h-full">
               <h1 className="text-2xl font-bold">Showing posts tagged with &quot;{id}&quot;</h1>
-              <div className="w-full flex flex-wrap justify-center">
-                {posts.map((post, index) => (
+              <div className={"h-full w-full flex justify-center" + (posts.length > 0 ? " flex-wrap" : "")}>
+                {posts.length > 0 ? posts.map((post, index) => (
                     <PostCard post={post} key={index}/>
-                ))}
+                )) : (
+                    <>
+                      <h3 className="m-auto text-2xl font-bold">No posts with this tag found... :(</h3>
+                    </>)}
               </div>
             </div>
           </Layout>
