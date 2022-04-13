@@ -2,8 +2,6 @@ import {NextPage} from "next";
 import {useSession} from "next-auth/react";
 import {GlobalHead} from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
-import Image from "next/image";
-import Logo from "../../public/logo.webp";
 import {useRouter} from "next/router";
 import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
@@ -40,12 +38,22 @@ const Post: NextPage = () => {
       <>
         <GlobalHead/>
         <Layout>
-          <div className="p-6">
+          <div className="container h-full p-6">
             {
               post &&
-                <div>
-                  {post.title}
-                </div>
+                <>
+                    <div className="w-full p-4 bg-base-200 rounded-box p-4 flex flex-wrap">
+                        <h2 className="font-bold text-2xl">{post.title}</h2>
+                      {
+                        post.tags.map(tag =>
+                            <span key={tag} className="badge my-auto ml-1.5 text-xl font-bold p-2">#{tag}</span>
+                        )
+                      }
+                    </div>
+                    <div className="text-lg w-full p-4 bg-base-200 rounded-box mt-2">
+                      {post.content}
+                    </div>
+                </>
             }
           </div>
         </Layout>
