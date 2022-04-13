@@ -12,6 +12,7 @@ specifiers:
   daisyui: 2.13.6
   eslint: 8.12.0
   eslint-config-next: 12.1.4
+  javascript-time-ago: ^2.3.13
   mongodb: 4.5.0
   next: 12.1.4
   next-auth: 4.3.1
@@ -22,6 +23,7 @@ specifiers:
   raw-body: ^2.5.1
   react: 18.0.0
   react-dom: 18.0.0
+  react-time-ago: ^7.1.9
   tailwindcss: 3.0.23
   typescript: 4.6.3
 
@@ -32,6 +34,7 @@ dependencies:
   autoprefixer: 10.4.4_postcss@8.4.12
   axios: 0.26.1
   daisyui: 2.13.6_081650f2f4dba35b17265937ab2a2ec0
+  javascript-time-ago: 2.3.13
   mongodb: 4.5.0
   next: 12.1.4_react-dom@18.0.0+react@18.0.0
   next-auth: 4.3.1_293f37d500369a03b239180d5cb6a3fb
@@ -42,6 +45,7 @@ dependencies:
   raw-body: 2.5.1
   react: 18.0.0
   react-dom: 18.0.0_react@18.0.0
+  react-time-ago: 7.1.9_e2dac03dbd4e3a22cfc83041b1fdcbe7
   tailwindcss: 3.0.23_autoprefixer@10.4.4
 
 devDependencies:
@@ -3083,6 +3087,12 @@ packages:
       minimatch: 3.1.2
     dev: false
 
+  /javascript-time-ago/2.3.13:
+    resolution: {integrity: sha512-LiNqRLERXpePGLejdqjbxfMkFlwx+2RDz21Jfw/3l2mH20fTa6nAtwOFQmAK5l0SfaV7HvixJgTCxyph9VmG1Q==}
+    dependencies:
+      relative-time-format: 1.0.8
+    dev: false
+
   /jest-worker/26.6.2:
     resolution: {integrity: sha512-KWYVV1c4i+jbMpaBC+U++4Va0cp8OisU185o73T1vo99hqi7w8tSJfUXYswwqqrjzwxa6KpRK54WhPvwf5w6PQ==}
     engines: {node: '>= 10.13.0'}
@@ -3252,7 +3262,7 @@ packages:
     dev: false
 
   /loose-envify/1.4.0:
-    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==, registry: https://registry.yarnpkg.com/, tarball: https://registry.yarnpkg.com/loose-envify/-/loose-envify-1.4.0.tgz}
+    resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
     dependencies:
       js-tokens: 4.0.0
@@ -3281,6 +3291,10 @@ packages:
     engines: {node: '>=8'}
     dependencies:
       semver: 6.3.0
+    dev: false
+
+  /memoize-one/6.0.0:
+    resolution: {integrity: sha512-rkpe71W0N0c0Xz6QD0eJETuWAJGnJ9afsl1srmwPrI+yBCkge5EycXXbYRyvL29zZVUWQCY7InPRCv3GDXuZNw==}
     dev: false
 
   /memory-pager/1.5.0:
@@ -3661,6 +3675,10 @@ packages:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
 
+  /performance-now/2.1.0:
+    resolution: {integrity: sha1-Ywn04OX6kT7BxpMHrjZLSzd8nns=}
+    dev: false
+
   /picocolors/1.0.0:
     resolution: {integrity: sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==}
     dev: false
@@ -3793,12 +3811,11 @@ packages:
     dev: false
 
   /prop-types/15.8.1:
-    resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==, registry: https://registry.yarnpkg.com/, tarball: https://registry.yarnpkg.com/prop-types/-/prop-types-15.8.1.tgz}
+    resolution: {integrity: sha512-oj87CgZICdulUohogVAR7AjlC0327U4el4L6eAvOqCeudMDVU0NThNaV+b9Df4dXgSP1gXMTnPdhfe/2qDH5cg==}
     dependencies:
       loose-envify: 1.4.0
       object-assign: 4.1.1
       react-is: 16.13.1
-    dev: true
 
   /punycode/2.1.1:
     resolution: {integrity: sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==}
@@ -3810,6 +3827,12 @@ packages:
   /quick-lru/5.1.1:
     resolution: {integrity: sha512-WuyALRjWPDGtt/wzJiadO5AXY+8hZ80hVpe6MyivgraREW751X3SbhRvG3eLKOYN+8VEvqLcf3wdnt44Z4S4SA==}
     engines: {node: '>=10'}
+    dev: false
+
+  /raf/3.4.1:
+    resolution: {integrity: sha512-Sq4CW4QhwOHE8ucn6J34MqtZCeWFP2aQSmrlroYgqAV1PjStIhJXxYuTgUIfkEk7zTLjmIjLmU5q+fbD1NnOJA==}
+    dependencies:
+      performance-now: 2.1.0
     dev: false
 
   /randombytes/2.1.0:
@@ -3840,7 +3863,21 @@ packages:
 
   /react-is/16.13.1:
     resolution: {integrity: sha512-24e6ynE2H+OKt4kqsOvNd8kBpV65zoxbA4BVsEOB3ARVWQki/DHzaUoC5KuON/BiccDaCCTZBuOcfZs70kR8bQ==}
-    dev: true
+
+  /react-time-ago/7.1.9_e2dac03dbd4e3a22cfc83041b1fdcbe7:
+    resolution: {integrity: sha512-jN4EsEgqm3a5eLJV0ZrRpom3iG+w4bullS2NHc2htIucGUIr2FbgHXjU0wIkuN9uWM87aFvIfkUDpS/ju7Mazg==}
+    peerDependencies:
+      javascript-time-ago: ^2.3.7
+      react: '>=0.16.8'
+      react-dom: '>=0.16.8'
+    dependencies:
+      javascript-time-ago: 2.3.13
+      memoize-one: 6.0.0
+      prop-types: 15.8.1
+      raf: 3.4.1
+      react: 18.0.0
+      react-dom: 18.0.0_react@18.0.0
+    dev: false
 
   /react/18.0.0:
     resolution: {integrity: sha512-x+VL6wbT4JRVPm7EGxXhZ8w8LTROaxPXOqhlGyVSrv0sB1jkyFGgXxJ8LVoPRLvPR6/CIZGFmfzqUa2NYeMr2A==, registry: https://registry.yarnpkg.com/, tarball: https://registry.yarnpkg.com/react/-/react-18.0.0.tgz}
@@ -3909,6 +3946,10 @@ packages:
     hasBin: true
     dependencies:
       jsesc: 0.5.0
+    dev: false
+
+  /relative-time-format/1.0.8:
+    resolution: {integrity: sha512-bbDLk8h09IdqvlhofjBMTgDzn4ESw+gvV+/KQ2YRjSbWvggI91AIKn/gFURWNGwMtaVZpJvfE5824Dy7AyhPoQ==}
     dev: false
 
   /require-from-string/2.0.2:

@@ -6,7 +6,7 @@ import {useRouter} from "next/router";
 import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
 
-interface PostData {
+export interface PostData {
   id: string;
   postId: string;
   title: string;
@@ -28,7 +28,6 @@ const Post: NextPage = () => {
     if (!post && id) {
       axios.get(`/post/${id}`)
           .then(res => {
-            console.log(res.data.post)
             setPost(res.data.post)
           })
     }

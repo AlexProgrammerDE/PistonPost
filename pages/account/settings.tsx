@@ -55,7 +55,7 @@ const Settings: CustomNextPage = () => {
   useEffect(() => {
     if (!userData) {
       axios.get('/settings').then(res => {
-        setUserData(res.data.userData)
+        setUserData(res.data)
       })
     }
   }, [userData])
