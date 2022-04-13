@@ -19,7 +19,7 @@ const Post: CustomNextPage = () => {
       e.preventDefault()
 
       const value = e.currentTarget.value.trim()
-      if (tags.length < 5 && !tags.includes(value)) {
+      if (tags.length < 5 && !tags.includes(value) && tags.filter(tag => tag.toLowerCase() === value.toLowerCase()).length <= 0) {
         setTags([...tags, value]);
         e.currentTarget.value = "";
         return;
@@ -103,8 +103,8 @@ const Post: CustomNextPage = () => {
                 </label>
                 <label className={tags.length > 0 ? "md:input-group" : ""}>
                   {
-                    tags.map(tag => <span onClick={() => setTags(tags.filter(tag2 => tag2 != tag))} key={tag}
-                                          className="btn hover:btn-error duration-500 mb-1 md:mb-0">{tag}</span>)
+                    tags.map(tag => <span onClick={() => setTags(tags.filter(tag2 => tag2 !== tag))} key={tag}
+                                          className="transform-none btn hover:btn-error duration-500 mb-1 md:mb-0">#{tag}</span>)
                   }
                   <input type="text"
                          placeholder="Comedy"
