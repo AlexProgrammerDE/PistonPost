@@ -8,7 +8,6 @@ const instance = axios.create({
 instance.interceptors.request.use(async function (config) {
   const session = await getSession();
 
-  console.log();
   if (!!session?.accessToken) {
     config.headers = {
       ...config.headers,

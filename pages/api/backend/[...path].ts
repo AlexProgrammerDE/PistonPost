@@ -18,22 +18,24 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   const url = `http://localhost:5757/application/${path.join("/")}`;
 
+  const headers = token ? {
+    ...req.headers as any,
+    "Authorization": `Bearer ${token}`,
+  } : req.headers;
+
   const rawBody = await getRawBody(req)
   await axios.request({
     url: url,
     method: req.method! as Method,
     params: req.query,
     data: rawBody,
-    headers: {
-      ...req.headers as any,
-      Authorization: `Bearer ${token}`
-    }
+    headers
   })
       .then(response => {
         res.status(response.status).json(response.data);
       })
       .catch(error => {
         console.error(error)
-        res.status(error.response.status).send(error.response.statusText);
+        res.status(error.response.status).send(error.response.data);
       });
 }

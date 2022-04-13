@@ -1,12 +1,15 @@
-import type {NextPage} from 'next'
-import Image from 'next/image'
-import Logo from '../public/logo.webp'
-import {GlobalHead} from "../components/GlobalHead";
+import {NextPage} from "next";
 import {useSession} from "next-auth/react";
-import Layout from "../components/Layout";
+import {GlobalHead} from "../../../components/GlobalHead";
+import Layout from "../../../components/Layout";
+import Image from "next/image";
+import Logo from "../../../public/logo.webp";
+import {useRouter} from "next/router";
 
-const Home: NextPage = () => {
+const Comment: NextPage = () => {
   const {data: session} = useSession()
+  const router = useRouter()
+  const { id, comment } = router.query
 
   return (
       <>
@@ -27,4 +30,4 @@ const Home: NextPage = () => {
 }
 
 // noinspection JSUnusedGlobalSymbols
-export default Home
+export default Comment
