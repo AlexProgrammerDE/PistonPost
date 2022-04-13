@@ -1,16 +1,7 @@
 import Link from "next/link";
 import ReactTimeAgo from "react-time-ago";
-
-export interface PostData {
-  id: string;
-  postId: string;
-  title: string;
-  content: string;
-  author: string;
-  tags: string[];
-  timestamp: number;
-  unlisted: boolean;
-}
+import {PostData} from "../lib/responses";
+import Image from "next/image";
 
 export default function PostCard({post}: { post: PostData }) {
   return (
@@ -18,11 +9,19 @@ export default function PostCard({post}: { post: PostData }) {
         <div className="card-body">
           <Link href={'/post/' + post.postId}>
             <a>
-              <h2 className="card-title">
+              <h2 className="card-title justify-between">
                 {post.title}
+                <div className="card-actions">
+                  <Image alt={"Avatar of " + post.authorData.name} className="rounded-full" src={post.authorData.avatar}
+                         width={22} height={22}/>
+                  <span className="-ml-1 my-auto text-sm font-semibold">
+                    @{post.authorData.name}
+                  </span>
+                </div>
               </h2>
             </a>
           </Link>
+
 
           <div className="card-actions justify-between">
             <span><span><ReactTimeAgo date={post.timestamp}/></span></span>

@@ -3,11 +3,7 @@ import Image from "next/image";
 import axios from "../lib/axios";
 import {useEffect, useState} from "react";
 import Link from "next/link";
-
-interface UserData {
-  name: string;
-  avatar: string;
-}
+import {UserData} from "../lib/responses";
 
 export default function ProfileNav() {
   const {data: session, status} = useSession()

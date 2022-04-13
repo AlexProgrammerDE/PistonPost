@@ -4,15 +4,7 @@ import Drawer from "./Drawer";
 import axios from "../lib/axios";
 import defaultAxios from "axios";
 import {useSession} from "next-auth/react";
-
-interface HealthResponse {
-  [key: string]: {
-    healthy: boolean;
-    message: string;
-    duration: number;
-    timestamp: string;
-  }
-}
+import {HealthResponse} from "../lib/responses";
 
 // noinspection JSUnusedLocalSymbols
 export const Theme = createContext({

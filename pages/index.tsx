@@ -4,7 +4,8 @@ import Layout from "../components/Layout";
 import {useEffect, useState} from "react";
 import LoadingView from "../components/LoadingView";
 import axios from "../lib/axios";
-import PostCard, {PostData} from "../components/PostCard";
+import PostCard from "../components/PostCard";
+import {PostData} from "../lib/responses";
 
 const Home: NextPage = () => {
   const [frontData, setFrontData] = useState<PostData[]>();

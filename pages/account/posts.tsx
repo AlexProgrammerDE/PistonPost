@@ -4,7 +4,8 @@ import {CustomNextPage} from "../../components/CustomNextPage";
 import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
 import LoadingView from "../../components/LoadingView";
-import PostCard, {PostData} from "../../components/PostCard";
+import PostCard from "../../components/PostCard";
+import {PostData} from "../../lib/responses";
 
 const Posts: CustomNextPage = () => {
   const [posts, setPosts] = useState<PostData[]>()

@@ -5,16 +5,7 @@ import Layout, {Theme} from "../../components/Layout";
 import axios from "../../lib/axios";
 import {signOut} from "next-auth/react";
 import {CustomNextPage} from "../../components/CustomNextPage";
-
-interface UserData {
-  name: string;
-  email: string;
-  settings: {
-    emailNotifications?: boolean;
-    bio?: string;
-    theme?: string;
-  } | null;
-}
+import {AccountSettings} from "../../lib/responses";
 
 interface ThemeData {
   name: string;
@@ -50,7 +41,7 @@ function deleteAccount() {
 }
 
 const Settings: CustomNextPage = () => {
-  const [userData, setUserData] = useState<UserData>()
+  const [userData, setUserData] = useState<AccountSettings>()
 
   useEffect(() => {
     if (!userData) {
