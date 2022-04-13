@@ -12,9 +12,9 @@ export default function Document() {
       <Html>
         <Head/>
         <body id="documentBody">
-          <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }}/>
-          <Main/>
-          <NextScript/>
+        <script dangerouslySetInnerHTML={{__html: themeInitializerScript}}/>
+        <Main/>
+        <NextScript/>
         </body>
       </Html>
   )

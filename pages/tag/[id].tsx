@@ -1,13 +1,10 @@
 import {NextPage} from "next";
-import {useSession} from "next-auth/react";
 import {GlobalHead} from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
 import {useRouter} from "next/router";
 import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
-import Link from "next/link";
 import LoadingView from "../../components/LoadingView";
-import ReactTimeAgo from "react-time-ago";
 import PostCard, {PostData} from "../../components/PostCard";
 
 const Post: NextPage = () => {

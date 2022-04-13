@@ -9,7 +9,7 @@ import {useRouter} from "next/router";
 const Comment: NextPage = () => {
   const {data: session} = useSession()
   const router = useRouter()
-  const { id, comment } = router.query
+  const {id, comment} = router.query
 
   return (
       <>

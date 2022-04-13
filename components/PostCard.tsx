@@ -12,7 +12,7 @@ export interface PostData {
   unlisted: boolean;
 }
 
-export default function PostCard({post}: {post: PostData}) {
+export default function PostCard({post}: { post: PostData }) {
   return (
       <div className="card w-96 bg-base-200 shadow-lg m-2">
         <div className="card-body">

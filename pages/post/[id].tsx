@@ -39,8 +39,8 @@ const Post: NextPage = () => {
                         )
                       }
                       {
-                        post.unlisted &&
-                        <span className="badge my-auto ml-1.5 text-xl font-bold p-2">Unlisted</span>
+                          post.unlisted &&
+                          <span className="badge my-auto ml-1.5 text-xl font-bold p-2">Unlisted</span>
                       }
                     </div>
                     <div className="text-lg w-full p-4 bg-base-200 rounded-box mt-2">
