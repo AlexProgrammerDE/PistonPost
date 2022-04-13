@@ -36,6 +36,7 @@ export default function ProfileNav() {
             </a>
             <ul className="p-2 bg-base-200 gap-1 left-0 top-full shadow-2xl z-20">
               <li><Link href="/account/settings"><a>Settings</a></Link></li>
+              <li><Link href="/account/posts"><a>Settings</a></Link></li>
               <li><a onClick={() => signOut()}>Sign out</a></li>
             </ul>
           </li>

@@ -1,42 +1,38 @@
-import {NextPage} from "next";
-import {useSession} from "next-auth/react";
 import {GlobalHead} from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
-import {useRouter} from "next/router";
+import {CustomNextPage} from "../../components/CustomNextPage";
 import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
-import Link from "next/link";
 import LoadingView from "../../components/LoadingView";
-import ReactTimeAgo from "react-time-ago";
 import PostCard, {PostData} from "../../components/PostCard";
 
-const Post: NextPage = () => {
-  const router = useRouter()
-  const {id} = router.query
+const Posts: CustomNextPage = () => {
   const [posts, setPosts] = useState<PostData[]>()
 
   useEffect(() => {
-    if (!posts && id) {
-      axios.get(`/tag/${id}`)
+    if (!posts) {
+      axios.get(`/posts`)
           .then(res => {
             setPosts(res.data)
           })
     }
-  }, [posts, id])
+  }, [posts])
 
   if (posts) {
     return (
         <>
           <GlobalHead/>
           <Layout>
-            <div className="p-6 container">
-              <h1 className="text-2xl font-bold">Showing posts tagged with &quot;{id}&quot;</h1>
+            <main className="container p-2">
+              <h1 className="font-bold text-2xl">Your posts</h1>
               <div className="w-full flex flex-wrap justify-center">
-                {posts.map((post, index) => (
-                    <PostCard post={post} key={index}/>
-                ))}
+                {
+                  posts.map((post, index) => (
+                      <PostCard key={index} post={post}/>
+                  ))
+                }
               </div>
-            </div>
+            </main>
           </Layout>
         </>
     )
@@ -45,5 +41,7 @@ const Post: NextPage = () => {
   }
 }
 
+Posts.auth = true
+
 // noinspection JSUnusedGlobalSymbols
-export default Post
+export default Posts

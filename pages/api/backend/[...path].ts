@@ -9,8 +9,7 @@ export const config = {
   },
 }
 
-// noinspection JSUnusedGlobalSymbols
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   const token = await getToken({req: req, raw: true});
 
   const path = req.query.path as string[];
@@ -39,3 +38,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         res.status(error.response.status).send(error.response.data);
       });
 }
+
+// noinspection JSUnusedGlobalSymbols
+export default apiRequest
