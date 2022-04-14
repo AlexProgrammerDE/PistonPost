@@ -1,9 +1,10 @@
 import {GlobalHead} from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
 import {CustomNextPage} from "../../components/CustomNextPage";
-import {KeyboardEventHandler, useState} from "react";
+import {useState} from "react";
 import axios from "../../lib/axios";
 import {useRouter} from "next/router";
+import {onTagInput} from "../../lib/shared";
 
 const Post: CustomNextPage = () => {
   const router = useRouter();
@@ -13,19 +14,6 @@ const Post: CustomNextPage = () => {
   const [unlisted, setUnlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const onTagInput: KeyboardEventHandler<HTMLInputElement> = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault()
-
-      const value = e.currentTarget.value.trim()
-      if (tags.length < 5 && !tags.includes(value) && tags.filter(tag => tag.toLowerCase() === value.toLowerCase()).length <= 0) {
-        setTags([...tags, value]);
-        e.currentTarget.value = "";
-        return;
-      }
-    }
-  };
 
   return (
       <>
@@ -109,7 +97,7 @@ const Post: CustomNextPage = () => {
                   <input type="text"
                          placeholder="Comedy"
                          maxLength={20}
-                         onKeyDown={onTagInput}
+                         onKeyDown={e => onTagInput(e, setTags, tags)}
                          className="input input-bordered"/>
                 </label>
                 <label className="label">

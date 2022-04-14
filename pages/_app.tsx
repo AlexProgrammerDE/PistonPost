@@ -6,6 +6,7 @@ import {NextComponentType} from "next";
 import Auth from '../components/Auth';
 import TimeAgo from 'javascript-time-ago'
 import en from 'javascript-time-ago/locale/en.json'
+import UserDataProvider, {UserDataContext} from "../components/UserDataProvider";
 
 if (!global._hasSetTime) {
   TimeAgo.addDefaultLocale(en)
@@ -20,13 +21,15 @@ type CustomAppProps = AppProps & {
 export default function App({Component, pageProps: {session, ...pageProps},}: CustomAppProps) {
   return (
       <SessionProvider session={session}>
-        {Component.auth ? (
-            <Auth>
+        <UserDataProvider>
+          {Component.auth ? (
+              <Auth>
+                <Component {...pageProps} />
+              </Auth>
+          ) : (
               <Component {...pageProps} />
-            </Auth>
-        ) : (
-            <Component {...pageProps} />
-        )}
+          )}
+        </UserDataProvider>
       </SessionProvider>
   )
 }

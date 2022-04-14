@@ -19,8 +19,10 @@ export interface AccountSettings {
 }
 
 export interface UserData {
+  id: string;
   name: string;
   avatar: string;
+  roles: string[];
 }
 
 export interface HealthResponse {
