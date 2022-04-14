@@ -18,6 +18,24 @@ a {
   box-sizing: border-box;
 }
 
+@layer utilities {
+  .masonry {
+    column-count: 1;
+  }
+
+  .masonry-sm {
+    column-count: 1;
+  }
+
+  .masonry-md {
+    column-count: 2;
+  }
+
+  .masonry-lg {
+    column-count: 3;
+  }
+}
+
 .container {
   @apply max-w-screen-xl mx-auto;
 }

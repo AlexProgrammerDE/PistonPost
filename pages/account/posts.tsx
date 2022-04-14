@@ -26,7 +26,7 @@ const Posts: CustomNextPage = () => {
           <Layout>
             <main className="container p-2">
               <h1 className="font-bold text-2xl">Your posts</h1>
-              <div className="w-full flex flex-wrap justify-center">
+              <div className="w-full masonry sm:masonry-sm md:masonry-md lg:masonry-lg justify-center">
                 {
                   posts.map((post, index) => (
                       <PostCard key={index} post={post}/>

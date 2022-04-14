@@ -23,9 +23,9 @@ const Home: NextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <div className="p-6 container">
+            <div className="p-1 md:p-6 container">
               <h1 className="text-2xl font-bold">Recent posts...</h1>
-              <div className="w-full flex flex-wrap justify-center">
+              <div className="w-full masonry sm:masonry-sm md:masonry-md lg:masonry-lg justify-center">
                 {frontData.map((post, index) => (
                     <PostCard key={index} post={post}/>
                 ))}

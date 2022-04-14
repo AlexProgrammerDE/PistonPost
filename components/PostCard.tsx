@@ -9,7 +9,7 @@ export default function PostCard({post}: { post: PostData }) {
         <div className="card-body justify-between">
           <Link href={'/post/' + post.postId}>
             <a>
-              <h2 className="card-title justify-between break-text">
+              <h2 className="card-title flex-wrap justify-between break-text">
                 {post.title}
                 <div className="card-actions">
                   <Image alt={"Avatar of " + post.authorData.name} className="rounded-full" src={post.authorData.avatar}
@@ -22,9 +22,9 @@ export default function PostCard({post}: { post: PostData }) {
             </a>
           </Link>
 
-          <div className="card-actions justify-between">
+          <div className="card-actions flex-wrap justify-between">
             <span><ReactTimeAgo date={post.timestamp}/></span>
-            <div className="card-actions">
+            <div className="card-actions flex-wrap">
               {post.tags.map((tag, index) => (
                   <div key={index} className="flex flex-col justify-center">
                     <Link href={'/tag/' + tag}>

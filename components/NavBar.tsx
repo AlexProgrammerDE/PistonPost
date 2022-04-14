@@ -1,6 +1,7 @@
 import Logo from "../public/logo.webp";
 import Image from "next/image";
 import NavOptions from "./NavOptions";
+import Link from "next/link";
 
 export default function NavBar() {
   return (
@@ -16,17 +17,19 @@ export default function NavBar() {
             </label>
           </div>
           <div className="flex-1 px-2 mx-2">
-            <div className="flex flex-row">
-              <Image
-                  src={Logo}
-                  alt="PistonPost Logo"
-                  width={40}
-                  height={40}
-              />
-              <p className="my-auto ml-2 font-bold text-xl">
-                PistonPost
-              </p>
-            </div>
+            <Link href="/">
+              <a className="btn btn-ghost normal-case text-xl">
+                <Image
+                    src={Logo}
+                    alt="PistonPost Logo"
+                    width={40}
+                    height={40}
+                />
+                <p className="my-auto ml-2 font-bold text-xl">
+                  PistonPost
+                </p>
+              </a>
+            </Link>
           </div>
           <div className="flex-none hidden lg:block">
             <ul className="menu menu-horizontal p-0 font-bold text-xl">
