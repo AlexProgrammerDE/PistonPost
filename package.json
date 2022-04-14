@@ -17,6 +17,7 @@
     "@types/cookie-parser": "1.4.2",
     "autoprefixer": "10.4.4",
     "axios": "0.26.1",
+    "bson-objectid": "^2.0.3",
     "daisyui": "2.13.6",
     "javascript-time-ago": "^2.3.13",
     "mongodb": "4.5.0",

@@ -19,7 +19,7 @@ const Post: CustomNextPage = () => {
       <>
         <GlobalHead/>
         <Layout>
-          <main className="container p-2">
+          <main className="container min-h-screen p-2">
             <h1 className="font-bold text-2xl">Create Post</h1>
             {error &&
                 <div className="my-3 alert alert-error shadow-lg">

@@ -7,7 +7,7 @@ import axios from "../../../lib/axios";
 import {signOut} from "next-auth/react";
 import {onTagInput} from "../../../lib/shared";
 import LoadingView from "../../../components/LoadingView";
-import {PostData} from "../../../lib/responses";
+import {PostResponse} from "../../../lib/responses";
 
 const PostEdit: CustomNextPage = () => {
   const router = useRouter();
@@ -17,13 +17,13 @@ const PostEdit: CustomNextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const {id} = router.query
-  const [post, setPost] = useState<PostData>()
+  const [post, setPost] = useState<PostResponse>()
 
   useEffect(() => {
     if (id && router) {
       axios.get(`/post/${id}`)
           .then(res => {
-            const post: PostData = res.data;
+            const post: PostResponse = res.data;
 
             setTags(post.tags);
             setTitle(post.title);
@@ -48,7 +48,7 @@ const PostEdit: CustomNextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <main className="container p-2">
+            <main className="container min-h-screen p-2">
               <h1 className="font-bold text-2xl">Edit Post</h1>
               {error &&
                   <div className="my-3 alert alert-error shadow-lg">

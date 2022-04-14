@@ -1,4 +1,4 @@
-export interface PostData {
+export interface PostResponse {
   postId: string;
   title: string;
   content: string;
@@ -14,6 +14,8 @@ export interface AccountSettings {
   settings: {
     emailNotifications?: boolean;
     bio?: string;
+    website?: string;
+    location?: string;
     theme?: string;
   } | null;
 }
@@ -32,4 +34,15 @@ export interface HealthResponse {
     duration: number;
     timestamp: string;
   }
+}
+
+export interface UserPageResponse {
+  id: string;
+  name: string;
+  avatar: string;
+  roles: string[];
+  bio: string;
+  website: string;
+  location: string;
+  posts: PostResponse[];
 }

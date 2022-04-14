@@ -5,10 +5,10 @@ import {useEffect, useState} from "react";
 import LoadingView from "../components/LoadingView";
 import axios from "../lib/axios";
 import PostCard from "../components/PostCard";
-import {PostData} from "../lib/responses";
+import {PostResponse} from "../lib/responses";
 
 const Home: NextPage = () => {
-  const [frontData, setFrontData] = useState<PostData[]>();
+  const [frontData, setFrontData] = useState<PostResponse[]>();
 
   useEffect(() => {
     if (!frontData) {
@@ -23,7 +23,7 @@ const Home: NextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <div className="p-1 md:p-6 container">
+            <div className="container min-h-screen p-1 md:p-6">
               <h1 className="text-2xl font-bold">Recent posts...</h1>
               <div className="w-full h-full flex flex-wrap">
                 {frontData.map((post, index) => (

@@ -5,10 +5,10 @@ import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
 import LoadingView from "../../components/LoadingView";
 import PostCard from "../../components/PostCard";
-import {PostData} from "../../lib/responses";
+import {PostResponse} from "../../lib/responses";
 
 const Posts: CustomNextPage = () => {
-  const [posts, setPosts] = useState<PostData[]>()
+  const [posts, setPosts] = useState<PostResponse[]>()
 
   useEffect(() => {
     if (!posts) {
@@ -24,7 +24,7 @@ const Posts: CustomNextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <main className="container p-2">
+            <main className="container min-h-screen p-2">
               <h1 className="font-bold text-2xl">Your posts</h1>
               <div className="w-full h-full flex flex-wrap justify-center">
                 {

@@ -5,6 +5,7 @@ import axios from "../lib/axios";
 import defaultAxios from "axios";
 import {useSession} from "next-auth/react";
 import {AccountSettings, HealthResponse} from "../lib/responses";
+import Footer from "./Footer";
 
 // noinspection JSUnusedLocalSymbols
 export const Theme = createContext({
@@ -95,6 +96,7 @@ export default function Layout({children}: { children: ReactNode }) {
           <Drawer>
             <NavBar/>
             {children}
+            <Footer/>
           </Drawer>
         </div>
       </Theme.Provider>

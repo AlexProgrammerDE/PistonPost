@@ -1,16 +1,20 @@
 import Link from "next/link";
 import ReactTimeAgo from "react-time-ago";
-import {PostData} from "../lib/responses";
+import {PostResponse} from "../lib/responses";
 import Image from "next/image";
 
-export default function PostCard({post}: { post: PostData }) {
+export default function PostCard({post}: { post: PostResponse }) {
   return (
       <div className="card w-96 bg-base-200 shadow-lg m-2">
         <div className="card-body justify-between">
-          <Link href={'/post/' + post.postId}>
-            <a>
-              <h2 className="card-title flex-wrap justify-between break-text">
+          <h2 className="card-title flex-wrap justify-between break-text">
+            <Link href={'/post/' + post.postId}>
+              <a>
                 {post.title}
+              </a>
+            </Link>
+            <Link href={'/user/' + post.authorData.name}>
+              <a>
                 <div className="card-actions">
                   <Image alt={"Avatar of " + post.authorData.name} className="rounded-full" src={post.authorData.avatar}
                          width={22} height={22}/>
@@ -18,9 +22,9 @@ export default function PostCard({post}: { post: PostData }) {
                     @{post.authorData.name}
                   </span>
                 </div>
-              </h2>
-            </a>
-          </Link>
+              </a>
+            </Link>
+          </h2>
 
           <div className="card-actions flex-wrap justify-between">
             <span><ReactTimeAgo date={post.timestamp}/></span>

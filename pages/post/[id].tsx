@@ -4,17 +4,18 @@ import Layout from "../../components/Layout";
 import {useRouter} from "next/router";
 import {useContext, useEffect, useState} from "react";
 import axios from "../../lib/axios";
-import {PostData} from "../../lib/responses";
+import {PostResponse} from "../../lib/responses";
 import Image from "next/image";
 import LoadingView from "../../components/LoadingView";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
 import {UserDataContext} from "../../components/UserDataProvider";
+import {NewlineText} from "../../lib/shared";
 
 const Post: NextPage = () => {
   const router = useRouter()
   const {id} = router.query
-  const [post, setPost] = useState<PostData>()
+  const [post, setPost] = useState<PostResponse>()
   const {user} = useContext(UserDataContext)
 
   useEffect(() => {
@@ -31,7 +32,7 @@ const Post: NextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <div className="container h-full p-6 break-text">
+            <div className="container min-h-screen p-2 break-text">
               <div className="w-full p-4 bg-base-200 rounded-box p-4 flex flex-wrap">
                 <h2 className="font-bold text-2xl my-2">{post.title}</h2>
                 <div className="flex flex-wrap">
@@ -82,7 +83,7 @@ const Post: NextPage = () => {
                     date={post.timestamp}/></span>
               </div>
               <div className="text-lg w-full p-4 bg-base-200 rounded-box mt-2">
-                {post.content}
+                <NewlineText text={post.content}/>
               </div>
             </div>
           </Layout>

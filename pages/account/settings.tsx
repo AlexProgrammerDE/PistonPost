@@ -40,6 +40,8 @@ const Settings: CustomNextPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
+  const [website, setWebsite] = useState("");
+  const [location, setLocation] = useState("");
   const [emailNotifications, setEmailNotifications] = useState(false);
   const [formTheme, setFormTheme] = useState("");
 
@@ -59,6 +61,12 @@ const Settings: CustomNextPage = () => {
         if (settings.settings) {
           if (settings.settings.bio) {
             setBio(settings.settings.bio);
+          }
+          if (settings.settings.website) {
+            setWebsite(settings.settings.website);
+          }
+          if (settings.settings.location) {
+            setLocation(settings.settings.location);
           }
           if (settings.settings.emailNotifications) {
             setEmailNotifications(settings.settings.emailNotifications);
@@ -81,7 +89,7 @@ const Settings: CustomNextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <main className="container p-2">
+            <main className="container min-h-screen p-2">
               <h1 className="font-bold text-2xl">Settings</h1>
               {error &&
                   <div className="my-3 alert alert-error shadow-lg">
@@ -107,6 +115,8 @@ const Settings: CustomNextPage = () => {
 
                 formData.set("name", name);
                 formData.set("bio", bio);
+                formData.set("website", website);
+                formData.set("location", location);
                 formData.set("emailNotifications", emailNotifications ? "true" : "false");
                 formData.set("theme", formTheme);
 
@@ -156,6 +166,32 @@ const Settings: CustomNextPage = () => {
                             onInput={(e) => setBio(e.currentTarget.value)}
                             defaultValue={accountSettings.settings.bio}
                             placeholder="Write your bio here..."></textarea>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Your website</span>
+                  </label>
+                  <label className="input-group">
+                    <span>Website</span>
+                    <input type="text" defaultValue={accountSettings.settings.website}
+                           onInput={(e) => setWebsite(e.currentTarget.value)}
+                           placeholder="https://example.com"
+                           className="input input-bordered"/>
+                  </label>
+                </div>
+
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Your location</span>
+                  </label>
+                  <label className="input-group">
+                    <span>Location</span>
+                    <input type="text" defaultValue={accountSettings.settings.location}
+                           onInput={(e) => setLocation(e.currentTarget.value)}
+                           placeholder="London, UK"
+                           className="input input-bordered"/>
+                  </label>
                 </div>
 
                 <div className="form-control">

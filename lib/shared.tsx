@@ -12,4 +12,7 @@ export function onTagInput(e: React.KeyboardEvent<HTMLInputElement>, setTags: (t
     }
   }
 }
-;
+
+export function NewlineText({text}: {text: string}) {
+  return <div>{text.split('\n').map((str, index) => <p key={index}>{str}</p>)}</div>;
+}

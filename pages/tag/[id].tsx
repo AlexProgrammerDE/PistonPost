@@ -6,12 +6,12 @@ import {useEffect, useState} from "react";
 import axios from "../../lib/axios";
 import LoadingView from "../../components/LoadingView";
 import PostCard from "../../components/PostCard";
-import {PostData} from "../../lib/responses";
+import {PostResponse} from "../../lib/responses";
 
 const Post: NextPage = () => {
   const router = useRouter()
   const {id} = router.query
-  const [posts, setPosts] = useState<PostData[]>()
+  const [posts, setPosts] = useState<PostResponse[]>()
 
   useEffect(() => {
     if (id) {
@@ -27,7 +27,7 @@ const Post: NextPage = () => {
         <>
           <GlobalHead/>
           <Layout>
-            <div className="p-6 container h-full">
+            <div className="p-6 container min-h-screen">
               <h1 className="text-2xl font-bold">Showing posts tagged with &quot;{id}&quot;</h1>
               {
                 posts.length > 0 ?
