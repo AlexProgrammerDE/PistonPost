@@ -83,16 +83,23 @@ const Post: NextPage = () => {
               </div>
             </div>
             <div className="rounded-box mt-2 flex w-full flex-wrap bg-base-200 p-4 p-4">
-              <Image
-                alt={"Avatar of " + post.authorData.name}
-                className="rounded-box"
-                src={post.authorData.avatar}
-                width={32}
-                height={32}
-              />
-              <span className="my-auto ml-2 text-xl font-bold">
-                @{post.authorData.name} - <ReactTimeAgo date={post.timestamp} />
-              </span>
+              <Link href={"/user/" + post.authorData.name}>
+                <a className="my-auto flex flex-wrap">
+                  <Image
+                    alt={"Avatar of " + post.authorData.name}
+                    className="rounded-box"
+                    src={post.authorData.avatar}
+                    width={32}
+                    height={32}
+                  />
+                  <div className="flex flex-col justify-center">
+                    <span className="my-auto ml-2 text-xl font-bold">
+                      @{post.authorData.name} -{" "}
+                      <ReactTimeAgo date={post.timestamp} />
+                    </span>
+                  </div>
+                </a>
+              </Link>
             </div>
             <div className="rounded-box mt-2 w-full bg-base-200 p-4 text-lg">
               <NewlineText text={post.content} />

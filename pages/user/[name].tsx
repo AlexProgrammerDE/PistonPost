@@ -47,7 +47,7 @@ const UserName: NextPage = () => {
               <li className="mb-1 flex flex-row">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
+                  className="h-5 w-5 my-auto"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -70,7 +70,7 @@ const UserName: NextPage = () => {
                 <li className="mb-1 flex flex-row">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
+                    className="h-5 w-5 my-auto"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -89,7 +89,7 @@ const UserName: NextPage = () => {
                 <li className="flex flex-row">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
+                    className="h-5 w-5 my-auto"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
