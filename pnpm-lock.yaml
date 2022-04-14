@@ -18,7 +18,7 @@ specifiers:
   next: 12.1.4
   next-auth: 4.3.2
   next-pwa: 5.5.0
-  next-sitemap: 2.5.19
+  next-sitemap: 2.5.20
   nodemailer: 6.7.3
   postcss: 8.4.12
   raw-body: 2.5.1
@@ -41,7 +41,7 @@ dependencies:
   next: 12.1.4_react-dom@18.0.0+react@18.0.0
   next-auth: 4.3.2_293f37d500369a03b239180d5cb6a3fb
   next-pwa: 5.5.0_next@12.1.4
-  next-sitemap: 2.5.19_next@12.1.4
+  next-sitemap: 2.5.20_next@12.1.4
   nodemailer: 6.7.3
   postcss: 8.4.12
   raw-body: 2.5.1
@@ -3419,8 +3419,8 @@ packages:
       - webpack
     dev: false
 
-  /next-sitemap/2.5.19_next@12.1.4:
-    resolution: {integrity: sha512-skcjmCO9ZEDxUmfaSz9FGWt/TRhXvfwvJzuMj8NRCd46vhMNzsLu+2lq2T4KJp5kNYEp3ISajtVNxJ+iegcDDg==}
+  /next-sitemap/2.5.20_next@12.1.4:
+    resolution: {integrity: sha512-Qbm4N2WGA6VHemFN0C9PNWQav9RKwMEbVrNgVvDQhG0sDBmNBgKii54WklOjCvVJVHgQPgtXLBhlNaJGS+RVQA==}
     engines: {node: '>=14.18'}
     hasBin: true
     peerDependencies:
