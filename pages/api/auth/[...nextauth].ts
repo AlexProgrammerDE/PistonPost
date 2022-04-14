@@ -1,7 +1,7 @@
-import NextAuth from "next-auth"
-import EmailProvider from "next-auth/providers/email"
+import NextAuth from "next-auth";
+import EmailProvider from "next-auth/providers/email";
 import clientPromise from "../../../lib/mongodb";
-import {MongoDBAdapter} from "../../../lib/mongo-adapter";
+import { MongoDBAdapter } from "../../../lib/mongo-adapter";
 
 // For more information on each option (and a full list of options) go to
 // https://next-auth.js.org/configuration/options
@@ -9,8 +9,8 @@ export default NextAuth({
   providers: [
     EmailProvider({
       server: process.env.EMAIL_SERVER,
-      from: process.env.EMAIL_FROM,
-    }),
+      from: process.env.EMAIL_FROM
+    })
   ],
   // Database optional. MySQL, Maria DB, Postgres and MongoDB are supported.
   // https://next-auth.js.org/configuration/databases
@@ -32,7 +32,7 @@ export default NextAuth({
     // Seconds - Throttle how frequently to write to database to extend a session.
     // Use it to limit write operations. Set to 0 to always update the database.
     // Note: This option is ignored if using JSON Web Tokens
-    updateAge: 24 * 60 * 60, // 24 hours
+    updateAge: 24 * 60 * 60 // 24 hours
   },
 
   // You can define custom pages to override the built-in ones. These will be regular Next.js pages
@@ -64,9 +64,9 @@ export default NextAuth({
 
   theme: {
     colorScheme: "auto",
-    logo: '/medium_logo.webp'
+    logo: "/medium_logo.webp"
   },
 
   // Enable debug messages in the console if you are having problems
-  debug: false,
-})
+  debug: false
+});

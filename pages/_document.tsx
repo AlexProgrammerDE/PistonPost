@@ -1,4 +1,4 @@
-import {Head, Html, Main, NextScript} from 'next/document'
+import { Head, Html, Main, NextScript } from "next/document";
 
 const themeInitializerScript = `
        (function () {
@@ -9,13 +9,13 @@ const themeInitializerScript = `
 
 export default function Document() {
   return (
-      <Html>
-        <Head/>
-        <body id="documentBody">
-        <script dangerouslySetInnerHTML={{__html: themeInitializerScript}}/>
-        <Main/>
-        <NextScript/>
-        </body>
-      </Html>
-  )
+    <Html>
+      <Head />
+      <body id="documentBody">
+        <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
+        <Main />
+        <NextScript />
+      </body>
+    </Html>
+  );
 }

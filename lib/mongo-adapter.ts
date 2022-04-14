@@ -1,18 +1,23 @@
 // Copy of https://github.com/nextauthjs/next-auth/blob/main/packages/adapter-mongodb/src/index.ts
-import type {MongoClient} from "mongodb"
+import type { MongoClient } from "mongodb";
 // Adds option for custom DB
-import {ObjectId} from "mongodb"
+import { ObjectId } from "mongodb";
 
-import type {Adapter, AdapterSession, AdapterUser, VerificationToken,} from "next-auth/adapters"
-import type {Account} from "next-auth"
+import type {
+  Adapter,
+  AdapterSession,
+  AdapterUser,
+  VerificationToken
+} from "next-auth/adapters";
+import type { Account } from "next-auth";
 
 export interface MongoDBAdapterOptions {
   collections?: {
-    Users?: string
-    Accounts?: string
-    Sessions?: string
-    VerificationTokens?: string
-  }
+    Users?: string;
+    Accounts?: string;
+    Sessions?: string;
+    VerificationTokens?: string;
+  };
 }
 
 export const defaultCollections: Required<Required<MongoDBAdapterOptions>["collections"]> = {

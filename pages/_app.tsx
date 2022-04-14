@@ -1,37 +1,38 @@
-import '../styles/globals.css'
-import '../styles/fonts.css'
-import type {AppProps} from 'next/app'
-import {SessionProvider} from "next-auth/react";
-import {NextComponentType} from "next";
-import Auth from '../components/Auth';
-import TimeAgo from 'javascript-time-ago'
-import en from 'javascript-time-ago/locale/en.json'
-import UserDataProvider, {UserDataContext} from "../components/UserDataProvider";
+import "../styles/globals.css";
+import "../styles/fonts.css";
+import type { AppProps } from "next/app";
+import { SessionProvider } from "next-auth/react";
+import { NextComponentType } from "next";
+import Auth from "../components/Auth";
+import TimeAgo from "javascript-time-ago";
+import en from "javascript-time-ago/locale/en.json";
+import UserDataProvider from "../components/UserDataProvider";
 
 if (!global._hasSetTime) {
-  TimeAgo.addDefaultLocale(en)
-  global._hasSetTime = true
+  TimeAgo.addDefaultLocale(en);
+  global._hasSetTime = true;
 }
 
 type CustomAppProps = AppProps & {
-  Component: NextComponentType & { auth?: boolean } // add auth type
-}
+  Component: NextComponentType & { auth?: boolean }; // add auth type
+};
 
 // noinspection JSUnusedGlobalSymbols
-export default function App({Component, pageProps: {session, ...pageProps},}: CustomAppProps) {
+export default function App({
+  Component,
+  pageProps: { session, ...pageProps }
+}: CustomAppProps) {
   return (
-      <SessionProvider session={session}>
-        <UserDataProvider>
-          {Component.auth ? (
-              <Auth>
-                <Component {...pageProps} />
-              </Auth>
-          ) : (
-              <Component {...pageProps} />
-          )}
-        </UserDataProvider>
-      </SessionProvider>
-  )
+    <SessionProvider session={session}>
+      <UserDataProvider>
+        {Component.auth ? (
+          <Auth>
+            <Component {...pageProps} />
+          </Auth>
+        ) : (
+          <Component {...pageProps} />
+        )}
+      </UserDataProvider>
+    </SessionProvider>
+  );
 }
-
-

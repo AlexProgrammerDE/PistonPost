@@ -16,11 +16,11 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: '/backend',
-        destination: 'http://localhost:5757'
+        source: "/backend",
+        destination: "http://localhost:5757"
       }
-    ]
+    ];
   }
-}
+};
 
-module.exports = withBundleAnalyzer(nextConfig)
+module.exports = withBundleAnalyzer(nextConfig);

@@ -1,4 +1,4 @@
-import {MongoClient} from "mongodb";
+import { MongoClient } from "mongodb";
 
 declare global {
   // noinspection ES6ConvertVarToLetConst

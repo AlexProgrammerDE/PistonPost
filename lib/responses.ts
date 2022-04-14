@@ -33,7 +33,7 @@ export interface HealthResponse {
     message: string;
     duration: number;
     timestamp: string;
-  }
+  };
 }
 
 export interface UserPageResponse {

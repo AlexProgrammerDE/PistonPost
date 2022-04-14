@@ -1,3 +1,3 @@
-import {NextPage} from "next";
+import { NextPage } from "next";
 
-export type CustomNextPage = NextPage & { auth?: boolean }
+export type CustomNextPage = NextPage & { auth?: boolean };
