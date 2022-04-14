@@ -5,7 +5,7 @@ specifiers:
   '@next/bundle-analyzer': 12.1.4
   '@types/cookie-parser': 1.4.2
   '@types/node': 17.0.23
-  '@types/react': 18.0.1
+  '@types/react': 18.0.5
   '@types/react-dom': 18.0.0
   autoprefixer: 10.4.4
   axios: 0.26.1
@@ -52,7 +52,7 @@ dependencies:
 
 devDependencies:
   '@types/node': 17.0.23
-  '@types/react': 18.0.1
+  '@types/react': 18.0.5
   '@types/react-dom': 18.0.0
   eslint: 8.12.0
   eslint-config-next: 12.1.4_fab470334d1cc33786399cd971ce0917
@@ -1570,11 +1570,11 @@ packages:
   /@types/react-dom/18.0.0:
     resolution: {integrity: sha512-49897Y0UiCGmxZqpC8Blrf6meL8QUla6eb+BBhn69dTXlmuOlzkfr7HHY/O8J25e1lTUMs+YYxSlVDAaGHCOLg==, registry: https://registry.yarnpkg.com/, tarball: https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.0.0.tgz}
     dependencies:
-      '@types/react': 18.0.1
+      '@types/react': 18.0.5
     dev: true
 
-  /@types/react/18.0.1:
-    resolution: {integrity: sha512-VnWlrVgG0dYt+NqlfMI0yUYb8Rdl4XUROyH+c6gq/iFCiZ805Vi//26UW38DHnxQkbDhnrIWTBiy6oKZqL11cw==}
+  /@types/react/18.0.5:
+    resolution: {integrity: sha512-UPxNGInDCIKlfqBrm8LDXYWNfLHwIdisWcsH5GpMyGjhEDLFgTtlRBaoWuCua9HcyuE0rMkmAeZ3FXV1pYLIYQ==}
     dependencies:
       '@types/prop-types': 15.7.5
       '@types/scheduler': 0.16.2
