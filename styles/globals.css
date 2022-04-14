@@ -9,33 +9,6 @@ body {
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-@layer utilities {
-  .masonry {
-    column-count: 1;
-  }
-
-  .masonry-sm {
-    column-count: 1;
-  }
-
-  .masonry-md {
-    column-count: 2;
-  }
-
-  .masonry-lg {
-    column-count: 3;
-  }
-}
-
 .container {
   @apply max-w-screen-xl mx-auto;
 }

@@ -6,6 +6,7 @@ import axios from "../../lib/axios";
 import {signOut} from "next-auth/react";
 import {CustomNextPage} from "../../components/CustomNextPage";
 import {AccountSettings} from "../../lib/responses";
+import {useRouter} from "next/router";
 
 interface ThemeData {
   name: string;
@@ -32,28 +33,48 @@ const themeData: ThemeData[] = themes.map(theme => ({
   value: theme.toLowerCase(),
 }));
 
-function deleteAccount() {
-  axios.delete("/settings").then(() => {
-    signOut().then(() => {
-      window.location.href = "/";
-    })
-  });
-}
-
 const Settings: CustomNextPage = () => {
-  const [userData, setUserData] = useState<AccountSettings>()
+  const router = useRouter();
+  const [accountSettings, setAccountSettings] = useState<AccountSettings>()
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [emailNotifications, setEmailNotifications] = useState(false);
+  const [formTheme, setFormTheme] = useState("");
+
+  function deleteAccount() {
+    axios.delete("/settings").then(() => {
+      signOut().then(() => {
+        router.push("/").then()
+      })
+    });
+  }
 
   useEffect(() => {
-    if (!userData) {
+    if (!accountSettings) {
       axios.get('/settings').then(res => {
-        setUserData(res.data)
+        const settings: AccountSettings = res.data;
+        setName(settings.name);
+        if (settings.settings) {
+          if (settings.settings.bio) {
+            setBio(settings.settings.bio);
+          }
+          if (settings.settings.emailNotifications) {
+            setEmailNotifications(settings.settings.emailNotifications);
+          }
+          if (settings.settings.theme) {
+            setFormTheme(settings.settings.theme);
+          }
+        }
+        setAccountSettings(settings)
       })
     }
-  }, [userData])
+  }, [accountSettings])
 
-  if (userData) {
-    if (!userData.settings) {
-      userData.settings = {}
+  if (accountSettings) {
+    if (!accountSettings.settings) {
+      accountSettings.settings = {}
     }
 
     return (
@@ -62,22 +83,54 @@ const Settings: CustomNextPage = () => {
           <Layout>
             <main className="container p-2">
               <h1 className="font-bold text-2xl">Settings</h1>
-              <form action="/api/backend/settings" method="POST" /*onSubmit={async (e) => {
+              {error &&
+                  <div className="my-3 alert alert-error shadow-lg">
+                      <div>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current flex-shrink-0 h-6 w-6"
+                               fill="none"
+                               viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                                    d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                          </svg>
+                          <span>{error}</span>
+                      </div>
+                  </div>
+              }
+              <form onSubmit={async (e) => {
                 e.preventDefault();
+
+                if (isLoading) {
+                  return;
+                }
 
                 const formData = new FormData(e.currentTarget);
 
-                formData.set()
+                formData.set("name", name);
+                formData.set("bio", bio);
+                formData.set("emailNotifications", emailNotifications ? "true" : "false");
+                formData.set("theme", formTheme);
 
-                console.log(formData);
-              }}*/>
+                setIsLoading(true);
+                axios.put('/settings', formData, {
+                  headers: {
+                    'Content-Type': 'multipart/form-data'
+                  }
+                }).then((res) => {
+                  setIsLoading(false);
+                  setError(null);
+                  router.reload()
+                }).catch((res) => {
+                  setIsLoading(false);
+                  setError(`${res.response.data.message}`)
+                })
+              }}>
                 <div className="form-control">
                   <label className="label">
                     <span className="label-text">Your Email</span>
                   </label>
                   <label className="input-group">
                     <span>Email</span>
-                    <input id="input-email" disabled type="text" value={userData.email} placeholder="you@example.com"
+                    <input disabled type="text" value={accountSettings.email}
                            className="input input-bordered"/>
                   </label>
                 </div>
@@ -88,7 +141,8 @@ const Settings: CustomNextPage = () => {
                   </label>
                   <label className="input-group">
                     <span>Name</span>
-                    <input id="input-name" name="username" type="text" defaultValue={userData.name}
+                    <input type="text" defaultValue={accountSettings.name}
+                           onInput={(e) => setName(e.currentTarget.value)}
                            placeholder="SomeUsername"
                            className="input input-bordered"/>
                   </label>
@@ -99,7 +153,8 @@ const Settings: CustomNextPage = () => {
                     <span className="label-text">Your bio</span>
                   </label>
                   <textarea id="input-bio" name="bio" className="textarea textarea-bordered h-24"
-                            defaultValue={userData.settings.bio}
+                            onInput={(e) => setBio(e.currentTarget.value)}
+                            defaultValue={accountSettings.settings.bio}
                             placeholder="Write your bio here..."></textarea>
                 </div>
 
@@ -107,8 +162,9 @@ const Settings: CustomNextPage = () => {
                   <label className="label cursor-pointer max-w-[12rem]">
                     <span className="label-text">Email Notifications</span>
                     <input id="input-emailNotifications" name="emailNotifications" type="checkbox"
+                           onInput={(e) => setEmailNotifications(e.currentTarget.checked)}
                            className="checkbox checkbox-primary"
-                           defaultChecked={userData.settings.emailNotifications}/>
+                           defaultChecked={accountSettings.settings.emailNotifications}/>
                   </label>
                 </div>
 
@@ -120,6 +176,7 @@ const Settings: CustomNextPage = () => {
                         </label>
                         <select id="input-theme" value={theme} name="theme" className="select select-bordered"
                                 onChange={(event) => {
+                                  setFormTheme(event.currentTarget.value);
                                   setTheme(event.target.value)
                                 }}>
                           {themeData.map(({name, value}) => (

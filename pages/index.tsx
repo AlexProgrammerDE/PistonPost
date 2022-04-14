@@ -25,9 +25,11 @@ const Home: NextPage = () => {
           <Layout>
             <div className="p-1 md:p-6 container">
               <h1 className="text-2xl font-bold">Recent posts...</h1>
-              <div className="w-full masonry sm:masonry-sm md:masonry-md lg:masonry-lg justify-center">
+              <div className="w-full h-full flex flex-wrap">
                 {frontData.map((post, index) => (
-                    <PostCard key={index} post={post}/>
+                    <div key={index}>
+                      <PostCard post={post} />
+                    </div>
                 ))}
               </div>
             </div>

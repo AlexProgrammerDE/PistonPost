@@ -4,7 +4,7 @@ import Drawer from "./Drawer";
 import axios from "../lib/axios";
 import defaultAxios from "axios";
 import {useSession} from "next-auth/react";
-import {HealthResponse} from "../lib/responses";
+import {AccountSettings, HealthResponse} from "../lib/responses";
 
 // noinspection JSUnusedLocalSymbols
 export const Theme = createContext({
@@ -46,7 +46,11 @@ export default function Layout({children}: { children: ReactNode }) {
   useEffect(() => {
     if (status === "authenticated") {
       axios.get('/settings').then(res => {
-        setTheme(res.data.settings.theme)
+        const data = res.data as AccountSettings
+
+        if (data.settings && data.settings.theme) {
+          setTheme(data.settings.theme)
+        }
       })
     }
   }, [status, setTheme]);

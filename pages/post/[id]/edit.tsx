@@ -39,10 +39,8 @@ const PostEdit: CustomNextPage = () => {
 
   if (id && post) {
     const deletePost = () => {
-      axios.delete("/post/" + id).then(() => {
-        signOut().then(() => {
-          window.location.href = "/";
-        })
+      axios.delete(`/post/${id}`).then(() => {
+        router.push('/').then()
       });
     }
 
@@ -86,7 +84,7 @@ const PostEdit: CustomNextPage = () => {
                 }).then((res) => {
                   setIsLoading(false);
                   setError(null);
-                  router.push('/post/[id]', `/post/${res.data.postId}`)
+                  router.push('/post/[id]', `/post/${id}`)
                 }).catch((res) => {
                   setIsLoading(false);
                   setError(`${res.response.data.message}`)

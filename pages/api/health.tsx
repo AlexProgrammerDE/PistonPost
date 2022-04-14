@@ -2,7 +2,7 @@ import type {NextApiRequest, NextApiResponse} from 'next'
 import axios from "axios";
 
 const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
-  await axios.get('http://localhost:5757/admin/healthcheck')
+  await axios.get(`${process.env.API_ENDPOINT}/admin/healthcheck`)
       .then(response => {
         res.status(response.status).json(response.data);
       })

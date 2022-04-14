@@ -29,14 +29,22 @@ const Post: NextPage = () => {
           <Layout>
             <div className="p-6 container h-full">
               <h1 className="text-2xl font-bold">Showing posts tagged with &quot;{id}&quot;</h1>
-              <div className={"w-full h-full justify-center " + (posts.length > 0 ? "masonry sm:masonry-sm md:masonry-md lg:masonry-lg" : "flex")}>
-                {posts.length > 0 ? posts.map((post, index) => (
-                    <PostCard post={post} key={index}/>
-                )) : (
-                    <>
+              {
+                posts.length > 0 ?
+                    <div className="w-full h-full flex flex-wrap justify-center">
+                      {
+                        posts.map((post, index) => (
+                            <div key={index}>
+                              <PostCard post={post} />
+                            </div>
+                        ))
+                      }
+                    </div>
+                    :
+                    <div className="w-full h-full flex justify-center">
                       <h3 className="m-auto text-3xl font-bold">No posts with this tag found... :(</h3>
-                    </>)}
-              </div>
+                    </div>
+              }
             </div>
           </Layout>
         </>

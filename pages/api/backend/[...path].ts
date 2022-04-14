@@ -15,7 +15,7 @@ const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   const path = req.query.path as string[];
   delete req.query.path;
 
-  const url = `http://localhost:5757/application/${path.join("/")}`;
+  const url = `${process.env.API_ENDPOINT}/application/${path.join("/")}`;
 
   const headers = token ? {
     ...req.headers as any,
