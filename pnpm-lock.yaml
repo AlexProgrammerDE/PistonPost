@@ -10,7 +10,7 @@ specifiers:
   autoprefixer: 10.4.4
   axios: 0.26.1
   bson-objectid: 2.0.3
-  daisyui: 2.13.6
+  daisyui: 2.14.0
   eslint: 8.13.0
   eslint-config-next: 12.1.5
   javascript-time-ago: 2.3.13
@@ -38,7 +38,7 @@ dependencies:
   autoprefixer: 10.4.4_postcss@8.4.12
   axios: 0.26.1
   bson-objectid: 2.0.3
-  daisyui: 2.13.6_081650f2f4dba35b17265937ab2a2ec0
+  daisyui: 2.14.0_081650f2f4dba35b17265937ab2a2ec0
   javascript-time-ago: 2.3.13
   mongodb: 4.5.0
   next: 12.1.5_react-dom@18.0.0+react@18.0.0
@@ -2168,8 +2168,8 @@ packages:
     resolution: {integrity: sha512-sa6P2wJ+CAbgyy4KFssIb/JNMLxFvKF1pCYCSXS8ZMuqZnMsrxqI2E5sPyoTpxoPU/gVZMzr2zjOfg8GIZOMsw==}
     dev: true
 
-  /daisyui/2.13.6_081650f2f4dba35b17265937ab2a2ec0:
-    resolution: {integrity: sha512-Z3DOqNwIKxp4og9qd64i8/eS4i3TccmmfcaKKXM/Y619FmRjKXRmKAm/GTu9qH+4W7GcVdL8IRxuw0z5GQSqvQ==}
+  /daisyui/2.14.0_081650f2f4dba35b17265937ab2a2ec0:
+    resolution: {integrity: sha512-M8Pb3iJ1qf0nrIFyBB3SSDlcq+zytsMx5QpVsUx8KerV+ruLOMqyiYY01zmrjjCG5wSKr6Rt8ObO3VXQyArNBA==}
     peerDependencies:
       autoprefixer: ^10.0.2
       postcss: ^8.1.6
