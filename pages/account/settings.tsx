@@ -23,9 +23,17 @@ const themes = [
   "Business",
   "Dracula",
   "Night",
+  "Retro",
   "Coffee",
+  "Light",
   "Lofi",
-  "Cmyk"
+  "Cmyk",
+  "Cyberpunk",
+  "Valentine",
+  "Cupcake",
+  "Winter",
+  "Lemonade",
+  "Corporate"
 ];
 
 const themeData: ThemeData[] = themes.map((theme) => ({
@@ -89,7 +97,7 @@ const Settings: CustomNextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <main className="container min-h-screen p-2">
+          <main className="container flex-grow p-2">
             <h1 className="text-2xl font-bold">Settings</h1>
             {error && (
               <div className="alert alert-error my-3 shadow-lg">

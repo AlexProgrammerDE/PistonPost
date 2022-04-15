@@ -30,7 +30,7 @@ const UserName: NextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <div className="break-text container min-h-screen p-6">
+          <div className="break-text container flex-grow p-6">
             <div className="rounded-box flex w-full flex-wrap bg-base-200 p-4">
               <div className="flex flex-col justify-center">
                 <Image

@@ -31,7 +31,7 @@ const Post: NextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <div className="break-text container min-h-screen p-2">
+          <div className="break-text container flex-grow p-2">
             <div className="rounded-box flex w-full flex-wrap bg-base-200 p-4 p-4">
               <h2 className="my-2 text-2xl font-bold">{post.title}</h2>
               <div className="flex flex-wrap">

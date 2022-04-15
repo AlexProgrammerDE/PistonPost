@@ -6,6 +6,8 @@ import LoadingView from "../components/LoadingView";
 import axios from "../lib/axios";
 import PostCard from "../components/PostCard";
 import { PostResponse } from "../lib/responses";
+import Masonry from "react-masonry-css";
+import { breakpointColumnsObj } from "../lib/shared";
 
 const Home: NextPage = () => {
   const [frontData, setFrontData] = useState<PostResponse[]>();
@@ -23,15 +25,17 @@ const Home: NextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <div className="container min-h-screen p-1 md:p-6">
+          <div className="container flex-grow p-1 md:p-6">
             <h1 className="text-2xl font-bold">Recent posts...</h1>
-            <div className="flex h-full w-full flex-wrap">
+            <Masonry
+              breakpointCols={breakpointColumnsObj}
+              className="my-masonry-grid"
+              columnClassName="my-masonry-grid_column"
+            >
               {frontData.map((post, index) => (
-                <div key={index}>
-                  <PostCard post={post} />
-                </div>
+                <PostCard key={index} post={post} />
               ))}
-            </div>
+            </Masonry>
           </div>
         </Layout>
       </>

@@ -48,7 +48,7 @@ const PostEdit: CustomNextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <main className="container min-h-screen p-2">
+          <main className="container flex-grow p-2">
             <h1 className="text-2xl font-bold">Edit Post</h1>
             {error && (
               <div className="alert alert-error my-3 shadow-lg">

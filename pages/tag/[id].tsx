@@ -7,6 +7,8 @@ import axios from "../../lib/axios";
 import LoadingView from "../../components/LoadingView";
 import PostCard from "../../components/PostCard";
 import { PostResponse } from "../../lib/responses";
+import Masonry from "react-masonry-css";
+import { breakpointColumnsObj } from "../../lib/shared";
 
 const Post: NextPage = () => {
   const router = useRouter();
@@ -26,18 +28,20 @@ const Post: NextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <div className="container min-h-screen p-6">
+          <div className="container flex-grow p-6">
             <h1 className="text-2xl font-bold">
               Showing posts tagged with &quot;{id}&quot;
             </h1>
             {posts.length > 0 ? (
-              <div className="flex h-full w-full flex-wrap justify-center">
+              <Masonry
+                breakpointCols={breakpointColumnsObj}
+                className="my-masonry-grid h-full w-full"
+                columnClassName="my-masonry-grid_column"
+              >
                 {posts.map((post, index) => (
-                  <div key={index}>
-                    <PostCard post={post} />
-                  </div>
+                  <PostCard key={index} post={post} />
                 ))}
-              </div>
+              </Masonry>
             ) : (
               <div className="flex h-full w-full justify-center">
                 <h3 className="m-auto text-3xl font-bold">
