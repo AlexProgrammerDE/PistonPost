@@ -3,7 +3,6 @@ import {
   color,
   description as brandDescription,
   title as brandTitle,
-  twitter,
   url
 } from "../lib/branding";
 
