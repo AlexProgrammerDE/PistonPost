@@ -13,7 +13,10 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
 
   return (
     <>
-      <GlobalHead />
+      <GlobalHead
+        overrideTitle={`User ${userData.name}`}
+        overrideDescription={`${userData.posts.length} posts`}
+      />
       <Layout>
         <div className="break-text container flex-grow p-6">
           <div className="rounded-box flex w-full flex-wrap bg-base-200 p-4">

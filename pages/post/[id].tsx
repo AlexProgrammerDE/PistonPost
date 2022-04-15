@@ -17,7 +17,10 @@ const Post = ({ postData }: { postData: PostResponse }) => {
 
   return (
     <>
-      <GlobalHead />
+      <GlobalHead
+        overrideTitle={postData.title}
+        overrideDescription={`Post by ${postData.authorData.name}`}
+      />
       <Layout>
         <div className="break-text container flex-grow p-2">
           <div className="rounded-box flex w-full flex-wrap bg-base-200 p-4 p-4">
