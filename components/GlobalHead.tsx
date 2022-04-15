@@ -22,23 +22,19 @@ export function GlobalHead({
       <title>{title}</title>
       <meta name="description" content={description} />
 
-      <meta name="application-name" content={title} />
-      <meta property="og:site_name" content={title} />
+      <meta name="application-name" content={brandTitle} />
+      <meta property="og:site_name" content={brandTitle} />
+      <meta name="apple-mobile-web-app-title" content={brandTitle} />
+      <meta name="msapplication-tooltip" content={brandTitle} />
+      <meta name="apple-mobile-web-app-title" content={brandTitle} />
 
       <meta name="msapplication-TileColor" content={color} />
       <meta name="theme-color" content={color} />
-
-      <meta name="apple-mobile-web-app-title" content={title} />
-
-      <meta name="msapplication-TileColor" content={color} />
       <meta name="msapplication-navbutton-color" content={color} />
-      <meta name="msapplication-tooltip" content={title} />
-      <meta name="apple-mobile-web-app-title" content={title} />
 
       <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:creator" content={twitter} />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:url" content={url} />

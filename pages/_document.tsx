@@ -1,4 +1,5 @@
 import { Head, Html, Main, NextScript } from "next/document";
+import { twitter } from "../lib/branding";
 
 const themeInitializerScript = `
        (function () {
@@ -126,6 +127,7 @@ export default function Document() {
         />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="/icons/apple-touch-icon.png" />
+        <meta name="twitter:creator" content={twitter} />
       </Head>
       <body id="documentBody">
         <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
