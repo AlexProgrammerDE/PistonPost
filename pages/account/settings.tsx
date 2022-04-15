@@ -181,6 +181,8 @@ const Settings: CustomNextPage = () => {
                   <input
                     type="text"
                     defaultValue={accountSettings.name}
+                    maxLength={20}
+                    minLength={3}
                     onInput={(e) => setName(e.currentTarget.value)}
                     placeholder="SomeUsername"
                     className="input input-bordered"
