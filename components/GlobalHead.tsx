@@ -1,8 +1,12 @@
 import Head from "next/head";
 
-export function GlobalHead() {
-  const title = "PistonPost";
-  const url = "https://post.pistonmaster.dev";
+export function GlobalHead({
+  title = "PistonPost",
+  description = "Post like a pro."
+}) {
+  const url = "https://post.pistonmaster.net";
+  const color = "#FCFDF2";
+  const twitter = "@AlexProgrammer3";
   return (
     <Head>
       <meta charSet="utf-8" />
@@ -13,12 +17,12 @@ export function GlobalHead() {
       <meta name="viewport" content="width=device-width, initial-scale=1" />
 
       <meta name="application-name" content={title} />
-      <meta name="description" content="Post like a pro." />
+      <meta name="description" content={description} />
       <meta name="format-detection" content="telephone=no" />
       <meta name="mobile-web-app-capable" content="yes" />
-      <meta name="msapplication-TileColor" content={"#FCFDF2"} />
+      <meta name="msapplication-TileColor" content={color} />
       <meta name="msapplication-tap-highlight" content="no" />
-      <meta name="theme-color" content={"#FCFDF2"} />
+      <meta name="theme-color" content={color} />
 
       <meta name="apple-mobile-web-app-capable" content="yes" />
       <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -82,11 +86,11 @@ export function GlobalHead() {
         name="msapplication-TileImage"
         content="/_icons/win8-tile-144x144.png"
       />
-      <meta name="msapplication-TileColor" content="#ffffff" />
-      <meta name="msapplication-navbutton-color" content="#ffffff" />
-      <meta name="application-name" content="PistonPost" />
-      <meta name="msapplication-tooltip" content="PistonPost" />
-      <meta name="apple-mobile-web-app-title" content="PistonPost" />
+      <meta name="msapplication-TileColor" content={color} />
+      <meta name="msapplication-navbutton-color" content={color} />
+      <meta name="application-name" content={title} />
+      <meta name="msapplication-tooltip" content={title} />
+      <meta name="apple-mobile-web-app-title" content={title} />
       <meta
         name="msapplication-square70x70logo"
         content="/icons/win8-tile-70x70.png"
@@ -124,16 +128,16 @@ export function GlobalHead() {
       <link rel="shortcut icon" href="/favicon.ico" />
 
       <meta name="twitter:card" content="summary" />
-      <meta name="twitter:url" content="https://post.pistonmaster.net" />
+      <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content="Post like a pro." />
+      <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content="/icons/android-chrome-192x192.png" />
-      <meta name="twitter:creator" content="@AlexProgrammer3" />
+      <meta name="twitter:creator" content={twitter} />
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
-      <meta property="og:description" content="Post like a pro." />
+      <meta property="og:description" content={description} />
       <meta property="og:site_name" content={title} />
-      <meta property="og:url" content="https://post.pistonmaster.net" />
+      <meta property="og:url" content={url} />
       <meta property="og:image" content="/icons/apple-touch-icon.png" />
     </Head>
   );

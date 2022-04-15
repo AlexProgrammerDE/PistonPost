@@ -1,7 +1,7 @@
 import axios from "axios";
 
-const instance = axios.create({
+const clientAxios = axios.create({
   baseURL: `/api/backend`
 });
 
-export default instance;
+export default clientAxios;
