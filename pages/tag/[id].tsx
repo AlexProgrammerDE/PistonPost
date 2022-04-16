@@ -29,7 +29,7 @@ const Post: NextPage = () => {
         <GlobalHead />
         <Layout>
           <div className="container flex-grow p-6">
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold mx-2">
               Showing posts tagged with &quot;{id}&quot;
             </h1>
             {posts.length > 0 ? (

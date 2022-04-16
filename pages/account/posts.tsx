@@ -26,7 +26,7 @@ const Posts: CustomNextPage = () => {
         <GlobalHead />
         <Layout>
           <main className="container flex-grow p-2">
-            <h1 className="text-2xl font-bold">Your posts</h1>
+            <h1 className="text-2xl font-bold mx-2">Your posts</h1>
             <Masonry
               breakpointCols={breakpointColumnsObj}
               className="my-masonry-grid h-full w-full"
