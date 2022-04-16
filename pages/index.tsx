@@ -26,7 +26,7 @@ const Home: NextPage = () => {
         <GlobalHead />
         <Layout>
           <div className="container flex-grow p-1 md:p-6">
-            <h1 className="text-2xl font-bold">Recent posts...</h1>
+            <h1 className="text-2xl font-bold mx-2">Recent posts...</h1>
             <Masonry
               breakpointCols={breakpointColumnsObj}
               className="my-masonry-grid"
