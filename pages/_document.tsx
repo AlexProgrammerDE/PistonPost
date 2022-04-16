@@ -121,12 +121,7 @@ export default function Document() {
         <link rel="shortcut icon" href="/favicon.ico" />
 
         <meta name="twitter:card" content="summary" />
-        <meta
-          name="twitter:image"
-          content="/icons/android-chrome-192x192.png"
-        />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="/icons/apple-touch-icon.png" />
         <meta name="twitter:creator" content={twitter} />
       </Head>
       <body id="documentBody">
