@@ -15,7 +15,9 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
     <>
       <GlobalHead
         overrideTitle={`User ${userData.name}`}
-        overrideDescription={`${userData.posts.length} posts`}
+        overrideDescription={`${userData.posts.length} post${
+          userData.posts.length === 1 ? "" : "s"
+        }`}
       />
       <Layout>
         <div className="break-text container flex-grow p-6">
