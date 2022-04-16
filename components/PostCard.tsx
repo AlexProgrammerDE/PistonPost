@@ -21,7 +21,7 @@ export default function PostCard({ post }: { post: PostResponse }) {
                   width={22}
                   height={22}
                 />
-                <span className="my-auto -ml-1 text-sm font-semibold">
+                <span className="my-auto text-sm font-semibold">
                   @{post.authorData.name}
                 </span>
               </div>
@@ -33,11 +33,11 @@ export default function PostCard({ post }: { post: PostResponse }) {
           <span>
             <ReactTimeAgo date={post.timestamp} />
           </span>
-          <div className="card-actions flex-wrap">
+          <div className="card-actions gap-0 flex-wrap">
             {post.tags.map((tag, index) => (
               <div key={index} className="flex flex-col justify-center">
                 <Link href={"/tag/" + tag}>
-                  <a className="badge badge-outline my-auto">#{tag}</a>
+                  <a className="badge badge-outline my-auto mx-1">#{tag}</a>
                 </Link>
               </div>
             ))}
