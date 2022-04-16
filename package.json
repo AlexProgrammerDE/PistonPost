@@ -18,7 +18,7 @@
     "autoprefixer": "10.4.4",
     "axios": "0.26.1",
     "bson-objectid": "2.0.3",
-    "daisyui": "2.13.6",
+    "daisyui": "2.14.0",
     "javascript-time-ago": "2.3.13",
     "mongodb": "4.5.0",
     "next": "12.1.5",
