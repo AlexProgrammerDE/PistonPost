@@ -17,7 +17,7 @@ specifiers:
   mongodb: 4.5.0
   next: 12.1.5
   next-auth: 4.3.2
-  next-pwa: 5.5.0
+  next-pwa: 5.5.2
   next-sitemap: 2.5.20
   nodemailer: 6.7.3
   postcss: 8.4.12
@@ -43,7 +43,7 @@ dependencies:
   mongodb: 4.5.0
   next: 12.1.5_react-dom@18.0.0+react@18.0.0
   next-auth: 4.3.2_293f37d500369a03b239180d5cb6a3fb
-  next-pwa: 5.5.0_next@12.1.5
+  next-pwa: 5.5.2_next@12.1.5
   next-sitemap: 2.5.20_next@12.1.5
   nodemailer: 6.7.3
   postcss: 8.4.12
@@ -3372,8 +3372,8 @@ packages:
       uuid: 8.3.2
     dev: false
 
-  /next-pwa/5.5.0_next@12.1.5:
-    resolution: {integrity: sha512-+u07p3I3depUzFHUFd379Fwo0HYP+0YPTYpZ57naUO5O1uepq0P+N/L+5Y4aA5XTlDGkbD+E5Th5J1br2TW5fw==}
+  /next-pwa/5.5.2_next@12.1.5:
+    resolution: {integrity: sha512-NOZxIS/4Qa4lsPG99CNh3ZA1vfVJ3vpZjBvfouXOfWn0K9CLjBRZwGkJAcWsMWngSGoTN1hUkg97Pe+9xESzWQ==}
     peerDependencies:
       next: '>=9.0.0'
     dependencies:
