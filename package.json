@@ -22,7 +22,7 @@
     "javascript-time-ago": "2.3.13",
     "mongodb": "4.5.0",
     "next": "12.1.5",
-    "next-auth": "4.3.2",
+    "next-auth": "4.3.3",
     "next-pwa": "5.5.2",
     "next-sitemap": "2.5.20",
     "nodemailer": "6.7.3",
