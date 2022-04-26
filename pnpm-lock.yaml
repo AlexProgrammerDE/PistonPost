@@ -8,7 +8,7 @@ specifiers:
   '@types/react': 18.0.7
   '@types/react-dom': 18.0.2
   autoprefixer: 10.4.5
-  axios: 0.27.0
+  axios: 0.27.1
   bson-objectid: 2.0.3
   daisyui: 2.14.2
   eslint: 8.14.0
@@ -36,7 +36,7 @@ dependencies:
   '@next/bundle-analyzer': 12.1.5
   '@types/cookie-parser': 1.4.2
   autoprefixer: 10.4.5_postcss@8.4.12
-  axios: 0.27.0
+  axios: 0.27.1
   bson-objectid: 2.0.3
   daisyui: 2.14.2_c01214db2e04c60602bae73116393d69
   javascript-time-ago: 2.3.13
@@ -1864,8 +1864,8 @@ packages:
     engines: {node: '>=4'}
     dev: true
 
-  /axios/0.27.0:
-    resolution: {integrity: sha512-XV/WrPxXfzgZ8j4lcB5i6LyaXmi90yetmV/Fem0kmglGx+mpY06CiweL3YxU6wOTNLmqLUePW4G8h45nGZ/+pA==}
+  /axios/0.27.1:
+    resolution: {integrity: sha512-ePNMai55xo5GsXajb/k756AqZqpqeDaGwGcdvbZLSSELbbYwsIn2jNmGfUPEwd8j/yu4OoMstLLIVa4t0MneEA==}
     dependencies:
       follow-redirects: 1.14.9
       form-data: 4.0.0
