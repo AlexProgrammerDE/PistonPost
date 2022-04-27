@@ -3,7 +3,7 @@ lockfileVersion: 5.3
 specifiers:
   '@next-auth/mongodb-adapter': 1.0.3
   '@next/bundle-analyzer': 12.1.5
-  '@types/cookie-parser': 1.4.2
+  '@types/cookie-parser': 1.4.3
   '@types/node': 17.0.23
   '@types/react': 18.0.8
   '@types/react-dom': 18.0.2
@@ -34,7 +34,7 @@ specifiers:
 dependencies:
   '@next-auth/mongodb-adapter': 1.0.3_mongodb@4.5.0+next-auth@4.3.3
   '@next/bundle-analyzer': 12.1.5
-  '@types/cookie-parser': 1.4.2
+  '@types/cookie-parser': 1.4.3
   autoprefixer: 10.4.5_postcss@8.4.12
   axios: 0.27.2
   bson-objectid: 2.0.3
@@ -1504,8 +1504,8 @@ packages:
       '@types/node': 17.0.23
     dev: false
 
-  /@types/cookie-parser/1.4.2:
-    resolution: {integrity: sha512-uwcY8m6SDQqciHsqcKDGbo10GdasYsPCYkH3hVegj9qAah6pX5HivOnOuI3WYmyQMnOATV39zv/Ybs0bC/6iVg==}
+  /@types/cookie-parser/1.4.3:
+    resolution: {integrity: sha512-CqSKwFwefj4PzZ5n/iwad/bow2hTCh0FlNAeWLtQM3JA/NX/iYagIpWG2cf1bQKQ2c9gU2log5VUCrn7LDOs0w==}
     dependencies:
       '@types/express': 4.17.13
     dev: false
