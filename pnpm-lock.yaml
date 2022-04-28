@@ -16,7 +16,7 @@ specifiers:
   javascript-time-ago: 2.3.13
   mongodb: 4.5.0
   next: 12.1.5
-  next-auth: 4.3.3
+  next-auth: 4.3.4
   next-pwa: 5.5.2
   next-sitemap: 2.5.20
   nodemailer: 6.7.3
@@ -32,7 +32,7 @@ specifiers:
   typescript: 4.6.3
 
 dependencies:
-  '@next-auth/mongodb-adapter': 1.0.3_mongodb@4.5.0+next-auth@4.3.3
+  '@next-auth/mongodb-adapter': 1.0.3_mongodb@4.5.0+next-auth@4.3.4
   '@next/bundle-analyzer': 12.1.5
   '@types/cookie-parser': 1.4.3
   autoprefixer: 10.4.5_postcss@8.4.12
@@ -42,7 +42,7 @@ dependencies:
   javascript-time-ago: 2.3.13
   mongodb: 4.5.0
   next: 12.1.5_react-dom@18.1.0+react@18.1.0
-  next-auth: 4.3.3_4af765c999f4e02417781df2044b756d
+  next-auth: 4.3.4_4af765c999f4e02417781df2044b756d
   next-pwa: 5.5.2_next@12.1.5
   next-sitemap: 2.5.20_next@12.1.5
   nodemailer: 6.7.3
@@ -1261,14 +1261,14 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.11
     dev: false
 
-  /@next-auth/mongodb-adapter/1.0.3_mongodb@4.5.0+next-auth@4.3.3:
+  /@next-auth/mongodb-adapter/1.0.3_mongodb@4.5.0+next-auth@4.3.4:
     resolution: {integrity: sha512-oO8OYjMhYx8s5qsdWWD+yNCqszCO7ewg6UkDhvfY0KhJRbcoOAwOgYYH5Bo4ZGJDqmIw8g6JeGipP7+xLa2Ynw==}
     peerDependencies:
       mongodb: ^4.1.1
       next-auth: ^4.0.1
     dependencies:
       mongodb: 4.5.0
-      next-auth: 4.3.3_4af765c999f4e02417781df2044b756d
+      next-auth: 4.3.4_4af765c999f4e02417781df2044b756d
     dev: false
 
   /@next/bundle-analyzer/12.1.5:
@@ -3389,13 +3389,13 @@ packages:
     resolution: {integrity: sha1-Sr6/7tdUHywnrPspvbvRXI1bpPc=}
     dev: true
 
-  /next-auth/4.3.3_4af765c999f4e02417781df2044b756d:
-    resolution: {integrity: sha512-bUs+oOOPT18Pq/+4v9q4PA/DGoVoAX6jwY7RTfE/akFXwlny+y/mNS6lPSUwpqcHjljqBaq34PQA3+01SdOOPw==}
+  /next-auth/4.3.4_4af765c999f4e02417781df2044b756d:
+    resolution: {integrity: sha512-8dGkNicbxY2BYsJq4uOJIEsGt39wXj5AViTBsVfbRQqtAFmZmXYHutf90VBmobm8rT2+Xl60HDUTkuVVK+x+xw==}
     engines: {node: ^12.19.0 || ^14.15.0 || ^16.13.0}
     peerDependencies:
       nodemailer: ^6.6.5
-      react: ^17.0.2 || ^18.0.0-0
-      react-dom: ^17.0.2 || ^18.0.0-0
+      react: ^17.0.2 || ^18
+      react-dom: ^17.0.2 || ^18
     peerDependenciesMeta:
       nodemailer:
         optional: true
