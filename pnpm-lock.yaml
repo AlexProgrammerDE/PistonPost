@@ -19,7 +19,7 @@ specifiers:
   next-auth: 4.3.4
   next-pwa: 5.5.2
   next-sitemap: 2.5.20
-  nodemailer: 6.7.4
+  nodemailer: 6.7.5
   postcss: 8.4.13
   prettier: ^2.6.2
   prettier-plugin-tailwindcss: ^0.1.8
@@ -42,10 +42,10 @@ dependencies:
   javascript-time-ago: 2.3.13
   mongodb: 4.6.0
   next: 12.1.5_react-dom@18.1.0+react@18.1.0
-  next-auth: 4.3.4_2a504c6cf5a602f01e10d716d2c4aa57
+  next-auth: 4.3.4_ee0d2ff1dd0995aa8e1101e381e4f027
   next-pwa: 5.5.2_next@12.1.5
   next-sitemap: 2.5.20_next@12.1.5
-  nodemailer: 6.7.4
+  nodemailer: 6.7.5
   postcss: 8.4.13
   raw-body: 2.5.1
   react: 18.1.0
@@ -1270,7 +1270,7 @@ packages:
       next-auth: ^4.0.1
     dependencies:
       mongodb: 4.6.0
-      next-auth: 4.3.4_2a504c6cf5a602f01e10d716d2c4aa57
+      next-auth: 4.3.4_ee0d2ff1dd0995aa8e1101e381e4f027
     dev: false
 
   /@next/bundle-analyzer/12.1.5:
@@ -3434,7 +3434,7 @@ packages:
     resolution: {integrity: sha1-Sr6/7tdUHywnrPspvbvRXI1bpPc=}
     dev: true
 
-  /next-auth/4.3.4_2a504c6cf5a602f01e10d716d2c4aa57:
+  /next-auth/4.3.4_ee0d2ff1dd0995aa8e1101e381e4f027:
     resolution: {integrity: sha512-8dGkNicbxY2BYsJq4uOJIEsGt39wXj5AViTBsVfbRQqtAFmZmXYHutf90VBmobm8rT2+Xl60HDUTkuVVK+x+xw==}
     engines: {node: ^12.19.0 || ^14.15.0 || ^16.13.0}
     peerDependencies:
@@ -3449,7 +3449,7 @@ packages:
       '@panva/hkdf': 1.0.1
       cookie: 0.4.2
       jose: 4.6.0
-      nodemailer: 6.7.4
+      nodemailer: 6.7.5
       oauth: 0.9.15
       openid-client: 5.1.4
       preact: 10.7.1
@@ -3539,8 +3539,8 @@ packages:
     resolution: {integrity: sha512-gbMzqQtTtDz/00jQzZ21PQzdI9PyLYqUSvD0p3naOhX4odFji0ZxYdnVwPTxmSwkmxhcFImpozceidSG+AgoPQ==}
     dev: false
 
-  /nodemailer/6.7.4:
-    resolution: {integrity: sha512-TBSS3qS8WG45ycUwEvEA/3UM1o3sLz9jUl4TPUKPz4ImWWM6UgRCb5pLO+HOouDKEj57yNLOrzQlO8+9IjWZoA==}
+  /nodemailer/6.7.5:
+    resolution: {integrity: sha512-6VtMpwhsrixq1HDYSBBHvW0GwiWawE75dS3oal48VqRhUvKJNnKnJo2RI/bCVQubj1vgrgscMNW4DHaD6xtMCg==}
     engines: {node: '>=6.0.0'}
     dev: false
 
