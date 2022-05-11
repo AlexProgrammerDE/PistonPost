@@ -7,7 +7,7 @@ specifiers:
   '@types/node': 17.0.23
   '@types/react': 18.0.9
   '@types/react-dom': 18.0.3
-  autoprefixer: 10.4.5
+  autoprefixer: 10.4.7
   axios: 0.27.2
   bson-objectid: 2.0.3
   daisyui: 2.14.3
@@ -35,10 +35,10 @@ dependencies:
   '@next-auth/mongodb-adapter': 1.0.3_mongodb@4.6.0+next-auth@4.3.4
   '@next/bundle-analyzer': 12.1.5
   '@types/cookie-parser': 1.4.3
-  autoprefixer: 10.4.5_postcss@8.4.13
+  autoprefixer: 10.4.7_postcss@8.4.13
   axios: 0.27.2
   bson-objectid: 2.0.3
-  daisyui: 2.14.3_1824c569936d24bc346301fad9d96c12
+  daisyui: 2.14.3_1479244b7b1ab8346eed707106c1912f
   javascript-time-ago: 2.3.13
   mongodb: 4.6.0
   next: 12.1.5_react-dom@18.1.0+react@18.1.0
@@ -153,7 +153,7 @@ packages:
       '@babel/compat-data': 7.17.7
       '@babel/core': 7.17.9
       '@babel/helper-validator-option': 7.16.7
-      browserslist: 4.20.2
+      browserslist: 4.20.3
       semver: 6.3.0
     dev: false
 
@@ -1845,15 +1845,15 @@ packages:
     engines: {node: '>= 4.0.0'}
     dev: false
 
-  /autoprefixer/10.4.5_postcss@8.4.13:
-    resolution: {integrity: sha512-Fvd8yCoA7lNX/OUllvS+aS1I7WRBclGXsepbvT8ZaPgrH24rgXpZzF0/6Hh3ZEkwg+0AES/Osd196VZmYoEFtw==}
+  /autoprefixer/10.4.7_postcss@8.4.13:
+    resolution: {integrity: sha512-ypHju4Y2Oav95SipEcCcI5J7CGPuvz8oat7sUtYj3ClK44bldfvtvcxK6IEK++7rqB7YchDGzweZIBG+SD0ZAA==}
     engines: {node: ^10 || ^12 || >=14}
     hasBin: true
     peerDependencies:
       postcss: ^8.1.0
     dependencies:
-      browserslist: 4.20.2
-      caniuse-lite: 1.0.30001332
+      browserslist: 4.20.3
+      caniuse-lite: 1.0.30001339
       fraction.js: 4.2.0
       normalize-range: 0.1.2
       picocolors: 1.0.0
@@ -1962,15 +1962,15 @@ packages:
     dependencies:
       fill-range: 7.0.1
 
-  /browserslist/4.20.2:
-    resolution: {integrity: sha512-CQOBCqp/9pDvDbx3xfMi+86pr4KXIf2FDkTTdeuYw8OxS9t898LA1Khq57gtufFILXpfgsSx5woNgsBgvGjpsA==}
+  /browserslist/4.20.3:
+    resolution: {integrity: sha512-NBhymBQl1zM0Y5dQT/O+xiLP9/rzOIQdKM/eMJBAq7yBgaB6krIYLGejrwVYnSHZdqjscB1SPuAjHwxjvN6Wdg==}
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
     dependencies:
-      caniuse-lite: 1.0.30001332
-      electron-to-chromium: 1.4.106
+      caniuse-lite: 1.0.30001339
+      electron-to-chromium: 1.4.137
       escalade: 3.1.1
-      node-releases: 2.0.2
+      node-releases: 2.0.4
       picocolors: 1.0.0
     dev: false
 
@@ -2026,8 +2026,8 @@ packages:
     resolution: {integrity: sha512-1/Cg4jlD9qjZzhbzkzEaAC2JHsP0WrOc8Rd/3a3LuajGzGWR/hD7TVyvq99VqmTy99eVh8Zkmdq213OgvgXx7w==}
     dev: false
 
-  /caniuse-lite/1.0.30001332:
-    resolution: {integrity: sha512-10T30NYOEQtN6C11YGg411yebhvpnC6Z102+B95eAsN0oB6KUs01ivE8u+G6FMIRtIrVlYXhL+LUwQ3/hXwDWw==}
+  /caniuse-lite/1.0.30001339:
+    resolution: {integrity: sha512-Es8PiVqCe+uXdms0Gu5xP5PF2bxLR7OBp3wUzUnuO7OHzhOfCyg3hdiGWVPVxhiuniOzng+hTc1u3fEQ0TlkSQ==}
     dev: false
 
   /chalk/2.4.2:
@@ -2146,7 +2146,7 @@ packages:
   /core-js-compat/3.21.1:
     resolution: {integrity: sha512-gbgX5AUvMb8gwxC7FLVWYT7Kkgu/y7+h/h1X43yJkNqhlK2fuYyQimqvKGNZFAY6CKii/GFKJ2cp/1/42TN36g==}
     dependencies:
-      browserslist: 4.20.2
+      browserslist: 4.20.3
       semver: 7.0.0
     dev: false
 
@@ -2186,13 +2186,13 @@ packages:
     resolution: {integrity: sha512-sa6P2wJ+CAbgyy4KFssIb/JNMLxFvKF1pCYCSXS8ZMuqZnMsrxqI2E5sPyoTpxoPU/gVZMzr2zjOfg8GIZOMsw==}
     dev: true
 
-  /daisyui/2.14.3_1824c569936d24bc346301fad9d96c12:
+  /daisyui/2.14.3_1479244b7b1ab8346eed707106c1912f:
     resolution: {integrity: sha512-EH6cLLaieInq81ACE8FxHsWLsH08sZ62zLxctIHTnLhn0eHvtHdLYZ6yngsy7yd43ZFOstzbyYY4q5xByZdaQQ==}
     peerDependencies:
       autoprefixer: ^10.0.2
       postcss: ^8.1.6
     dependencies:
-      autoprefixer: 10.4.5_postcss@8.4.13
+      autoprefixer: 10.4.7_postcss@8.4.13
       color: 4.2.3
       css-selector-tokenizer: 0.8.0
       postcss: 8.4.13
@@ -2336,8 +2336,8 @@ packages:
       jake: 10.8.4
     dev: false
 
-  /electron-to-chromium/1.4.106:
-    resolution: {integrity: sha512-ZYfpVLULm67K7CaaGP7DmjyeMY4naxsbTy+syVVxT6QHI1Ww8XbJjmr9fDckrhq44WzCrcC5kH3zGpdusxwwqg==}
+  /electron-to-chromium/1.4.137:
+    resolution: {integrity: sha512-0Rcpald12O11BUogJagX3HsCN3FE83DSqWjgXoHo5a72KUKMSfI39XBgJpgNNxS9fuGzytaFjE06kZkiVFy2qA==}
     dev: false
 
   /emoji-regex/9.2.2:
@@ -3535,8 +3535,8 @@ packages:
       - babel-plugin-macros
     dev: false
 
-  /node-releases/2.0.2:
-    resolution: {integrity: sha512-XxYDdcQ6eKqp/YjI+tb2C5WM2LgjnZrfYg4vgQt49EK268b6gYCHsBLrK2qvJo4FmCtqmKezb0WZFK4fkrZNsg==}
+  /node-releases/2.0.4:
+    resolution: {integrity: sha512-gbMzqQtTtDz/00jQzZ21PQzdI9PyLYqUSvD0p3naOhX4odFji0ZxYdnVwPTxmSwkmxhcFImpozceidSG+AgoPQ==}
     dev: false
 
   /nodemailer/6.7.4:
