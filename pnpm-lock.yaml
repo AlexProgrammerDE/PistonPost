@@ -13,7 +13,7 @@ specifiers:
   daisyui: 2.15.0
   eslint: 8.16.0
   eslint-config-next: 12.1.6
-  javascript-time-ago: 2.5.1
+  javascript-time-ago: 2.5.2
   mongodb: 4.6.0
   next: 12.1.6
   next-auth: 4.3.4
@@ -39,7 +39,7 @@ dependencies:
   axios: 0.27.2
   bson-objectid: 2.0.3
   daisyui: 2.15.0_a191cbaa25c4a0a9f05cc78eac153be7
-  javascript-time-ago: 2.5.1
+  javascript-time-ago: 2.5.2
   mongodb: 4.6.0
   next: 12.1.6_react-dom@18.1.0+react@18.1.0
   next-auth: 4.3.4_ee0d2ff1dd0995aa8e1101e381e4f027
@@ -51,7 +51,7 @@ dependencies:
   react: 18.1.0
   react-dom: 18.1.0_react@18.1.0
   react-masonry-css: 1.0.16_react@18.1.0
-  react-time-ago: 7.1.9_77a6d690745fb8cb329c06b880809acd
+  react-time-ago: 7.1.9_8125dbc442931fe470538cdbe2482ab9
   tailwindcss: 3.0.24
 
 devDependencies:
@@ -3144,10 +3144,10 @@ packages:
       minimatch: 3.1.2
     dev: false
 
-  /javascript-time-ago/2.5.1:
-    resolution: {integrity: sha512-jB5PlImQRpWoniY+lMzb4cLaU878yHkNSU6heB9gIdNBYqZmu9NuVlLyeI82cvtzv4pLuF8Xo9giVo2YIC9L0w==}
+  /javascript-time-ago/2.5.2:
+    resolution: {integrity: sha512-YvVhsRDwfwoA11ODy+Rp1j9OBPVTH9K59BwIOk14fsSoNWPaSgtCmWqtIOs6sqqRKdsFMhts6thTnfjVNeh2jg==}
     dependencies:
-      relative-time-format: 1.0.8
+      relative-time-format: 1.1.2
     dev: false
 
   /jest-worker/26.6.2:
@@ -3944,14 +3944,14 @@ packages:
       react: 18.1.0
     dev: false
 
-  /react-time-ago/7.1.9_77a6d690745fb8cb329c06b880809acd:
+  /react-time-ago/7.1.9_8125dbc442931fe470538cdbe2482ab9:
     resolution: {integrity: sha512-jN4EsEgqm3a5eLJV0ZrRpom3iG+w4bullS2NHc2htIucGUIr2FbgHXjU0wIkuN9uWM87aFvIfkUDpS/ju7Mazg==}
     peerDependencies:
       javascript-time-ago: ^2.3.7
       react: '>=0.16.8'
       react-dom: '>=0.16.8'
     dependencies:
-      javascript-time-ago: 2.5.1
+      javascript-time-ago: 2.5.2
       memoize-one: 6.0.0
       prop-types: 15.8.1
       raf: 3.4.1
@@ -4028,8 +4028,8 @@ packages:
       jsesc: 0.5.0
     dev: false
 
-  /relative-time-format/1.0.8:
-    resolution: {integrity: sha512-bbDLk8h09IdqvlhofjBMTgDzn4ESw+gvV+/KQ2YRjSbWvggI91AIKn/gFURWNGwMtaVZpJvfE5824Dy7AyhPoQ==}
+  /relative-time-format/1.1.2:
+    resolution: {integrity: sha512-sMNgiPKLIJb+jeB44YEkgGC5ngyFnLs0gAEdwARV8f501B0w8qJNtIEGcdikWeX5xVgqP7JwJICAZPqW4J9/vg==}
     dev: false
 
   /require-from-string/2.0.2:
