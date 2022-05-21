@@ -27,7 +27,7 @@ specifiers:
   react: 18.1.0
   react-dom: 18.1.0
   react-masonry-css: ^1.0.16
-  react-time-ago: 7.1.9
+  react-time-ago: 7.2.1
   tailwindcss: 3.0.24
   typescript: 4.6.4
 
@@ -51,7 +51,7 @@ dependencies:
   react: 18.1.0
   react-dom: 18.1.0_react@18.1.0
   react-masonry-css: 1.0.16_react@18.1.0
-  react-time-ago: 7.1.9_8125dbc442931fe470538cdbe2482ab9
+  react-time-ago: 7.2.1_8125dbc442931fe470538cdbe2482ab9
   tailwindcss: 3.0.24
 
 devDependencies:
@@ -3944,8 +3944,8 @@ packages:
       react: 18.1.0
     dev: false
 
-  /react-time-ago/7.1.9_8125dbc442931fe470538cdbe2482ab9:
-    resolution: {integrity: sha512-jN4EsEgqm3a5eLJV0ZrRpom3iG+w4bullS2NHc2htIucGUIr2FbgHXjU0wIkuN9uWM87aFvIfkUDpS/ju7Mazg==}
+  /react-time-ago/7.2.1_8125dbc442931fe470538cdbe2482ab9:
+    resolution: {integrity: sha512-X5zwJDZHa1fsMwMvh8mrHN31g85s84zMCp+d7YL6IX50kNnr6YMAS2wpt1BmO9OxBV2Ue5J1ptD6JI8Zjd35HA==}
     peerDependencies:
       javascript-time-ago: ^2.3.7
       react: '>=0.16.8'
