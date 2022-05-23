@@ -7,7 +7,7 @@ export default function PostCard({ post }: { post: PostResponse }) {
   return (
     <div className="card md:card-normal card-compact m-2 md:w-96 bg-base-200 shadow-lg">
       <div className="card-body justify-between">
-        <h2 className="break-text card-title flex-col">
+        <h2 className="break-text card-title place-items-start flex-col">
           <Link href={"/post/" + post.postId}>
             <a>{post.title}</a>
           </Link>
