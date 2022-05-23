@@ -50,7 +50,8 @@ const Post = ({ postData }: { postData: PostResponse }) => {
               )}
               {user && (
                 <>
-                  {postData.authorData.id === user.id && (
+                  {(user.roles.includes("ADMIN") ||
+                    postData.authorData.id === user.id) && (
                     <Link href={`/post/${id}/edit`}>
                       <a className="my-auto ml-1.5">
                         <svg
