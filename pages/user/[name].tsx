@@ -7,6 +7,7 @@ import Image from "next/image";
 import { UserDataContext } from "../../components/UserDataProvider";
 import ObjectId from "bson-objectid";
 import { NewlineText } from "../../lib/shared";
+import { BadgeIcon } from "../../components/roles";
 
 const UserName = ({ userData }: { userData: UserPageResponse }) => {
   const { user } = useContext(UserDataContext);
@@ -31,7 +32,12 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
                 height={45}
               />
             </div>
-            <h2 className="my-2 ml-2 text-2xl font-bold">@{userData.name}</h2>
+            <h2 className="my-auto ml-2 text-2xl font-bold">
+              @{userData.name}
+            </h2>
+            {userData.roles.map((role, index) => (
+              <BadgeIcon key={index} role={role} />
+            ))}
           </div>
           <ul className="rounded-box mt-2 w-full bg-base-200 p-4">
             <li className="mb-1 flex flex-row">
