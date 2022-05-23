@@ -37,7 +37,7 @@ export default function PostCard({ post }: { post: PostResponse }) {
             {post.tags.map((tag, index) => (
               <div key={index} className="flex flex-col justify-center">
                 <Link href={"/tag/" + tag}>
-                  <a className="badge badge-outline my-auto mx-1">#{tag}</a>
+                  <a className="badge badge-outline my-0.5 mx-1">#{tag}</a>
                 </Link>
               </div>
             ))}
