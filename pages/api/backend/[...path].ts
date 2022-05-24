@@ -15,14 +15,18 @@ const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   const path = req.query.path as string[];
   delete req.query.path;
 
-  const url = `${process.env.API_ENDPOINT}/application/${path.join("/")}`;
+  const url = `${process.env.API_ENDPOINT}/${path.join("/")}`;
 
   const headers = token
     ? {
         ...(req.headers as any),
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
+        "X-Forwarded-For": req.socket.remoteAddress
       }
-    : req.headers;
+    : {
+        ...(req.headers as any),
+        "X-Forwarded-For": req.socket.remoteAddress
+      };
 
   const rawBody = await getRawBody(req);
   await axios

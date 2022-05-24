@@ -3,7 +3,7 @@ import axios from "axios";
 
 const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
   await axios
-    .get(`${process.env.API_ENDPOINT}/admin/healthcheck`)
+    .get(`${process.env.ADMIN_ENDPOINT}/healthcheck`)
     .then((response) => {
       res.status(response.status).json(response.data);
     })
