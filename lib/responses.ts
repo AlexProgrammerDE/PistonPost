@@ -40,9 +40,9 @@ export interface UserPageResponse {
   id: string;
   name: string;
   avatar: string;
-  roles: string[];
-  bio: string;
-  website: string;
-  location: string;
+  roles?: string[];
+  bio?: string;
+  website?: string;
+  location?: string;
   posts: PostResponse[];
 }
