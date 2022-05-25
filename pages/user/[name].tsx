@@ -115,9 +115,7 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { name } = context.query;
 
-  const res = await fetch(
-    `${process.env.API_ENDPOINT}/application/userdata/${name}`
-  );
+  const res = await fetch(`${process.env.API_ENDPOINT}/userdata/${name}`);
 
   if (res.status === 404) {
     return { notFound: true };

@@ -105,7 +105,7 @@ const Post = ({ postData }: { postData: PostResponse }) => {
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { id } = context.query;
 
-  const res = await fetch(`${process.env.API_ENDPOINT}/application/post/${id}`);
+  const res = await fetch(`${process.env.API_ENDPOINT}/post/${id}`);
 
   if (res.status === 404) {
     return { notFound: true };
