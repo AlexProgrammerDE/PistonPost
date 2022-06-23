@@ -1,11 +1,27 @@
+import {PostType} from "./types";
+
 export interface PostResponse {
   postId: string;
   title: string;
-  content: string;
+  type: PostType;
+  content?: string;
+  images?: ImageResponse[];
+  video?: VideoResponse;
   authorData: UserData;
   tags: string[];
   timestamp: number;
   unlisted: boolean;
+}
+
+export interface ImageResponse {
+  id: string;
+  width: number;
+  height: number;
+}
+
+export interface VideoResponse {
+  id: string;
+  thumbnailId: string;
 }
 
 export interface AccountSettings {

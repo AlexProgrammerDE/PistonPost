@@ -15,7 +15,7 @@ const Post: CustomNextPage = () => {
   const router = useRouter();
   const [tags, setTags] = useState<string[]>([]);
   const [title, setTitle] = useState<string>("");
-  const [postSetting, setPostSetting] = useState<PostType>("text");
+  const [postSetting, setPostSetting] = useState<PostType>("TEXT");
   const [content, setContent] = useState<string>("");
   const [imageList, setImageList] = useState<FileList | null>();
   const [video, setVideo] = useState<File | null>();
@@ -61,27 +61,28 @@ const Post: CustomNextPage = () => {
 
                   formData.set("title", title);
                   switch (postSetting) {
-                    case "text": {
+                    case "TEXT": {
                       if (content && content.length > 0) {
                         formData.set("content", content);
                       } else return;
                       break;
                     }
-                    case "images": {
+                    case "IMAGES": {
                       if (imageList) {
                         for (let i = 0; i < imageList.length; i++) {
-                          formData.append(`image${i}`, imageList[i], imageList[i].name);
+                          formData.append("image", imageList[i], imageList[i].name);
                         }
                       } else return;
                       break;
                     }
-                    case "video": {
+                    case "VIDEO": {
                       if (video) {
                         formData.append("video", video);
                       } else return;
                       break;
                     }
                   }
+                  formData.set("type", postSetting.toUpperCase());
                   formData.set("tags", tags.join(","));
                   formData.set("unlisted", unlisted ? "true" : "false");
 
@@ -136,7 +137,7 @@ const Post: CustomNextPage = () => {
                 </select>
               </div>
 
-              {postSetting === "text" && (
+              {postSetting === "TEXT" && (
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text">Content</span>
@@ -150,7 +151,7 @@ const Post: CustomNextPage = () => {
                     ></textarea>
                   </div>
               )}
-              {postSetting === "images" && (
+              {postSetting === "IMAGES" && (
                   <div className="form-control max-w-md">
                     <label className="label">
                       <span className="label-text">Images</span>
@@ -180,7 +181,7 @@ const Post: CustomNextPage = () => {
                     </div>
                   </div>
               )}
-              {postSetting === "video" && (
+              {postSetting === "VIDEO" && (
                   <div className="form-control">
                     <label className="label">
                       <span className="label-text">Video</span>
