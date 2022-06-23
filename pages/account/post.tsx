@@ -5,12 +5,19 @@ import { useState } from "react";
 import axios from "../../lib/axios";
 import { useRouter } from "next/router";
 import { onTagInput } from "../../lib/shared";
+import { postType, PostType } from "../../lib/types";
+
+function capitalizeFirstLetter(string: string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
 
 const Post: CustomNextPage = () => {
   const router = useRouter();
   const [tags, setTags] = useState<string[]>([]);
   const [title, setTitle] = useState<string>("");
+  const [postSetting, setPostSetting] = useState<PostType>("text");
   const [content, setContent] = useState<string>("");
+  const [fileList, setFileList] = useState<FileList | null>();
   const [unlisted, setUnlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -90,16 +97,97 @@ const Post: CustomNextPage = () => {
 
             <div className="form-control">
               <label className="label">
-                <span className="label-text">Content</span>
+                <span className="label-text">Post type</span>
               </label>
-              <textarea
-                className="textarea textarea-bordered h-24"
-                onInput={(e) => setContent(e.currentTarget.value)}
-                required
-                maxLength={1000}
-                placeholder="Today I drank a bottle of water... A bo'oh'o'wa'er"
-              ></textarea>
+              <select
+                className="select select-bordered w-full max-w-xs"
+                defaultValue={postSetting}
+                onChange={(e) =>
+                  setPostSetting(e.currentTarget.value as PostType)
+                }
+              >
+                {postType.map((type, index) => (
+                  <option key={index} value={type}>
+                    {capitalizeFirstLetter(type)}
+                  </option>
+                ))}
+              </select>
             </div>
+
+            {postSetting === "text" && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Content</span>
+                </label>
+                <textarea
+                  className="textarea textarea-bordered h-24"
+                  onInput={(e) => setContent(e.currentTarget.value)}
+                  required
+                  maxLength={1000}
+                  placeholder="Today I drank a bottle of water... A bo'oh'o'wa'er"
+                ></textarea>
+              </div>
+            )}
+            {postSetting === "image" && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Images</span>
+                  <span className="label-text-alt">(20 max)</span>
+                </label>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onInput={(e) => setFileList(e.currentTarget.files)}
+                  required
+                  max={20}
+                ></input>
+              </div>
+            )}
+            <div className="flex items-center justify-center w-full">
+              <label
+                htmlFor="dropzone-file"
+                className="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600"
+              >
+                <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                  <svg
+                    className="w-10 h-10 mb-3 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    ></path>
+                  </svg>
+                  <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="font-semibold">Click to upload</span> or
+                    drag and drop
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    SVG, PNG, JPG or GIF (MAX. 800x400px)
+                  </p>
+                </div>
+                <input id="dropzone-file" type="file" className="hidden" />
+              </label>
+            </div>
+            {postSetting === "video" && (
+              <div className="form-control">
+                <label className="label">
+                  <span className="label-text">Video</span>
+                </label>
+                <input
+                  type="file"
+                  accept="video/*"
+                  onInput={(e) => setFileList(e.currentTarget.files)}
+                  required
+                ></input>
+              </div>
+            )}
 
             <div className="form-control">
               <label className="label">
