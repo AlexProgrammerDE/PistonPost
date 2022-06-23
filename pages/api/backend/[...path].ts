@@ -38,7 +38,9 @@ const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
       headers
     })
     .then((response) => {
-      res.status(response.status).json(response.data);
+      res.setHeader("Content-Type", response.headers["content-type"]);
+
+      res.status(response.status).send(response.data);
     })
     .catch((error) => {
       console.error(error);
