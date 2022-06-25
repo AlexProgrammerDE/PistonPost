@@ -1,4 +1,4 @@
-import {PostType} from "./types";
+import { PostType } from "./types";
 
 export interface PostResponse {
   postId: string;
@@ -15,12 +15,14 @@ export interface PostResponse {
 
 export interface ImageResponse {
   id: string;
+  extension: string;
   width: number;
   height: number;
 }
 
 export interface VideoResponse {
   id: string;
+  extension: string;
   thumbnailId: string;
 }
 

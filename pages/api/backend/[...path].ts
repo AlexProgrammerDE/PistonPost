@@ -44,7 +44,13 @@ const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
     })
     .catch((error) => {
       console.error(error);
-      res.status(error.response.status).send(error.response.data);
+      if (error.response) {
+        res.status(error.response.status).send(error.response.data);
+      } else if (error.code) {
+        res.status(500).send(error.code);
+      } else {
+        res.status(500).send("Internal Server Error");
+      }
     });
 };
 
