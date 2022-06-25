@@ -1,7 +1,7 @@
 import { GlobalHead } from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
 import { CustomNextPage } from "../../components/CustomNextPage";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "../../lib/axios";
 import { useRouter } from "next/router";
 import { onTagInput } from "../../lib/shared";
@@ -257,7 +257,7 @@ const Post: CustomNextPage = () => {
                     </div>
                     <input
                       type="file"
-                      accept="video/mp4"
+                      accept="video/mp4,video/mov,video/webm,video/mpeg,video/mpg,video/avi"
                       onInput={({ currentTarget }) =>
                         setVideo(
                           currentTarget.files ? currentTarget.files[0] : null
