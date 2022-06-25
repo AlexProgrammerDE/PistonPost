@@ -310,8 +310,7 @@ const Settings: CustomNextPage = () => {
                   Do you really want to delete your account?
                 </h3>
                 <p className="py-4">
-                  This action will delete your entire account and is not
-                  revertable.
+                  This action will delete your entire account and is permanent.
                 </p>
                 <div className="modal-action">
                   <label htmlFor="delete-modal" className="btn btn-primary">

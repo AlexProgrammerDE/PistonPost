@@ -199,7 +199,7 @@ const Post: CustomNextPage = () => {
                     <input
                       type="file"
                       multiple
-                      accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                      accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/tiff,image/bmp,image/wbmp"
                       onChange={(e) => {
                         const imageList = e.currentTarget.files;
                         if (imageList) {
