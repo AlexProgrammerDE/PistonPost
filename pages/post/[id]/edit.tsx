@@ -6,13 +6,22 @@ import Layout from "../../../components/Layout";
 import axios from "../../../lib/axios";
 import { onTagInput } from "../../../lib/shared";
 import LoadingView from "../../../components/LoadingView";
-import { PostResponse } from "../../../lib/responses";
+import {
+  ImageResponse,
+  PostResponse,
+  VideoResponse
+} from "../../../lib/responses";
+import { PostType } from "../../../lib/types";
 
 const PostEdit: CustomNextPage = () => {
   const router = useRouter();
   const [tags, setTags] = useState<string[]>([]);
   const [title, setTitle] = useState<string>("");
-  const [content, setContent] = useState<string>("");
+  const [postSetting, setPostSetting] = useState<PostType>("TEXT");
+  const [content, setContent] = useState<string | null>();
+  const [unlisted, setUnlisted] = useState(false);
+  const [imageList, setImageList] = useState<ImageResponse[] | null>();
+  const [video, setVideo] = useState<VideoResponse | null>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { id } = router.query;
@@ -25,9 +34,20 @@ const PostEdit: CustomNextPage = () => {
         .then((res) => {
           const post: PostResponse = res.data;
 
-          setTags(post.tags);
           setTitle(post.title);
-          setContent(post.content);
+          setPostSetting(post.type);
+          switch (post.type) {
+            case "TEXT":
+              setContent(post.content!);
+              break;
+            case "IMAGES":
+              setImageList(post.images!);
+              break;
+            case "VIDEO":
+              setVideo(post.video!);
+          }
+          setTags(post.tags);
+          setUnlisted(post.unlisted);
           setPost(post);
         })
         .catch((err) => {
@@ -81,8 +101,11 @@ const PostEdit: CustomNextPage = () => {
                 const formData = new FormData(e.currentTarget);
 
                 formData.set("title", title);
-                formData.set("content", content);
+
+                if (content) formData.set("content", content);
+
                 formData.set("tags", tags.join(","));
+                formData.set("unlisted", unlisted ? "true" : "false");
 
                 setIsLoading(true);
                 axios
@@ -94,7 +117,7 @@ const PostEdit: CustomNextPage = () => {
                   .then((res) => {
                     setIsLoading(false);
                     setError(null);
-                    router.push("/post/[id]", `/post/${id}`);
+                    router.push(`/post/${id}`).then();
                   })
                   .catch((res) => {
                     setIsLoading(false);
@@ -117,19 +140,54 @@ const PostEdit: CustomNextPage = () => {
                 />
               </div>
 
-              <div className="form-control">
-                <label className="label">
-                  <span className="label-text">Content</span>
-                </label>
-                <textarea
-                  className="textarea textarea-bordered h-24"
-                  onInput={(e) => setContent(e.currentTarget.value)}
-                  required
-                  maxLength={1000}
-                  defaultValue={content}
-                  placeholder="Today I drank a bottle of water... A bo'oh'o'wa'er"
-                ></textarea>
-              </div>
+              {postSetting === "TEXT" && content && (
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Content</span>
+                  </label>
+                  <textarea
+                    className="textarea textarea-bordered h-24"
+                    onInput={(e) => setContent(e.currentTarget.value)}
+                    required
+                    maxLength={1000}
+                    defaultValue={content}
+                    placeholder="Today I drank a bottle of water... A bo'oh'o'wa'er"
+                  ></textarea>
+                </div>
+              )}
+              {postSetting === "IMAGES" && (
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Images</span>
+                  </label>
+                  <ul className="list-decimal ml-4">
+                    {imageList &&
+                      imageList.map((image, index) => (
+                        <li key={index}>
+                          <a
+                            className="link"
+                            href={`/static/images/${image.id}.${image.extension}`}
+                          >
+                            {image.id}.{image.extension}
+                          </a>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              )}
+              {postSetting === "VIDEO" && video && (
+                <div className="form-control">
+                  <label className="label">
+                    <span className="label-text">Video</span>
+                  </label>
+                  <a
+                    href={`/static/videos/${video.id}.${video.extension}`}
+                    className="link"
+                  >
+                    {video.id}.{video.extension}
+                  </a>
+                </div>
+              )}
 
               <div className="form-control">
                 <label className="label">
@@ -159,6 +217,17 @@ const PostEdit: CustomNextPage = () => {
                   <span className="label-text-alt">
                     Press enter do add a tag (5 max)
                   </span>
+                </label>
+              </div>
+
+              <div className="form-control">
+                <label className="label max-w-[12rem] cursor-pointer">
+                  <span className="label-text">Unlisted</span>
+                  <input
+                    type="checkbox"
+                    onChange={(e) => setUnlisted(e.currentTarget.checked)}
+                    className="checkbox checkbox-primary"
+                  />
                 </label>
               </div>
 

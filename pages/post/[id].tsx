@@ -17,9 +17,6 @@ const Post = ({ postData }: { postData: PostResponse }) => {
   const { id } = router.query;
   const { user } = useContext(UserDataContext);
 
-  const maxWidth = 300;
-  const maxHeight = 300;
-
   return (
     <>
       <GlobalHead
