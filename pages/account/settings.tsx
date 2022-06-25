@@ -146,7 +146,7 @@ const Settings: CustomNextPage = () => {
                       "Content-Type": "multipart/form-data"
                     }
                   })
-                  .then((res) => {
+                  .then(() => {
                     setIsLoading(false);
                     setError(null);
                     router.reload();

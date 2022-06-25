@@ -5,6 +5,7 @@ import { MongoDBAdapter } from "../../../lib/mongo-adapter";
 
 // For more information on each option (and a full list of options) go to
 // https://next-auth.js.org/configuration/options
+// noinspection JSUnusedGlobalSymbols
 export default NextAuth({
   providers: [
     EmailProvider({

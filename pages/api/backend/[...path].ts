@@ -3,6 +3,7 @@ import axios, { Method } from "axios";
 import { getToken } from "next-auth/jwt";
 import getRawBody from "raw-body";
 
+// noinspection JSUnusedGlobalSymbols
 export const config = {
   api: {
     bodyParser: false

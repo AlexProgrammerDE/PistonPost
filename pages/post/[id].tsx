@@ -133,6 +133,7 @@ const Post = ({ postData }: { postData: PostResponse }) => {
   );
 };
 
+// noinspection JSUnusedGlobalSymbols
 export const getServerSideProps: GetServerSideProps = async (context) => {
   const { id } = context.query;
 
