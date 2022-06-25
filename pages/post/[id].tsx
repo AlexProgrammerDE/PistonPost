@@ -109,7 +109,11 @@ const Post = ({ postData }: { postData: PostResponse }) => {
                 columnClassName="my-masonry-grid_column"
               >
                 {postData.images!.map((image) => (
-                  <div key={image.id} className="m-1 max-w-sm max-h-screen">
+                  <div
+                    key={image.id}
+                    style={{ maxHeight: "60rem" }}
+                    className="m-1 max-w-sm overflow-hidden"
+                  >
                     <Image
                       alt={`Image from ${postData.authorData.name}`}
                       className="rounded-box"
