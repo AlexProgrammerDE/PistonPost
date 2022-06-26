@@ -142,7 +142,7 @@ const Post: CustomNextPage = () => {
               >
                 {postType.map((type, index) => (
                   <option key={index} value={type}>
-                    {capitalizeFirstLetter(type)}
+                    {capitalizeFirstLetter(type.toLowerCase())}
                   </option>
                 ))}
               </select>
@@ -240,11 +240,7 @@ const Post: CustomNextPage = () => {
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        <path
-                          fillRule="evenodd"
-                          d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                          clipRule="evenodd"
-                        />
+                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                       </svg>
                       <p className="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
                         Select a video

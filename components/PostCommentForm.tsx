@@ -7,6 +7,7 @@ import { useState } from "react";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
 import ObjectID from "bson-objectid";
+import { BadgeIcon } from "./roles";
 
 export default function PostCommentForm({
   postData
@@ -86,16 +87,42 @@ export default function PostCommentForm({
               </Link>
             </div>
             <div className="flex flex-col ml-2">
-              <Link href={`/user/${comment.author.name}`}>
-                <a className="flex flex-wrap">
-                  <span className="text-sm">
-                    @{comment.author.name} -{" "}
-                    <ReactTimeAgo
-                      date={new ObjectID(comment.id).getTimestamp()}
+              <div className="flex flex-wrap">
+                <Link href={`/user/${comment.author.name}`}>
+                  <a>
+                    <span className="text-sm">
+                      @{comment.author.name} -{" "}
+                      <ReactTimeAgo
+                        date={new ObjectID(comment.id).getTimestamp()}
+                      />
+                    </span>
+                  </a>
+                </Link>
+                {comment.author.id === postData.authorData.id && (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 text-secondary my-auto ml-0.5 text-lg font-bold"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <title>Original Poster</title>
+                    <path
+                      fillRule="evenodd"
+                      d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                      clipRule="evenodd"
                     />
-                  </span>
-                </a>
-              </Link>
+                  </svg>
+                )}
+                {comment.author.roles &&
+                  comment.author.roles.map((role, index) => (
+                    <BadgeIcon
+                      key={index}
+                      role={role}
+                      size={4}
+                      marginLeft={0.5}
+                    />
+                  ))}
+              </div>
               <div className="mt-1 text-sm">
                 <NewlineText text={comment.content} />
               </div>

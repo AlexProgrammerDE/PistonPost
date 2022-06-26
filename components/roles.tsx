@@ -1,11 +1,25 @@
-export function BadgeIcon({ role }: { role: string }) {
+export function BadgeIcon({
+  role,
+  className,
+  size,
+  marginLeft
+}: {
+  role: string;
+  className?: string;
+  size?: number;
+  marginLeft?: number;
+}) {
+  const usedSize = size || 7;
+  const usedMarginLeft = marginLeft || 4;
   switch (role) {
     case "ADMIN":
       return (
         <svg
           version="1.0"
           xmlns="http://www.w3.org/2000/svg"
-          className="h-8 w-8 my-auto ml-2 text-lg font-bold"
+          className={`h-${usedSize + 1} w-${
+            usedSize + 1
+          } text-accent my-auto ml-${usedMarginLeft} text-lg font-bold`}
           fill="currentColor"
           viewBox="0 0 1280.000000 815.000000"
         >
@@ -22,7 +36,7 @@ export function BadgeIcon({ role }: { role: string }) {
           version="1.1"
           viewBox="0,0,24,24"
           fill="currentColor"
-          className="h-7 w-7 my-auto ml-2 text-lg font-bold"
+          className={`h-${usedSize} w-${usedSize} text-info my-auto ml-${usedMarginLeft} text-lg font-bold`}
           xmlns="http://www.w3.org/2000/svg"
         >
           <title>Verified</title>
