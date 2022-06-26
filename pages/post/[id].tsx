@@ -9,8 +9,10 @@ import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
 import { UserDataContext } from "../../components/UserDataProvider";
 import { breakpointColumnsObj, NewlineText } from "../../lib/shared";
-import VideoPlayer from "../../components/VideoPlayer";
 import Masonry from "react-masonry-css";
+import dynamic from "next/dynamic";
+
+const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
 
 const Post = ({ postData }: { postData: PostResponse }) => {
   const router = useRouter();
