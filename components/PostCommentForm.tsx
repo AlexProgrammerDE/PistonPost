@@ -118,8 +118,8 @@ export default function PostCommentForm({
                     <BadgeIcon
                       key={index}
                       role={role}
-                      size={4}
-                      marginLeft={0.5}
+                      classNameBig="h-5 w-5 ml-0.5"
+                      classNameSmall="h-4 w-4 ml-0.5"
                     />
                   ))}
               </div>

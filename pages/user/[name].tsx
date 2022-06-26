@@ -37,7 +37,12 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
             </h2>
             {userData.roles &&
               userData.roles.map((role, index) => (
-                <BadgeIcon key={index} role={role} />
+                <BadgeIcon
+                  key={index}
+                  role={role}
+                  classNameBig="h-8 w-8 ml-4"
+                  classNameSmall="h-7 w-7 ml-4"
+                />
               ))}
           </div>
           <ul className="rounded-box mt-2 w-full bg-base-200 p-4">
