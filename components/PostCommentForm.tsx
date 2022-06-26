@@ -3,11 +3,12 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import { NewlineText } from "../lib/shared";
 import axios from "../lib/axios";
-import { useState } from "react";
+import { useContext, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
 import ObjectID from "bson-objectid";
 import { BadgeIcon } from "./roles";
+import { UserDataContext } from "./UserDataProvider";
 
 export default function PostCommentForm({
   postData
@@ -18,11 +19,13 @@ export default function PostCommentForm({
   const [content, setContent] = useState<string | null>();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { user } = useContext(UserDataContext);
 
   return (
     <>
       <div className="rounded-box mt-2 flex w-full flex-wrap bg-base-200 p-4 p-4">
         <form
+          className="w-full"
           onSubmit={async (e) => {
             e.preventDefault();
 
@@ -56,8 +59,13 @@ export default function PostCommentForm({
             <div className="input-group">
               <input
                 type="text"
-                placeholder="Write a comment..."
-                className="input input-bordered"
+                placeholder={
+                  user ? "Write a comment..." : "Log in to write a comment!"
+                }
+                className="input input-bordered max-w-lg w-full"
+                maxLength={250}
+                required
+                disabled={!user}
                 onInput={(e) => setContent(e.currentTarget.value)}
               />
               <button type="submit" className="btn">
