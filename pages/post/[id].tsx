@@ -11,12 +11,11 @@ import { UserDataContext } from "../../components/UserDataProvider";
 import { breakpointColumnsObj, NewlineText } from "../../lib/shared";
 import Masonry from "react-masonry-css";
 import dynamic from "next/dynamic";
+import PostCommentForm from "../../components/PostCommentForm";
 
 const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
 
 const Post = ({ postData }: { postData: PostResponse }) => {
-  const router = useRouter();
-  const { id } = router.query;
   const { user } = useContext(UserDataContext);
 
   return (
@@ -55,16 +54,17 @@ const Post = ({ postData }: { postData: PostResponse }) => {
                   <title>Unlisted</title>
                   <path
                     fillRule="evenodd"
-                    d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z"
+                    d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z"
                     clipRule="evenodd"
                   />
+                  <path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.065 7 9.542 7 .847 0 1.669-.105 2.454-.303z" />
                 </svg>
               )}
               {user && (
                 <>
                   {(user.roles.includes("ADMIN") ||
                     postData.authorData.id === user.id) && (
-                    <Link href={`/post/${id}/edit`}>
+                    <Link href={`/post/${postData.postId}/edit`}>
                       <a className="my-auto ml-1.5">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -137,6 +137,7 @@ const Post = ({ postData }: { postData: PostResponse }) => {
               <VideoPlayer video={postData.video!} />
             )}
           </div>
+          <PostCommentForm postData={postData} />
         </div>
       </Layout>
     </>

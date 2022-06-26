@@ -9,6 +9,7 @@ export interface PostResponse {
   video?: VideoResponse;
   authorData: UserData;
   tags: string[];
+  comments: CommentResponse[];
   timestamp: number;
   unlisted: boolean;
 }
@@ -24,6 +25,12 @@ export interface VideoResponse {
   id: string;
   extension: string;
   thumbnailId: string;
+}
+
+export interface CommentResponse {
+  id: string;
+  content: string;
+  author: UserData;
 }
 
 export interface AccountSettings {
