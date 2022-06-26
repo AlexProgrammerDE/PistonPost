@@ -9,11 +9,13 @@ import {
 export function GlobalHead({
   overrideTitle,
   overrideDescription,
-  overrideImage
+  overrideImage,
+  largeSummary
 }: {
   overrideTitle?: string;
   overrideDescription?: string;
   overrideImage?: string;
+  largeSummary?: boolean;
 }) {
   const title = overrideTitle || brandTitle;
   const description = overrideDescription || brandDescription;
@@ -44,6 +46,10 @@ export function GlobalHead({
 
       <meta property="og:image" content={image} />
       <meta name="twitter:image" content={image} />
+
+      {largeSummary && (
+        <meta name="twitter:card" content="summary_large_image" />
+      )}
     </Head>
   );
 }

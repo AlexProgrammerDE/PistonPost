@@ -22,6 +22,14 @@ const Post = ({ postData }: { postData: PostResponse }) => {
       <GlobalHead
         overrideTitle={postData.title}
         overrideDescription={`Post by ${postData.authorData.name}`}
+        overrideImage={
+          postData.type === "IMAGES" && postData.images!.length > 0
+            ? `/static/images/${postData.images![0].id}.${
+                postData.images![0].extension
+              }`
+            : undefined
+        }
+        largeSummary
       />
       <Layout>
         <div className="break-text container flex-grow p-2">
