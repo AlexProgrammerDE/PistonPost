@@ -226,6 +226,7 @@ const PostEdit: CustomNextPage = () => {
                   <input
                     type="checkbox"
                     onChange={(e) => setUnlisted(e.currentTarget.checked)}
+                    defaultChecked={unlisted}
                     className="checkbox checkbox-primary"
                   />
                 </label>
