@@ -24,6 +24,26 @@ export default function PostCommentForm({
   return (
     <>
       <div className="rounded-box mt-2 flex w-full flex-wrap bg-base-200 p-4 p-4">
+        {error && (
+          <div className="alert alert-error mb-3 shadow-lg">
+            <div>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 flex-shrink-0 stroke-current"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>{error}</span>
+            </div>
+          </div>
+        )}
         <form
           className="w-full"
           onSubmit={async (e) => {
@@ -130,6 +150,42 @@ export default function PostCommentForm({
                       classNameSmall="h-4 w-4 ml-0.5"
                     />
                   ))}
+                {user && comment.author.id === user.id && (
+                  <button
+                    className="flex"
+                    onClick={() => {
+                      if (
+                        window.confirm(
+                          "Are you sure you want to delete this comment?"
+                        )
+                      ) {
+                        axios
+                          .delete(
+                            `/post/${postData.postId}/comment/${comment.id}`
+                          )
+                          .then(() => {
+                            router.push(`/post/${postData.postId}`).then();
+                          })
+                          .catch((res) => {
+                            setError(`${res.response.data.message}`);
+                          });
+                      }
+                    }}
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 ml-0.5 my-auto"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                )}
               </div>
               <div className="mt-1 text-sm">
                 <NewlineText text={comment.content} />
