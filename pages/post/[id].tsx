@@ -17,6 +17,13 @@ const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
 
 const Post = ({ postData }: { postData: PostResponse }) => {
   const { user } = useContext(UserDataContext);
+  const router = useRouter();
+  const { image } = router.query;
+
+  const imageIndex =
+    postData.type === "IMAGES" && image
+      ? Math.min(postData.images!.length - 1, parseInt(image as string))
+      : 0;
 
   return (
     <>
@@ -25,8 +32,8 @@ const Post = ({ postData }: { postData: PostResponse }) => {
         overrideDescription={`Post by ${postData.authorData.name}`}
         overrideImage={
           postData.type === "IMAGES"
-            ? `/static/images/${postData.images![0].id}.${
-                postData.images![0].extension
+            ? `/static/images/${postData.images![imageIndex].id}.${
+                postData.images![imageIndex].extension
               }`
             : undefined
         }
