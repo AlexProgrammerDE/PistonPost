@@ -3,7 +3,7 @@ import { useRouter } from "next/router";
 import Image from "next/image";
 import { NewlineText } from "../lib/shared";
 import axios from "../lib/axios";
-import { useContext, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
 import ObjectID from "bson-objectid";
@@ -20,6 +20,7 @@ export default function PostCommentForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useContext(UserDataContext);
+  const inputEl = useRef<HTMLInputElement>(null);
 
   return (
     <>
@@ -57,6 +58,8 @@ export default function PostCommentForm({
             const formData = new FormData(e.currentTarget);
 
             formData.set("content", content);
+            inputEl.current!.value = "";
+            setContent("");
 
             axios
               .put(`/post/${postData.postId}/comment`, formData, {
@@ -82,10 +85,11 @@ export default function PostCommentForm({
                 placeholder={
                   user ? "Write a comment..." : "Log in to write a comment!"
                 }
-                className="input input-bordered max-w-lg w-full"
+                className="rounded-box input input-bordered max-w-lg w-full"
                 maxLength={250}
                 required
                 disabled={!user}
+                ref={inputEl}
                 onInput={(e) => setContent(e.currentTarget.value)}
               />
               <button type="submit" className="btn">
@@ -178,6 +182,7 @@ export default function PostCommentForm({
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >
+                      <title>Delete Comment</title>
                       <path
                         fillRule="evenodd"
                         d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
