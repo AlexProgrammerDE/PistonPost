@@ -31,21 +31,21 @@
     "raw-body": "2.5.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
-    "react-masonry-css": "^1.0.16",
+    "react-masonry-css": "1.0.16",
     "react-time-ago": "7.2.1",
-    "sharp": "^0.30.4",
-    "swagger-ui-react": "^4.11.1",
+    "sharp": "0.30.7",
+    "swagger-ui-react": "4.12.0",
     "tailwindcss": "3.1.4"
   },
   "devDependencies": {
     "@types/node": "17.0.23",
     "@types/react": "18.0.14",
     "@types/react-dom": "18.0.5",
-    "@types/swagger-ui-react": "^4.11.0",
+    "@types/swagger-ui-react": "4.11.0",
     "eslint": "8.18.0",
     "eslint-config-next": "12.1.6",
-    "prettier": "^2.6.2",
-    "prettier-plugin-tailwindcss": "^0.1.8",
+    "prettier": "2.7.1",
+    "prettier-plugin-tailwindcss": "0.1.11",
     "typescript": "4.7.4"
   }
 }
