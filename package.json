@@ -19,7 +19,7 @@
     "axios": "0.27.2",
     "bson-objectid": "2.0.3",
     "daisyui": "2.17.0",
-    "javascript-time-ago": "2.5.4",
+    "javascript-time-ago": "2.5.5",
     "mongodb": "4.7.0",
     "next": "12.2.0",
     "next-auth": "4.6.1",
