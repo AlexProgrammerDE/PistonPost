@@ -22,6 +22,7 @@ export function GlobalHead({
   const title = overrideTitle || brandTitle;
   const description = overrideDescription || brandDescription;
   const image = overrideImage || "/logo.webp";
+  const pageType = overrideVideo ? "video.other" : "website";
 
   return (
     <Head>
@@ -45,6 +46,8 @@ export function GlobalHead({
 
       <meta name="twitter:url" content={url} />
       <meta property="og:url" content={url} />
+
+      <meta property="og:type" content={pageType} />
 
       {!overrideVideo && (
         <>
