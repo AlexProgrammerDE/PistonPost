@@ -9,20 +9,15 @@ import {
 export function GlobalHead({
   overrideTitle,
   overrideDescription,
-  overrideImage,
-  overrideVideo,
-  largeSummary
+  overridePageType
 }: {
   overrideTitle?: string;
   overrideDescription?: string;
-  overrideImage?: string;
-  overrideVideo?: string;
-  largeSummary?: boolean;
+  overridePageType?: string;
 }) {
   const title = overrideTitle || brandTitle;
   const description = overrideDescription || brandDescription;
-  const image = overrideImage || "/logo.webp";
-  const pageType = overrideVideo ? "video.other" : "website";
+  const image = "/logo.webp";
 
   return (
     <Head>
@@ -47,25 +42,8 @@ export function GlobalHead({
       <meta name="twitter:url" content={url} />
       <meta property="og:url" content={url} />
 
-      <meta property="og:type" content={pageType} />
-
-      {!overrideVideo && (
-        <>
-          <meta property="og:image" content={image} />
-          <meta name="twitter:image" content={image} />
-        </>
-      )}
-      {overrideVideo && (
-        <>
-          <meta property="og:video" content={overrideVideo} />
-          <meta property="og:video:secure_url" content={overrideVideo} />
-          <meta property="og:video:type" content="application/mp4" />
-        </>
-      )}
-
-      {largeSummary && (
-        <meta name="twitter:card" content="summary_large_image" />
-      )}
+      <meta property="og:image" content={image} />
+      <meta name="twitter:image" content={image} />
     </Head>
   );
 }

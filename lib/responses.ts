@@ -24,7 +24,9 @@ export interface ImageResponse {
 export interface VideoResponse {
   id: string;
   extension: string;
-  thumbnailId: string;
+  thumbnail: ImageResponse;
+  width: number;
+  height: number;
 }
 
 export interface CommentResponse {

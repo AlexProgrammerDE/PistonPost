@@ -12,6 +12,7 @@ import { breakpointColumnsObj, NewlineText } from "../../lib/shared";
 import Masonry from "react-masonry-css";
 import dynamic from "next/dynamic";
 import PostCommentForm from "../../components/PostCommentForm";
+import Head from "next/head";
 
 const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
 
@@ -25,28 +26,66 @@ const Post = ({ postData }: { postData: PostResponse }) => {
       ? Math.min(postData.images!.length - 1, parseInt(image as string))
       : 0;
 
+  const imageUrl =
+    postData.type === "IMAGES"
+      ? `/static/images/${postData.images![imageIndex].id}.${
+          postData.images![imageIndex].extension
+        }`
+      : undefined;
+  const videoUrl =
+    postData.type === "VIDEO"
+      ? `/static/videos/${postData.video!.id}.${postData.video!.extension}`
+      : undefined;
+  const videoThumbnailUrl =
+    postData.type === "VIDEO"
+      ? `/static/images/${postData.video!.thumbnail.id}.${
+          postData.video!.thumbnail.extension
+        }`
+      : undefined;
+
   return (
     <>
       <GlobalHead
         overrideTitle={postData.title}
         overrideDescription={`Post by ${postData.authorData.name}`}
-        overrideImage={
-          postData.type === "IMAGES"
-            ? `/static/images/${postData.images![imageIndex].id}.${
-                postData.images![imageIndex].extension
-              }`
-            : undefined
-        }
-        overrideVideo={
-          postData.type === "VIDEO"
-            ? `/static/videos/${postData.video!.id}.${
-                postData.video!.extension
-              }`
-            : undefined
-        }
-        largeSummary={postData.type === "IMAGES"}
       />
       <Layout>
+        {postData.type === "IMAGES" && (
+          <Head>
+            <meta name="twitter:card" content="summary_large_image" />
+
+            <meta property="og:image" content={imageUrl} />
+            <meta name="twitter:image" content={imageUrl} />
+          </Head>
+        )}
+        {postData.type === "VIDEO" && (
+          <Head>
+            <meta property="og:type" content="video.other" />
+
+            <meta property="og:image" content={videoThumbnailUrl} />
+            <meta name="twitter:image" content={videoThumbnailUrl} />
+            <meta
+              property="og:image:width"
+              content={postData.video!.thumbnail.width.toString()}
+            />
+            <meta
+              property="og:image:height"
+              content={postData.video!.thumbnail.height.toString()}
+            />
+
+            <meta property="og:video" content={videoUrl} />
+            <meta
+              property="og:video:width"
+              content={postData.video!.width.toString()}
+            />
+            <meta
+              property="og:video:height"
+              content={postData.video!.height.toString()}
+            />
+            <meta property="og:video:type" content="application/mp4" />
+          </Head>
+        )}
+
         <div className="break-text container flex-grow p-2">
           <div className="rounded-box flex w-full flex-wrap bg-base-200 p-4 p-4">
             <h2 className="my-2 text-2xl font-bold">{postData.title}</h2>
