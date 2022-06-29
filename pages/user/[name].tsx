@@ -15,8 +15,8 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
   return (
     <>
       <GlobalHead
-        overrideTitle={`User ${userData.name}`}
-        overrideDescription={`${userData.posts.length} post${
+        title={`User ${userData.name}`}
+        description={`${userData.posts.length} post${
           userData.posts.length === 1 ? "" : "s"
         }`}
       />

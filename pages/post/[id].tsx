@@ -46,8 +46,10 @@ const Post = ({ postData }: { postData: PostResponse }) => {
   return (
     <>
       <GlobalHead
-        overrideTitle={postData.title}
-        overrideDescription={`Post by ${postData.authorData.name}`}
+        title={postData.title}
+        description={`Post by ${postData.authorData.name}`}
+        noType={postData.type === "VIDEO"}
+        noImage={postData.type === "IMAGES" || postData.type === "VIDEO"}
       />
       <Layout>
         {postData.type === "IMAGES" && (
@@ -56,6 +58,14 @@ const Post = ({ postData }: { postData: PostResponse }) => {
 
             <meta property="og:image" content={imageUrl} />
             <meta name="twitter:image" content={imageUrl} />
+            <meta
+              property="og:image:width"
+              content={postData.images![imageIndex].width.toString()}
+            />
+            <meta
+              property="og:image:height"
+              content={postData.images![imageIndex].height.toString()}
+            />
           </Head>
         )}
         {postData.type === "VIDEO" && (
