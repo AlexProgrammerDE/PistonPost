@@ -37,6 +37,13 @@ const Post = ({ postData }: { postData: PostResponse }) => {
               }`
             : undefined
         }
+        overrideVideo={
+          postData.type === "VIDEO"
+            ? `/static/videos/${postData.video!.id}.${
+                postData.video!.extension
+              }`
+            : undefined
+        }
         largeSummary={postData.type === "IMAGES"}
       />
       <Layout>
