@@ -197,7 +197,7 @@ const Post = ({ postData }: { postData: PostResponse }) => {
               </Masonry>
             )}
             {postData.type === "VIDEO" && (
-              <VideoPlayer video={postData.video!} />
+              <VideoPlayer video={postData.video!} title={postData.title} />
             )}
           </div>
           <PostCommentForm postData={postData} />
