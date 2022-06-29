@@ -9,6 +9,10 @@ body {
     Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
 }
 
+.plyr {
+    @apply max-h-96;
+}
+
 .container {
     @apply max-w-screen-xl mx-auto;
 }
