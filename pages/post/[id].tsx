@@ -43,11 +43,22 @@ const Post = ({ postData }: { postData: PostResponse }) => {
         }`
       : undefined;
 
+  let description;
+  switch (postData.type) {
+    case "IMAGES":
+      description = `Post by ${postData.authorData.name} - ${
+        postData.images!.length
+      } image${postData.images!.length === 1 ? "" : "s"}`;
+      break;
+    default:
+      description = `Post by ${postData.authorData.name}`;
+  }
+
   return (
     <>
       <GlobalHead
         title={postData.title}
-        description={`Post by ${postData.authorData.name}`}
+        description={description}
         noType={postData.type === "VIDEO"}
         noImage={postData.type === "IMAGES" || postData.type === "VIDEO"}
       />
