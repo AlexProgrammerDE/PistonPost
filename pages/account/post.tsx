@@ -204,8 +204,8 @@ const Post: CustomNextPage = () => {
                       onChange={(e) => {
                         const imageList = e.currentTarget.files;
                         if (imageList) {
-                          if (imageList.length > 20) {
-                            setError("You can only upload 20 images");
+                          if (imageList.length > 50) {
+                            setError("You can only upload 50 images");
                             return;
                           }
                           setImageList(imageList);
@@ -219,7 +219,7 @@ const Post: CustomNextPage = () => {
                         }
                       }}
                       required
-                      max={20}
+                      max={50}
                       className="opacity-0"
                     />
                   </label>
