@@ -168,7 +168,7 @@ const Post: CustomNextPage = () => {
                 <label className="label">
                   <span className="label-text">Images</span>
                   <span className="label-text-alt">
-                    (20 max, 5MB per image)
+                    (50 max, 5MB per image)
                   </span>
                 </label>
                 <div className="flex items-center justify-center w-full">
