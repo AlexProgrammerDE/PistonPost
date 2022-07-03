@@ -94,7 +94,8 @@ const Post: CustomNextPage = () => {
                   headers: {
                     "Content-Type": "multipart/form-data"
                   },
-                  maxBodyLength: 104857780,
+                  maxContentLength: Infinity,
+                  maxBodyLength: Infinity,
                   onUploadProgress: (progressEvent) => {
                     setProgress(
                       Math.round(
