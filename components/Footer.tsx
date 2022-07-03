@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import Logo from "../public/logo.webp";
 
 export default function Footer() {
@@ -8,6 +9,14 @@ export default function Footer() {
         <div className="flex flex-wrap">
           <Image alt="Pistonpost Logo" src={Logo} width={32} height={32} />
           <p className="my-auto">Copyright © 2022 - All right reserved</p>
+          <div className="my-auto">
+            <Link href="/tos">
+              <a className="mr-1 my-auto">Terms of Service</a>
+            </Link>
+            <Link href="/privacy">
+              <a className="mr-1 my-auto">Privacy Policy</a>
+            </Link>
+          </div>
         </div>
         <div className="grid-flow-col gap-4 md:place-self-center md:justify-self-end">
           <a
