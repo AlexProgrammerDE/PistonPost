@@ -36,6 +36,7 @@ const apiRequest = async (req: NextApiRequest, res: NextApiResponse) => {
       method: req.method! as Method,
       params: req.query,
       data: rawBody,
+      maxBodyLength: 104857780,
       headers
     })
     .then((response) => {
