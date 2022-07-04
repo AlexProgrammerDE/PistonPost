@@ -200,7 +200,7 @@ const Post = ({ postData }: { postData: PostResponse }) => {
                     <Image
                       alt={`Image from ${postData.authorData.name}`}
                       className="rounded-box"
-                      src={imageUrl!}
+                      src={`/backend/static/images/${image.id}.${image.extension}`}
                       width={image.width}
                       height={image.height}
                       layout="responsive"
