@@ -14,14 +14,14 @@ export default function VideoPlayer({
       source={{
         sources: [
           {
-            src: `/static/videos/${video.id}.${video.extension}`,
+            src: `/backend/static/videos/${video.id}.${video.extension}`,
             type: "video/mp4",
             size: 720
           }
         ],
         title,
         type: "video",
-        poster: `/static/images/${video.thumbnail.id}.${video.thumbnail.extension}`
+        poster: `/backend/static/images/${video.thumbnail.id}.${video.thumbnail.extension}`
       }}
       options={{ ratio: "16:9" }}
     />

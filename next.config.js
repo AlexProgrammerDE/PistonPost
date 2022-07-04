@@ -16,8 +16,8 @@ const nextConfig = {
   async rewrites() {
     return [
       {
-        source: "/static/:path*",
-        destination: "http://localhost:5757/static/:path*"
+        source: "/backend/:path*",
+        destination: "http://localhost:5757/:path*"
       }
     ];
   }

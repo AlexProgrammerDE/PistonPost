@@ -28,17 +28,19 @@ const Post = ({ postData }: { postData: PostResponse }) => {
 
   const imageUrl =
     postData.type === "IMAGES"
-      ? `/static/images/${postData.images![imageIndex].id}.${
+      ? `/backend/static/images/${postData.images![imageIndex].id}.${
           postData.images![imageIndex].extension
         }`
       : undefined;
   const videoUrl =
     postData.type === "VIDEO"
-      ? `/static/videos/${postData.video!.id}.${postData.video!.extension}`
+      ? `/backend/static/videos/${postData.video!.id}.${
+          postData.video!.extension
+        }`
       : undefined;
   const videoThumbnailUrl =
     postData.type === "VIDEO"
-      ? `/static/images/${postData.video!.thumbnail.id}.${
+      ? `/backend/static/images/${postData.video!.thumbnail.id}.${
           postData.video!.thumbnail.extension
         }`
       : undefined;
@@ -198,7 +200,7 @@ const Post = ({ postData }: { postData: PostResponse }) => {
                     <Image
                       alt={`Image from ${postData.authorData.name}`}
                       className="rounded-box"
-                      src={`/static/images/${image.id}.${image.extension}`}
+                      src={imageUrl!}
                       width={image.width}
                       height={image.height}
                       layout="responsive"

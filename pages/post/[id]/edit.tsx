@@ -45,6 +45,7 @@ const PostEdit: CustomNextPage = () => {
               break;
             case "VIDEO":
               setVideo(post.video!);
+              break;
           }
           setTags(post.tags);
           setUnlisted(post.unlisted);
@@ -166,7 +167,7 @@ const PostEdit: CustomNextPage = () => {
                         <li key={index}>
                           <a
                             className="link"
-                            href={`/static/images/${image.id}.${image.extension}`}
+                            href={`/backend/static/images/${image.id}.${image.extension}`}
                           >
                             {image.id}.{image.extension}
                           </a>
@@ -181,7 +182,7 @@ const PostEdit: CustomNextPage = () => {
                     <span className="label-text">Video</span>
                   </label>
                   <a
-                    href={`/static/videos/${video.id}.${video.extension}`}
+                    href={`/backend/static/videos/${video.id}.${video.extension}`}
                     className="link"
                   >
                     {video.id}.{video.extension}
