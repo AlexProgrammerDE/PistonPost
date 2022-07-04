@@ -11,6 +11,8 @@ function capitalizeFirstLetter(string: string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
 
+const imageLimit = 150;
+
 const Post: CustomNextPage = () => {
   const router = useRouter();
   const [tags, setTags] = useState<string[]>([]);
@@ -168,7 +170,7 @@ const Post: CustomNextPage = () => {
                 <label className="label">
                   <span className="label-text">Images</span>
                   <span className="label-text-alt">
-                    (50 max, 5MB per image)
+                    ({imageLimit} max, 5MB per image)
                   </span>
                 </label>
                 <div className="flex items-center justify-center w-full">
@@ -204,8 +206,10 @@ const Post: CustomNextPage = () => {
                       onChange={(e) => {
                         const imageList = e.currentTarget.files;
                         if (imageList) {
-                          if (imageList.length > 50) {
-                            setError("You can only upload 50 images");
+                          if (imageList.length > imageLimit) {
+                            setError(
+                              `You can only upload ${imageLimit} images`
+                            );
                             return;
                           }
                           setImageList(imageList);
