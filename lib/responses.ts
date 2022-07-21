@@ -1,4 +1,4 @@
-import { PostType } from "./types";
+import {PostType} from "./types";
 
 export interface PostResponse {
   postId: string;
@@ -12,6 +12,14 @@ export interface PostResponse {
   comments: CommentResponse[];
   timestamp: number;
   unlisted: boolean;
+  likes: PostVote;
+  dislikes: PostVote;
+  hearts: PostVote;
+}
+
+export interface PostVote {
+  value: number;
+  voted: boolean;
 }
 
 export interface ImageResponse {
