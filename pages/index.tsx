@@ -1,26 +1,17 @@
 import type { NextPage } from "next";
 import { GlobalHead } from "../components/GlobalHead";
 import Layout from "../components/Layout";
-import { useEffect, useState } from "react";
 import LoadingView from "../components/LoadingView";
-import axios from "../lib/axios";
 import PostCard from "../components/PostCard";
 import { PostResponse } from "../lib/responses";
 import Masonry from "react-masonry-css";
 import { breakpointColumnsObj } from "../lib/shared";
+import useSWR from 'swr'
 
 const Home: NextPage = () => {
-  const [frontData, setFrontData] = useState<PostResponse[]>();
+  const { data, error } = useSWR<PostResponse[]>('/home', { refreshInterval: 60000 })
 
-  useEffect(() => {
-    if (!frontData) {
-      axios.get("/home").then((res) => {
-        setFrontData(res.data);
-      });
-    }
-  }, [frontData]);
-
-  if (frontData) {
+  if (data) {
     return (
       <>
         <GlobalHead />
@@ -32,7 +23,7 @@ const Home: NextPage = () => {
               className="my-masonry-grid"
               columnClassName="my-masonry-grid_column"
             >
-              {frontData.map((post, index) => (
+              {data.map((post, index) => (
                 <PostCard key={index} post={post} />
               ))}
             </Masonry>

@@ -1,24 +1,15 @@
 import { GlobalHead } from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
 import { CustomNextPage } from "../../components/CustomNextPage";
-import { useEffect, useState } from "react";
-import axios from "../../lib/axios";
 import LoadingView from "../../components/LoadingView";
 import PostCard from "../../components/PostCard";
 import { PostResponse } from "../../lib/responses";
 import Masonry from "react-masonry-css";
 import { breakpointColumnsObj } from "../../lib/shared";
+import useSWR from "swr";
 
 const Posts: CustomNextPage = () => {
-  const [posts, setPosts] = useState<PostResponse[]>();
-
-  useEffect(() => {
-    if (!posts) {
-      axios.get(`/posts`).then((res) => {
-        setPosts(res.data);
-      });
-    }
-  }, [posts]);
+  const { data: posts, error } = useSWR<PostResponse[]>('/posts', { refreshInterval: 3000 })
 
   if (posts) {
     return (
