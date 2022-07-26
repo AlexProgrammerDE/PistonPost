@@ -21,7 +21,7 @@
     "bson-objectid": "2.0.3",
     "daisyui": "2.20.0",
     "javascript-time-ago": "2.5.7",
-    "mongodb": "4.8.0",
+    "mongodb": "4.8.1",
     "next": "12.2.3",
     "next-auth": "4.10.2",
     "next-pwa": "5.5.4",
