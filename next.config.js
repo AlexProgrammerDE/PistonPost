@@ -6,6 +6,12 @@ const withBundleAnalyzer = require("@next/bundle-analyzer")({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  pwa: {
+    dest: "public",
+    register: true,
+    skipWaiting: true,
+    disable: process.env.NODE_ENV === "development"
+  },
   i18n: {
     locales: ["en-US"],
     defaultLocale: "en-US",
@@ -21,13 +27,7 @@ const nextConfig = {
         destination: "http://localhost:5757/:path*"
       }
     ];
-  },
-  pwa: {
-    dest: "public",
-    register: true,
-    skipWaiting: true,
-    disable: process.env.NODE_ENV === "development"
   }
 };
 
-module.exports = withPWA(withBundleAnalyzer(nextConfig));
+module.exports = withBundleAnalyzer(withPWA(nextConfig));
