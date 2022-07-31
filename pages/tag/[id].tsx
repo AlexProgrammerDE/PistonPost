@@ -9,21 +9,14 @@ import PostCard from "../../components/PostCard";
 import { PostResponse } from "../../lib/responses";
 import Masonry from "react-masonry-css";
 import { breakpointColumnsObj } from "../../lib/shared";
+import useSWR from "swr";
 
 const Post: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const [posts, setPosts] = useState<PostResponse[]>();
+  const { data, error } = useSWR<PostResponse[]>(`/tag/${id}`, { refreshInterval: 20000 })
 
-  useEffect(() => {
-    if (id) {
-      axios.get(`/tag/${id}`).then((res) => {
-        setPosts(res.data);
-      });
-    }
-  }, [id]);
-
-  if (posts) {
+  if (data) {
     return (
       <>
         <GlobalHead />
@@ -32,13 +25,13 @@ const Post: NextPage = () => {
             <h1 className="text-2xl font-bold mx-2">
               Showing posts tagged with &quot;{id}&quot;
             </h1>
-            {posts.length > 0 ? (
+            {data.length > 0 ? (
               <Masonry
                 breakpointCols={breakpointColumnsObj}
                 className="my-masonry-grid h-full w-full"
                 columnClassName="my-masonry-grid_column"
               >
-                {posts.map((post, index) => (
+                {data.map((post, index) => (
                   <PostCard key={index} post={post} />
                 ))}
               </Masonry>
