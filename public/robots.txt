@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://pistonpost.com
+Host: https://post.pistonmaster.net
 
 # Sitemaps
-Sitemap: https://pistonpost.com/sitemap.xml
+Sitemap: https://post.pistonmaster.net/sitemap.xml
