@@ -2228,7 +2228,7 @@ electron-to-chromium@^1.4.202:
   resolved "https://registry.yarnpkg.com/electron-to-chromium/-/electron-to-chromium-1.4.206.tgz#580ff85b54d7ec0c05f20b1e37ea0becdd7b0ee4"
   integrity sha512-h+Fadt1gIaQ06JaIiyqPsBjJ08fV5Q7md+V8bUvQW/9OvXfL2LRICTz2EcnnCP7QzrFTS6/27MRV6Bl9Yn97zA==
 
-emoji-picker-react@^3.6.0:
+emoji-picker-react@3.6.0:
   version "3.6.0"
   resolved "https://registry.yarnpkg.com/emoji-picker-react/-/emoji-picker-react-3.6.0.tgz#d371b3ba0bebfa202a58896f31dbc631a66f9b5e"
   integrity sha512-J5RhEYfxpJQ70dQrLx7E6dKdVOmXI1TXIwTspK/tqwInFDk69a+IvbNJ8X1Xd8MbIA/k+ybreZop7AEncH5jsw==
