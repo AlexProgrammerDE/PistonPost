@@ -14,7 +14,7 @@ export default function Swagger() {
     <>
       <GlobalHead />
       <div className="bg-white">
-        <SwaggerUI url="/api/backend/openapi.json" />
+        <SwaggerUI url="/backend/openapi.json" />
       </div>
     </>
   );
