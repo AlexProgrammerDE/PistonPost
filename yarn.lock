@@ -4231,13 +4231,13 @@ react-copy-to-clipboard@5.0.4:
     copy-to-clipboard "^3"
     prop-types "^15.5.8"
 
-react-debounce-input@=3.2.4:
-  version "3.2.4"
-  resolved "https://registry.yarnpkg.com/react-debounce-input/-/react-debounce-input-3.2.4.tgz#8204373a6498776536a2fcc7e467d054c3b729d4"
-  integrity sha512-fX70bNj0fLEYO2Zcvuh7eh9wOUQ29GIx6r8IxIJlc0i0mpUH++9ax0BhfAYfzndADli3RAMROrZQ014J01owrg==
+react-debounce-input@=3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/react-debounce-input/-/react-debounce-input-3.3.0.tgz#85e3ebcaa41f2016e50613134a1ec9fe3cdb422e"
+  integrity sha512-VEqkvs8JvY/IIZvh71Z0TC+mdbxERvYF33RcebnodlsUZ8RSgyKe2VWaHXv4+/8aoOgXLxWrdsYs2hDhcwbUgA==
   dependencies:
     lodash.debounce "^4"
-    prop-types "^15.7.2"
+    prop-types "^15.8.1"
 
 react-dom@18.2.0:
   version "18.2.0"
@@ -4895,10 +4895,10 @@ swagger-client@^3.18.5:
     traverse "~0.6.6"
     url "~0.11.0"
 
-swagger-ui-react@4.13.1:
-  version "4.13.1"
-  resolved "https://registry.yarnpkg.com/swagger-ui-react/-/swagger-ui-react-4.13.1.tgz#aac0a7650247d80ae6c267f65c0b477ee7739561"
-  integrity sha512-9l1hxWP5brVUAWWknVm9lXQk0UN4+Js14W4JV58rp6/rm31uNvjEj39zWOa74yIt344tXgnIFs7q3Eu6tGoQuw==
+swagger-ui-react@4.13.2:
+  version "4.13.2"
+  resolved "https://registry.yarnpkg.com/swagger-ui-react/-/swagger-ui-react-4.13.2.tgz#dee4f42dae9ca8b9ac85e64a46fc12c694100a80"
+  integrity sha512-U3IarPb0Vyi5/bHb45Q8uWf/7fowPp3B+LeYF0VKB4xhgKNiaPypPHoSJW9oCse/lkFGd4ZKyqBOpYXCsWMcgA==
   dependencies:
     "@babel/runtime-corejs3" "^7.18.9"
     "@braintree/sanitize-url" "=6.0.0"
@@ -4916,7 +4916,7 @@ swagger-ui-react@4.13.1:
     randexp "^0.5.3"
     randombytes "^2.1.0"
     react-copy-to-clipboard "5.0.4"
-    react-debounce-input "=3.2.4"
+    react-debounce-input "=3.3.0"
     react-immutable-proptypes "2.2.0"
     react-immutable-pure-component "^2.2.0"
     react-inspector "^5.1.1"
