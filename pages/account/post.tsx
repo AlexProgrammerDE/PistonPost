@@ -203,7 +203,7 @@ const Post: CustomNextPage = () => {
                       type="file"
                       multiple
                       accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/tiff,image/bmp,image/wbmp"
-                      onChange={(e) => {
+                      onInput={(e) => {
                         const imageList = e.currentTarget.files;
                         if (imageList) {
                           if (imageList.length > imageLimit) {
@@ -276,7 +276,7 @@ const Post: CustomNextPage = () => {
               <label className="label">
                 <span className="label-text">Tags</span>
               </label>
-              <label className={tags.length > 0 ? "md:input-group" : ""}>
+              <div className={tags.length > 0 ? "md:input-group" : ""}>
                 {tags.map((tag) => (
                   <button
                     onClick={() => setTags(tags.filter((tag2) => tag2 !== tag))}
@@ -293,7 +293,7 @@ const Post: CustomNextPage = () => {
                   onKeyDown={(e) => onTagInput(e, setTags, tags)}
                   className="input input-bordered"
                 />
-              </label>
+              </div>
               <label className="label">
                 <span className="label-text-alt">
                   Press enter do add a tag (5 max)
