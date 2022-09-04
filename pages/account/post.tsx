@@ -203,8 +203,8 @@ const Post: CustomNextPage = () => {
                       type="file"
                       multiple
                       accept="image/png,image/jpeg,image/jpg,image/webp,image/gif,image/tiff,image/bmp,image/wbmp"
-                      onInput={(e) => {
-                        const imageList = e.currentTarget.files;
+                      onChange={({target}) => {
+                        const imageList = target.files;
                         if (imageList) {
                           if (imageList.length > imageLimit) {
                             setError(
@@ -259,9 +259,9 @@ const Post: CustomNextPage = () => {
                     <input
                       type="file"
                       accept="video/mp4,video/mov,video/webm,video/mpeg,video/mpg,video/avi"
-                      onInput={({ currentTarget }) =>
+                      onChange={({ target }) =>
                         setVideo(
-                          currentTarget.files ? currentTarget.files[0] : null
+                            target.files ? target.files[0] : null
                         )
                       }
                       required
