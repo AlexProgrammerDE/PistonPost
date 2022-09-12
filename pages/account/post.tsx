@@ -223,7 +223,6 @@ const Post: CustomNextPage = () => {
                         }
                       }}
                       required
-                      max={50}
                       className="opacity-0"
                     />
                   </label>
