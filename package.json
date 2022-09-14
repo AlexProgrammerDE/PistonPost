@@ -16,7 +16,7 @@
     "@next/bundle-analyzer": "12.3.0",
     "@tailwindcss/typography": "0.5.7",
     "@types/cookie-parser": "1.4.3",
-    "autoprefixer": "10.4.10",
+    "autoprefixer": "10.4.11",
     "axios": "0.27.2",
     "bson-objectid": "2.0.3",
     "daisyui": "2.27.0",
