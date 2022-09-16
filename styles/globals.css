@@ -14,7 +14,7 @@ body {
 }
 
 .container {
-    @apply max-w-screen-xl mx-auto;
+    @apply mx-auto;
 }
 
 .break-text {
