@@ -15,13 +15,16 @@ const getKey: SWRInfiniteKeyLoader = (pageIndex, previousPageData) => {
 
 const Home: NextPage = () => {
   const {data, size, setSize} = useSWRInfinite<PostResponse[]>(getKey)
+  const isEmpty = data?.[0]?.length === 0;
+  const isReachingEnd =
+      isEmpty || (data && data[data.length - 1]?.length < 40);
 
   if (data) {
     return (
         <>
           <GlobalHead/>
           <Layout>
-            <div className="container flex-grow p-1 md:p-6">
+            <div className="container flex-grow p-1 md:p-6 flex flex-col">
               <h1 className="text-2xl font-bold mx-2">Recent posts...</h1>
               <Masonry
                   breakpointCols={breakpointColumnsObj}
@@ -34,7 +37,7 @@ const Home: NextPage = () => {
                     ))
                 ))}
               </Masonry>
-              <button className="btn btn-primary mx-auto my-2" onClick={() => setSize(size + 1)}>Load More</button>
+              {!isReachingEnd && <button className="btn btn-primary mx-auto my-2" onClick={() => setSize(size + 1)}>Load More</button>}
             </div>
           </Layout>
         </>
