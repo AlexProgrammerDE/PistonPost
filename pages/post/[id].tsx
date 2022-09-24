@@ -47,6 +47,15 @@ const Post = ({postData}: { postData: PostResponse }) => {
           }`
           : undefined;
 
+  let title;
+  switch (postData.type) {
+    case "VIDEO":
+      title = `${postData.title} - ${postData.authorData.name}`;
+      break;
+    default:
+      title = postData.title;
+  }
+
   let description;
   switch (postData.type) {
     case "IMAGES":
@@ -72,7 +81,7 @@ const Post = ({postData}: { postData: PostResponse }) => {
   return (
       <>
         <GlobalHead
-            title={postData.title}
+            title={title}
             description={description}
             noType={postData.type === "VIDEO"}
             noImage={postData.type === "IMAGES" || postData.type === "VIDEO"}
