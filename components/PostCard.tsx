@@ -38,9 +38,9 @@ export default function PostCard({post}: { post: PostResponse }) {
       <div className="card md:card-normal card-compact m-2 md:w-96 bg-base-200 shadow-lg">
         <div className="card-body justify-between">
           <h2 className="break-text card-title place-items-start flex-col">
-            <div className="flex flex-wrap md:justify-between w-full">
+            <div className="flex flex-wrap justify-between w-full">
               <Link href={"/post/" + post.postId}>
-                <a>{post.title}</a>
+                <a className="ml-2">{post.title}</a>
               </Link>
               {icon}
             </div>
