@@ -9,7 +9,9 @@ export default function PostCard({post}: { post: PostResponse }) {
     case "TEXT":
       icon = (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 my-auto">
-            <path fillRule="evenodd" d="M18.97 3.659a2.25 2.25 0 00-3.182 0l-10.94 10.94a3.75 3.75 0 105.304 5.303l7.693-7.693a.75.75 0 011.06 1.06l-7.693 7.693a5.25 5.25 0 11-7.424-7.424l10.939-10.94a3.75 3.75 0 115.303 5.304L9.097 18.835l-.008.008-.007.007-.002.002-.003.002A2.25 2.25 0 015.91 15.66l7.81-7.81a.75.75 0 011.061 1.06l-7.81 7.81a.75.75 0 001.054 1.068L18.97 6.84a2.25 2.25 0 000-3.182z" clipRule="evenodd" />
+            <path fillRule="evenodd"
+                  d="M18.97 3.659a2.25 2.25 0 00-3.182 0l-10.94 10.94a3.75 3.75 0 105.304 5.303l7.693-7.693a.75.75 0 011.06 1.06l-7.693 7.693a5.25 5.25 0 11-7.424-7.424l10.939-10.94a3.75 3.75 0 115.303 5.304L9.097 18.835l-.008.008-.007.007-.002.002-.003.002A2.25 2.25 0 015.91 15.66l7.81-7.81a.75.75 0 011.061 1.06l-7.81 7.81a.75.75 0 001.054 1.068L18.97 6.84a2.25 2.25 0 000-3.182z"
+                  clipRule="evenodd"/>
           </svg>
       );
       break;
@@ -17,7 +19,8 @@ export default function PostCard({post}: { post: PostResponse }) {
       icon = (
           <div className="flex flex-row">
             {post.images?.length}
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 ml-1 my-auto">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"
+                 className="w-6 h-6 ml-1 my-auto">
               <path fillRule="evenodd"
                     d="M1.5 6a2.25 2.25 0 012.25-2.25h16.5A2.25 2.25 0 0122.5 6v12a2.25 2.25 0 01-2.25 2.25H3.75A2.25 2.25 0 011.5 18V6zM3 16.06V18c0 .414.336.75.75.75h16.5A.75.75 0 0021 18v-1.94l-2.69-2.689a1.5 1.5 0 00-2.12 0l-.88.879.97.97a.75.75 0 11-1.06 1.06l-5.16-5.159a1.5 1.5 0 00-2.12 0L3 16.061zm10.125-7.81a1.125 1.125 0 112.25 0 1.125 1.125 0 01-2.25 0z"
                     clipRule="evenodd"/>
@@ -28,7 +31,8 @@ export default function PostCard({post}: { post: PostResponse }) {
     case "VIDEO":
       icon = (
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 my-auto">
-            <path d="M4.5 4.5a3 3 0 00-3 3v9a3 3 0 003 3h8.25a3 3 0 003-3v-9a3 3 0 00-3-3H4.5zM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06z" />
+            <path
+                d="M4.5 4.5a3 3 0 00-3 3v9a3 3 0 003 3h8.25a3 3 0 003-3v-9a3 3 0 00-3-3H4.5zM19.94 18.75l-2.69-2.69V7.94l2.69-2.69c.944-.945 2.56-.276 2.56 1.06v11.38c0 1.336-1.616 2.005-2.56 1.06z"/>
           </svg>
       );
       break;
@@ -38,7 +42,7 @@ export default function PostCard({post}: { post: PostResponse }) {
       <div className="card md:card-normal card-compact m-2 md:w-96 bg-base-200 shadow-lg">
         <div className="card-body justify-between">
           <h2 className="break-text card-title place-items-start flex-col">
-            <div className="flex flex-wrap justify-between w-full">
+            <div className="flex flex-row justify-between w-full">
               <Link href={"/post/" + post.postId}>
                 <a className="mr-1">{post.title}</a>
               </Link>
@@ -62,10 +66,10 @@ export default function PostCard({post}: { post: PostResponse }) {
             </Link>
           </h2>
 
-          <div className="card-actions flex-wrap justify-between">
-          <span>
-            <ReactTimeAgo date={post.timestamp}/>
-          </span>
+          <div className="card-actions flex-row justify-between">
+            <div>
+              <ReactTimeAgo date={post.timestamp}/>
+            </div>
             <div className="card-actions gap-0 flex-wrap">
               {post.tags.map((tag, index) => (
                   <div key={index} className="flex flex-col justify-center">

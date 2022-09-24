@@ -134,7 +134,7 @@ const Post = ({postData}: { postData: PostResponse }) => {
           <div className="break-text container flex-grow p-2">
             <div className="rounded-box flex w-full flex-wrap bg-base-200 p-4 p-4">
               <h2 className="my-2 text-2xl font-bold">{postData.title}</h2>
-              <div className="flex flex-wrap">
+              <div className="flex flex-wrap gap-1">
                 {postData.tags.map((tag) => (
                     <div key={tag} className="flex flex-col justify-center">
                       <Link href={"/tag/" + tag}>
@@ -200,10 +200,10 @@ const Post = ({postData}: { postData: PostResponse }) => {
                     </div>
                   </div>
                   <div className="flex flex-col justify-center">
-                  <span className="my-auto ml-2 text-xl font-bold">
-                    @{postData.authorData.name} -{" "}
-                    <ReactTimeAgo date={postData.timestamp}/>
-                  </span>
+                    <div className="my-auto ml-2 text-xl font-bold">
+                      @{postData.authorData.name} -{" "}
+                      <ReactTimeAgo date={postData.timestamp}/>
+                    </div>
                   </div>
                 </a>
               </Link>
