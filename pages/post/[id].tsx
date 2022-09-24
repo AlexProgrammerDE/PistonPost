@@ -52,10 +52,10 @@ const Post = ({postData}: { postData: PostResponse }) => {
     case "IMAGES":
       description = `Post by ${postData.authorData.name} - ${
           postData.images!.length
-      } image${postData.images!.length === 1 ? "" : "s"}`;
+      } image${postData.images!.length === 1 ? "" : "s"} - tags: ${postData.tags.join(', ')}`;
       break;
     default:
-      description = `Post by ${postData.authorData.name}`;
+      description = `Post by ${postData.authorData.name} - tags: ${postData.tags.join(', ')}`;
   }
 
   const vote = (type: VoteType, clientVoted: boolean) => {
