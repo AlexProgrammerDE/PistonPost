@@ -40,7 +40,7 @@ export default function PostCard({post}: { post: PostResponse }) {
           <h2 className="break-text card-title place-items-start flex-col">
             <div className="flex flex-wrap justify-between w-full">
               <Link href={"/post/" + post.postId}>
-                <a className="ml-2">{post.title}</a>
+                <a className="mr-1">{post.title}</a>
               </Link>
               {icon}
             </div>
