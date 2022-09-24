@@ -34,7 +34,7 @@ const Home: NextPage = () => {
                     ))
                 ))}
               </Masonry>
-              <button onClick={() => setSize(size + 1)}>Load More</button>
+              <button className="btn btn-primary mx-auto my-2" onClick={() => setSize(size + 1)}>Load More</button>
             </div>
           </Layout>
         </>
