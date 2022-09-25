@@ -2,7 +2,7 @@ import {GetServerSideProps} from "next";
 import {GlobalHead} from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
 import {useRouter} from "next/router";
-import {useContext} from "react";
+import {useContext, useState} from "react";
 import {PostResponse} from "../../lib/responses";
 import Image from "next/image";
 import ReactTimeAgo from "react-time-ago";
@@ -19,6 +19,9 @@ import {VoteType} from "../../lib/types";
 const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
 
 const Post = ({postData}: { postData: PostResponse }) => {
+  const [likes, setLikes] = useState(postData.likes);
+  const [dislikes, setDislikes] = useState(postData.dislikes);
+  const [hearts, setHearts] = useState(postData.hearts);
   const {user} = useContext(UserDataContext);
   const router = useRouter();
   const {image} = router.query;
@@ -73,7 +76,26 @@ const Post = ({postData}: { postData: PostResponse }) => {
         url: `/post/${postData.postId}/vote?type=${type}`,
         method: clientVoted ? "DELETE" : "PUT",
       }).then(() => {
-        router.reload();
+        switch (type) {
+          case "LIKE":
+            setLikes({
+              voted: !clientVoted,
+              value: likes.value + (clientVoted ? -1 : 1),
+            });
+            break;
+          case "DISLIKE":
+            setDislikes({
+              voted: !clientVoted,
+              value: dislikes.value + (clientVoted ? -1 : 1),
+            })
+            break;
+          case "HEART":
+            setHearts({
+              voted: !clientVoted,
+              value: hearts.value + (clientVoted ? -1 : 1),
+            })
+            break
+        }
       });
     }
   }
@@ -208,12 +230,12 @@ const Post = ({postData}: { postData: PostResponse }) => {
                 </a>
               </Link>
               <div className="flex flex-row">
-                <button onClick={() => vote("LIKE", postData.likes.voted)}
-                        className={"btn ml-1 mr-0.5" + (postData.likes.voted ? " btn-primary" : "")}>👍️️ {String(postData.likes.value)}</button>
-                <button onClick={() => vote("DISLIKE", postData.dislikes.voted)}
-                        className={"btn mx-0.5" + (postData.dislikes.voted ? " btn-primary" : "")}>👎 {String(postData.dislikes.value)}</button>
-                <button onClick={() => vote("HEART", postData.hearts.voted)}
-                        className={"btn mx-0.5" + (postData.hearts.voted ? " btn-primary" : "")}>♥️ {String(postData.hearts.value)}</button>
+                <button onClick={() => vote("LIKE", likes.voted)}
+                        className={"btn ml-1 mr-0.5" + (likes.voted ? " btn-primary" : "")}>👍️️ {String(likes.value)}</button>
+                <button onClick={() => vote("DISLIKE", dislikes.voted)}
+                        className={"btn mx-0.5" + (dislikes.voted ? " btn-primary" : "")}>👎 {String(dislikes.value)}</button>
+                <button onClick={() => vote("HEART", hearts.voted)}
+                        className={"btn mx-0.5" + (hearts.voted ? " btn-primary" : "")}>♥️ {String(hearts.value)}</button>
               </div>
             </div>
             <div className="rounded-box mt-2 w-full bg-base-200 p-4 text-lg">
