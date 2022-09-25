@@ -363,7 +363,7 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const postData = await res.json();
 
   return {
-    props: {postData, postUrl: process.env.NEXTAUTH_URL}
+    props: {postData, postUrl: `${process.env.NEXTAUTH_URL}/post/${id}`}
   };
 };
 
