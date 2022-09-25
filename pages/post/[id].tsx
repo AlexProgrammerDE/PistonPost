@@ -3,7 +3,7 @@ import {GlobalHead} from "../../components/GlobalHead";
 import Layout from "../../components/Layout";
 import {useRouter} from "next/router";
 import {useContext, useState} from "react";
-import {PostResponse} from "../../lib/responses";
+import {PostResponse, UserData} from "../../lib/responses";
 import Image from "next/image";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
@@ -18,10 +18,54 @@ import {VoteType} from "../../lib/types";
 
 const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
 
-const Post = ({postData}: { postData: PostResponse }) => {
+const VoteRow = ({postData, user}: { postData: PostResponse, user: UserData | undefined }) => {
   const [likes, setLikes] = useState(postData.likes);
   const [dislikes, setDislikes] = useState(postData.dislikes);
   const [hearts, setHearts] = useState(postData.hearts);
+
+  const vote = (type: VoteType, clientVoted: boolean) => {
+    if (user) {
+      axios.request({
+        url: `/post/${postData.postId}/vote?type=${type}`,
+        method: clientVoted ? "DELETE" : "PUT",
+      }).then(() => {
+        switch (type) {
+          case "LIKE":
+            setLikes({
+              voted: !clientVoted,
+              value: likes.value + (clientVoted ? -1 : 1),
+            });
+            break;
+          case "DISLIKE":
+            setDislikes({
+              voted: !clientVoted,
+              value: dislikes.value + (clientVoted ? -1 : 1),
+            })
+            break;
+          case "HEART":
+            setHearts({
+              voted: !clientVoted,
+              value: hearts.value + (clientVoted ? -1 : 1),
+            })
+            break
+        }
+      });
+    }
+  }
+
+  return (
+      <div className="flex flex-row">
+        <button onClick={() => vote("LIKE", likes.voted)}
+                className={"btn ml-1 mr-0.5" + (likes.voted ? " btn-primary" : "")}>👍️️ {String(likes.value)}</button>
+        <button onClick={() => vote("DISLIKE", dislikes.voted)}
+                className={"btn mx-0.5" + (dislikes.voted ? " btn-primary" : "")}>👎 {String(dislikes.value)}</button>
+        <button onClick={() => vote("HEART", hearts.voted)}
+                className={"btn mx-0.5" + (hearts.voted ? " btn-primary" : "")}>♥️ {String(hearts.value)}</button>
+      </div>
+  )
+}
+
+const Post = ({postData}: { postData: PostResponse }) => {
   const {user} = useContext(UserDataContext);
   const router = useRouter();
   const {image} = router.query;
@@ -68,36 +112,6 @@ const Post = ({postData}: { postData: PostResponse }) => {
       break;
     default:
       description = `Post by ${postData.authorData.name} - tags: ${postData.tags.join(', ')}`;
-  }
-
-  const vote = (type: VoteType, clientVoted: boolean) => {
-    if (user) {
-      axios.request({
-        url: `/post/${postData.postId}/vote?type=${type}`,
-        method: clientVoted ? "DELETE" : "PUT",
-      }).then(() => {
-        switch (type) {
-          case "LIKE":
-            setLikes({
-              voted: !clientVoted,
-              value: likes.value + (clientVoted ? -1 : 1),
-            });
-            break;
-          case "DISLIKE":
-            setDislikes({
-              voted: !clientVoted,
-              value: dislikes.value + (clientVoted ? -1 : 1),
-            })
-            break;
-          case "HEART":
-            setHearts({
-              voted: !clientVoted,
-              value: hearts.value + (clientVoted ? -1 : 1),
-            })
-            break
-        }
-      });
-    }
   }
 
   return (
@@ -229,14 +243,7 @@ const Post = ({postData}: { postData: PostResponse }) => {
                   </div>
                 </a>
               </Link>
-              <div className="flex flex-row">
-                <button onClick={() => vote("LIKE", likes.voted)}
-                        className={"btn ml-1 mr-0.5" + (likes.voted ? " btn-primary" : "")}>👍️️ {String(likes.value)}</button>
-                <button onClick={() => vote("DISLIKE", dislikes.voted)}
-                        className={"btn mx-0.5" + (dislikes.voted ? " btn-primary" : "")}>👎 {String(dislikes.value)}</button>
-                <button onClick={() => vote("HEART", hearts.voted)}
-                        className={"btn mx-0.5" + (hearts.voted ? " btn-primary" : "")}>♥️ {String(hearts.value)}</button>
-              </div>
+              <VoteRow postData={postData} user={user}/>
             </div>
             <div className="rounded-box mt-2 w-full bg-base-200 p-4 text-lg">
               {postData.type === "TEXT" && (
