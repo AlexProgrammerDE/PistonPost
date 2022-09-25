@@ -68,19 +68,27 @@ const VoteRow = ({postData, user}: { postData: PostResponse, user: UserData | un
 const Post = ({postData}: { postData: PostResponse }) => {
   const {user} = useContext(UserDataContext);
   const router = useRouter();
-  const {image} = router.query;
+  const {image, montage} = router.query;
 
-  const imageIndex =
-      postData.type === "IMAGES" && image
-          ? Math.min(postData.images!.length - 1, parseInt(image as string))
-          : 0;
+  let seoImage: {
+    url: string,
+    width: number,
+    height: number,
+  } | undefined = undefined;
+  if (postData.type === "IMAGES") {
+    let usedImage = postData.images![0];
+    if (image) {
+      usedImage = postData.images![Math.min(postData.images!.length - 1, parseInt(image as string))]
+    } else if (montage && postData.montages) {
+      usedImage = postData.montages![Math.min(postData.montages.length - 1, parseInt(montage as string))]
+    }
+    seoImage = {
+      url: `/backend/static/images/${usedImage.id}.${usedImage.extension}`,
+      width: usedImage.width,
+      height: usedImage.height,
+    }
+  }
 
-  const imageUrl =
-      postData.type === "IMAGES"
-          ? `/backend/static/images/${postData.images![imageIndex].id}.${
-              postData.images![imageIndex].extension
-          }`
-          : undefined;
   const videoUrl =
       postData.type === "VIDEO"
           ? `/backend/static/videos/${postData.video!.id}.${
@@ -123,19 +131,19 @@ const Post = ({postData}: { postData: PostResponse }) => {
             noImage={postData.type === "IMAGES" || postData.type === "VIDEO"}
         />
         <Layout>
-          {postData.type === "IMAGES" && (
+          {postData.type === "IMAGES" && seoImage && (
               <Head>
                 <meta name="twitter:card" content="summary_large_image"/>
 
-                <meta property="og:image" content={imageUrl}/>
-                <meta name="twitter:image" content={imageUrl}/>
+                <meta property="og:image" content={seoImage.url}/>
+                <meta name="twitter:image" content={seoImage.url}/>
                 <meta
                     property="og:image:width"
-                    content={postData.images![imageIndex].width.toString()}
+                    content={seoImage.width.toString()}
                 />
                 <meta
                     property="og:image:height"
-                    content={postData.images![imageIndex].height.toString()}
+                    content={seoImage.height.toString()}
                 />
               </Head>
           )}

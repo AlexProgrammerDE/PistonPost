@@ -6,6 +6,7 @@ export interface PostResponse {
   type: PostType;
   content?: string;
   images?: ImageResponse[];
+  montages?: ImageResponse[];
   video?: VideoResponse;
   authorData: UserData;
   tags: string[];
