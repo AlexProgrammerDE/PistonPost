@@ -1,17 +1,17 @@
-import { CustomNextPage } from "../../../components/CustomNextPage";
+import { CustomNextPage } from "components/CustomNextPage";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { GlobalHead } from "../../../components/GlobalHead";
-import Layout from "../../../components/Layout";
-import axios from "../../../lib/axios";
-import { onTagInput } from "../../../lib/shared";
-import LoadingView from "../../../components/LoadingView";
+import { GlobalHead } from "components/GlobalHead";
+import Layout from "components/Layout";
+import axios from "lib/axios";
+import { onTagInput } from "lib/shared";
+import LoadingView from "components/LoadingView";
 import {
   ImageResponse,
   PostResponse,
   VideoResponse
-} from "../../../lib/responses";
-import { PostType } from "../../../lib/types";
+} from "lib/responses";
+import { PostType } from "lib/types";
 
 const PostEdit: CustomNextPage = () => {
   const router = useRouter();

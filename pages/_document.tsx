@@ -1,5 +1,5 @@
 import { Head, Html, Main, NextScript } from "next/document";
-import { twitter } from "../lib/branding";
+import { twitter } from "lib/branding";
 
 const themeInitializerScript = `
        (function () {

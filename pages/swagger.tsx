@@ -1,4 +1,4 @@
-import { GlobalHead } from "../components/GlobalHead";
+import { GlobalHead } from "components/GlobalHead";
 import "swagger-ui-react/swagger-ui.css";
 import dynamic from "next/dynamic";
 import { useEffect } from "react";

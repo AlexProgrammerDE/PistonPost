@@ -1,11 +1,11 @@
 import type {NextPage} from "next";
-import {GlobalHead} from "../components/GlobalHead";
-import Layout from "../components/Layout";
-import LoadingView from "../components/LoadingView";
-import PostCard from "../components/PostCard";
-import {PostResponse} from "../lib/responses";
+import {GlobalHead} from "components/GlobalHead";
+import Layout from "components/Layout";
+import LoadingView from "components/LoadingView";
+import PostCard from "components/PostCard";
+import {PostResponse} from "lib/responses";
 import Masonry from "react-masonry-css";
-import {breakpointColumnsObj} from "../lib/shared";
+import {breakpointColumnsObj} from "lib/shared";
 import useSWRInfinite, {SWRInfiniteKeyLoader} from 'swr/infinite'
 
 const getKey: SWRInfiniteKeyLoader = (pageIndex, previousPageData) => {

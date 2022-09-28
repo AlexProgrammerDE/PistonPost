@@ -1,13 +1,13 @@
 import { GetServerSideProps } from "next";
-import { GlobalHead } from "../../components/GlobalHead";
-import Layout from "../../components/Layout";
+import { GlobalHead } from "components/GlobalHead";
+import Layout from "components/Layout";
 import { useContext } from "react";
-import { UserPageResponse } from "../../lib/responses";
+import { UserPageResponse } from "lib/responses";
 import Image from "next/image";
-import { UserDataContext } from "../../components/UserDataProvider";
+import { UserDataContext } from "components/UserDataProvider";
 import ObjectId from "bson-objectid";
-import { NewlineText } from "../../lib/shared";
-import { BadgeIcon } from "../../components/roles";
+import { NewlineText } from "lib/shared";
+import { BadgeIcon } from "components/roles";
 
 const UserName = ({ userData }: { userData: UserPageResponse }) => {
   const { user } = useContext(UserDataContext);

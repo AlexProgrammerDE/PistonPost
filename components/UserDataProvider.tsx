@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useEffect, useState } from "react";
-import {HealthResponse, UserData} from "../lib/responses";
-import axios from "../lib/axios";
+import {HealthResponse, UserData} from "lib/responses";
+import axios from "lib/axios";
 import { useSession } from "next-auth/react";
 import useSWR from "swr";
 

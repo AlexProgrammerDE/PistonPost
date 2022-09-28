@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import LoadingView from "../../components/LoadingView";
-import { GlobalHead } from "../../components/GlobalHead";
-import Layout, { Theme } from "../../components/Layout";
-import axios from "../../lib/axios";
+import LoadingView from "components/LoadingView";
+import { GlobalHead } from "components/GlobalHead";
+import Layout, { Theme } from "components/Layout";
+import axios from "lib/axios";
 import { signOut } from "next-auth/react";
-import { CustomNextPage } from "../../components/CustomNextPage";
-import { AccountSettings } from "../../lib/responses";
+import { CustomNextPage } from "components/CustomNextPage";
+import { AccountSettings } from "lib/responses";
 import { useRouter } from "next/router";
 
 interface ThemeData {

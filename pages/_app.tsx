@@ -1,14 +1,14 @@
-import "../styles/globals.css";
-import "../styles/fonts.css";
+import "styles/globals.css";
+import "styles/fonts.css";
 import type {AppProps} from "next/app";
 import {SessionProvider} from "next-auth/react";
 import {NextComponentType} from "next";
-import Auth from "../components/Auth";
+import Auth from "components/Auth";
 import TimeAgo from "javascript-time-ago";
 import en from "javascript-time-ago/locale/en.json";
-import UserDataProvider from "../components/UserDataProvider";
+import UserDataProvider from "components/UserDataProvider";
 import Head from "next/head";
-import axios from "../lib/axios";
+import axios from "lib/axios";
 import { SWRConfig } from "swr";
 
 if (!global._hasSetTime) {

@@ -1,6 +1,6 @@
 import Plyr from "plyr-react";
 import "plyr-react/plyr.css";
-import { VideoResponse } from "../lib/responses";
+import { VideoResponse } from "lib/responses";
 
 export default function VideoPlayer({
   video,

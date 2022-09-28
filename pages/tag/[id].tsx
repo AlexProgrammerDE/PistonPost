@@ -1,14 +1,14 @@
 import { NextPage } from "next";
-import { GlobalHead } from "../../components/GlobalHead";
-import Layout from "../../components/Layout";
+import { GlobalHead } from "components/GlobalHead";
+import Layout from "components/Layout";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import axios from "../../lib/axios";
-import LoadingView from "../../components/LoadingView";
-import PostCard from "../../components/PostCard";
-import { PostResponse } from "../../lib/responses";
+import axios from "lib/axios";
+import LoadingView from "components/LoadingView";
+import PostCard from "components/PostCard";
+import { PostResponse } from "lib/responses";
 import Masonry from "react-masonry-css";
-import { breakpointColumnsObj } from "../../lib/shared";
+import { breakpointColumnsObj } from "lib/shared";
 import useSWR from "swr";
 
 const Post: NextPage = () => {

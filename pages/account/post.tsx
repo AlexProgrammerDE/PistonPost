@@ -1,11 +1,11 @@
-import { GlobalHead } from "../../components/GlobalHead";
-import Layout from "../../components/Layout";
-import { CustomNextPage } from "../../components/CustomNextPage";
+import { GlobalHead } from "components/GlobalHead";
+import Layout from "components/Layout";
+import { CustomNextPage } from "components/CustomNextPage";
 import { useState } from "react";
-import axios from "../../lib/axios";
+import axios from "lib/axios";
 import { useRouter } from "next/router";
-import { onTagInput } from "../../lib/shared";
-import { postType, PostType } from "../../lib/types";
+import { onTagInput } from "lib/shared";
+import { postType, PostType } from "lib/types";
 
 function capitalizeFirstLetter(string: string) {
   return string.charAt(0).toUpperCase() + string.slice(1);

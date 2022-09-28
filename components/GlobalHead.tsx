@@ -4,7 +4,7 @@ import {
   description as brandDescription,
   title as brandTitle,
   url
-} from "../lib/branding";
+} from "lib/branding";
 
 export function GlobalHead({
   title = brandTitle,

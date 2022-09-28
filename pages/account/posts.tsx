@@ -1,11 +1,11 @@
-import { GlobalHead } from "../../components/GlobalHead";
-import Layout from "../../components/Layout";
-import { CustomNextPage } from "../../components/CustomNextPage";
-import LoadingView from "../../components/LoadingView";
-import PostCard from "../../components/PostCard";
-import { PostResponse } from "../../lib/responses";
+import { GlobalHead } from "components/GlobalHead";
+import Layout from "components/Layout";
+import { CustomNextPage } from "components/CustomNextPage";
+import LoadingView from "components/LoadingView";
+import PostCard from "components/PostCard";
+import { PostResponse } from "lib/responses";
 import Masonry from "react-masonry-css";
-import { breakpointColumnsObj } from "../../lib/shared";
+import { breakpointColumnsObj } from "lib/shared";
 import useSWR from "swr";
 
 const Posts: CustomNextPage = () => {

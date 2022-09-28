@@ -1,8 +1,8 @@
-import { PostResponse } from "../lib/responses";
+import { PostResponse } from "lib/responses";
 import { useRouter } from "next/router";
 import Image from "next/image";
-import { NewlineText } from "../lib/shared";
-import axios from "../lib/axios";
+import { NewlineText } from "lib/shared";
+import axios from "lib/axios";
 import { useContext, useRef, useState } from "react";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";

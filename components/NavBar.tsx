@@ -1,4 +1,4 @@
-import Logo from "../public/logo.webp";
+import Logo from "public/logo.webp";
 import Image from "next/image";
 import NavOptions from "./NavOptions";
 import Link from "next/link";

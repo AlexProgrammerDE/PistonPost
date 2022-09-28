@@ -1,23 +1,23 @@
 import {GetServerSideProps} from "next";
-import {GlobalHead} from "../../components/GlobalHead";
-import Layout from "../../components/Layout";
+import {GlobalHead} from "components/GlobalHead";
+import Layout from "components/Layout";
 import {useRouter} from "next/router";
 import {ReactNode, useContext, useState} from "react";
-import {PostResponse, UserData} from "../../lib/responses";
+import {PostResponse, UserData} from "lib/responses";
 import Image from "next/image";
 import ReactTimeAgo from "react-time-ago";
 import Link from "next/link";
-import {UserDataContext} from "../../components/UserDataProvider";
-import {breakpointColumnsObj, NewlineText} from "../../lib/shared";
+import {UserDataContext} from "components/UserDataProvider";
+import {breakpointColumnsObj, NewlineText} from "lib/shared";
 import Masonry from "react-masonry-css";
 import dynamic from "next/dynamic";
-import PostCommentForm from "../../components/PostCommentForm";
+import PostCommentForm from "components/PostCommentForm";
 import Head from "next/head";
-import axios from "../../lib/axios";
-import {VoteType} from "../../lib/types";
-import CopyButton from "../../components/CopyButton";
+import axios from "lib/axios";
+import {VoteType} from "lib/types";
+import CopyButton from "components/CopyButton";
 
-const VideoPlayer = dynamic(() => import("../../components/VideoPlayer"));
+const VideoPlayer = dynamic(() => import("components/VideoPlayer"));
 
 const PostOptionColumn = ({children}: { children: ReactNode }) => {
   return (

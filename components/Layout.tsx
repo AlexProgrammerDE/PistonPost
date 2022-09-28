@@ -2,7 +2,7 @@ import {createContext, ReactNode, useCallback, useEffect, useState} from "react"
 import NavBar from "./NavBar";
 import Drawer from "./Drawer";
 import {useSession} from "next-auth/react";
-import {AccountSettings, HealthResponse} from "../lib/responses";
+import {AccountSettings, HealthResponse} from "lib/responses";
 import Footer from "./Footer";
 import useSWR from "swr";
 

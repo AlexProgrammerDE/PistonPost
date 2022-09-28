@@ -1,6 +1,6 @@
 import Link from "next/link";
 import ReactTimeAgo from "react-time-ago";
-import {PostResponse} from "../lib/responses";
+import {PostResponse} from "lib/responses";
 import Image from "next/image";
 
 export default function PostCard({post}: { post: PostResponse }) {
