@@ -273,12 +273,12 @@ const Post: CustomNextPage = () => {
               <label className="label">
                 <span className="label-text">Tags</span>
               </label>
-              <div className={tags.length > 0 ? "md:input-group" : ""}>
+              <div className="flex flex-wrap gap-x-0.5 gap-y-1">
                 {tags.map((tag) => (
                   <button
                     onClick={() => setTags(tags.filter((tag2) => tag2 !== tag))}
                     key={tag}
-                    className="btn mb-1 normal-case duration-500 hover:btn-error md:mb-0"
+                    className="btn normal-case duration-500 hover:btn-error"
                   >
                     #{tag}
                   </button>

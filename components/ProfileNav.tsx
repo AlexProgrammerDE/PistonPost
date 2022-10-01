@@ -28,7 +28,7 @@ export default function ProfileNav() {
               height={28}
               className="rounded-full"
               src={user.avatar}
-              alt=""
+              alt={`Avatar of ${user.name}`}
             />
           </div>
           <span>{user.name}</span>
