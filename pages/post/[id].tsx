@@ -152,12 +152,12 @@ const Post = ({
         postData.images!.length
       } image${
         postData.images!.length === 1 ? "" : "s"
-      } - tags: ${postData.tags.join(", ")}`;
+      } - ${postData.tags.map(tag => `#${tag}`).join(" ")}`;
       break;
     default:
       description = `Post by ${
         postData.authorData.name
-      } - tags: ${postData.tags.join(", ")}`;
+      } - ${postData.tags.map(tag => `#${tag}`).join(" ")}`;
   }
 
   return (
