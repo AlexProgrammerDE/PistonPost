@@ -23,7 +23,7 @@ const nextConfig = {
     return [
       {
         source: "/backend/:path*",
-        destination: "http://localhost:5757/:path*"
+        destination: `${process.env.API_ENDPOINT}/:path*`
       }
     ];
   }
