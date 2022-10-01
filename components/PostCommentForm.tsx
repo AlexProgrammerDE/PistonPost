@@ -85,7 +85,7 @@ export default function PostCommentForm({
                 placeholder={
                   user ? "Write a comment..." : "Log in to write a comment!"
                 }
-                className="rounded-box input input-bordered max-w-lg w-full"
+                className="input input-bordered rounded-box w-full max-w-lg"
                 maxLength={250}
                 required
                 disabled={!user}
@@ -118,7 +118,7 @@ export default function PostCommentForm({
                 </a>
               </Link>
             </div>
-            <div className="flex flex-col ml-2">
+            <div className="ml-2 flex flex-col">
               <div className="flex flex-wrap">
                 <Link href={`/user/${comment.author.name}`}>
                   <a>
@@ -133,7 +133,7 @@ export default function PostCommentForm({
                 {comment.author.id === postData.authorData.id && (
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 text-secondary my-auto ml-0.5 text-lg font-bold"
+                    className="my-auto ml-0.5 h-4 w-4 text-lg font-bold text-secondary"
                     viewBox="0 0 20 20"
                     fill="currentColor"
                   >
@@ -178,7 +178,7 @@ export default function PostCommentForm({
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      className="h-4 w-4 ml-0.5 my-auto"
+                      className="my-auto ml-0.5 h-4 w-4"
                       viewBox="0 0 20 20"
                       fill="currentColor"
                     >

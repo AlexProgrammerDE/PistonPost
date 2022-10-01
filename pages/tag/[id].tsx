@@ -2,8 +2,6 @@ import { NextPage } from "next";
 import { GlobalHead } from "components/GlobalHead";
 import Layout from "components/Layout";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
-import axios from "lib/axios";
 import LoadingView from "components/LoadingView";
 import PostCard from "components/PostCard";
 import { PostResponse } from "lib/responses";
@@ -14,7 +12,9 @@ import useSWR from "swr";
 const Post: NextPage = () => {
   const router = useRouter();
   const { id } = router.query;
-  const { data, error } = useSWR<PostResponse[]>(`/tag/${id}`, { refreshInterval: 20000 })
+  const { data, error } = useSWR<PostResponse[]>(`/tag/${id}`, {
+    refreshInterval: 20000
+  });
 
   if (data) {
     return (
@@ -22,7 +22,7 @@ const Post: NextPage = () => {
         <GlobalHead />
         <Layout>
           <div className="container flex-grow p-6">
-            <h1 className="text-2xl font-bold mx-2">
+            <h1 className="mx-2 text-2xl font-bold">
               Showing posts tagged with &quot;{id}&quot;
             </h1>
             {data.length > 0 ? (

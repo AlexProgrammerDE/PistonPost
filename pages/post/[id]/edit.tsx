@@ -6,11 +6,7 @@ import Layout from "components/Layout";
 import axios from "lib/axios";
 import { onTagInput } from "lib/shared";
 import LoadingView from "components/LoadingView";
-import {
-  ImageResponse,
-  PostResponse,
-  VideoResponse
-} from "lib/responses";
+import { ImageResponse, PostResponse, VideoResponse } from "lib/responses";
 import { PostType } from "lib/types";
 
 const PostEdit: CustomNextPage = () => {
@@ -161,7 +157,7 @@ const PostEdit: CustomNextPage = () => {
                   <label className="label">
                     <span className="label-text">Images</span>
                   </label>
-                  <ul className="list-decimal ml-4">
+                  <ul className="ml-4 list-decimal">
                     {imageList &&
                       imageList.map((image, index) => (
                         <li key={index}>

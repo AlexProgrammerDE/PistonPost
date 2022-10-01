@@ -1,3 +1,3 @@
 # PistonPost-frontend
 
-Open source platform inspired by Reddit. 
+Open source platform inspired by Reddit.

@@ -13,7 +13,7 @@ export function BadgeIcon({
         <svg
           version="1.0"
           xmlns="http://www.w3.org/2000/svg"
-          className={`${classNameBig} text-accent my-auto text-lg font-bold`}
+          className={`${classNameBig} my-auto text-lg font-bold text-accent`}
           fill="currentColor"
           viewBox="0 0 1280.000000 815.000000"
         >
@@ -30,7 +30,7 @@ export function BadgeIcon({
           version="1.1"
           viewBox="0,0,24,24"
           fill="currentColor"
-          className={`${classNameSmall} text-info my-auto text-lg font-bold`}
+          className={`${classNameSmall} my-auto text-lg font-bold text-info`}
           xmlns="http://www.w3.org/2000/svg"
         >
           <title>Verified</title>

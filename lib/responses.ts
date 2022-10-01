@@ -1,4 +1,4 @@
-import {PostType} from "./types";
+import { PostType } from "./types";
 
 export interface PostResponse {
   postId: string;

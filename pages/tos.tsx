@@ -8,7 +8,7 @@ const TOS: NextPage = () => {
     <>
       <GlobalHead />
       <Layout>
-        <div className="container flex-grow p-1 md:p-6 prose">
+        <div className="container prose flex-grow p-1 md:p-6">
           <h1>Website Terms and Conditions of Use</h1>
 
           <h2>1. Terms</h2>

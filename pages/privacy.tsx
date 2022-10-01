@@ -7,7 +7,7 @@ const Privacy: NextPage = () => {
     <>
       <GlobalHead />
       <Layout>
-        <div className="container flex-grow p-1 md:p-6 prose">
+        <div className="container prose flex-grow p-1 md:p-6">
           <h1>Privacy Policy for PistonPost</h1>
 
           <p>

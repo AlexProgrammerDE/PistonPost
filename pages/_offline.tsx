@@ -8,7 +8,9 @@ export default function Offline() {
       <Layout>
         <main className="flex h-full w-full flex-col justify-center text-center">
           <h1 className="text-5xl font-bold">You are offline!</h1>
-          <p className="text-xl">Please connect to the internet to use PistonPost.</p>
+          <p className="text-xl">
+            Please connect to the internet to use PistonPost.
+          </p>
         </main>
       </Layout>
     </>

@@ -173,12 +173,12 @@ const Post: CustomNextPage = () => {
                     ({imageLimit} max, 5MB per image)
                   </span>
                 </label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col w-full min-h-32 border-4 border-dashed rounded border-primary hover:bg-base-300">
+                <div className="flex w-full items-center justify-center">
+                  <label className="min-h-32 flex w-full flex-col rounded border-4 border-dashed border-primary hover:bg-base-300">
                     <div className="flex flex-col items-center justify-center pt-7">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="w-12 h-12 text-gray-400 group-hover:text-gray-600"
+                        className="h-12 w-12 text-gray-400 group-hover:text-gray-600"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
@@ -192,7 +192,7 @@ const Post: CustomNextPage = () => {
                         Select images
                       </p>
                       {fileNames && (
-                        <ul className="list-decimal flex flex-col mt-2 pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
+                        <ul className="mt-2 flex list-decimal flex-col pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
                           {fileNames.map((name, index) => (
                             <li key={index}>{name}</li>
                           ))}
@@ -203,7 +203,7 @@ const Post: CustomNextPage = () => {
                       type="file"
                       multiple
                       accept="image/*"
-                      onChange={({target}) => {
+                      onChange={({ target }) => {
                         const imageList = target.files;
                         if (imageList) {
                           if (imageList.length > imageLimit) {
@@ -235,12 +235,12 @@ const Post: CustomNextPage = () => {
                   <span className="label-text">Video</span>
                   <span className="label-text-alt">(50MB max)</span>
                 </label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col w-full min-h-32 border-4 border-dashed rounded border-primary hover:bg-base-300">
+                <div className="flex w-full items-center justify-center">
+                  <label className="min-h-32 flex w-full flex-col rounded border-4 border-dashed border-primary hover:bg-base-300">
                     <div className="flex flex-col items-center justify-center pt-7">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="w-12 h-12 text-gray-400 group-hover:text-gray-600"
+                        className="h-12 w-12 text-gray-400 group-hover:text-gray-600"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
@@ -250,7 +250,7 @@ const Post: CustomNextPage = () => {
                         Select a video
                       </p>
                       {video && (
-                        <p className="text-center flex flex-col mt-2 pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
+                        <p className="mt-2 flex flex-col pt-1 text-center text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
                           {video.name}
                         </p>
                       )}
@@ -259,9 +259,7 @@ const Post: CustomNextPage = () => {
                       type="file"
                       accept="video/mp4,video/mov,video/webm,video/mpeg,video/mpg,video/avi"
                       onChange={({ target }) =>
-                        setVideo(
-                            target.files ? target.files[0] : null
-                        )
+                        setVideo(target.files ? target.files[0] : null)
                       }
                       required
                       className="opacity-0"

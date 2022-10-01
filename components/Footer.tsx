@@ -11,10 +11,10 @@ export default function Footer() {
           <p className="my-auto">Copyright © 2022 - All right reserved</p>
           <div className="my-auto">
             <Link href="/tos">
-              <a className="mr-1 my-auto">Terms of Service</a>
+              <a className="my-auto mr-1">Terms of Service</a>
             </Link>
             <Link href="/privacy">
-              <a className="mr-1 my-auto">Privacy Policy</a>
+              <a className="my-auto mr-1">Privacy Policy</a>
             </Link>
           </div>
         </div>

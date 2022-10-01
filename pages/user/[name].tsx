@@ -49,7 +49,7 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
             <li className="mb-1 flex flex-row">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 my-auto"
+                className="my-auto h-5 w-5"
                 viewBox="0 0 20 20"
                 fill="currentColor"
               >
@@ -72,7 +72,7 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
               <li className="mb-1 flex flex-row">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 my-auto"
+                  className="my-auto h-5 w-5"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >
@@ -91,7 +91,7 @@ const UserName = ({ userData }: { userData: UserPageResponse }) => {
               <li className="flex flex-row">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 my-auto"
+                  className="my-auto h-5 w-5"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >

@@ -9,7 +9,8 @@
     "start": "next start",
     "analyze": "ANALYZE=true next build",
     "lint": "next lint",
-    "fix": "next lint --fix"
+    "fix": "next lint --fix",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@next-auth/mongodb-adapter": "1.1.0",
