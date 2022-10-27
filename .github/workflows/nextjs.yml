@@ -26,4 +26,10 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: "yarn"
       - run: yarn install
+      - name: Make envfile
+        uses: SpicyPizza/create-envfile@v1.3
+        with:
+          envkey_API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
+          file_name: .env.local
+          fail_on_empty: false
       - run: yarn build
