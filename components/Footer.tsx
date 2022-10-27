@@ -10,11 +10,11 @@ export default function Footer() {
           <Image alt="Pistonpost Logo" src={Logo} width={32} height={32} />
           <p className="my-auto">Copyright © 2022 - All right reserved</p>
           <div className="my-auto">
-            <Link href="/tos">
-              <a className="my-auto mr-1">Terms of Service</a>
+            <Link href="/tos" className="my-auto mr-1">
+              Terms of Service
             </Link>
-            <Link href="/privacy">
-              <a className="my-auto mr-1">Privacy Policy</a>
+            <Link href="/privacy" className="my-auto mr-1">
+              Privacy Policy
             </Link>
           </div>
         </div>

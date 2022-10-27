@@ -63,26 +63,26 @@ export default function PostCard({ post }: { post: PostResponse }) {
       <div className="card-body justify-between">
         <h2 className="break-text card-title flex-col place-items-start">
           <div className="flex w-full flex-row justify-between">
-            <Link href={"/post/" + post.postId}>
-              <a className="mr-1">{post.title}</a>
+            <Link href={"/post/" + post.postId} className="mr-1">
+              {post.title}
             </Link>
             <div className="flex-shrink-0">{icon}</div>
           </div>
           <Link href={"/user/" + post.authorData.name}>
-            <a>
-              <div className="card-actions">
-                <Image
-                  alt={"Avatar of " + post.authorData.name}
-                  className="rounded-full"
-                  src={post.authorData.avatar}
-                  width={22}
-                  height={22}
-                />
-                <p className="my-auto text-sm font-semibold">
-                  @{post.authorData.name}
-                </p>
-              </div>
-            </a>
+
+            <div className="card-actions">
+              <Image
+                alt={"Avatar of " + post.authorData.name}
+                className="rounded-full"
+                src={post.authorData.avatar}
+                width={22}
+                height={22}
+              />
+              <p className="my-auto text-sm font-semibold">
+                @{post.authorData.name}
+              </p>
+            </div>
+
           </Link>
         </h2>
 
@@ -92,9 +92,9 @@ export default function PostCard({ post }: { post: PostResponse }) {
           </div>
           <div className="flex flex-wrap justify-end gap-y-0.5 gap-x-1">
             {post.tags.map((tag, index) => (
-              <Link key={index} href={"/tag/" + tag}>
-                <a className="badge badge-outline">#{tag}</a>
-              </Link>
+              (<Link key={index} href={"/tag/" + tag} className="badge badge-outline">
+                #{tag}
+              </Link>)
             ))}
             {post.unlisted && (
               <svg

@@ -36,12 +36,12 @@ export default function ProfileNav() {
         <ul className="left-0 top-full z-20 gap-1 bg-base-200 p-2 shadow-2xl">
           <li>
             <Link href="/account/settings">
-              <a>Settings</a>
+              Settings
             </Link>
           </li>
           <li>
             <Link href="/account/posts">
-              <a>Posts</a>
+              Posts
             </Link>
           </li>
           <li>

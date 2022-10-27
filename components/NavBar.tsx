@@ -25,11 +25,11 @@ export default function NavBar() {
           </label>
         </div>
         <div className="mx-2 flex-1 px-2">
-          <Link href="/">
-            <a className="btn btn-ghost text-xl normal-case">
-              <Image src={Logo} alt="PistonPost Logo" width={40} height={40} />
-              <p className="my-auto ml-2 text-xl font-bold">PistonPost</p>
-            </a>
+          <Link href="/" className="btn btn-ghost text-xl normal-case">
+
+            <Image src={Logo} alt="PistonPost Logo" width={40} height={40} />
+            <p className="my-auto ml-2 text-xl font-bold">PistonPost</p>
+
           </Link>
         </div>
         <div className="hidden flex-none lg:block">
