@@ -7,6 +7,7 @@ import { PostResponse } from "lib/responses";
 import Masonry from "react-masonry-css";
 import { breakpointColumnsObj } from "lib/shared";
 import useSWRInfinite, { SWRInfiniteKeyLoader } from "swr/infinite";
+import cn from "classnames";
 
 const getKey: SWRInfiniteKeyLoader = (pageIndex, previousPageData) => {
   if (previousPageData && !previousPageData.length) return null;
@@ -14,9 +15,13 @@ const getKey: SWRInfiniteKeyLoader = (pageIndex, previousPageData) => {
 };
 
 const Home: NextPage = () => {
-  const { data, size, setSize } = useSWRInfinite<PostResponse[]>(getKey);
+  const { data, error, size, setSize } = useSWRInfinite<PostResponse[]>(getKey);
   const isEmpty = data?.[0]?.length === 0;
   const isReachingEnd = isEmpty || (data && data[data.length - 1]?.length < 40);
+  const isLoadingInitialData = !data && !error;
+  const isLoadingMore =
+    isLoadingInitialData ||
+    (size > 0 && data && typeof data[size - 1] === "undefined");
 
   if (data) {
     return (
@@ -38,7 +43,7 @@ const Home: NextPage = () => {
             </Masonry>
             {!isReachingEnd && (
               <button
-                className="btn btn-primary mx-auto my-2"
+                className={cn("btn btn-primary mx-auto my-2", {"loading": isLoadingMore})}
                 onClick={() => setSize(size + 1)}
               >
                 Load More
