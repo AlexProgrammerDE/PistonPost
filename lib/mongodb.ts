@@ -2,7 +2,7 @@ import { MongoClient, MongoClientOptions } from "mongodb";
 
 const uri = process.env.MONGODB_URI!;
 const options: MongoClientOptions = {
-  appName: "PistonPost"
+  appName: "PistonPost",
 };
 
 let clientPromise: Promise<MongoClient>;

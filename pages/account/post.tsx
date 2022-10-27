@@ -98,11 +98,12 @@ const Post: CustomNextPage = () => {
                   },
                   maxBodyLength: 104857780,
                   onUploadProgress: (progressEvent) => {
-                    setProgress(
-                      Math.round(
-                        (progressEvent.loaded * 100) / progressEvent.total
-                      )
-                    );
+                    const {loaded, total} = progressEvent;
+                    if (!total) {
+                      return;
+                    }
+
+                    setProgress(Math.round((loaded * 100) / total));
                   }
                 })
                 .then((res) => {

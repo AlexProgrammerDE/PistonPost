@@ -16,7 +16,7 @@ export default NextAuth({
   // Database optional. MySQL, Maria DB, Postgres and MongoDB are supported.
   // https://next-auth.js.org/configuration/databases
   //
-  adapter: MongoDBAdapter(clientPromise, "pistonpost"),
+  adapter: MongoDBAdapter(clientPromise, {databaseName: "pistonpost"}),
 
   session: {
     // Choose how you want to save the user session.
