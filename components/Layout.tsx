@@ -11,6 +11,12 @@ import { useSession } from "next-auth/react";
 import { AccountSettings, HealthResponse } from "lib/responses";
 import Footer from "./Footer";
 import useSWR from "swr";
+import { Montserrat } from '@next/font/google';
+
+const montserrat = Montserrat({
+  display: "swap",
+  subsets: ["latin", "latin-ext"],
+})
 
 // noinspection JSUnusedLocalSymbols
 export const Theme = createContext({
@@ -80,7 +86,7 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <Theme.Provider value={{ theme, setTheme }}>
-      <div className="min-w-screen min-h-screen">
+      <div className={`min-w-screen min-h-screen ${montserrat.className}`}>
         {badHealth && (
           <div className="alert alert-error rounded-none shadow-lg">
             <div className="container flex flex-row justify-center">
