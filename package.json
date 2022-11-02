@@ -23,7 +23,7 @@
     "bson-objectid": "2.0.3",
     "daisyui": "2.38.0",
     "emoji-picker-react": "4.4.4",
-    "javascript-time-ago": "2.5.7",
+    "javascript-time-ago": "2.5.9",
     "mongodb": "4.11.0",
     "next": "13.0.1",
     "next-auth": "4.15.0",
