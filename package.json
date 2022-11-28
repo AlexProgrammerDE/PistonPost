@@ -22,7 +22,7 @@
     "axios": "1.2.0",
     "bson-objectid": "2.0.4",
     "daisyui": "2.42.1",
-    "emoji-picker-react": "4.4.5",
+    "emoji-picker-react": "4.4.6",
     "javascript-time-ago": "2.5.9",
     "mongodb": "4.12.1",
     "next": "13.0.5",
