@@ -4850,10 +4850,10 @@ pkg-dir@^4.1.0:
   dependencies:
     find-up "^4.0.0"
 
-plyr-react@5.1.0:
-  version "5.1.0"
-  resolved "https://registry.yarnpkg.com/plyr-react/-/plyr-react-5.1.0.tgz#b080261103d2fbf4e8a151e9d25431201e1bec59"
-  integrity sha512-N0qIuN1wZZzpKUXngtNeZwTiWqvOb6qAzqcfMI48rLkRJGM5xM5MRWILd3hW1PWPbVBKsAH4Ged32ZZhkJVbXA==
+plyr-react@5.1.1:
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/plyr-react/-/plyr-react-5.1.1.tgz#63f692ac277fca6c0290139712f50af1e3951fa2"
+  integrity sha512-eEDDOMbSOI1REiD2+PKTwDStqddn1DH2e4qbG9JYo1GO6O6elspfRW5ypIkwzb8uceTtb/ieSWYkElAYlcZ0Bw==
   dependencies:
     plyr "^3.7.2"
     react-aptor "^2.0.0-alpha.1"
