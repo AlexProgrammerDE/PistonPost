@@ -21,7 +21,7 @@
     "autoprefixer": "10.4.13",
     "axios": "1.2.1",
     "bson-objectid": "2.0.4",
-    "daisyui": "2.43.2",
+    "daisyui": "2.45.0",
     "emoji-picker-react": "4.4.7",
     "javascript-time-ago": "2.5.9",
     "mongodb": "4.12.1",
