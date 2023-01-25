@@ -2783,10 +2783,10 @@ custom-event-polyfill@^1.0.7:
   resolved "https://registry.yarnpkg.com/custom-event-polyfill/-/custom-event-polyfill-1.0.7.tgz#9bc993ddda937c1a30ccd335614c6c58c4f87aee"
   integrity sha512-TDDkd5DkaZxZFM8p+1I3yAlvM3rSr1wbrOliG4yJiwinMZN8z/iGL7BTlDkrJcYTmgUSb4ywVCc3ZaUtOtC76w==
 
-daisyui@2.47.0:
-  version "2.47.0"
-  resolved "https://registry.yarnpkg.com/daisyui/-/daisyui-2.47.0.tgz#f3a8dad0838fc5cbd125910694fa2de0d34441bd"
-  integrity sha512-svZpXKldtHjXTEdj/lu2n7b+EQJSatqvmVB59k4dhCDOYUhUZ3jtGuPrgOJlPysHhDjxjCRWWug/fgV5e8tc/w==
+daisyui@2.47.1:
+  version "2.47.1"
+  resolved "https://registry.yarnpkg.com/daisyui/-/daisyui-2.47.1.tgz#a8768009dc8817cdffd098d4910ce7daa4728d9f"
+  integrity sha512-R/5I/M8SigMZVfZtOW2X/fn+lW6Zq9/jNgEE74Jn4czD1W7hz3HYgsSjedfiiBzJv/gYWgZu6YGf8+D1xQqwOQ==
   dependencies:
     color "^4.2"
     css-selector-tokenizer "^0.8.0"
