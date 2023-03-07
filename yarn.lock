@@ -6405,10 +6405,10 @@ supports-preserve-symlinks-flag@^1.0.0:
   resolved "https://registry.yarnpkg.com/supports-preserve-symlinks-flag/-/supports-preserve-symlinks-flag-1.0.0.tgz#6eda4bd344a3c94aea376d4cc31bc77311039e09"
   integrity sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==
 
-swagger-client@=3.19.0-beta.8:
-  version "3.19.0-beta.8"
-  resolved "https://registry.yarnpkg.com/swagger-client/-/swagger-client-3.19.0-beta.8.tgz#86639e3d8704a305ab66109bfacae29c6bdbe411"
-  integrity sha512-idGYcLsr5p3yLRPSRsLRpjWKM8exb5lb28f9xjwZpBUGWo5rgQydWLcPRPTdwxxr5lMvuWXFIKowJ69EvpfUsw==
+swagger-client@^3.19.0:
+  version "3.19.0"
+  resolved "https://registry.yarnpkg.com/swagger-client/-/swagger-client-3.19.0.tgz#c091667253735fedf8584db897578bc250003061"
+  integrity sha512-qpmxroj7fuXNSx4Ha720iyoXcUrfS7GRZfUpjuOp6Z85EIbaLcV+8Pf4s5j2ZgX4qPeVgTMApG8KpzGk1Wu68Q==
   dependencies:
     "@babel/runtime-corejs3" "^7.20.13"
     "@swagger-api/apidom-core" "=0.69.0"
@@ -6428,10 +6428,10 @@ swagger-client@=3.19.0-beta.8:
     traverse "~0.6.6"
     url "~0.11.0"
 
-swagger-ui-react@4.17.0:
-  version "4.17.0"
-  resolved "https://registry.yarnpkg.com/swagger-ui-react/-/swagger-ui-react-4.17.0.tgz#bed8caa0412bb0b7ac719b806c64c116202dd1f1"
-  integrity sha512-vecFFlXqpn8I1TE6d7kewNZbDSI8VNLyTv21dhMlGwFZfRLRkuXr/lTIZ9MBHeYsrUZuJYbszQ3BVS1nydiggg==
+swagger-ui-react@4.17.1:
+  version "4.17.1"
+  resolved "https://registry.yarnpkg.com/swagger-ui-react/-/swagger-ui-react-4.17.1.tgz#7db679471d93800e69a6f5c4a4254ed88494d7f2"
+  integrity sha512-y2dXQjwPoKfEqcmCrflMOj5EfIvY+Tkuwsyu2/LJTG82AsMJILzYzLc8vlAZRLsbVxl26Jq1Cqhc1O/umf2gsg==
   dependencies:
     "@babel/runtime-corejs3" "^7.18.9"
     "@braintree/sanitize-url" "=6.0.2"
@@ -6462,7 +6462,7 @@ swagger-ui-react@4.17.0:
     reselect "^4.1.5"
     serialize-error "^8.1.0"
     sha.js "^2.4.11"
-    swagger-client "=3.19.0-beta.8"
+    swagger-client "^3.19.0"
     url-parse "^1.5.8"
     xml "=1.0.1"
     xml-but-prettier "^1.0.1"
