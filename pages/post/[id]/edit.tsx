@@ -8,6 +8,7 @@ import { onTagInput } from "lib/shared";
 import LoadingView from "components/LoadingView";
 import { ImageResponse, PostResponse, VideoResponse } from "lib/responses";
 import { PostType } from "lib/types";
+import cn from "classnames";
 
 const PostEdit: CustomNextPage = () => {
   const router = useRouter();
@@ -190,14 +191,14 @@ const PostEdit: CustomNextPage = () => {
                 <label className="label">
                   <span className="label-text">Tags</span>
                 </label>
-                <label className={tags.length > 0 ? "md:input-group" : ""}>
+                <label className="flex flex-wrap gap-2">
                   {tags.map((tag) => (
                     <button
                       onClick={() =>
                         setTags(tags.filter((tag2) => tag2 !== tag))
                       }
                       key={tag}
-                      className="btn mb-1 normal-case duration-500 hover:btn-error md:mb-0"
+                      className="btn normal-case duration-500 hover:btn-error"
                     >
                       #{tag}
                     </button>

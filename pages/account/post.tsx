@@ -274,7 +274,7 @@ const Post: CustomNextPage = () => {
               <label className="label">
                 <span className="label-text">Tags</span>
               </label>
-              <div className="flex flex-wrap gap-x-0.5 gap-y-1">
+              <div className="flex flex-wrap gap-2">
                 {tags.map((tag) => (
                   <button
                     onClick={() => setTags(tags.filter((tag2) => tag2 !== tag))}
