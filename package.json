@@ -39,8 +39,8 @@
     "react-masonry-css": "1.0.16",
     "react-time-ago": "7.2.1",
     "sharp": "0.31.3",
-    "swagger-ui-react": "4.17.0",
-    "swr": "2.0.4",
+    "swagger-ui-react": "4.18.0",
+    "swr": "2.1.0",
     "tailwindcss": "3.2.7"
   },
   "devDependencies": {
