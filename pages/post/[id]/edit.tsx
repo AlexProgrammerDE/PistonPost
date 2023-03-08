@@ -191,7 +191,7 @@ const PostEdit: CustomNextPage = () => {
                 <label className="label">
                   <span className="label-text">Tags</span>
                 </label>
-                <label className="flex flex-wrap gap-2">
+                <label className="flex flex-wrap gap-1">
                   {tags.map((tag) => (
                     <button
                       onClick={() =>
