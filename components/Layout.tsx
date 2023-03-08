@@ -11,7 +11,7 @@ import { useSession } from "next-auth/react";
 import { AccountSettings, HealthResponse } from "lib/responses";
 import Footer from "./Footer";
 import useSWR from "swr";
-import { Montserrat } from '@next/font/google';
+import { Montserrat } from 'next/font/google';
 
 const montserrat = Montserrat({
   display: "swap",

@@ -79,3 +79,4 @@ sitemap*.xml
 **/public/worker-*.js.map
 **/public/fallback-*.js.map
 
+.yarn
