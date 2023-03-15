@@ -3122,9 +3122,9 @@ core-js-pure@^3.25.1:
   integrity sha512-v94gUjN5UTe1n0yN/opTihJ8QBWD2O8i19RfTZR7foONPWArnjB96QA/wk5ozu1mm6ja3udQCzOzwQXTxi3xOQ==
 
 core-js@^3.26.1:
-  version "3.29.0"
-  resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.29.0.tgz#0273e142b67761058bcde5615c503c7406b572d6"
-  integrity sha512-VG23vuEisJNkGl6XQmFJd3rEG/so/CNatqeE+7uZAwTSwFeB/qaO0be8xZYUNWprJ/GIwL8aMt9cj1kvbpTZhg==
+  version "3.29.1"
+  resolved "https://registry.yarnpkg.com/core-js/-/core-js-3.29.1.tgz#40ff3b41588b091aaed19ca1aa5cb111803fa9a6"
+  integrity sha512-+jwgnhg6cQxKYIIjGtAHq2nwUOolo9eoFZ4sHfUH09BLXBgxnH4gA0zEd+t+BO2cNB8idaBtZFcFTRjQJRJmAw==
 
 core-util-is@~1.0.0:
   version "1.0.3"
@@ -5425,9 +5425,9 @@ plyr-react@5.1.2:
     react-aptor "^2.0.0-alpha.1"
 
 plyr@^3.7.3:
-  version "3.7.6"
-  resolved "https://registry.yarnpkg.com/plyr/-/plyr-3.7.6.tgz#6291037fc82a94eb473d97e2a709f72c7ae6db9e"
-  integrity sha512-pHYiB+AT9E++Qr6YcFsj+iR5y+PsBJUQainH1YumVyOaEgGb+50X72xBoF1izT0jTP8q3gjcwcsc5pMyZZ648A==
+  version "3.7.7"
+  resolved "https://registry.yarnpkg.com/plyr/-/plyr-3.7.7.tgz#f7d20ab9297645d1ad3f68c7c66db6c3d8eef9a8"
+  integrity sha512-8B2b0HP+j/jKM7GrYdEuSi1hIF3BnNzjaBsBa3bx4/SO9omX3EfhCi78ZFh/0QuCKlwpTBusTMMZ3Hq6bJ5d/g==
   dependencies:
     core-js "^3.26.1"
     custom-event-polyfill "^1.0.7"
