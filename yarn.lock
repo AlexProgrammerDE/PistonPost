@@ -5490,15 +5490,15 @@ pkg-dir@^4.1.0:
   dependencies:
     find-up "^4.0.0"
 
-plyr-react@5.1.2:
-  version "5.1.2"
-  resolved "https://registry.yarnpkg.com/plyr-react/-/plyr-react-5.1.2.tgz#89f66bac1e2241461172add6176868b04588c605"
-  integrity sha512-RHRlK5wKIRIpX0xHmnHcGJGH2hFAU7njHrIE2bv/8J2l9BjmCM7KOaRKMQYPxkpCNXGtdVgAt3qYitegRN7g9g==
+plyr-react@5.2.0:
+  version "5.2.0"
+  resolved "https://registry.yarnpkg.com/plyr-react/-/plyr-react-5.2.0.tgz#6774e0c84caf98b8744aeb0370edafd7a6c82e6e"
+  integrity sha512-Y3wkY8FQQyPw1timhuRbaHo4jqP5csImbAgN7LwaDLwf4ewSdHVpDrO+F0XVDsRAbCzZxMA6NEiStgguos5uYg==
   dependencies:
-    plyr "^3.7.3"
-    react-aptor "^2.0.0-alpha.1"
+    plyr "^3.7.7"
+    react-aptor "^2.0.0"
 
-plyr@^3.7.3:
+plyr@^3.7.3, plyr@^3.7.7:
   version "3.7.8"
   resolved "https://registry.yarnpkg.com/plyr/-/plyr-3.7.8.tgz#b79bccc23687705b5d9a283b2a88c124bf7471ed"
   integrity sha512-yG/EHDobwbB/uP+4Bm6eUpJ93f8xxHjjk2dYcD1Oqpe1EcuQl5tzzw9Oq+uVAzd2lkM11qZfydSiyIpiB8pgdA==
@@ -5805,7 +5805,7 @@ rc@^1.2.7:
     minimist "^1.2.0"
     strip-json-comments "~2.0.1"
 
-react-aptor@^2.0.0-alpha.1:
+react-aptor@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/react-aptor/-/react-aptor-2.0.0.tgz#d78235dbcdf28889dc9a6c179035d6ca8bd7cfa1"
   integrity sha512-YnCayokuhAwmBBP4Oc0bbT2l6ApfsjbY3DEEVUddIKZEBlGl1npzjHHzWnSqWuboSbMZvRqUM01Io9yiIp1wcg==
