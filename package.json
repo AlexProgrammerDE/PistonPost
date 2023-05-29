@@ -29,7 +29,7 @@
     "next-auth": "4.22.1",
     "next-pwa": "5.6.0",
     "next-sitemap": "3.1.55",
-    "nodemailer": "6.9.2",
+    "nodemailer": "6.9.3",
     "plyr": "^3.7.3",
     "plyr-react": "5.2.0",
     "postcss": "8.4.24",
