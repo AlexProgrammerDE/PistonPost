@@ -27,7 +27,7 @@ jobs:
           cache: "yarn"
       - run: yarn install
       - name: Make envfile
-        uses: SpicyPizza/create-envfile@v1.3
+        uses: SpicyPizza/create-envfile@v2.0
         with:
           envkey_API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
           file_name: .env.local
