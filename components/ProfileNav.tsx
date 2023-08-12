@@ -34,7 +34,7 @@ export default function ProfileNav() {
             </div>
             <span>{user.name}</span>
           </summary>
-          <ul className="bg-base-200">
+          <ul className="bg-base-200 z-50">
             <li>
               <Link href="/account/settings">
                 Settings
