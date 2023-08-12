@@ -8,7 +8,7 @@ export default function NavBar() {
     <div className="navbar w-full bg-base-300">
       <div className="container">
         <div className="flex-none lg:hidden">
-          <label htmlFor="my-drawer-3" className="btn btn-ghost btn-square">
+          <label htmlFor="nav-drawer" className="btn btn-ghost btn-square">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
