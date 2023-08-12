@@ -28,7 +28,7 @@ const Home: NextPage = () => {
       <>
         <GlobalHead />
         <Layout>
-          <div className="container flex flex-grow flex-col p-1 md:p-6">
+          <main className="container flex flex-grow flex-col p-1 md:p-6">
             <h1 className="mx-2 text-2xl font-bold">Recent posts...</h1>
             <Masonry
               breakpointCols={breakpointColumnsObj}
@@ -49,7 +49,7 @@ const Home: NextPage = () => {
                 Load More
               </button>
             )}
-          </div>
+          </main>
         </Layout>
       </>
     );

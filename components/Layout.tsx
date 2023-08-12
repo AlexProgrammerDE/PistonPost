@@ -86,10 +86,10 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <Theme.Provider value={{ theme, setTheme }}>
-      <div className={`min-w-screen min-h-screen ${montserrat.className}`}>
+      <div className={`min-w-screen min-h-screen flex flex-col ${montserrat.className}`}>
         {badHealth && (
           <div className="alert alert-error rounded-none shadow-lg">
-            <div className="container flex flex-row justify-center">
+            <div className="container flex flex-row justify-center gap-4">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-6 w-6 flex-shrink-0 animate-spin stroke-current"

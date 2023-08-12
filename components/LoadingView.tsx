@@ -6,7 +6,7 @@ export default function LoadingView() {
     <>
       <GlobalHead />
       <Layout>
-        <main className="flex h-full w-full justify-center text-center">
+        <main className="flex flex-grow h-full w-full justify-center text-center">
           <div className="m-auto">
             <svg
               className="h-12 w-12 animate-spin"
