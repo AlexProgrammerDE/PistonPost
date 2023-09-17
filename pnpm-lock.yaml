@@ -29,6 +29,9 @@ dependencies:
   classnames:
     specifier: ^2.3.2
     version: 2.3.2
+  copy-to-clipboard:
+    specifier: ^3.3.3
+    version: 3.3.3
   daisyui:
     specifier: 3.5.1
     version: 3.5.1
