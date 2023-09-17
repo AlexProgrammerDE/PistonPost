@@ -4,7 +4,7 @@ import Logo from "public/logo.webp";
 
 export default function Footer() {
   return (
-    <footer className="footer mt-4 bg-neutral p-4 text-neutral-content">
+    <footer className="footer mt-4 bg-base-300 p-4 text-neutral-content">
       <div className="container footer grid-flow-col items-center">
         <div className="flex flex-wrap">
           <Image alt="Pistonpost Logo" src={Logo} width={32} height={32} />
