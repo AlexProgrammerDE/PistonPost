@@ -36,9 +36,7 @@ const VoteRow = ({
 
   const vote = (type: VoteType, clientVoted: boolean) => {
     if (user) {
-      axios
-        .request({
-          url: `/post/${postData.postId}/vote?type=${type}`,
+      fetch(`/backend/post/${postData.postId}/vote?type=${type}`, {
           method: clientVoted ? "DELETE" : "PUT"
         })
         .then(() => {

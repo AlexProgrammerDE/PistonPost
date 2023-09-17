@@ -56,7 +56,7 @@ const PostEdit: CustomNextPage = () => {
 
   if (id && post) {
     const deletePost = () => {
-      axios.delete(`/post/${id}`).then(() => {
+      fetch(`/backend/post/${id}`, {method: "DELETE"}).then(() => {
         router.push("/").then();
       });
     };
@@ -230,7 +230,10 @@ const PostEdit: CustomNextPage = () => {
               </div>
 
               {isLoading ? (
-                <button className="btn loading btn-primary mt-6">Edit</button>
+                <button className="btn btn-primary no-animation mt-6">
+                  <span className="loading loading-spinner"></span>
+                  Edit
+                </button>
               ) : (
                 <input
                   type="submit"

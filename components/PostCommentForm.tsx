@@ -11,8 +11,8 @@ import { BadgeIcon } from "./roles";
 import { UserDataContext } from "./UserDataProvider";
 
 export default function PostCommentForm({
-  postData
-}: {
+                                          postData
+                                        }: {
   postData: PostResponse;
 }) {
   const router = useRouter();
@@ -162,13 +162,11 @@ export default function PostCommentForm({
                         "Are you sure you want to delete this comment?"
                       )
                     ) {
-                      axios
-                        .delete(
-                          `/post/${postData.postId}/comment/${comment.id}`
-                        )
-                        .then(() => {
-                          router.push(`/post/${postData.postId}`).then();
-                        })
+                      fetch(`/backend/post/${postData.postId}/comment/${comment.id}`, {
+                        method: "DELETE"
+                      }).then(() => {
+                        router.push(`/post/${postData.postId}`).then();
+                      })
                         .catch((res) => {
                           setError(`${res.response.data.message}`);
                         });

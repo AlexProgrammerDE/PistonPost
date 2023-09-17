@@ -54,7 +54,7 @@ const Settings: CustomNextPage = () => {
   const [formTheme, setFormTheme] = useState("");
 
   function deleteAccount() {
-    axios.delete("/settings").then(() => {
+    fetch("/backend/settings", {method: "DELETE"}).then(() => {
       signOut().then(() => {
         router.push("/").then();
       });
@@ -63,8 +63,7 @@ const Settings: CustomNextPage = () => {
 
   useEffect(() => {
     if (!accountSettings) {
-      axios.get("/settings").then((res) => {
-        const settings: AccountSettings = res.data;
+      fetch("/backend/settings").then(res => res.json()).then((settings) => {
         setName(settings.name);
         if (settings.settings) {
           if (settings.settings.bio) {

@@ -316,7 +316,8 @@ const Post: CustomNextPage = () => {
             </div>
 
             {isLoading ? (
-              <button className="btn loading btn-primary mt-6">
+              <button className="btn btn-primary no-animation mt-6">
+                <span className="loading loading-spinner"></span>
                 Submitting {progress}%
               </button>
             ) : (
