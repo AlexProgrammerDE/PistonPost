@@ -9,6 +9,7 @@ import Link from "next/link";
 import ObjectID from "bson-objectid";
 import { BadgeIcon } from "./roles";
 import { UserDataContext } from "./UserDataProvider";
+import RoundXIcon from "./RoundXIcon";
 
 export default function PostCommentForm({
                                           postData
@@ -26,20 +27,8 @@ export default function PostCommentForm({
     <div className="rounded-box mt-2 flex w-full flex-wrap bg-base-200 p-4 p-4">
       {error && (
         <div className="alert alert-error mb-3 shadow-lg">
-          <div>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 flex-shrink-0 stroke-current"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+          <div className="flex flex-wrap">
+            <RoundXIcon/>
             <span>{error}</span>
           </div>
         </div>
