@@ -23,6 +23,7 @@ const Post: CustomNextPage = () => {
   const [video, setVideo] = useState<File | null>();
   const [unlisted, setUnlisted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [finishedUpload, setFinishedUpload] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [fileNames, setFileNames] = useState<string[]>([]);
@@ -104,15 +105,20 @@ const Post: CustomNextPage = () => {
                     }
 
                     setProgress(Math.round((loaded * 100) / total));
+                    if (loaded === total) {
+                      setFinishedUpload(true);
+                    }
                   }
                 })
                 .then((res) => {
                   setIsLoading(false);
+                  setFinishedUpload(false);
                   setError(null);
                   router.push("/post/[id]", `/post/${res.data.postId}`);
                 })
                 .catch((res) => {
                   setIsLoading(false);
+                  setFinishedUpload(false);
                   if (res.response.data.message) {
                     setError(res.response.data.message);
                   } else setError(res.response.data);
@@ -318,7 +324,7 @@ const Post: CustomNextPage = () => {
             {isLoading ? (
               <button className="btn btn-primary no-animation mt-6">
                 <span className="loading loading-spinner"></span>
-                Submitting {progress}%
+                {finishedUpload ? "Processing" : <>Submitting {progress}%</>}
               </button>
             ) : (
               <input

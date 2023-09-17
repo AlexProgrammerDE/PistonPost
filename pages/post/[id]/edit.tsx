@@ -232,7 +232,7 @@ const PostEdit: CustomNextPage = () => {
               {isLoading ? (
                 <button className="btn btn-primary no-animation mt-6">
                   <span className="loading loading-spinner"></span>
-                  Edit
+                  Processing
                 </button>
               ) : (
                 <input
