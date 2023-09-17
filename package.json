@@ -24,7 +24,7 @@
     "classnames": "^2.3.2",
     "copy-to-clipboard": "^3.3.3",
     "daisyui": "3.5.1",
-    "emoji-picker-react": "4.4.10",
+    "emoji-picker-react": "4.5.1",
     "javascript-time-ago": "2.5.9",
     "mongodb": "4.16.0",
     "next": "13.4.13",
