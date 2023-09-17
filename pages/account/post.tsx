@@ -98,7 +98,7 @@ const Post: CustomNextPage = () => {
                   },
                   maxBodyLength: 104857780,
                   onUploadProgress: (progressEvent) => {
-                    const {loaded, total} = progressEvent;
+                    const { loaded, total } = progressEvent;
                     if (!total) {
                       return;
                     }
@@ -175,7 +175,8 @@ const Post: CustomNextPage = () => {
                   </span>
                 </label>
                 <div className="flex w-full items-center justify-center">
-                  <label className="min-h-32 flex w-full flex-col rounded border-4 border-dashed border-primary hover:bg-base-300">
+                  <label
+                    className="min-h-32 flex w-full flex-col rounded border-4 border-dashed border-primary hover:bg-base-300">
                     <div className="flex flex-col items-center justify-center pt-7">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -193,7 +194,8 @@ const Post: CustomNextPage = () => {
                         Select images
                       </p>
                       {fileNames && (
-                        <ul className="mt-2 flex list-decimal flex-col pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
+                        <ul
+                          className="mt-2 flex list-decimal flex-col pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
                           {fileNames.map((name, index) => (
                             <li key={index}>{name}</li>
                           ))}
@@ -237,7 +239,8 @@ const Post: CustomNextPage = () => {
                   <span className="label-text-alt">(50MB max)</span>
                 </label>
                 <div className="flex w-full items-center justify-center">
-                  <label className="min-h-32 flex w-full flex-col rounded border-4 border-dashed border-primary hover:bg-base-300">
+                  <label
+                    className="min-h-32 flex w-full flex-col rounded border-4 border-dashed border-primary hover:bg-base-300">
                     <div className="flex flex-col items-center justify-center pt-7">
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -245,13 +248,15 @@ const Post: CustomNextPage = () => {
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
-                        <path d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
+                        <path
+                          d="M2 6a2 2 0 012-2h6a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zM14.553 7.106A1 1 0 0014 8v4a1 1 0 00.553.894l2 1A1 1 0 0018 13V7a1 1 0 00-1.447-.894l-2 1z" />
                       </svg>
                       <p className="pt-1 text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
                         Select a video
                       </p>
                       {video && (
-                        <p className="mt-2 flex flex-col pt-1 text-center text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
+                        <p
+                          className="mt-2 flex flex-col pt-1 text-center text-sm tracking-wider text-gray-400 group-hover:text-gray-600">
                           {video.name}
                         </p>
                       )}

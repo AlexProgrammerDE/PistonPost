@@ -8,7 +8,6 @@ import { onTagInput } from "lib/shared";
 import LoadingView from "components/LoadingView";
 import { ImageResponse, PostResponse, VideoResponse } from "lib/responses";
 import { PostType } from "lib/types";
-import cn from "classnames";
 
 const PostEdit: CustomNextPage = () => {
   const router = useRouter();

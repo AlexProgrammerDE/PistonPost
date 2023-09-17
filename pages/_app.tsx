@@ -21,9 +21,9 @@ type CustomAppProps = AppProps & {
 
 // noinspection JSUnusedGlobalSymbols
 export default function App({
-  Component,
-  pageProps: { session, ...pageProps }
-}: CustomAppProps) {
+                              Component,
+                              pageProps: { session, ...pageProps }
+                            }: CustomAppProps) {
   // noinspection HtmlRequiredTitleElement
   return (
     <>

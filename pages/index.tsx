@@ -43,7 +43,7 @@ const Home: NextPage = () => {
             </Masonry>
             {!isReachingEnd && (
               <button
-                className={cn("btn btn-primary mx-auto my-2", {"loading": isLoadingMore})}
+                className={cn("btn btn-primary mx-auto my-2", { "loading": isLoadingMore })}
                 onClick={() => setSize(size + 1)}
               >
                 Load More

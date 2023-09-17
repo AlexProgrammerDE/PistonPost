@@ -125,9 +125,9 @@ export default function Document() {
         <meta name="twitter:creator" content={twitter} />
       </Head>
       <body id="documentBody">
-        <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
-        <Main />
-        <NextScript />
+      <script dangerouslySetInnerHTML={{ __html: themeInitializerScript }} />
+      <Main />
+      <NextScript />
       </body>
     </Html>
   );
