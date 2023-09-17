@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [16]
+        node-version: [18]
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
@@ -21,12 +21,32 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
-      - run: pnpm install
+
+      - uses: pnpm/action-setup@v2
+        name: Install pnpm
+        with:
+          version: 8
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - uses: actions/cache@v3
+        name: Setup pnpm cache
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+      - name: Install dependencies
+        run: pnpm install
       - name: Make envfile
         uses: SpicyPizza/create-envfile@v2.0
         with:
           envkey_API_ENDPOINT: ${{ secrets.API_ENDPOINT }}
           file_name: .env.local
           fail_on_empty: false
-      - run: pnpm build
+      - name: Build project
+        run: pnpm build
