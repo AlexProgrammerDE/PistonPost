@@ -50,7 +50,7 @@
     "eslint-config-next": "13.4.19",
     "prettier": "3.1.0",
     "prettier-plugin-tailwindcss": "0.5.9",
-    "typescript": "5.3.2",
+    "typescript": "5.3.3",
     "webpack": "^5.88.2"
   }
 }
