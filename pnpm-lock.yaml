@@ -33,8 +33,8 @@ dependencies:
     specifier: 3.9.4
     version: 3.9.4
   javascript-time-ago:
-    specifier: 2.5.9
-    version: 2.5.9
+    specifier: 2.5.10
+    version: 2.5.10
   mongodb:
     specifier: 6.5.0
     version: 6.5.0
@@ -73,7 +73,7 @@ dependencies:
     version: 1.0.16(react@18.2.0)
   react-time-ago:
     specifier: 7.3.1
-    version: 7.3.1(javascript-time-ago@2.5.9)(react-dom@18.2.0)(react@18.2.0)
+    version: 7.3.1(javascript-time-ago@2.5.10)(react-dom@18.2.0)(react@18.2.0)
   sharp:
     specifier: 0.33.3
     version: 0.33.3
@@ -3805,8 +3805,8 @@ packages:
       minimatch: 3.1.2
     dev: false
 
-  /javascript-time-ago@2.5.9:
-    resolution: {integrity: sha512-pQ8mNco/9g9TqWXWWjP0EWl6i/lAQScOyEeXy5AB+f7MfLSdgyV9BJhiOD1zrIac/lrxPYOWNbyl/IW8CW5n0A==}
+  /javascript-time-ago@2.5.10:
+    resolution: {integrity: sha512-EUxp4BP74QH8xiYHyeSHopx1XhMMJ9qEX4rcBdFtpVWmKRdzpxbNzz2GSbuekZr5wt0rmLehuyp0PE34EAJT9g==}
     dependencies:
       relative-time-format: 1.1.6
     dev: false
@@ -4721,14 +4721,14 @@ packages:
       react: 18.2.0
     dev: false
 
-  /react-time-ago@7.3.1(javascript-time-ago@2.5.9)(react-dom@18.2.0)(react@18.2.0):
+  /react-time-ago@7.3.1(javascript-time-ago@2.5.10)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-c6QKSRrnIhZiEbOa2PXdh1InNYpqX3wwXA0fuOFX4r/C2hdt5hNvjvKXbKbGWXAeumMi9DoS3oGPboEpgccnOQ==}
     peerDependencies:
       javascript-time-ago: ^2.3.7
       react: '>=0.16.8'
       react-dom: '>=0.16.8'
     dependencies:
-      javascript-time-ago: 2.5.9
+      javascript-time-ago: 2.5.10
       memoize-one: 6.0.0
       prop-types: 15.8.1
       raf: 3.4.1
