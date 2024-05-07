@@ -72,8 +72,8 @@ dependencies:
     specifier: 1.0.16
     version: 1.0.16(react@18.3.1)
   react-time-ago:
-    specifier: 7.3.1
-    version: 7.3.1(javascript-time-ago@2.5.10)(react-dom@18.3.1)(react@18.3.1)
+    specifier: 7.3.3
+    version: 7.3.3(javascript-time-ago@2.5.10)(react-dom@18.3.1)(react@18.3.1)
   sharp:
     specifier: 0.33.3
     version: 0.33.3
@@ -4716,8 +4716,8 @@ packages:
       react: 18.3.1
     dev: false
 
-  /react-time-ago@7.3.1(javascript-time-ago@2.5.10)(react-dom@18.3.1)(react@18.3.1):
-    resolution: {integrity: sha512-c6QKSRrnIhZiEbOa2PXdh1InNYpqX3wwXA0fuOFX4r/C2hdt5hNvjvKXbKbGWXAeumMi9DoS3oGPboEpgccnOQ==}
+  /react-time-ago@7.3.3(javascript-time-ago@2.5.10)(react-dom@18.3.1)(react@18.3.1):
+    resolution: {integrity: sha512-5kh2Kuu/UhHzcZrGvf3GUrF2d+IXjkIXif5MR2iDWIfSqQuBW27/ejN/tmzJBRyPiryYTgbDIG6AZFJ4RW3yfw==}
     peerDependencies:
       javascript-time-ago: ^2.3.7
       react: '>=0.16.8'
