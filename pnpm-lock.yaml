@@ -13,7 +13,7 @@ dependencies:
     version: 13.5.6
   '@tailwindcss/typography':
     specifier: 0.5.13
-    version: 0.5.13(tailwindcss@3.4.3)
+    version: 0.5.13(tailwindcss@3.4.4)
   autoprefixer:
     specifier: 10.4.19
     version: 10.4.19(postcss@8.4.38)
@@ -81,8 +81,8 @@ dependencies:
     specifier: 2.2.5
     version: 2.2.5(react@18.3.1)
   tailwindcss:
-    specifier: 3.4.3
-    version: 3.4.3
+    specifier: 3.4.4
+    version: 3.4.4
 
 devDependencies:
   '@next/env':
@@ -1831,7 +1831,7 @@ packages:
       tslib: 2.6.2
     dev: false
 
-  /@tailwindcss/typography@0.5.13(tailwindcss@3.4.3):
+  /@tailwindcss/typography@0.5.13(tailwindcss@3.4.4):
     resolution: {integrity: sha512-ADGcJ8dX21dVVHIwTRgzrcunY6YY9uSlAHHGVKvkA+vLc5qLwEszvKts40lx7z0qc4clpjclwLeK5rVCV2P/uw==}
     peerDependencies:
       tailwindcss: '>=3.0.0 || insiders'
@@ -1840,7 +1840,7 @@ packages:
       lodash.isplainobject: 4.0.6
       lodash.merge: 4.6.2
       postcss-selector-parser: 6.0.10
-      tailwindcss: 3.4.3
+      tailwindcss: 3.4.4
     dev: false
 
   /@types/eslint-scope@3.7.7:
@@ -2656,7 +2656,7 @@ packages:
       css-selector-tokenizer: 0.8.0
       postcss: 8.4.38
       postcss-js: 4.0.1(postcss@8.4.38)
-      tailwindcss: 3.4.3
+      tailwindcss: 3.4.4
     transitivePeerDependencies:
       - ts-node
     dev: false
@@ -3399,6 +3399,7 @@ packages:
 
   /glob@7.1.6:
     resolution: {integrity: sha512-LwaxwyZ72Lk7vZINtNNrywX0ZuLyStrdDtabefZKAY5ZGJhVtgdznluResxNmPitE0SAO+O26sWTHeKSI2wMBA==}
+    deprecated: Glob versions prior to v9 are no longer supported
     dependencies:
       fs.realpath: 1.0.0
       inflight: 1.0.6
@@ -3410,6 +3411,7 @@ packages:
 
   /glob@7.1.7:
     resolution: {integrity: sha512-OvD9ENzPLbegENnYP5UUfJIirTg4+XwMWGaQfQTY0JenxNvvIKP3U3/tAQSPIu/lHxXYSZmpXlUHeqAIdKzBLQ==}
+    deprecated: Glob versions prior to v9 are no longer supported
     dependencies:
       fs.realpath: 1.0.0
       inflight: 1.0.6
@@ -3421,6 +3423,7 @@ packages:
 
   /glob@7.2.3:
     resolution: {integrity: sha512-nFR0zLpU2YCaRxwoCJvL6UvCH2JFyFVIvwTLsIf21AuHlMskA1hhTdk+LlYJtOlYt9v6dvszD2BGRqBL+iQK9Q==}
+    deprecated: Glob versions prior to v9 are no longer supported
     dependencies:
       fs.realpath: 1.0.0
       inflight: 1.0.6
@@ -3575,6 +3578,7 @@ packages:
 
   /inflight@1.0.6:
     resolution: {integrity: sha512-k92I/b08q4wvFscXCLvqfsHCrjrF7yiXsQuIVvVE7N82W3+aqpzuUdBbfhWcy/FZR3/4IgflMgKLOsvPDrGCJA==}
+    deprecated: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
     dependencies:
       once: 1.4.0
       wrappy: 1.0.2
@@ -5232,8 +5236,8 @@ packages:
       use-sync-external-store: 1.2.0(react@18.3.1)
     dev: false
 
-  /tailwindcss@3.4.3:
-    resolution: {integrity: sha512-U7sxQk/n397Bmx4JHbJx/iSOOv5G+II3f1kpLpY2QeUv5DcPdcTsYLlusZfq1NthHS1c1cZoyFmmkex1rzke0A==}
+  /tailwindcss@3.4.4:
+    resolution: {integrity: sha512-ZoyXOdJjISB7/BcLTR6SEsLgKtDStYyYZVLsUtWChO4Ps20CBad7lfJKVDiejocV4ME1hLmyY0WJE3hSDcmQ2A==}
     engines: {node: '>=14.0.0'}
     hasBin: true
     dependencies:
