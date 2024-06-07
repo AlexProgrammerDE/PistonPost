@@ -1,11 +1,11 @@
-// @ts-check
-// noinspection JSFileReferences
-import {
-  PHASE_DEVELOPMENT_SERVER,
-  PHASE_PRODUCTION_BUILD,
-} from "next/constants.js";
-
 import bundle_analyzer from "@next/bundle-analyzer";
+import withSerwistInit from "@serwist/next";
+
+const withSerwist = withSerwistInit({
+  swSrc: "app/sw.ts",
+  swDest: "public/sw.js",
+});
+
 const withBundleAnalyzer = bundle_analyzer({
   enabled: process.env.ANALYZE === "true"
 });
@@ -32,16 +32,4 @@ const nextConfig = {
   }
 };
 
-const nextConfigFunction = async (phase) => {
-  if (phase === PHASE_DEVELOPMENT_SERVER || phase === PHASE_PRODUCTION_BUILD) {
-    const withPWA = (await import("@ducanh2912/next-pwa")).default({
-      dest: "public",
-      register: true,
-      disable: process.env.NODE_ENV === "development"
-    });
-    return withBundleAnalyzer(withPWA(nextConfig));
-  }
-  return withBundleAnalyzer(nextConfig);
-};
-
-export default nextConfigFunction;
+export default withBundleAnalyzer(withSerwist(nextConfig));
