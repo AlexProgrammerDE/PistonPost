@@ -2,7 +2,7 @@ import bundle_analyzer from "@next/bundle-analyzer";
 import withSerwistInit from "@serwist/next";
 
 const withSerwist = withSerwistInit({
-  swSrc: "app/sw.ts",
+  swSrc: "service-worker/index.ts",
   swDest: "public/sw.js",
 });
 
