@@ -116,7 +116,7 @@ importers:
         version: 0.6.2(prettier@3.3.1)
       serwist:
         specifier: ^9.0.2
-        version: 9.0.2(typescript@5.4.5)
+        version: 9.0.3(typescript@5.4.5)
       typescript:
         specifier: 5.4.5
         version: 5.4.5
@@ -2157,14 +2157,6 @@ packages:
 
   serialize-javascript@6.0.2:
     resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
-
-  serwist@9.0.2:
-    resolution: {integrity: sha512-36+GeVAd0nd6byRKrSVJJHdIF0mSJ+hwxPYBQKZ+8BJ9SGap9Udw4FeG1ohgbezvGteUWoOLXJwQqTl1I1BkyQ==}
-    peerDependencies:
-      typescript: '>=5.0.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
 
   serwist@9.0.3:
     resolution: {integrity: sha512-WNan/+oethHd0YKyEVIETk9z7BWNnhbrhKWD5iE/n9eAIGUMUS4a3Ff5E6QHltxEVo+X3Dc3HtSIqXkSoEK9YA==}
@@ -4630,12 +4622,6 @@ snapshots:
   serialize-javascript@6.0.2:
     dependencies:
       randombytes: 2.1.0
-
-  serwist@9.0.2(typescript@5.4.5):
-    dependencies:
-      idb: 8.0.0
-    optionalDependencies:
-      typescript: 5.4.5
 
   serwist@9.0.3(typescript@5.4.5):
     dependencies:
