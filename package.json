@@ -16,7 +16,7 @@
     "@next/bundle-analyzer": "14.2.5",
     "@serwist/next": "^9.0.2",
     "@tailwindcss/typography": "0.5.13",
-    "autoprefixer": "10.4.19",
+    "autoprefixer": "10.4.20",
     "axios": "1.7.3",
     "bson-objectid": "2.0.4",
     "classnames": "^2.3.2",
