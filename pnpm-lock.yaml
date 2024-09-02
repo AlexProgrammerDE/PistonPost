@@ -36,8 +36,8 @@ importers:
         specifier: 3.9.4
         version: 3.9.4
       javascript-time-ago:
-        specifier: 2.5.10
-        version: 2.5.10
+        specifier: 2.5.11
+        version: 2.5.11
       mongodb:
         specifier: 6.8.0
         version: 6.8.0
@@ -76,7 +76,7 @@ importers:
         version: 1.0.16(react@18.3.1)
       react-time-ago:
         specifier: 7.3.3
-        version: 7.3.3(javascript-time-ago@2.5.10)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 7.3.3(javascript-time-ago@2.5.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       sharp:
         specifier: 0.33.5
         version: 0.33.5
@@ -1496,8 +1496,8 @@ packages:
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
 
-  javascript-time-ago@2.5.10:
-    resolution: {integrity: sha512-EUxp4BP74QH8xiYHyeSHopx1XhMMJ9qEX4rcBdFtpVWmKRdzpxbNzz2GSbuekZr5wt0rmLehuyp0PE34EAJT9g==}
+  javascript-time-ago@2.5.11:
+    resolution: {integrity: sha512-Zeyf5R7oM1fSMW9zsU3YgAYwE0bimEeF54Udn2ixGd8PUwu+z1Yc5t4Y8YScJDMHD6uCx6giLt3VJR5K4CMwbg==}
 
   jest-worker@27.5.1:
     resolution: {integrity: sha512-7vuh85V5cdDofPyxn58nrPjBktZo0u9x1g8WtjQol+jZDaE+fhN+cIvTj11GndBnMnyfrUOG1sZQxCdjKh+DKg==}
@@ -4010,7 +4010,7 @@ snapshots:
     optionalDependencies:
       '@pkgjs/parseargs': 0.11.0
 
-  javascript-time-ago@2.5.10:
+  javascript-time-ago@2.5.11:
     dependencies:
       relative-time-format: 1.1.6
 
@@ -4453,9 +4453,9 @@ snapshots:
     dependencies:
       react: 18.3.1
 
-  react-time-ago@7.3.3(javascript-time-ago@2.5.10)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  react-time-ago@7.3.3(javascript-time-ago@2.5.11)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
-      javascript-time-ago: 2.5.10
+      javascript-time-ago: 2.5.11
       memoize-one: 6.0.0
       prop-types: 15.8.1
       raf: 3.4.1
