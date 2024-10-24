@@ -23,9 +23,9 @@
     "copy-to-clipboard": "^3.3.3",
     "daisyui": "3.9.4",
     "javascript-time-ago": "2.5.11",
-    "mongodb": "6.9.0",
+    "mongodb": "6.10.0",
     "next": "15.0.1",
-    "next-auth": "4.24.7",
+    "next-auth": "4.24.10",
     "next-sitemap": "4.2.3",
     "nodemailer": "6.9.15",
     "plyr": "^3.7.8",
@@ -38,20 +38,20 @@
     "react-time-ago": "7.3.3",
     "sharp": "0.33.5",
     "swr": "2.2.5",
-    "tailwindcss": "3.4.13"
+    "tailwindcss": "3.4.14"
   },
   "devDependencies": {
     "@next/env": "^15.0.0",
-    "@types/node": "20.16.10",
-    "@types/react": "18.3.11",
-    "@types/react-dom": "18.3.0",
+    "@types/node": "20.17.0",
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
     "@types/swagger-ui-react": "4.18.3",
     "eslint": "8.57.1",
     "eslint-config-next": "15.0.1",
     "prettier": "3.3.3",
     "prettier-plugin-tailwindcss": "0.6.8",
     "serwist": "^9.0.2",
-    "typescript": "5.6.2",
+    "typescript": "5.6.3",
     "webpack": "^5.88.2"
   }
 }
