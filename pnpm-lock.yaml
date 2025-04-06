@@ -13,7 +13,7 @@ importers:
         version: 15.0.1
       '@serwist/next':
         specifier: ^9.0.2
-        version: 9.0.12(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.6.2)(webpack@5.98.0)
+        version: 9.0.13(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.6.2)(webpack@5.98.0)
       '@tailwindcss/typography':
         specifier: 0.5.15
         version: 0.5.15(tailwindcss@3.4.13)
@@ -116,7 +116,7 @@ importers:
         version: 0.6.8(prettier@3.3.3)
       serwist:
         specifier: ^9.0.2
-        version: 9.0.12(typescript@5.6.2)
+        version: 9.0.13(typescript@5.6.2)
       typescript:
         specifier: 5.6.2
         version: 5.6.2
@@ -407,8 +407,8 @@ packages:
   '@rushstack/eslint-patch@1.10.4':
     resolution: {integrity: sha512-WJgX9nzTqknM393q1QJDJmoW28kUfEnybeTfVNcNAPnIx210RXm2DiXiHzfNPJNIUUb1tJnz/l4QGtJ30PgWmA==}
 
-  '@serwist/build@9.0.12':
-    resolution: {integrity: sha512-hGWhaPw6HyQ/Jow7AcKzqhA58OQKvjdGVBqkaAPdxAD6V4ahF2qXfW+FBYHI4Xu6XT8miGTo96TNkCoq1BJlOw==}
+  '@serwist/build@9.0.13':
+    resolution: {integrity: sha512-Hoc6llxFmnsE8z5Cs95UmRRhRyoNh44OdrMWWPPX8BpW19z0CK/qnBquptjyBIe46jjoOxsPHK0Tt7oZOV4Mbw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=5.0.0'
@@ -416,8 +416,8 @@ packages:
       typescript:
         optional: true
 
-  '@serwist/next@9.0.12':
-    resolution: {integrity: sha512-hQU4RLbgIT2CuIv/HEZjJx+I34npUvK99CcL+rUnyozviUw8OupxbmFm6GvohWhkSrsDJMedTiTDECcxhn+nFA==}
+  '@serwist/next@9.0.13':
+    resolution: {integrity: sha512-nI2N4oSEHJGH0YUsE4m1obPfudO3DZ/pXiHPaisw+28YjgkMqD6ePfhzeHGO07ahPmIUiyHca9VNO8OfarbQ1Q==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       next: '>=14.0.0'
@@ -426,8 +426,8 @@ packages:
       typescript:
         optional: true
 
-  '@serwist/webpack-plugin@9.0.12':
-    resolution: {integrity: sha512-qpVnTI1ww8MHSVUYUtrnCXQ8QdgFLUlGwVo6iTd38jZxhdzxCqFZZceWGVvL6aGCVduKIoghDsAcFLICSEWbYw==}
+  '@serwist/webpack-plugin@9.0.13':
+    resolution: {integrity: sha512-Z+Eve8dckM2FulRCa7Cj7VCF3EOP7QkRA76tI742olF7J2sYZSm3t9Ex13jDxTMmYiU1AxLq6V6gEMIdRAetVw==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       typescript: '>=5.0.0'
@@ -438,8 +438,8 @@ packages:
       webpack:
         optional: true
 
-  '@serwist/window@9.0.12':
-    resolution: {integrity: sha512-Yy6j2iBpk9b0gSa9tAklsHUp+nJu36OCxH8Oj+mxIeHJ/Z8KvPWtamfesiq2Pzz/6m1gFldmwm+C/tB5UN+ppw==}
+  '@serwist/window@9.0.13':
+    resolution: {integrity: sha512-Cf3RizPuFInDcLt0P1Y5QzG1sA5mW131/PZfMYE3yBuNUSGNgOQGlYuLdwDOWPHgECYoVb/da8pspdQNKs0O5g==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -1272,8 +1272,8 @@ packages:
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
 
-  foreground-child@3.3.0:
-    resolution: {integrity: sha512-Ld2g8rrAyMYFXBhEqMz8ZAHBi4J4uS1i/CxGMDnjyFWddMXLVcDp051DZfu+t7+ab7Wv6SMqpWmyFIj5UbfFvg==}
+  foreground-child@3.3.1:
+    resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
 
   form-data@4.0.0:
@@ -2235,8 +2235,8 @@ packages:
   serialize-javascript@6.0.2:
     resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
 
-  serwist@9.0.12:
-    resolution: {integrity: sha512-u5UIJfG/RwkHtffLzlHAaBjXTHQFkKIGvdLQu/zpCWG3cN/AdMbvmtT7Kx2360wQqfE6infDORMdNTtNXpIpjQ==}
+  serwist@9.0.13:
+    resolution: {integrity: sha512-BF3bmzYdOVT2lF3iHV0044NqTO6q6GAiqrYpc7L9EPYQXZHOy22WajKaHLvCdvpm2Jpji4SsxUL8/uC1WSCZ5g==}
     peerDependencies:
       typescript: '>=5.0.0'
     peerDependenciesMeta:
@@ -2883,7 +2883,7 @@ snapshots:
 
   '@rushstack/eslint-patch@1.10.4': {}
 
-  '@serwist/build@9.0.12(typescript@5.6.2)':
+  '@serwist/build@9.0.13(typescript@5.6.2)':
     dependencies:
       common-tags: 1.8.2
       glob: 10.4.5
@@ -2893,34 +2893,34 @@ snapshots:
     optionalDependencies:
       typescript: 5.6.2
 
-  '@serwist/next@9.0.12(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.6.2)(webpack@5.98.0)':
+  '@serwist/next@9.0.13(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(typescript@5.6.2)(webpack@5.98.0)':
     dependencies:
-      '@serwist/build': 9.0.12(typescript@5.6.2)
-      '@serwist/webpack-plugin': 9.0.12(typescript@5.6.2)(webpack@5.98.0)
-      '@serwist/window': 9.0.12(typescript@5.6.2)
+      '@serwist/build': 9.0.13(typescript@5.6.2)
+      '@serwist/webpack-plugin': 9.0.13(typescript@5.6.2)(webpack@5.98.0)
+      '@serwist/window': 9.0.13(typescript@5.6.2)
       chalk: 5.4.1
       glob: 10.4.5
       next: 15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      serwist: 9.0.12(typescript@5.6.2)
+      serwist: 9.0.13(typescript@5.6.2)
       zod: 3.24.2
     optionalDependencies:
       typescript: 5.6.2
     transitivePeerDependencies:
       - webpack
 
-  '@serwist/webpack-plugin@9.0.12(typescript@5.6.2)(webpack@5.98.0)':
+  '@serwist/webpack-plugin@9.0.13(typescript@5.6.2)(webpack@5.98.0)':
     dependencies:
-      '@serwist/build': 9.0.12(typescript@5.6.2)
+      '@serwist/build': 9.0.13(typescript@5.6.2)
       pretty-bytes: 6.1.1
       zod: 3.24.2
     optionalDependencies:
       typescript: 5.6.2
       webpack: 5.98.0
 
-  '@serwist/window@9.0.12(typescript@5.6.2)':
+  '@serwist/window@9.0.13(typescript@5.6.2)':
     dependencies:
       '@types/trusted-types': 2.0.7
-      serwist: 9.0.12(typescript@5.6.2)
+      serwist: 9.0.13(typescript@5.6.2)
     optionalDependencies:
       typescript: 5.6.2
 
@@ -3995,7 +3995,7 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  foreground-child@3.3.0:
+  foreground-child@3.3.1:
     dependencies:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
@@ -4054,7 +4054,7 @@ snapshots:
 
   glob@10.4.5:
     dependencies:
-      foreground-child: 3.3.0
+      foreground-child: 3.3.1
       jackspeak: 3.4.3
       minimatch: 9.0.5
       minipass: 7.1.2
@@ -4871,7 +4871,7 @@ snapshots:
     dependencies:
       randombytes: 2.1.0
 
-  serwist@9.0.12(typescript@5.6.2):
+  serwist@9.0.13(typescript@5.6.2):
     dependencies:
       idb: 8.0.2
     optionalDependencies:
