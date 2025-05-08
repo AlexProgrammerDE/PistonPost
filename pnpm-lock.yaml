@@ -46,13 +46,13 @@ importers:
         version: 15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-auth:
         specifier: 4.24.7
-        version: 4.24.7(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 4.24.7(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@7.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       next-sitemap:
         specifier: 4.2.3
         version: 4.2.3(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))
       nodemailer:
-        specifier: 6.9.15
-        version: 6.9.15
+        specifier: 7.0.3
+        version: 7.0.3
       plyr:
         specifier: ^3.7.8
         version: 3.7.8
@@ -1804,8 +1804,8 @@ packages:
   node-releases@2.0.19:
     resolution: {integrity: sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw==}
 
-  nodemailer@6.9.15:
-    resolution: {integrity: sha512-AHf04ySLC6CIfuRtRiEYtGEXgRfa6INgWGluDhnxTZhHSKvrBu7lc1VVchQ0d8nPc4cFaZoPq8vkyNoZr0TpGQ==}
+  nodemailer@7.0.3:
+    resolution: {integrity: sha512-Ajq6Sz1x7cIK3pN6KesGTah+1gnwMnx5gKl3piQlQQE/PwyJ4Mbc8is2psWYxK3RJTVeqsDaCv8ZzXLCDHMTZw==}
     engines: {node: '>=6.0.0'}
 
   normalize-path@3.0.0:
@@ -4453,7 +4453,7 @@ snapshots:
 
   neo-async@2.6.2: {}
 
-  next-auth@4.24.7(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@6.9.15)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+  next-auth@4.24.7(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(nodemailer@7.0.3)(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
     dependencies:
       '@babel/runtime': 7.23.9
       '@panva/hkdf': 1.1.1
@@ -4468,7 +4468,7 @@ snapshots:
       react-dom: 18.3.1(react@18.3.1)
       uuid: 8.3.2
     optionalDependencies:
-      nodemailer: 6.9.15
+      nodemailer: 7.0.3
 
   next-sitemap@4.2.3(next@15.0.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1)):
     dependencies:
@@ -4507,7 +4507,7 @@ snapshots:
 
   node-releases@2.0.19: {}
 
-  nodemailer@6.9.15: {}
+  nodemailer@7.0.3: {}
 
   normalize-path@3.0.0: {}
 
