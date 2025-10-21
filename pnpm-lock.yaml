@@ -100,8 +100,8 @@ importers:
         specifier: 19.2.1
         version: 19.2.1(@types/react@19.2.2)
       '@types/swagger-ui-react':
-        specifier: 4.18.3
-        version: 4.18.3
+        specifier: 5.18.0
+        version: 5.18.0
       eslint:
         specifier: 8.57.1
         version: 8.57.1
@@ -488,8 +488,8 @@ packages:
   '@types/semver@7.5.8':
     resolution: {integrity: sha512-I8EUhyrgfLrcTkzV3TSsGyl1tSuPrEDzr0yd5m90UgNxQkyDXULk3b6MlQqTCpZpNtWe1K0hzclnZkTcLBe2UQ==}
 
-  '@types/swagger-ui-react@4.18.3':
-    resolution: {integrity: sha512-Mo/R7IjDVwtiFPs84pWvh5pI9iyNGBjmfielxqbOh2Jv+8WVSDVe8Nu25kb5BOuV2xmGS3o33jr6nwDJMBcX+Q==}
+  '@types/swagger-ui-react@5.18.0':
+    resolution: {integrity: sha512-c2M9adVG7t28t1pq19K9Jt20VLQf0P/fwJwnfcmsVVsdkwCWhRmbKDu+tIs0/NGwJ/7GY8lBx+iKZxuDI5gDbw==}
 
   '@types/trusted-types@2.0.7':
     resolution: {integrity: sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==}
@@ -2977,7 +2977,7 @@ snapshots:
 
   '@types/semver@7.5.8': {}
 
-  '@types/swagger-ui-react@4.18.3':
+  '@types/swagger-ui-react@5.18.0':
     dependencies:
       '@types/react': 19.2.2
 
