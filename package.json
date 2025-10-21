@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@next/env": "^15.0.0",
-    "@types/node": "20.16.10",
+    "@types/node": "22.18.12",
     "@types/react": "19.2.2",
     "@types/react-dom": "19.2.1",
     "@types/swagger-ui-react": "4.18.3",
