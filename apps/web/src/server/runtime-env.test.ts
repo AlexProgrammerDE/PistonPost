@@ -6,11 +6,11 @@ describe("decodeRuntimeConfig", () => {
   it("parses the committed runtime variables", () => {
     const config = decodeRuntimeConfig({
       APP_ENV: "preview",
-      PUBLIC_APP_URL: "https://staging.pistonpost.example",
+      PUBLIC_APP_URL: "https://staging.post.pistonmaster.net",
     })
 
     expect(config.APP_ENV).toBe("preview")
-    expect(config.PUBLIC_APP_URL.hostname).toBe("staging.pistonpost.example")
+    expect(config.PUBLIC_APP_URL.hostname).toBe("staging.post.pistonmaster.net")
   })
 
   it("rejects malformed public URLs", () => {

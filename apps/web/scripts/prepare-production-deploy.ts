@@ -1,6 +1,12 @@
 const generatedConfigPath = new URL("../dist/server/wrangler.json", import.meta.url)
 
 const secretBindings = ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET", "STREAM_WEBHOOK_SECRET"]
+const productionOrigin = "https://post.pistonmaster.net"
+const productionVariables = {
+  AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
+  NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
+  SUPPORT_EMAIL: "support@pistonmaster.net",
+} as const
 
 type JsonRecord = Record<string, unknown>
 
@@ -50,6 +56,9 @@ export function readProductionDeployInput(
   ) {
     throw new Error("PRODUCTION_BASE_URL must be an HTTPS origin without a path, query, or port.")
   }
+  if (parsedBaseUrl.origin !== productionOrigin) {
+    throw new Error(`PRODUCTION_BASE_URL must be ${productionOrigin}.`)
+  }
 
   const turnstileSiteKey = requiredEnvironmentVariable(environment, "PRODUCTION_TURNSTILE_SITE_KEY")
   if (
@@ -87,6 +96,11 @@ export function prepareProductionDeployConfig(
   const variables = requireRecord(config.vars, "Generated Wrangler variables")
   if (variables.APP_ENV !== "production") {
     throw new Error("The generated Wrangler configuration has a non-production APP_ENV.")
+  }
+  for (const [name, expectedValue] of Object.entries(productionVariables)) {
+    if (variables[name] !== expectedValue) {
+      throw new Error(`The generated Wrangler configuration has an invalid ${name}.`)
+    }
   }
 
   if (!Array.isArray(config.d1_databases)) {

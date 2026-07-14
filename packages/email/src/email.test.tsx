@@ -12,14 +12,14 @@ describe("transactional email", () => {
     const rendered = await renderEmail(
       authenticationMessage({
         template: "magic-link",
-        url: "https://pistonpost.example/auth/verify?token=redacted",
+        url: "https://post.pistonmaster.net/auth/verify?token=redacted",
         expiresIn: "in 10 minutes",
       }),
     )
 
     expect(rendered.subject).toBe("Your PistonPost sign-in link")
     expect(rendered.html).toContain("PISTONPOST / TRANSMISSION")
-    expect(rendered.html).toContain("https://pistonpost.example/auth/verify?token=redacted")
+    expect(rendered.html).toContain("https://post.pistonmaster.net/auth/verify?token=redacted")
     expect(rendered.text).toContain("SIGN IN TO PISTONPOST")
     expect(rendered.text).toContain("in 10 minutes")
   })
@@ -54,7 +54,7 @@ describe("transactional email", () => {
       data: {
         actorName: "Avery",
         postTitle: "Lathe restoration",
-        postUrl: "https://pistonpost.example/post/lathe",
+        postUrl: "https://post.pistonmaster.net/post/lathe",
       },
     })
 

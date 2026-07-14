@@ -69,7 +69,7 @@ export function PistonPostEmail({ content }: { readonly content: EmailContent })
           {content.footnote ? <Text style={styles.footnote}>{content.footnote}</Text> : null}
           <Text style={styles.footer}>
             If you did not request this message, you can ignore it or contact{" "}
-            <Link href="mailto:support@pistonpost.com" style={styles.link}>
+            <Link href="mailto:support@pistonmaster.net" style={styles.link}>
               PistonPost support
             </Link>
             .

@@ -61,7 +61,9 @@ Some bindings require account-level setup rather than a create command:
 
 - Enable Cloudflare Images and bind it as `IMAGES`.
 - Enable Stream and bind it as `STREAM` after confirming the current first-party binding shape.
-- Onboard the transactional email domain, configure SPF, DKIM, and DMARC, then bind Email Service as `EMAIL`.
+- Onboard `transactional.pistonmaster.net`, configure SPF, DKIM, and DMARC, then bind Email Service as `EMAIL`.
+- Allow `auth@transactional.pistonmaster.net` and `notifications@transactional.pistonmaster.net` as distinct Worker senders.
+- Use `support@pistonmaster.net` for replies and public support links.
 - Bind Analytics Engine as `ANALYTICS`.
 - Bind the account deletion Workflow as `ACCOUNT_DELETION`.
 - Keep distinct Turnstile widgets and secrets for preview and production.
@@ -112,7 +114,7 @@ Create a protected GitHub environment named `production`. Add these environment 
 
 Add these environment variables:
 
-- `PRODUCTION_BASE_URL`: the public HTTPS origin, such as `https://pistonpost.com`.
+- `PRODUCTION_BASE_URL`: `https://post.pistonmaster.net`.
 - `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
 - `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the three Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.

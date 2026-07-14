@@ -45,9 +45,9 @@
     "APP_ENV": "development",
     "PUBLIC_APP_URL": "http://localhost:3000",
     "TURNSTILE_SITE_KEY": "1x00000000000000000000AA",
-    "AUTH_EMAIL_FROM": "PistonPost Auth <auth@transactional.pistonpost.com>",
-    "NOTIFICATIONS_EMAIL_FROM": "PistonPost <notifications@transactional.pistonpost.com>",
-    "SUPPORT_EMAIL": "support@pistonpost.com",
+    "AUTH_EMAIL_FROM": "PistonPost Auth <auth@transactional.pistonmaster.net>",
+    "NOTIFICATIONS_EMAIL_FROM": "PistonPost <notifications@transactional.pistonmaster.net>",
+    "SUPPORT_EMAIL": "support@pistonmaster.net",
   },
   "d1_databases": [
     {
@@ -124,11 +124,11 @@
       "triggers": { "crons": ["*/15 * * * *"] },
       "vars": {
         "APP_ENV": "preview",
-        "PUBLIC_APP_URL": "https://staging.example.invalid",
+        "PUBLIC_APP_URL": "https://staging.post.pistonmaster.net",
         "TURNSTILE_SITE_KEY": "replace-with-preview-site-key",
-        "AUTH_EMAIL_FROM": "PistonPost Staging <auth@transactional.pistonpost.com>",
-        "NOTIFICATIONS_EMAIL_FROM": "PistonPost Staging <notifications@transactional.pistonpost.com>",
-        "SUPPORT_EMAIL": "support@pistonpost.com",
+        "AUTH_EMAIL_FROM": "PistonPost Staging <auth@transactional.pistonmaster.net>",
+        "NOTIFICATIONS_EMAIL_FROM": "PistonPost Staging <notifications@transactional.pistonmaster.net>",
+        "SUPPORT_EMAIL": "support@pistonmaster.net",
       },
       "d1_databases": [
         {
@@ -150,10 +150,10 @@
       "send_email": [
         {
           "name": "EMAIL",
-          "destination_address": "staging-email-sink@pistonpost.com",
+          "destination_address": "staging-email-sink@pistonmaster.net",
           "allowed_sender_addresses": [
-            "auth@transactional.pistonpost.com",
-            "notifications@transactional.pistonpost.com",
+            "auth@transactional.pistonmaster.net",
+            "notifications@transactional.pistonmaster.net",
           ],
         },
       ],
@@ -216,11 +216,11 @@
       "triggers": { "crons": ["*/15 * * * *"] },
       "vars": {
         "APP_ENV": "production",
-        "PUBLIC_APP_URL": "https://example.invalid",
+        "PUBLIC_APP_URL": "https://post.pistonmaster.net",
         "TURNSTILE_SITE_KEY": "replace-with-production-site-key",
-        "AUTH_EMAIL_FROM": "PistonPost Auth <auth@transactional.pistonpost.com>",
-        "NOTIFICATIONS_EMAIL_FROM": "PistonPost <notifications@transactional.pistonpost.com>",
-        "SUPPORT_EMAIL": "support@pistonpost.com",
+        "AUTH_EMAIL_FROM": "PistonPost Auth <auth@transactional.pistonmaster.net>",
+        "NOTIFICATIONS_EMAIL_FROM": "PistonPost <notifications@transactional.pistonmaster.net>",
+        "SUPPORT_EMAIL": "support@pistonmaster.net",
       },
       "observability": {
         "enabled": true,
@@ -255,8 +255,8 @@
         {
           "name": "EMAIL",
           "allowed_sender_addresses": [
-            "auth@transactional.pistonpost.com",
-            "notifications@transactional.pistonpost.com",
+            "auth@transactional.pistonmaster.net",
+            "notifications@transactional.pistonmaster.net",
           ],
         },
       ],

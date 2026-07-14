@@ -42,7 +42,7 @@ function PrivacyPage() {
         <h2>Contact</h2>
         <p>
           Questions about privacy can be sent to{" "}
-          <a href="mailto:support@pistonpost.com">support@pistonpost.com</a>.
+          <a href="mailto:support@pistonmaster.net">support@pistonmaster.net</a>.
         </p>
       </article>
     </main>

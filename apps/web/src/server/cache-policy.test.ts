@@ -9,7 +9,7 @@ import {
 describe("applyResponseCachePolicy", () => {
   it("caches anonymous public documents and varies viewer-bearing headers", () => {
     const response = applyResponseCachePolicy(
-      new Request("https://pistonpost.example/post/example"),
+      new Request("https://post.pistonmaster.net/post/example"),
       new Response("post"),
     )
 
@@ -20,7 +20,7 @@ describe("applyResponseCachePolicy", () => {
 
   it("keeps authenticated reads private", () => {
     const response = applyResponseCachePolicy(
-      new Request("https://pistonpost.example/", { headers: { Cookie: "session=opaque" } }),
+      new Request("https://post.pistonmaster.net/", { headers: { Cookie: "session=opaque" } }),
       new Response("feed"),
     )
 
@@ -29,11 +29,11 @@ describe("applyResponseCachePolicy", () => {
 
   it("keeps mutations and responses that set cookies private", () => {
     const mutation = applyResponseCachePolicy(
-      new Request("https://pistonpost.example/post/example", { method: "POST" }),
+      new Request("https://post.pistonmaster.net/post/example", { method: "POST" }),
       new Response(null, { status: 204 }),
     )
     const cookieResponse = applyResponseCachePolicy(
-      new Request("https://pistonpost.example/post/example"),
+      new Request("https://post.pistonmaster.net/post/example"),
       new Response("post", { headers: { "Set-Cookie": "session=opaque" } }),
     )
 
@@ -43,7 +43,7 @@ describe("applyResponseCachePolicy", () => {
 
   it("preserves an explicit no-store policy for unlisted content", () => {
     const response = applyResponseCachePolicy(
-      new Request("https://pistonpost.example/post/unlisted"),
+      new Request("https://post.pistonmaster.net/post/unlisted"),
       new Response("unlisted", { headers: { "Cache-Control": "private, no-store" } }),
     )
 

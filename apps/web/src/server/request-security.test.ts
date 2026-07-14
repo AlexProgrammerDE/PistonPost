@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { applySecurityHeaders, validateRequestSecurity } from "./request-security"
 
-const origin = "https://pistonpost.example"
+const origin = "https://post.pistonmaster.net"
 
 function mutation(path: string, headers: HeadersInit = {}) {
   const requestHeaders = new Headers(headers)

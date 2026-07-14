@@ -54,8 +54,8 @@ describe("request-scoped Better Auth", () => {
   it("accepts Cloudflare test-token hostnames only on loopback development origins", () => {
     expect(turnstileAllowedHostnames("http://localhost:3000")).toEqual(["localhost", "example.com"])
     expect(turnstileAllowedHostnames("http://127.0.0.1:3000")).toEqual(["127.0.0.1", "example.com"])
-    expect(turnstileAllowedHostnames("https://staging.pistonpost.example")).toEqual([
-      "staging.pistonpost.example",
+    expect(turnstileAllowedHostnames("https://staging.post.pistonmaster.net")).toEqual([
+      "staging.post.pistonmaster.net",
     ])
   })
 
