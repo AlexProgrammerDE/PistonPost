@@ -36,6 +36,9 @@ describe("prepareProductionDeployConfig", () => {
   test("hydrates the generated config with production resources", () => {
     const result = prepareProductionDeployConfig(productionConfig, input)
 
+    expect(result.targetEnvironment).toBeUndefined()
+    expect(result.legacy_env).toBeUndefined()
+    expect(result.env).toBeUndefined()
     expect(result.workers_dev).toBeFalse()
     expect(result.routes).toEqual([{ pattern: "post.pistonmaster.net", custom_domain: true }])
     expect(result.vars).toEqual({

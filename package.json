@@ -26,7 +26,7 @@
     "load:test": "bun scripts/load-test.ts",
     "migrate": "bun apps/migrate/src/index.ts",
     "migrate:legacy": "bun apps/migrate/src/index.ts",
-    "prepare": "lefthook install",
+    "prepare": "./scripts/prepare-effect.sh && lefthook install",
     "smoke:production": "bun scripts/smoke-production.ts",
     "test": "turbo run test",
     "test:e2e": "playwright test",

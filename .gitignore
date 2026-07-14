@@ -17,6 +17,7 @@ playwright-report
 test-results
 .migration
 reports/migration
+.repos/effect
 
 # turbo
 .turbo

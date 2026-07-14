@@ -1,6 +1,9 @@
 name: Deploy production
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       confirmation:
@@ -14,7 +17,7 @@ concurrency:
 
 jobs:
   deploy:
-    if: inputs.confirmation == 'deploy-production'
+    if: github.event_name == 'push' || inputs.confirmation == 'deploy-production'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: production
@@ -55,34 +58,36 @@ jobs:
 
       - name: Verify production deployment
         working-directory: apps/web
-        run: bunx wrangler deploy --dry-run --x-provision=false --x-auto-create=false
+        run: >-
+          bunx wrangler deploy --config dist/server/wrangler.json --dry-run
+          --x-provision=false --x-auto-create=false
 
       - name: Confirm existing production database
         working-directory: apps/web
-        run: bunx wrangler d1 info DB --json
+        run: bunx wrangler d1 info DB --config dist/server/wrangler.json --json
 
       - name: Record D1 Time Travel bookmark
         id: bookmark
         working-directory: apps/web
         run: |
-          bookmark="$(bunx wrangler d1 time-travel info DB --json | jq -r '.[0].bookmark // .bookmark')"
+          bookmark="$(bunx wrangler d1 time-travel info DB --config dist/server/wrangler.json --json | jq -r 'if type == "array" then .[0].bookmark else .bookmark end')"
           test -n "$bookmark"
           echo "bookmark=$bookmark" >> "$GITHUB_OUTPUT"
           echo "D1 bookmark recorded before migration." >> "$GITHUB_STEP_SUMMARY"
 
       - name: List unapplied migrations
         working-directory: apps/web
-        run: bunx wrangler d1 migrations list DB --remote
+        run: bunx wrangler d1 migrations list DB --config dist/server/wrangler.json --remote
 
       - name: Apply generated migrations
         working-directory: apps/web
-        run: bunx wrangler d1 migrations apply DB --remote
+        run: bunx wrangler d1 migrations apply DB --config dist/server/wrangler.json --remote
 
       - name: Deploy tagged Worker version
         working-directory: apps/web
         run: |
           subject="$(git log -1 --pretty=%s)"
-          bunx wrangler deploy --tag "$GITHUB_SHA" --message "$subject" --x-provision=false --x-auto-create=false
+          bunx wrangler deploy --config dist/server/wrangler.json --tag "$GITHUB_SHA" --message "$subject" --x-provision=false --x-auto-create=false
 
       - name: Run production smoke tests
         run: bun run smoke:production

@@ -120,8 +120,13 @@ export function prepareProductionDeployConfig(
   if (!foundDatabase) throw new Error("Generated Wrangler configuration is missing the DB binding.")
 
   const hostname = new URL(input.baseUrl).hostname
+  const standaloneConfig = Object.fromEntries(
+    Object.entries(config).filter(
+      ([key]) => key !== "targetEnvironment" && key !== "legacy_env" && key !== "env",
+    ),
+  )
   return {
-    ...config,
+    ...standaloneConfig,
     workers_dev: false,
     routes: [{ pattern: hostname, custom_domain: true }],
     vars: {

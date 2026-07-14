@@ -231,7 +231,13 @@
           "migrations_dir": "../../packages/db/drizzle",
         },
       ],
-      "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "pistonpost-production-media" }],
+      "r2_buckets": [
+        {
+          "binding": "MEDIA",
+          "bucket_name": "pistonpost-production-media",
+          "jurisdiction": "eu",
+        },
+      ],
       "images": { "binding": "IMAGES", "remote": true },
       "stream": { "binding": "STREAM", "remote": true },
       "workflows": [
