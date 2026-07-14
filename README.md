@@ -1,21 +1,30 @@
-# shadcn/ui monorepo template
+# PistonPost
 
-This is a TanStack Start monorepo template with shadcn/ui.
+PistonPost is a modern rewrite of the original media-focused social publishing app. The repository is a Bun and Turborepo monorepo built around TanStack Start, React 19, shadcn/ui on Base UI, and Cloudflare.
 
-## Adding components
+The implementation roadmap is in [PLAN.md](./PLAN.md). Agents and contributors must read [AGENTS.md](./AGENTS.md) before changing the repository.
 
-To add components to your app, run the following command at the root of your `web` app:
+## Current state
+
+The repository contains the initialized TanStack Start application and shared shadcn/ui package. Product, storage, authentication, migration, and Cloudflare work remains intentionally tracked in the execution plan.
+
+## Development
 
 ```bash
-pnpm dlx shadcn@latest add button -c apps/web
+bun install
+bun run dev
 ```
 
-This will place the ui components in the `packages/ui/src/components` directory.
+The web application runs from apps/web. Add shadcn components from the repository root:
 
-## Using components
+```bash
+bunx --bun shadcn@latest add <component> -c apps/web
+```
 
-To use the components in your app, import them from the `ui` package.
+Run the current baseline checks with:
 
-```tsx
-import { Button } from "@workspace/ui/components/button";
+```bash
+bun run lint
+bun run typecheck
+bun run build
 ```
