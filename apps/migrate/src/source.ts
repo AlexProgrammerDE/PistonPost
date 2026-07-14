@@ -208,7 +208,7 @@ function sourceIssues(
       }
       if (referenced && !archivedFile) {
         issues.push({
-          severity: "error",
+          severity: "warning",
           code: "missing-media-file",
           collection,
           legacyId: id,

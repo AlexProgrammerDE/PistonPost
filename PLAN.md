@@ -688,7 +688,7 @@ The OneDrive URI is not a filesystem path. Before execution, the operator must m
 - Convert legacy reaction sets into one reaction row per user and post.
 - If one legacy user appears in more than one reaction set for one post, apply a documented precedence and report it. Proposed precedence: HEART, LIKE, DISLIKE.
 - Missing authors become a controlled legacy-user tombstone only after the operator approves the policy.
-- Missing media keeps the post in failed migration state and appears in the report.
+- Public image galleries with at least one surviving image import as partial galleries and appear in the report. Incomplete unlisted posts are omitted with their exclusive media. Public media posts with no surviving media, and incomplete non-gallery media posts, remain failed and block cutover.
 
 ### Required CLI shape
 
@@ -1018,6 +1018,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Do not migrate legacy sessions or verification tokens. Require fresh authentication at cutover.
 - 2026-07-14: Do not add Better Auth organizations. PistonPost authorization is user, ownership, and role based.
 - 2026-07-14: Use Cloudflare products where they solve a concrete requirement. Do not add platform services without a matching domain or operational need.
+- 2026-07-15: Import incomplete public image posts as partial galleries when at least one image survives. Omit incomplete unlisted posts and media used only by those posts. Keep empty public media posts and incomplete non-gallery media posts as cutover-blocking failures.
 - 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, migration stages, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
 - 2026-07-14: Use shadcn Typeset for long-form post rendering and use Base UI-backed shadcn components whenever they own a real product interaction. Do not add components without a concrete use.
 - 2026-07-14: Generate Better Auth-owned tables before adding product-to-user foreign keys. Phase 3 enforces every product-only relationship immediately; Phase 4 adds the user relationships from the generated auth schema so the auth tables are never hand-authored from memory.

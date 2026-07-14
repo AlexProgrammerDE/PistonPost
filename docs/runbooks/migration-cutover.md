@@ -12,7 +12,8 @@ This runbook covers local rehearsal, Cloudflare preview rehearsal, production im
 - Stop if the source fingerprint differs from the reviewed dry-run.
 - Review every legacy administrator ID and pass only the approved IDs through
   `PISTONPOST_MIGRATION_ADMIN_IDS`. Never commit the value.
-- Treat every unexplained skip, missing reference, checksum mismatch, or foreign-key violation as a no-go result.
+- Treat every unexplained skip, checksum mismatch, or foreign-key violation as a no-go result.
+- Apply the approved missing-media policy exactly: publish an incomplete public image gallery only when at least one image survives, omit incomplete unlisted posts and their exclusive media, and block public posts with no surviving media or incomplete non-gallery media.
 
 ## Required operator environment
 

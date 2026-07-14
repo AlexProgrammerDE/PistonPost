@@ -176,4 +176,114 @@ describe("legacy source", () => {
       await rm(directory, { recursive: true, force: true })
     }
   })
+
+  test("publishes partial public galleries and drops incomplete unlisted posts", async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), "pistonpost-partial-gallery-"))
+    try {
+      const staticDirectory = resolve(directory, "static")
+      await mkdir(staticDirectory, { recursive: true })
+      await Promise.all([
+        writeFile(
+          resolve(directory, "users.json"),
+          JSON.stringify([{ _id: "gallery-user", email: "gallery@example.com" }]),
+        ),
+        writeFile(
+          resolve(directory, "images.json"),
+          JSON.stringify([
+            { _id: "public-available", filename: "public-available.webp" },
+            { _id: "public-missing", filename: "public-missing.webp" },
+            { _id: "unlisted-available", filename: "unlisted-available.webp" },
+            { _id: "unlisted-missing", filename: "unlisted-missing.webp" },
+            { _id: "empty-missing", filename: "empty-missing.webp" },
+          ]),
+        ),
+        writeFile(
+          resolve(directory, "videos.json"),
+          JSON.stringify([
+            { _id: "video-available", filename: "video-available.mp4" },
+            { _id: "video-missing", filename: "video-missing.mp4" },
+          ]),
+        ),
+        writeFile(
+          resolve(directory, "posts.json"),
+          JSON.stringify([
+            {
+              _id: "public-partial",
+              authorId: "gallery-user",
+              type: "images",
+              imageIds: ["public-available", "public-missing"],
+            },
+            {
+              _id: "unlisted-partial",
+              authorId: "gallery-user",
+              type: "images",
+              unlisted: true,
+              imageIds: ["unlisted-available", "unlisted-missing"],
+              comments: ["unlisted-comment"],
+            },
+            {
+              _id: "public-empty",
+              authorId: "gallery-user",
+              type: "images",
+              imageIds: ["empty-missing"],
+            },
+            {
+              _id: "public-partial-video",
+              authorId: "gallery-user",
+              type: "video",
+              videoIds: ["video-available", "video-missing"],
+            },
+          ]),
+        ),
+        writeFile(
+          resolve(directory, "comments.json"),
+          JSON.stringify([
+            { _id: "unlisted-comment", authorId: "gallery-user", content: "drop me" },
+          ]),
+        ),
+        writeFile(resolve(staticDirectory, "public-available.webp"), "public image"),
+        writeFile(resolve(staticDirectory, "unlisted-available.webp"), "unlisted image"),
+        writeFile(resolve(staticDirectory, "video-available.mp4"), "video"),
+      ])
+
+      const source = await loadLegacySource(directory)
+      const transformed = transformLegacySource(source)
+
+      expect(
+        source.inventory.issues
+          .filter((issue) => issue.code === "missing-media-file")
+          .every((issue) => issue.severity === "warning"),
+      ).toBeTrue()
+      expect(transformed.posts.map((post) => post.legacyId)).toEqual([
+        "public-partial",
+        "public-empty",
+        "public-partial-video",
+      ])
+      expect(transformed.posts[0]).toMatchObject({
+        status: "published",
+        mediaIds: [expect.any(String)],
+      })
+      expect(transformed.posts[1]).toMatchObject({ status: "failed", mediaIds: [] })
+      expect(transformed.posts[2]).toMatchObject({
+        status: "failed",
+        mediaIds: [expect.any(String)],
+      })
+      expect(transformed.media.map((media) => media.legacyId)).toEqual([
+        "public-available",
+        "video-available",
+      ])
+      expect(transformed.comments).toEqual([])
+      expect(transformed.issues.map((issue) => [issue.code, issue.severity])).toEqual(
+        expect.arrayContaining([
+          ["partial-media-post", "warning"],
+          ["dropped-unlisted-post", "warning"],
+          ["dropped-unlisted-comment", "warning"],
+          ["empty-media-post", "error"],
+          ["incomplete-media-post", "error"],
+        ]),
+      )
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
 })

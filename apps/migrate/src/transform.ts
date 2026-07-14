@@ -150,6 +150,31 @@ function mediaFilename(document: LegacyDocument) {
   return legacyMediaFilename(document)
 }
 
+function mediaFile(source: LegacySource, document: LegacyDocument, legacyId: string) {
+  const filename = mediaFilename(document)
+  return filename
+    ? (source.mediaByName.get(basename(filename).toLocaleLowerCase("en-US")) ??
+        source.mediaById.get(legacyId))
+    : source.mediaById.get(legacyId)
+}
+
+function postMediaReferences(document: LegacyDocument) {
+  const imageReferences = referenceIds(document, "images", "imageIds", "media", "mediaIds")
+  const videoReferences = referenceIds(document, "videos", "videoIds")
+  const singularImage = stringField(document, "image", "imageId", "mediaId")
+  const singularVideo = stringField(document, "video", "videoId")
+  if (singularImage) imageReferences.push(singularImage)
+  if (singularVideo) videoReferences.push(singularVideo)
+  return { imageReferences, videoReferences }
+}
+
+function postVisibility(document: LegacyDocument) {
+  return booleanField(document, "unlisted", "isUnlisted") === true ||
+    stringField(document, "visibility") === "unlisted"
+    ? "unlisted"
+    : "public"
+}
+
 function createdAt(document: LegacyDocument, ...names: string[]) {
   const id = documentId(document)
   return dateField(document, ...names) ?? legacyDateFromId(id) ?? new Date(0)
@@ -276,20 +301,28 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
   const mediaIdMap = new Map<string, string>()
   const mediaOwnerMap = new Map<string, string>()
   const referencedMedia = new Set<string>()
-  for (const post of source.collections.posts ?? []) {
-    const references = [
-      ...referenceIds(post, "images", "imageIds", "media", "mediaIds"),
-      ...referenceIds(post, "videos", "videoIds"),
-    ]
-    for (const id of references) {
-      referencedMedia.add(id)
-      const ownerId = stringField(post, "authorId", "userId", "user", "author")
-      if (ownerId && !mediaOwnerMap.has(id)) mediaOwnerMap.set(id, ownerId)
+  const availableMedia = new Set<string>()
+  for (const collection of ["images", "videos"] as const) {
+    for (const document of source.collections[collection] ?? []) {
+      const legacyId = documentId(document)
+      if (legacyId && mediaFile(source, document, legacyId)) availableMedia.add(legacyId)
     }
-    const singularImage = stringField(post, "image", "imageId", "mediaId")
-    const singularVideo = stringField(post, "video", "videoId")
-    for (const id of [singularImage, singularVideo]) {
-      if (!id) continue
+  }
+  const droppedPostIds = new Set<string>()
+  for (const post of source.collections.posts ?? []) {
+    const legacyId = documentId(post)
+    if (!legacyId || postVisibility(post) !== "unlisted") continue
+    const { imageReferences, videoReferences } = postMediaReferences(post)
+    if ([...imageReferences, ...videoReferences].some((id) => !availableMedia.has(id))) {
+      droppedPostIds.add(legacyId)
+    }
+  }
+  for (const post of source.collections.posts ?? []) {
+    const postId = documentId(post)
+    if (postId && droppedPostIds.has(postId)) continue
+    const { imageReferences, videoReferences } = postMediaReferences(post)
+    const references = [...imageReferences, ...videoReferences]
+    for (const id of references) {
       referencedMedia.add(id)
       const ownerId = stringField(post, "authorId", "userId", "user", "author")
       if (ownerId && !mediaOwnerMap.has(id)) mediaOwnerMap.set(id, ownerId)
@@ -303,11 +336,7 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       const legacyId = documentId(document)
       if (!legacyId) continue
       if (!referencedMedia.has(legacyId)) continue
-      const filename = mediaFilename(document)
-      const file = filename
-        ? (source.mediaByName.get(basename(filename).toLocaleLowerCase("en-US")) ??
-          source.mediaById.get(legacyId))
-        : source.mediaById.get(legacyId)
+      const file = mediaFile(source, document, legacyId)
       if (!file) continue
       const id = deterministicId("media", legacyId)
       mediaIdMap.set(legacyId, id)
@@ -339,19 +368,30 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
   const posts: ImportedPost[] = []
   const postIdMap = new Map<string, string>()
   const commentPostMap = new Map<string, string>()
+  const droppedCommentIds = new Set<string>()
   for (const document of source.collections.posts ?? []) {
     const legacyId = documentId(document)
     const authorLegacyId = stringField(document, "authorId", "userId", "user", "author")
     const authorId = authorLegacyId ? userIdMap.get(authorLegacyId) : undefined
     if (!legacyId || !authorId) continue
-    const imageReferences = referenceIds(document, "images", "imageIds", "media", "mediaIds")
-    const videoReferences = referenceIds(document, "videos", "videoIds")
-    const singularImage = stringField(document, "image", "imageId", "mediaId")
-    const singularVideo = stringField(document, "video", "videoId")
-    if (singularImage) imageReferences.push(singularImage)
-    if (singularVideo) videoReferences.push(singularVideo)
+    const { imageReferences, videoReferences } = postMediaReferences(document)
     const allReferences = [...imageReferences, ...videoReferences]
     const missing = allReferences.filter((id) => !mediaIdMap.has(id))
+    const unavailable = allReferences.filter((id) => !availableMedia.has(id))
+    const visibility = postVisibility(document)
+    if (droppedPostIds.has(legacyId)) {
+      for (const commentId of referenceIds(document, "comments")) {
+        droppedCommentIds.add(commentId)
+      }
+      issues.push({
+        severity: "warning",
+        code: "dropped-unlisted-post",
+        collection: "posts",
+        legacyId,
+        message: `Unlisted post was omitted because ${unavailable.length} of ${allReferences.length} media references were unavailable; surviving media omitted with the post: ${allReferences.length - unavailable.length}.`,
+      })
+      continue
+    }
     const explicitType = stringField(document, "type", "postType")?.toLocaleLowerCase("en-US")
     const type =
       explicitType === "video" || videoReferences.length > 0
@@ -361,6 +401,29 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
           : "text"
     const publicId = stringField(document, "postId") ?? legacyId
     const id = validPublicId(publicId) ? publicId : deterministicId("post", publicId)
+    const importedMediaIds = allReferences
+      .map((mediaId) => mediaIdMap.get(mediaId))
+      .filter((mediaId): mediaId is string => mediaId !== undefined)
+    const emptyMediaPost = (type === "images" || type === "video") && importedMediaIds.length === 0
+    const incompleteNonGallery = missing.length > 0 && type !== "images"
+    const failedMediaPost = emptyMediaPost || incompleteNonGallery
+    if (missing.length > 0) {
+      issues.push({
+        severity: failedMediaPost ? "error" : "warning",
+        code: emptyMediaPost
+          ? "empty-media-post"
+          : incompleteNonGallery
+            ? "incomplete-media-post"
+            : "partial-media-post",
+        collection: "posts",
+        legacyId,
+        message: emptyMediaPost
+          ? "Public media post has no importable media."
+          : incompleteNonGallery
+            ? "Only public image galleries may be imported with missing media."
+            : `Public post will use ${importedMediaIds.length} of ${allReferences.length} media references.`,
+      })
+    }
     postIdMap.set(legacyId, id)
     for (const commentId of referenceIds(document, "comments")) {
       commentPostMap.set(commentId, legacyId)
@@ -379,21 +442,15 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       legacyId,
       authorId,
       type,
-      status: missing.length > 0 ? "failed" : "published",
-      visibility:
-        booleanField(document, "unlisted", "isUnlisted") === true ||
-        stringField(document, "visibility") === "unlisted"
-          ? "unlisted"
-          : "public",
+      status: failedMediaPost ? "failed" : "published",
+      visibility,
       title: stringField(document, "title", "name") ?? `Legacy post ${legacyId}`,
       textContent:
         type === "text"
           ? (stringField(document, "text", "body", "content", "description") ?? "")
           : (stringField(document, "text", "body", "description") ?? null),
       tags,
-      mediaIds: allReferences
-        .map((mediaId) => mediaIdMap.get(mediaId))
-        .filter((mediaId): mediaId is string => mediaId !== undefined),
+      mediaIds: importedMediaIds,
       createdAt: postCreatedAt,
       updatedAt: dateField(document, "updatedAt", "updated") ?? postCreatedAt,
       publishedAt: dateField(document, "publishedAt") ?? postCreatedAt,
@@ -409,6 +466,19 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
     const postId = postLegacyId ? postIdMap.get(postLegacyId) : undefined
     const authorId = authorLegacyId ? userIdMap.get(authorLegacyId) : undefined
     const content = stringField(document, "content", "text", "body")
+    if (
+      (postLegacyId && droppedPostIds.has(postLegacyId)) ||
+      (legacyId && droppedCommentIds.has(legacyId))
+    ) {
+      issues.push({
+        severity: "warning",
+        code: "dropped-unlisted-comment",
+        collection: "comments",
+        legacyId,
+        message: "Comment was omitted with its unlisted parent post.",
+      })
+      continue
+    }
     if (!legacyId || !postId || !authorId || !content) {
       issues.push({
         severity: "error",
