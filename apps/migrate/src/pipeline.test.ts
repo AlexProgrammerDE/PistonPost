@@ -9,6 +9,7 @@ import type { MigrationOptions } from "./model"
 import { migrationProgram } from "./pipeline"
 
 const fixture = new URL("../fixtures/legacy-valid", import.meta.url).pathname
+const edgeFixture = new URL("../fixtures/legacy-edge", import.meta.url).pathname
 const directories: string[] = []
 
 afterEach(async () => {
@@ -60,5 +61,20 @@ describe("migration pipeline", () => {
     expect(resumed.checks).toMatchObject({ users: 2, posts: 3, comments: 1, media: 3 })
     expect(rerun.checks).toMatchObject({ users: 2, posts: 3, comments: 1, reactions: 3, media: 3 })
     expect(rerun.results.every((result) => result.state === "already-present")).toBeTrue()
+  })
+
+  test("blocks production writes when preflight errors remain", async () => {
+    const productionOptions = await options()
+
+    const error = await Effect.runPromise(
+      migrationProgram({
+        ...productionOptions,
+        source: edgeFixture,
+        target: "production",
+        confirmProduction: true,
+      }).pipe(Effect.flip),
+    )
+
+    expect(error.message).toContain("Production apply is blocked")
   })
 })

@@ -10,7 +10,13 @@ This runbook covers local rehearsal, Cloudflare preview rehearsal, production im
 - Keep preview and production credentials separate.
 - Apply every generated D1 migration before starting the importer.
 - Stop if the source fingerprint differs from the reviewed dry-run.
+- Review every legacy administrator ID and pass only the approved IDs through
+  `PISTONPOST_MIGRATION_ADMIN_IDS`. Never commit the value.
 - Treat every unexplained skip, missing reference, checksum mismatch, or foreign-key violation as a no-go result.
+
+## Required operator environment
+
+Set `PISTONPOST_MIGRATION_ADMIN_IDS` to the comma-separated legacy MongoDB IDs of administrators whose role was explicitly reviewed. Leave it empty only when the source has no administrators. An unapproved legacy administrator or an allowlist entry that is not a legacy administrator blocks production before writes begin.
 
 ## Required remote environment
 

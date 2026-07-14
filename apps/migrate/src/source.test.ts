@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { mkdtemp, rm, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { resolve } from "node:path"
 
@@ -10,6 +10,17 @@ import { transformLegacySource } from "./transform"
 
 const validFixture = new URL("../fixtures/legacy-valid", import.meta.url).pathname
 const edgeFixture = new URL("../fixtures/legacy-edge", import.meta.url).pathname
+
+function bsonDocuments(documents: Array<Record<string, unknown>>) {
+  const serialized = documents.map((document) => BSON.serialize(document))
+  const result = new Uint8Array(serialized.reduce((total, value) => total + value.byteLength, 0))
+  let offset = 0
+  for (const value of serialized) {
+    result.set(value, offset)
+    offset += value.byteLength
+  }
+  return result
+}
 
 describe("legacy source", () => {
   test("inventories and transforms the valid mounted backup", async () => {
@@ -61,6 +72,106 @@ describe("legacy source", () => {
         "bson-user-one",
         "bson-user-two",
       ])
+    } finally {
+      await rm(directory, { recursive: true, force: true })
+    }
+  })
+
+  test("preserves the actual legacy backend BSON relationships", async () => {
+    const directory = await mkdtemp(resolve(tmpdir(), "pistonpost-backend-bson-"))
+    try {
+      const dataDirectory = resolve(directory, "pistonpost")
+      const imageDirectory = resolve(directory, "images")
+      await Promise.all([
+        mkdir(dataDirectory, { recursive: true }),
+        mkdir(imageDirectory, { recursive: true }),
+      ])
+      const userId = new BSON.ObjectId("62f100000000000000000001")
+      const imageId = new BSON.ObjectId("62f100000000000000000002")
+      const postId = new BSON.ObjectId("62f100000000000000000003")
+      const commentId = new BSON.ObjectId("62f100000000000000000004")
+      const postTimestamp = Date.UTC(2022, 7, 8)
+      await Promise.all([
+        writeFile(
+          resolve(dataDirectory, "users.bson"),
+          bsonDocuments([
+            {
+              _id: userId,
+              name: "legacy-user",
+              email: "legacy@example.com",
+              emailVerified: new Date(postTimestamp),
+              roles: ["ADMIN"],
+              settings: {
+                bio: "Legacy profile",
+                emailNotifications: false,
+                location: "Workshop",
+                theme: "business",
+                website: "https://example.com",
+              },
+            },
+          ]),
+        ),
+        writeFile(
+          resolve(dataDirectory, "images.bson"),
+          bsonDocuments([{ _id: imageId, extension: "jpeg", width: 640, height: 480 }]),
+        ),
+        writeFile(
+          resolve(dataDirectory, "posts.bson"),
+          bsonDocuments([
+            {
+              _id: postId,
+              postId: "legacy-public-post",
+              title: "Legacy image post",
+              type: "IMAGES",
+              imageIds: [imageId],
+              author: userId,
+              tags: ["lathe"],
+              comments: [commentId],
+              likes: [userId],
+              timestamp: postTimestamp,
+              unlisted: false,
+            },
+          ]),
+        ),
+        writeFile(
+          resolve(dataDirectory, "comments.bson"),
+          bsonDocuments([{ _id: commentId, author: userId, content: "Legacy comment" }]),
+        ),
+        writeFile(resolve(dataDirectory, "users.metadata.json"), "{}"),
+        writeFile(resolve(imageDirectory, `${imageId.toHexString()}.jpg`), "image"),
+      ])
+
+      const source = await loadLegacySource(directory)
+      const transformed = transformLegacySource(source, new Set([userId.toHexString()]))
+
+      expect(source.inventory.collections.users).toBe(1)
+      expect(source.inventory.issues.filter((issue) => issue.severity === "error")).toEqual([])
+      expect(transformed.issues.filter((issue) => issue.severity === "error")).toEqual([])
+      expect(transformed.users[0]).toMatchObject({
+        username: "legacy-user",
+        role: "admin",
+        bio: "Legacy profile",
+        website: "https://example.com",
+        location: "Workshop",
+        theme: "dark",
+        emailNotifications: false,
+        emailVerified: true,
+      })
+      expect(transformed.media[0]).toMatchObject({
+        ownerId: userId.toHexString(),
+        filename: `${imageId.toHexString()}.jpg`,
+      })
+      expect(transformed.posts[0]).toMatchObject({
+        id: "legacy-public-post",
+        legacyId: postId.toHexString(),
+        type: "images",
+        createdAt: new Date(postTimestamp),
+      })
+      expect(transformed.comments[0]).toMatchObject({
+        legacyId: commentId.toHexString(),
+        postId: "legacy-public-post",
+      })
+      expect(transformed.reactions).toHaveLength(1)
     } finally {
       await rm(directory, { recursive: true, force: true })
     }

@@ -5,7 +5,13 @@ import { basename, extname, relative, resolve } from "node:path"
 
 import { BSON } from "bson"
 
-import { documentId, isLegacyDocument, referenceIds, stringField } from "./legacy-values"
+import {
+  documentId,
+  isLegacyDocument,
+  legacyMediaFilename,
+  referenceIds,
+  stringField,
+} from "./legacy-values"
 import type {
   LegacyCollection,
   LegacyDocument,
@@ -61,10 +67,8 @@ async function checksum(path: string) {
 function inferCollection(path: string) {
   const extension = extname(path).toLocaleLowerCase("en-US")
   if (extension !== ".bson" && extension !== ".json" && extension !== ".jsonl") return undefined
-  const name = basename(path, extension)
-    .replace(/\.metadata$/i, "")
-    .replaceAll(/[-_]/g, "")
-    .toLocaleLowerCase("en-US")
+  if (/\.metadata\.json$/i.test(basename(path))) return undefined
+  const name = basename(path, extension).replaceAll(/[-_]/g, "").toLocaleLowerCase("en-US")
   return collectionAliases[name]
 }
 
@@ -128,6 +132,7 @@ async function readCollection(path: string) {
 function sourceIssues(
   collections: LegacySource["collections"],
   mediaByName: Map<string, SourceFile>,
+  mediaById: Map<string, SourceFile>,
 ) {
   const issues: MigrationIssue[] = []
   const users = collections.users ?? []
@@ -136,7 +141,11 @@ function sourceIssues(
     const seen = new Map<string, string>()
     for (const user of users) {
       const id = documentId(user) ?? "unknown"
-      const value = stringField(user, label)?.toLocaleLowerCase("en-US")
+      const value = stringField(
+        user,
+        label,
+        ...(label === "username" ? ["userName", "handle", "name"] : []),
+      )?.toLocaleLowerCase("en-US")
       if (!value) continue
       const prior = seen.get(value)
       if (prior) {
@@ -182,11 +191,12 @@ function sourceIssues(
   for (const collection of ["images", "videos"] as const) {
     for (const media of collections[collection] ?? []) {
       const id = documentId(media) ?? "unknown"
-      const filename = stringField(media, "filename", "fileName", "path", "key", "src")
-      if (!referencedMedia.has(id)) {
-        const archivedFile = filename
-          ? mediaByName.get(basename(filename).toLocaleLowerCase("en-US"))
-          : undefined
+      const filename = legacyMediaFilename(media)
+      const archivedFile =
+        (filename ? mediaByName.get(basename(filename).toLocaleLowerCase("en-US")) : undefined) ??
+        mediaById.get(id)
+      const referenced = referencedMedia.has(id)
+      if (!referenced) {
         issues.push({
           severity: "warning",
           code: "orphan-media-record",
@@ -196,20 +206,27 @@ function sourceIssues(
           path: archivedFile?.relativePath,
         })
       }
-      if (filename && !mediaByName.has(basename(filename).toLocaleLowerCase("en-US"))) {
+      if (referenced && !archivedFile) {
         issues.push({
           severity: "error",
           code: "missing-media-file",
           collection,
           legacyId: id,
-          message: `Archive file ${filename} is missing.`,
+          message: filename ? `Archive file ${filename} is missing.` : "Media filename is missing.",
         })
       }
     }
   }
   const recordedFiles = new Set(
     [...(collections.images ?? []), ...(collections.videos ?? [])]
-      .map((media) => stringField(media, "filename", "fileName", "path", "key", "src"))
+      .map((media) => {
+        const id = documentId(media)
+        const filename = legacyMediaFilename(media)
+        const file =
+          (filename ? mediaByName.get(basename(filename).toLocaleLowerCase("en-US")) : undefined) ??
+          (id ? mediaById.get(id) : undefined)
+        return file ? basename(file.path) : filename
+      })
       .filter((value): value is string => value !== undefined)
       .map((value) => basename(value).toLocaleLowerCase("en-US")),
   )
@@ -276,12 +293,18 @@ export async function loadLegacySource(sourcePath: string, limit?: number): Prom
   const mediaByName = new Map(
     mediaFiles.map((file) => [basename(file.path).toLocaleLowerCase("en-US"), file]),
   )
+  const mediaById = new Map(
+    mediaFiles.map((file) => [
+      basename(file.path, extname(file.path)).toLocaleLowerCase("en-US"),
+      file,
+    ]),
+  )
   const fingerprint = createHash("sha256")
     .update(
       sortedFiles.map((file) => `${file.relativePath}:${file.bytes}:${file.checksum}`).join("\n"),
     )
     .digest("hex")
-  const issues = sourceIssues(collections, mediaByName)
+  const issues = sourceIssues(collections, mediaByName, mediaById)
   const inventory: SourceInventory = {
     source,
     fingerprint,
@@ -297,5 +320,5 @@ export async function loadLegacySource(sourcePath: string, limit?: number): Prom
     },
     issues,
   }
-  return { inventory, collections, mediaByName }
+  return { inventory, collections, mediaByName, mediaById }
 }

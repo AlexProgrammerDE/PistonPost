@@ -81,6 +81,15 @@ function filterForUser(transformed: TransformedMigration, legacyUserId?: string)
   }
 }
 
+function migrationAdminIds() {
+  return new Set(
+    (process.env.PISTONPOST_MIGRATION_ADMIN_IDS ?? "")
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean),
+  )
+}
+
 function shouldRun(options: MigrationOptions, phase: MigrationOptions["phase"]) {
   return options.phase === undefined || options.phase === phase
 }
@@ -271,7 +280,7 @@ export function migrationProgram(options: MigrationOptions) {
     const source = yield* loadSource(options)
     const inventory = source?.inventory ?? emptyInventory()
     const transformed = source
-      ? filterForUser(transformLegacySource(source), options.user)
+      ? filterForUser(transformLegacySource(source, migrationAdminIds()), options.user)
       : undefined
     let runId = options.resume ?? `analysis-${inventory.fingerprint.slice(0, 12)}`
     let results: ImportResult[] = []
@@ -306,6 +315,17 @@ export function migrationProgram(options: MigrationOptions) {
         if (!transformed) {
           return yield* Effect.fail(
             new MigrationError({ operation: "apply", message: "Apply requires a source." }),
+          )
+        }
+        if (
+          options.target === "production" &&
+          transformed.issues.some((issue) => issue.severity === "error")
+        ) {
+          return yield* Effect.fail(
+            new MigrationError({
+              operation: "production-preflight",
+              message: "Production apply is blocked by unresolved migration errors.",
+            }),
           )
         }
         const run = yield* operation("begin-run", () =>

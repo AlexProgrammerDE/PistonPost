@@ -65,10 +65,25 @@ export function documentId(document: LegacyDocument) {
 
 export function referenceIds(document: LegacyDocument, ...names: string[]) {
   return arrayField(document, ...names)
-    .map((value) =>
-      isLegacyDocument(value)
-        ? legacyString(field(value, "_id", "id", "imageId", "mediaId", "videoId"))
-        : legacyString(value),
+    .map(
+      (value) =>
+        legacyString(value) ??
+        (isLegacyDocument(value)
+          ? legacyString(field(value, "_id", "id", "imageId", "mediaId", "videoId"))
+          : undefined),
     )
     .filter((value): value is string => value !== undefined)
+}
+
+export function legacyDateFromId(id: string | undefined) {
+  if (!id || !/^[a-f0-9]{24}$/i.test(id)) return undefined
+  return new Date(Number.parseInt(id.slice(0, 8), 16) * 1000)
+}
+
+export function legacyMediaFilename(document: LegacyDocument) {
+  const explicit = stringField(document, "filename", "fileName", "path", "key", "src", "url")
+  if (explicit) return explicit
+  const id = documentId(document)
+  const extension = stringField(document, "extension")?.replace(/^\./, "")
+  return id && extension ? `${id}.${extension}` : undefined
 }

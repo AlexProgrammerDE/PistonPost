@@ -72,6 +72,7 @@ export type LegacySource = {
   inventory: SourceInventory
   collections: Partial<Record<LegacyCollection, LegacyDocument[]>>
   mediaByName: Map<string, SourceFile>
+  mediaById: Map<string, SourceFile>
 }
 
 export type ImportState = "imported" | "skipped" | "failed" | "already-present"

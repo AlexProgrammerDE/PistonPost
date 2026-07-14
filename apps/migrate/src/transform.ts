@@ -8,6 +8,8 @@ import {
   documentId,
   field,
   isLegacyDocument,
+  legacyDateFromId,
+  legacyMediaFilename,
   legacyString,
   referenceIds,
   stringField,
@@ -28,6 +30,7 @@ export type ImportedUser = {
   website: string | null
   location: string | null
   theme: "system" | "light" | "dark"
+  emailNotifications: boolean
   createdAt: Date
 }
 
@@ -144,7 +147,12 @@ function numericField(document: LegacyDocument, ...names: string[]) {
 }
 
 function mediaFilename(document: LegacyDocument) {
-  return stringField(document, "filename", "fileName", "path", "key", "src", "url")
+  return legacyMediaFilename(document)
+}
+
+function createdAt(document: LegacyDocument, ...names: string[]) {
+  const id = documentId(document)
+  return dateField(document, ...names) ?? legacyDateFromId(id) ?? new Date(0)
 }
 
 function collisionUsername(base: string, used: Set<string>) {
@@ -170,6 +178,7 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
   const userIdMap = new Map<string, string>()
   const usedUsernames = new Set<string>()
   const usedEmails = new Set<string>()
+  const sourceAdminIds = new Set<string>()
   const sortedUsers = (source.collections.users ?? []).toSorted((left, right) =>
     (documentId(left) ?? "").localeCompare(documentId(right) ?? ""),
   )
@@ -189,7 +198,9 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
     if (usedEmails.has(email)) continue
     usedEmails.add(email)
     const requestedUsername =
-      stringField(document, "username", "userName", "handle") ?? email.split("@", 1)[0] ?? legacyId
+      stringField(document, "username", "userName", "handle", "name") ??
+      email.split("@", 1)[0] ??
+      legacyId
     const username = collisionUsername(requestedUsername, usedUsernames)
     if (username.toLocaleLowerCase("en-US") !== requestedUsername.toLocaleLowerCase("en-US")) {
       issues.push({
@@ -200,11 +211,34 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
         message: `Username ${requestedUsername} was imported as ${username}.`,
       })
     }
-    const createdAt = dateField(document, "createdAt", "created", "date") ?? new Date(0)
+    const userCreatedAt = createdAt(document, "createdAt", "created", "date")
     const id = validPublicId(legacyId) ? legacyId : deterministicId("user", legacyId)
     userIdMap.set(legacyId, id)
-    const themeValue = stringField(document, "theme", "themePreference")
-    const theme = themeValue === "light" || themeValue === "dark" ? themeValue : "system"
+    const settingsValue = field(document, "settings")
+    const settings = isLegacyDocument(settingsValue) ? settingsValue : undefined
+    const settingString = (...names: string[]) =>
+      settings ? stringField(settings, ...names) : undefined
+    const themeValue = stringField(document, "theme", "themePreference") ?? settingString("theme")
+    const theme =
+      themeValue === "light"
+        ? "light"
+        : themeValue === "dark" || themeValue === "business" || themeValue === "night"
+          ? "dark"
+          : "system"
+    const sourceRoles = arrayField(document, "roles").map(legacyString).filter(Boolean)
+    const sourceAdmin = sourceRoles.includes("ADMIN")
+    if (sourceAdmin) {
+      sourceAdminIds.add(legacyId)
+      if (!adminIds.has(legacyId)) {
+        issues.push({
+          severity: "error",
+          code: "unapproved-admin-role",
+          collection: "users",
+          legacyId,
+          message: "Legacy administrator is not present in the reviewed migration allowlist.",
+        })
+      }
+    }
     users.push({
       id,
       legacyId,
@@ -212,32 +246,54 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       email,
       emailVerified:
         booleanField(document, "emailVerified", "verified") === true ||
-        dateField(document, "emailVerifiedAt") !== undefined,
+        dateField(document, "emailVerified", "emailVerifiedAt") !== undefined,
       username,
       normalizedUsername: username.toLocaleLowerCase("en-US"),
-      role: adminIds.has(legacyId) ? "admin" : "user",
+      role: sourceAdmin && adminIds.has(legacyId) ? "admin" : "user",
       image: stringField(document, "image", "avatar", "avatarUrl") ?? null,
-      bio: stringField(document, "bio", "description") ?? null,
-      website: stringField(document, "website", "url") ?? null,
-      location: stringField(document, "location") ?? null,
+      bio: stringField(document, "bio", "description") ?? settingString("bio") ?? null,
+      website: stringField(document, "website", "url") ?? settingString("website") ?? null,
+      location: stringField(document, "location") ?? settingString("location") ?? null,
       theme,
-      createdAt,
+      emailNotifications:
+        (settings ? booleanField(settings, "emailNotifications") : undefined) ?? true,
+      createdAt: userCreatedAt,
     })
+  }
+  for (const adminId of adminIds) {
+    if (!sourceAdminIds.has(adminId)) {
+      issues.push({
+        severity: "error",
+        code: "unknown-admin-allowlist-entry",
+        collection: "users",
+        legacyId: adminId,
+        message: "Reviewed administrator ID is not an administrator in the legacy source.",
+      })
+    }
   }
 
   const media: ImportedMedia[] = []
   const mediaIdMap = new Map<string, string>()
+  const mediaOwnerMap = new Map<string, string>()
   const referencedMedia = new Set<string>()
   for (const post of source.collections.posts ?? []) {
-    for (const id of [
+    const references = [
       ...referenceIds(post, "images", "imageIds", "media", "mediaIds"),
       ...referenceIds(post, "videos", "videoIds"),
-    ])
+    ]
+    for (const id of references) {
       referencedMedia.add(id)
+      const ownerId = stringField(post, "authorId", "userId", "user", "author")
+      if (ownerId && !mediaOwnerMap.has(id)) mediaOwnerMap.set(id, ownerId)
+    }
     const singularImage = stringField(post, "image", "imageId", "mediaId")
     const singularVideo = stringField(post, "video", "videoId")
-    if (singularImage) referencedMedia.add(singularImage)
-    if (singularVideo) referencedMedia.add(singularVideo)
+    for (const id of [singularImage, singularVideo]) {
+      if (!id) continue
+      referencedMedia.add(id)
+      const ownerId = stringField(post, "authorId", "userId", "user", "author")
+      if (ownerId && !mediaOwnerMap.has(id)) mediaOwnerMap.set(id, ownerId)
+    }
   }
   for (const [collection, kind] of [
     ["images", "image"],
@@ -249,13 +305,16 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       if (!referencedMedia.has(legacyId)) continue
       const filename = mediaFilename(document)
       const file = filename
-        ? source.mediaByName.get(basename(filename).toLocaleLowerCase("en-US"))
-        : undefined
+        ? (source.mediaByName.get(basename(filename).toLocaleLowerCase("en-US")) ??
+          source.mediaById.get(legacyId))
+        : source.mediaById.get(legacyId)
       if (!file) continue
       const id = deterministicId("media", legacyId)
       mediaIdMap.set(legacyId, id)
       const checksum = file.checksum
-      const ownerLegacyId = stringField(document, "ownerId", "userId", "authorId", "user")
+      const ownerLegacyId =
+        stringField(document, "ownerId", "userId", "authorId", "user") ??
+        mediaOwnerMap.get(legacyId)
       media.push({
         id,
         legacyId,
@@ -272,13 +331,14 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
         height: numericField(document, "height"),
         duration: numericField(document, "duration", "durationMs"),
         altText: stringField(document, "alt", "altText", "description") ?? null,
-        createdAt: dateField(document, "createdAt", "created", "date") ?? new Date(0),
+        createdAt: createdAt(document, "createdAt", "created", "date"),
       })
     }
   }
 
   const posts: ImportedPost[] = []
   const postIdMap = new Map<string, string>()
+  const commentPostMap = new Map<string, string>()
   for (const document of source.collections.posts ?? []) {
     const legacyId = documentId(document)
     const authorLegacyId = stringField(document, "authorId", "userId", "user", "author")
@@ -292,16 +352,20 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
     if (singularVideo) videoReferences.push(singularVideo)
     const allReferences = [...imageReferences, ...videoReferences]
     const missing = allReferences.filter((id) => !mediaIdMap.has(id))
-    const explicitType = stringField(document, "type", "postType")
+    const explicitType = stringField(document, "type", "postType")?.toLocaleLowerCase("en-US")
     const type =
       explicitType === "video" || videoReferences.length > 0
         ? "video"
         : explicitType === "image" || explicitType === "images" || imageReferences.length > 0
           ? "images"
           : "text"
-    const id = validPublicId(legacyId) ? legacyId : deterministicId("post", legacyId)
+    const publicId = stringField(document, "postId") ?? legacyId
+    const id = validPublicId(publicId) ? publicId : deterministicId("post", publicId)
     postIdMap.set(legacyId, id)
-    const createdAt = dateField(document, "createdAt", "created", "date") ?? new Date(0)
+    for (const commentId of referenceIds(document, "comments")) {
+      commentPostMap.set(commentId, legacyId)
+    }
+    const postCreatedAt = createdAt(document, "createdAt", "created", "date", "timestamp")
     const tags = tagValues(document)
       .map((name) => ({ name, normalized: normalizedTag(name) }))
       .filter(({ normalized }) => normalized.length > 0)
@@ -330,16 +394,17 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       mediaIds: allReferences
         .map((mediaId) => mediaIdMap.get(mediaId))
         .filter((mediaId): mediaId is string => mediaId !== undefined),
-      createdAt,
-      updatedAt: dateField(document, "updatedAt", "updated") ?? createdAt,
-      publishedAt: dateField(document, "publishedAt") ?? createdAt,
+      createdAt: postCreatedAt,
+      updatedAt: dateField(document, "updatedAt", "updated") ?? postCreatedAt,
+      publishedAt: dateField(document, "publishedAt") ?? postCreatedAt,
     })
   }
 
   const comments: ImportedComment[] = []
   for (const document of source.collections.comments ?? []) {
     const legacyId = documentId(document)
-    const postLegacyId = stringField(document, "postId", "post")
+    const postLegacyId =
+      stringField(document, "postId", "post") ?? commentPostMap.get(legacyId ?? "")
     const authorLegacyId = stringField(document, "authorId", "userId", "user", "author")
     const postId = postLegacyId ? postIdMap.get(postLegacyId) : undefined
     const authorId = authorLegacyId ? userIdMap.get(authorLegacyId) : undefined
@@ -354,19 +419,18 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       })
       continue
     }
-    const createdAt =
+    const commentCreatedAt =
       dateField(document, "createdAt", "created", "date") ??
-      (/^[a-f0-9]{24}$/i.test(legacyId)
-        ? new Date(Number.parseInt(legacyId.slice(0, 8), 16) * 1000)
-        : new Date(0))
+      legacyDateFromId(legacyId) ??
+      new Date(0)
     comments.push({
       id: validPublicId(legacyId) ? legacyId : deterministicId("comment", legacyId),
       legacyId,
       postId,
       authorId,
       content,
-      createdAt,
-      updatedAt: dateField(document, "updatedAt", "updated") ?? createdAt,
+      createdAt: commentCreatedAt,
+      updatedAt: dateField(document, "updatedAt", "updated") ?? commentCreatedAt,
     })
   }
 
@@ -375,12 +439,17 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
     postLegacyId: string | undefined,
     userLegacyId: string | undefined,
     type: ImportedReaction["type"],
-    createdAt = new Date(0),
+    reactionCreatedAt = new Date(0),
   ) => {
     const postId = postLegacyId ? postIdMap.get(postLegacyId) : undefined
     const userId = userLegacyId ? userIdMap.get(userLegacyId) : undefined
     if (!postId || !userId) return
-    reactions.set(`${postId}:${userId}:${type}`, { postId, userId, type, createdAt })
+    reactions.set(`${postId}:${userId}:${type}`, {
+      postId,
+      userId,
+      type,
+      createdAt: reactionCreatedAt,
+    })
   }
   for (const document of source.collections.reactions ?? []) {
     const type = stringField(document, "type", "reaction")
@@ -404,9 +473,10 @@ export function transformLegacySource(source: LegacySource, adminIds = new Set<s
       for (const value of values) {
         addReaction(
           postLegacyId,
-          isLegacyDocument(value)
-            ? legacyString(field(value, "_id", "id", "userId"))
-            : legacyString(value),
+          legacyString(value) ??
+            (isLegacyDocument(value)
+              ? legacyString(field(value, "_id", "id", "userId"))
+              : undefined),
           type,
         )
       }

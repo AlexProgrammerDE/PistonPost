@@ -201,6 +201,7 @@ export class LocalMigrationDatabaseWriter implements MigrationDatabaseWriter {
         .insert(schema.userSettings)
         .values({
           userId: value.id,
+          emailNotifications: value.emailNotifications,
           theme: value.theme,
           createdAt: value.createdAt,
           updatedAt: value.createdAt,
@@ -461,7 +462,10 @@ export class LocalVideoWriter implements MigrationVideoWriter {
   constructor(readonly archive: LocalObjectWriter) {}
 
   async upload(sourcePath: string, checksum: string, _creator: string) {
-    const uid = `local-${checksum.slice(0, 32)}`
+    const uid = `local-${new Bun.CryptoHasher("sha256")
+      .update(`${checksum}:${basename(sourcePath)}`)
+      .digest("hex")
+      .slice(0, 32)}`
     await this.archive.put(
       `legacy-video/${checksum}-${basename(sourcePath)}`,
       sourcePath,

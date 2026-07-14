@@ -44,6 +44,10 @@ export function cloudflareConfiguration(target: Exclude<MigrationOptions["target
   } satisfies CloudflareConfiguration
 }
 
+export function cloudflareR2BaseUrl(accountId: string, bucket: string) {
+  return `https://${accountId}.eu.r2.cloudflarestorage.com/${bucket}`
+}
+
 function record(value: unknown): value is Readonly<Record<string, unknown>> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
 }
@@ -259,8 +263,15 @@ export class CloudflareMigrationDatabaseWriter implements MigrationDatabaseWrite
         ],
       },
       {
-        sql: "INSERT INTO user_settings (user_id, theme, created_at, updated_at) VALUES (?, ?, ?, ?)",
-        params: [value.id, value.theme, timestamp(value.createdAt), timestamp(value.createdAt)],
+        sql: `INSERT INTO user_settings
+          (user_id, email_notifications, theme, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`,
+        params: [
+          value.id,
+          value.emailNotifications ? 1 : 0,
+          value.theme,
+          timestamp(value.createdAt),
+          timestamp(value.createdAt),
+        ],
       },
       mappingQuery(runId, result),
     ])
@@ -507,7 +518,7 @@ export class CloudflareR2Writer implements MigrationObjectWriter {
       service: "s3",
       region: "auto",
     })
-    this.baseUrl = `https://${configuration.accountId}.r2.cloudflarestorage.com/${configuration.r2Bucket}`
+    this.baseUrl = cloudflareR2BaseUrl(configuration.accountId, configuration.r2Bucket)
   }
 
   private url(key: string) {
