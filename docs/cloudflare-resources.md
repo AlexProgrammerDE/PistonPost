@@ -23,7 +23,7 @@ bunx wrangler d1 create pistonpost-staging --location weur
 bunx wrangler d1 create pistonpost-production --location weur
 ```
 
-Wrangler prints each database ID after creation. Add the matching ID to the local, uncommitted deployment configuration or CI environment. Do not paste resource IDs into documentation.
+Wrangler prints each database ID after creation. Store the production ID in the GitHub production environment as `PRODUCTION_D1_DATABASE_ID`. The deployment preparation step adds it to the generated Wrangler configuration without committing the ID.
 
 The local development database is created automatically by the Cloudflare Vite plugin. Regenerate Worker types after any binding change:
 
@@ -89,7 +89,48 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 - `TURNSTILE_SECRET`
 - `STREAM_WEBHOOK_SECRET`
 
+Create or select a store, then create each secret with the `workers` scope:
+
+```bash
+bunx wrangler secrets-store store list
+STORE_ID=replace-with-your-store-id
+bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
+```
+
+Store the selected store ID in the GitHub production environment as `PRODUCTION_SECRETS_STORE_ID`. The deployment workflow binds all three secrets by name. Its Cloudflare API token needs permission to deploy Secrets Store bindings in addition to the permissions required by the other configured services.
+
 Do not store secrets in Wrangler `vars`, GitHub logs, migration reports, or shell history.
+
+## Configure production deployment
+
+Create a protected GitHub environment named `production`. Add these environment secrets:
+
+- `CLOUDFLARE_ACCOUNT_ID`
+- `CLOUDFLARE_API_TOKEN`
+
+Add these environment variables:
+
+- `PRODUCTION_BASE_URL`: the public HTTPS origin, such as `https://pistonpost.com`.
+- `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
+- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the three Worker secrets.
+- `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
+- `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
+
+The base URL determines the Worker Custom Domain. It must be an HTTPS origin without a path, query, port, or fragment. The hostname must belong to an active zone in the same Cloudflare account.
+
+The production workflow performs these steps in order:
+
+1. Run the complete repository CI gate.
+2. Build with `CLOUDFLARE_ENV=production` so the Cloudflare Vite plugin selects the production environment.
+3. Add the external resource IDs, Custom Domain, Turnstile site key, and Secrets Store bindings to the ignored generated configuration.
+4. Run a Wrangler dry run and stop if the build still points at local or placeholder resources.
+5. Record a D1 Time Travel bookmark and apply generated migrations.
+6. Deploy the Worker with commit metadata.
+7. Run the production smoke tests and publish the rollback checkpoint.
+
+After the cutover checklist is approved, open **Actions**, select **Deploy production**, choose **Run workflow**, and enter `deploy-production` as the confirmation value. Deploy only committed code from the reviewed branch.
 
 ## Validate the environment
 

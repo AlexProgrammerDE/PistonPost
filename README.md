@@ -49,6 +49,8 @@ The Worker exposes a shallow `GET /health` endpoint. Public document responses r
 
 See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before creating staging or production resources.
 
+Production releases use the manually approved `Deploy production` GitHub Actions workflow. The workflow builds the Cloudflare Vite application with the production environment selected, prepares the ignored deployment configuration from protected GitHub environment values, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning guide and cutover runbook before triggering it.
+
 ## Legacy migration
 
 Analyze a mounted backup without changing a target:

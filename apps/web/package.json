@@ -6,6 +6,7 @@
   "scripts": {
     "build": "vite build",
     "cf:typegen": "wrangler types --env-interface Env",
+    "deploy:prepare:production": "bun scripts/prepare-production-deploy.ts",
     "deploy:dry-run": "bun run build && wrangler deploy --dry-run",
     "dev": "node ../../node_modules/vite/bin/vite.js dev --port 3000",
     "preview": "vite preview",

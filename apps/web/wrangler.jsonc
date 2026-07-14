@@ -151,7 +151,10 @@
         {
           "name": "EMAIL",
           "destination_address": "staging-email-sink@pistonpost.com",
-          "allowed_sender_addresses": ["auth@transactional.pistonpost.com"],
+          "allowed_sender_addresses": [
+            "auth@transactional.pistonpost.com",
+            "notifications@transactional.pistonpost.com",
+          ],
         },
       ],
       "queues": {
@@ -251,7 +254,10 @@
       "send_email": [
         {
           "name": "EMAIL",
-          "allowed_sender_addresses": ["auth@transactional.pistonpost.com"],
+          "allowed_sender_addresses": [
+            "auth@transactional.pistonpost.com",
+            "notifications@transactional.pistonpost.com",
+          ],
         },
       ],
       "queues": {
