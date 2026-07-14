@@ -1,6 +1,10 @@
 import { describe, expect, test } from "bun:test"
 
-import { cloudflareR2BaseUrl, cloudflareR2ClientOptions } from "./cloudflare-adapters"
+import {
+  cloudflareApiError,
+  cloudflareR2BaseUrl,
+  cloudflareR2ClientOptions,
+} from "./cloudflare-adapters"
 
 describe("Cloudflare migration adapters", () => {
   test("uses the EU endpoint for jurisdictional R2 buckets", () => {
@@ -15,5 +19,12 @@ describe("Cloudflare migration adapters", () => {
       secretAccessKey: "secret",
       sessionToken: "session",
     })
+  })
+
+  test("extracts sanitized Cloudflare API error messages", () => {
+    expect(cloudflareApiError({ errors: [{ message: "Invalid batch request." }] })).toBe(
+      "Invalid batch request.",
+    )
+    expect(cloudflareApiError(null)).toBe("Unknown Cloudflare API error.")
   })
 })

@@ -73,6 +73,14 @@ function checkRecord(value: Readonly<Record<string, unknown>>) {
   )
 }
 
+export function cloudflareApiError(body: unknown) {
+  if (!record(body) || !Array.isArray(body.errors)) return "Unknown Cloudflare API error."
+  const messages = body.errors.flatMap((error) =>
+    record(error) && typeof error.message === "string" ? [error.message] : [],
+  )
+  return messages.join("; ") || "Unknown Cloudflare API error."
+}
+
 class D1Api {
   readonly endpoint
 
@@ -91,7 +99,9 @@ class D1Api {
     })
     const body: unknown = await response.json()
     if (!response.ok || !record(body) || body.success !== true || !Array.isArray(body.result)) {
-      throw new Error(`Cloudflare D1 query failed with status ${response.status}.`)
+      throw new Error(
+        `Cloudflare D1 query failed with status ${response.status}: ${cloudflareApiError(body)}`,
+      )
     }
     return body.result
   }
