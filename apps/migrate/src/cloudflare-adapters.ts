@@ -24,6 +24,7 @@ type CloudflareConfiguration = {
   r2Bucket: string
   r2AccessKeyId: string
   r2SecretAccessKey: string
+  r2SessionToken?: string
 }
 
 function requiredEnvironment(name: string) {
@@ -41,11 +42,20 @@ export function cloudflareConfiguration(target: Exclude<MigrationOptions["target
     r2Bucket: requiredEnvironment(`${prefix}_R2_BUCKET`),
     r2AccessKeyId: requiredEnvironment(`${prefix}_R2_ACCESS_KEY_ID`),
     r2SecretAccessKey: requiredEnvironment(`${prefix}_R2_SECRET_ACCESS_KEY`),
+    r2SessionToken: process.env[`${prefix}_R2_SESSION_TOKEN`],
   } satisfies CloudflareConfiguration
 }
 
 export function cloudflareR2BaseUrl(accountId: string, bucket: string) {
   return `https://${accountId}.eu.r2.cloudflarestorage.com/${bucket}`
+}
+
+export function cloudflareR2ClientOptions(
+  accessKeyId: string,
+  secretAccessKey: string,
+  sessionToken?: string,
+) {
+  return { accessKeyId, secretAccessKey, sessionToken }
 }
 
 function record(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -513,8 +523,11 @@ export class CloudflareR2Writer implements MigrationObjectWriter {
 
   constructor(readonly configuration: CloudflareConfiguration) {
     this.client = new AwsClient({
-      accessKeyId: configuration.r2AccessKeyId,
-      secretAccessKey: configuration.r2SecretAccessKey,
+      ...cloudflareR2ClientOptions(
+        configuration.r2AccessKeyId,
+        configuration.r2SecretAccessKey,
+        configuration.r2SessionToken,
+      ),
       service: "s3",
       region: "auto",
     })

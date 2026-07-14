@@ -30,13 +30,15 @@ PISTONPOST_PREVIEW_D1_DATABASE_ID
 PISTONPOST_PREVIEW_R2_BUCKET
 PISTONPOST_PREVIEW_R2_ACCESS_KEY_ID
 PISTONPOST_PREVIEW_R2_SECRET_ACCESS_KEY
+PISTONPOST_PREVIEW_R2_SESSION_TOKEN
 PISTONPOST_PRODUCTION_D1_DATABASE_ID
 PISTONPOST_PRODUCTION_R2_BUCKET
 PISTONPOST_PRODUCTION_R2_ACCESS_KEY_ID
 PISTONPOST_PRODUCTION_R2_SECRET_ACCESS_KEY
+PISTONPOST_PRODUCTION_R2_SESSION_TOKEN
 ```
 
-The Stream writer uses the same account ID and narrowly scoped API token. The R2 writer verifies the stored SHA-256 object metadata before treating an existing immutable key as complete.
+The R2 session-token variables are required only for temporary credentials. The Stream writer uses the same account ID and narrowly scoped API token. The R2 writer verifies the stored SHA-256 object metadata before treating an existing immutable key as complete.
 
 ## Local rehearsal
 
