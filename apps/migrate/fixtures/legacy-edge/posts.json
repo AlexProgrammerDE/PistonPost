@@ -1,0 +1,15 @@
+[
+  {
+    "_id": "edge01",
+    "authorId": "edge-user-one",
+    "title": "Missing source",
+    "type": "image",
+    "imageIds": ["edge-image-missing"]
+  },
+  {
+    "_id": "edge02",
+    "authorId": "unknown-user",
+    "title": "Broken ownership",
+    "type": "text"
+  }
+]

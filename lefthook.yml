@@ -1,0 +1,22 @@
+pre-commit:
+  parallel: true
+  commands:
+    format:
+      glob: "*.{css,json,jsonc,md,mdx,mjs,cjs,js,jsx,ts,tsx,toml,yaml,yml}"
+      run: bunx oxfmt --check {staged_files}
+    lint:
+      glob: "*.{js,jsx,ts,tsx}"
+      run: bunx oxlint --type-aware --deny-warnings {staged_files}
+    typecheck:
+      glob: "{apps,packages,tests}/**/*.{ts,tsx}"
+      run: bun run typecheck
+
+commit-msg:
+  commands:
+    conventional:
+      run: |
+        message=$(head -n 1 {1})
+        if ! echo "$message" | grep -qE '^(feat|fix|docs|refactor|test|chore|ci|build|perf|style|revert)(\([a-z0-9._/-]+\))?: .+'; then
+          echo "Commit message must follow Conventional Commit format: type(scope): subject"
+          exit 1
+        fi

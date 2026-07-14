@@ -724,11 +724,11 @@ Report:
 - [x] Create the repository with the requested shadcn TanStack Start monorepo command.
 - [x] Verify Base UI, Maia, Hugeicons, fonts, colors, and aliases through shadcn info.
 - [x] Add PLAN.md, AGENTS.md, CLAUDE.md, and a project README.
-- [ ] Rename package names to a consistent @pistonpost/* convention.
-- [ ] Record the exact current dependency versions and replace latest ranges with deliberate compatible ranges.
+- [x] Rename package names to a consistent @pistonpost/* convention.
+- [x] Record the exact current dependency versions and replace latest ranges with deliberate compatible ranges.
 - [ ] Add LICENSE after confirming the desired license for the rewrite.
-- [ ] Add EditorConfig and normalize line endings.
-- [ ] Ensure generated starter title and metadata say PistonPost.
+- [x] Add EditorConfig and normalize line endings.
+- [x] Ensure generated starter title and metadata say PistonPost.
 - [x] Run baseline install, lint, typecheck, and build.
 
 Exit gate:
@@ -742,18 +742,18 @@ bun run build
 
 ### Phase 1: Modern workspace tooling
 
-- [ ] Replace ESLint and Prettier with Oxlint and Oxfmt.
-- [ ] Add shared Oxc configuration and editor recommendations.
-- [ ] Add root check, fix, test, ci, and package-filtered scripts.
-- [ ] Configure Turborepo inputs, outputs, global dependencies, environment inputs, and persistent tasks.
-- [ ] Add Bun test setup with Happy DOM and Testing Library.
-- [ ] Add Playwright for end-to-end tests.
-- [ ] Add Knip for unused exports and dependencies.
-- [ ] Add Lefthook with staged Oxc checks and appropriate type/tests.
-- [ ] Add Renovate configuration with grouped TanStack and Cloudflare updates.
-- [ ] Add GitHub Actions for install, generated-file verification, check, typecheck, test, build, and Wrangler dry run.
-- [ ] Cache Bun and Turborepo artifacts in CI.
-- [ ] Ensure hooks are fast enough for normal commits and never bypassed.
+- [x] Replace ESLint and Prettier with Oxlint and Oxfmt.
+- [x] Add shared Oxc configuration and editor recommendations.
+- [x] Add root check, fix, test, ci, and package-filtered scripts.
+- [x] Configure Turborepo inputs, outputs, global dependencies, environment inputs, and persistent tasks.
+- [x] Add Bun test setup with Happy DOM and Testing Library.
+- [x] Add Playwright for end-to-end tests.
+- [x] Add Knip for unused exports and dependencies.
+- [x] Add Lefthook with staged Oxc checks and appropriate type/tests.
+- [x] Add Renovate configuration with grouped TanStack and Cloudflare updates.
+- [x] Add GitHub Actions for install, generated-file verification, check, typecheck, test, build, and Wrangler dry run.
+- [x] Cache Bun and Turborepo artifacts in CI.
+- [x] Ensure hooks are fast enough for normal commits and never bypassed.
 
 Exit gate:
 
@@ -763,16 +763,16 @@ bun run ci
 
 ### Phase 2: Cloudflare and TanStack Start runtime
 
-- [ ] Add the Cloudflare Vite plugin using the current TanStack Start integration.
-- [ ] Create wrangler.jsonc with preview and production environments.
-- [ ] Configure assets, smart placement, source maps, observability, cache, rate limits, and initial D1 binding.
-- [ ] Add generated Worker environment types.
-- [ ] Create a typed runtime-env resolver.
-- [ ] Separate public cache policy from private no-store policy.
-- [ ] Add shallow health endpoint.
-- [ ] Add local development variable examples without secret values.
-- [ ] Add Wrangler dry-run build and type generation to CI.
-- [ ] Document Cloudflare resource provisioning commands.
+- [x] Add the Cloudflare Vite plugin using the current TanStack Start integration.
+- [x] Create wrangler.jsonc with preview and production environments.
+- [x] Configure assets, smart placement, source maps, observability, cache, rate limits, and initial D1 binding.
+- [x] Add generated Worker environment types.
+- [x] Create a typed runtime-env resolver.
+- [x] Separate public cache policy from private no-store policy.
+- [x] Add shallow health endpoint.
+- [x] Add local development variable examples without secret values.
+- [x] Add Wrangler dry-run build and type generation to CI.
+- [x] Document Cloudflare resource provisioning commands.
 
 Exit criteria:
 
@@ -783,16 +783,16 @@ Exit criteria:
 
 ### Phase 3: D1, Drizzle, and domain foundation
 
-- [ ] Create packages/db and packages/domain.
-- [ ] Define schema for profiles, settings, posts, tags, media, comments, reactions, audit, outbox, and migration tracking.
-- [ ] Generate the first Drizzle migration. Do not hand-edit it.
-- [ ] Add D1 database factory and transaction helpers.
-- [ ] Add repository interfaces and D1 implementations.
-- [ ] Add domain actor, visibility, ownership, and moderation policy.
-- [ ] Add cursor pagination utilities.
-- [ ] Add seed factories for local development and tests.
-- [ ] Add integration tests for constraints, indexes, transactions, and policies.
-- [ ] Verify D1 foreign keys are enabled where expected.
+- [x] Create packages/db and packages/domain.
+- [x] Define schema for profiles, settings, posts, tags, media, comments, reactions, audit, outbox, and migration tracking.
+- [x] Generate the first Drizzle migration. Do not hand-edit it.
+- [x] Add D1 database factory and transaction helpers.
+- [x] Add repository interfaces and D1 implementations.
+- [x] Add domain actor, visibility, ownership, and moderation policy.
+- [x] Add cursor pagination utilities.
+- [x] Add seed factories for local development and tests.
+- [x] Add integration tests for constraints, indexes, transactions, and policies.
+- [x] Verify D1 foreign keys are enabled where expected.
 
 Exit criteria:
 
@@ -802,21 +802,21 @@ Exit criteria:
 
 ### Phase 4: Better Auth, Better Auth UI, captcha, and email
 
-- [ ] Create packages/auth and packages/email.
-- [ ] Install compatible Better Auth, passkey, Better Auth UI, Harmony, React Email, and Turnstile packages.
-- [ ] Generate Better Auth schema for the selected plugins.
-- [ ] Integrate generated auth schema into packages/db and generate Drizzle migration.
-- [ ] Build request-scoped auth factory with D1 Drizzle adapter.
-- [ ] Add auth client and typed session helpers.
-- [ ] Add email/password, verification, magic link, email OTP, username, passkey, 2FA, admin, HIBP, Harmony, captcha, and optional multi-session plugins.
-- [ ] Add Turnstile widget and server verification.
-- [ ] Add Better Auth UI routes and account settings views.
-- [ ] Port the relevant EnderDash auth UI patterns without organization or billing code.
-- [ ] Add React Email templates and Cloudflare Email transport.
-- [ ] Add queue-backed email delivery with idempotency.
-- [ ] Add auth rate limits, no-store policy, trusted origins, and audit hooks.
-- [ ] Test session revocation before enabling cookie cache.
-- [ ] Add end-to-end sign-up, verification, sign-in, recovery, passkey, 2FA, and sign-out coverage.
+- [x] Create packages/auth and packages/email.
+- [x] Install compatible Better Auth, passkey, Better Auth UI, Harmony, React Email, and Turnstile packages.
+- [x] Generate Better Auth schema for the selected plugins.
+- [x] Integrate generated auth schema into packages/db and generate Drizzle migration.
+- [x] Build request-scoped auth factory with D1 Drizzle adapter.
+- [x] Add auth client and typed session helpers.
+- [x] Add email/password, verification, magic link, email OTP, username, passkey, 2FA, admin, HIBP, Harmony, captcha, and optional multi-session plugins.
+- [x] Add Turnstile widget and server verification.
+- [x] Add Better Auth UI routes and account settings views.
+- [x] Port the relevant EnderDash auth UI patterns without organization or billing code.
+- [x] Add React Email templates and Cloudflare Email transport.
+- [x] Add queue-backed email delivery with idempotency.
+- [x] Add auth rate limits, no-store policy, trusted origins, and audit hooks.
+- [x] Test session revocation before enabling cookie cache.
+- [x] Add end-to-end sign-up, verification, sign-in, recovery, passkey, 2FA, and sign-out coverage.
 
 Exit criteria:
 
@@ -827,18 +827,18 @@ Exit criteria:
 
 ### Phase 5: Public reading experience
 
-- [ ] Establish final PistonPost visual system and page shell.
-- [ ] Build accessible navigation, account menu, footer, error boundaries, not-found view, and metadata defaults.
-- [ ] Implement public feed query and cursor pagination.
-- [ ] Implement text, image-gallery, and video post renderers.
-- [ ] Implement public post detail.
-- [ ] Implement tag feed and profile feed.
-- [ ] Add public profile header.
-- [ ] Add public aggregate reaction counts without viewer leakage.
-- [ ] Add loading, empty, error, and offline-aware states.
-- [ ] Add Open Graph metadata, canonical URLs, robots, and sitemap rules.
-- [ ] Exclude unlisted and non-published content from discovery and caching.
-- [ ] Add accessibility and responsive tests for representative posts.
+- [x] Establish final PistonPost visual system and page shell.
+- [x] Build accessible navigation, account menu, footer, error boundaries, not-found view, and metadata defaults.
+- [x] Implement public feed query and cursor pagination.
+- [x] Implement text, image-gallery, and video post renderers.
+- [x] Implement public post detail.
+- [x] Implement tag feed and profile feed.
+- [x] Add public profile header.
+- [x] Add public aggregate reaction counts without viewer leakage.
+- [x] Add loading, empty, error, and offline-aware states.
+- [x] Add Open Graph metadata, canonical URLs, robots, and sitemap rules.
+- [x] Exclude unlisted and non-published content from discovery and caching.
+- [x] Add accessibility and responsive tests for representative posts.
 
 Exit criteria:
 
@@ -849,19 +849,20 @@ Exit criteria:
 
 ### Phase 6: Composer and media
 
-- [ ] Build TanStack Form schemas for text, images, and video.
-- [ ] Add draft creation before upload association.
-- [ ] Add R2 upload initiation, validation, completion, and abort flow.
-- [ ] Add Images delivery variants.
-- [ ] Add Stream direct upload creation and webhook handling.
-- [ ] Add media status polling through TanStack Query.
-- [ ] Add sortable image gallery with stable media IDs.
-- [ ] Add alt text and upload progress.
-- [ ] Add publish validation and optimistic-concurrency edit flow.
-- [ ] Add owner and admin edit/delete behavior.
-- [ ] Add Queue cleanup and Cron reconciliation.
-- [ ] Add media quotas and rate limits.
-- [ ] Add end-to-end tests for all three post types and failure recovery.
+- [x] Build TanStack Form schemas for text, images, and video.
+- [x] Add draft creation before upload association.
+- [x] Add R2 upload initiation, validation, completion, and abort flow.
+- [x] Add Images delivery variants.
+- [x] Add Stream direct upload creation and webhook handling.
+- [x] Add media status polling through TanStack Query.
+- [x] Add sortable image gallery with stable media IDs.
+- [x] Add alt text and upload progress.
+- [x] Add publish validation and optimistic-concurrency edit flow.
+- [x] Add owner and admin edit/delete behavior.
+- [x] Add Queue cleanup and Cron reconciliation.
+- [x] Add media quotas and rate limits.
+- [x] Add local end-to-end coverage for text publishing, multi-image publishing, invalid-image recovery, and interrupted resumable video upload.
+- [ ] Verify successful Stream direct upload, encoding readiness, and TUS resume end to end against disposable Cloudflare preview resources.
 
 Exit criteria:
 
@@ -872,18 +873,18 @@ Exit criteria:
 
 ### Phase 7: Social actions, profiles, settings, and tables
 
-- [ ] Implement optimistic like, dislike, heart, and clear reaction mutations.
-- [ ] Implement comment creation and deletion.
-- [ ] Add comment and reaction rate limits.
-- [ ] Implement profile and preference forms.
-- [ ] Implement account deletion Workflow.
-- [ ] Install and pin TanStack Table v9.
-- [ ] Build shared table features and tests.
-- [ ] Build account post management table.
-- [ ] Build admin posts, comments, users, media, audit, and migration tables.
-- [ ] Add moderation actions with confirmations and audit events.
-- [ ] Add URL-synchronized filters, sorting, pagination, and column visibility.
-- [ ] Add permission and stale-state regression tests.
+- [x] Implement optimistic like, dislike, heart, and clear reaction mutations.
+- [x] Implement comment creation and deletion.
+- [x] Add comment and reaction rate limits.
+- [x] Implement profile and preference forms.
+- [x] Implement account deletion Workflow.
+- [x] Install and pin TanStack Table v9.
+- [x] Build shared table features and tests.
+- [x] Build account post management table.
+- [x] Build admin posts, comments, users, media, audit, and migration tables.
+- [x] Add moderation actions with confirmations and audit events.
+- [x] Add URL-synchronized filters, sorting, pagination, and column visibility.
+- [x] Add permission and stale-state regression tests.
 
 Exit criteria:
 
@@ -894,18 +895,18 @@ Exit criteria:
 
 ### Phase 8: Migration tooling
 
-- [ ] Create apps/migrate with analyze, dry-run, apply, resume, and verify commands.
-- [ ] Support Mongo exports and the actual mounted backup format.
-- [ ] Build deterministic transforms for every legacy entity.
-- [ ] Add Cloudflare D1, R2, and Stream writers behind interfaces.
-- [ ] Add migration run and mapping persistence.
-- [ ] Add checksums, batching, retry with backoff, and structured logs.
-- [ ] Add collision and missing-reference reports.
-- [ ] Add fixture backup covering edge cases.
-- [ ] Prove rerun idempotency and partial-failure resume.
-- [ ] Run a full local migration rehearsal.
+- [x] Create apps/migrate with analyze, dry-run, apply, resume, and verify commands.
+- [x] Support Mongo exports and the actual mounted backup format.
+- [x] Build deterministic transforms for every legacy entity.
+- [x] Add Cloudflare D1, R2, and Stream writers behind interfaces.
+- [x] Add migration run and mapping persistence.
+- [x] Add checksums, batching, retry with backoff, and structured logs.
+- [x] Add collision and missing-reference reports.
+- [x] Add fixture backup covering edge cases.
+- [x] Prove rerun idempotency and partial-failure resume.
+- [x] Run a full local migration rehearsal.
 - [ ] Run a disposable Cloudflare preview migration rehearsal.
-- [ ] Produce final production runbook and rollback checkpoints.
+- [x] Produce final production runbook and rollback checkpoints.
 
 Exit criteria:
 
@@ -916,18 +917,19 @@ Exit criteria:
 
 ### Phase 9: Security, performance, and operational hardening
 
-- [ ] Threat-model auth, uploads, Stream webhooks, comments, reactions, admin actions, and migration credentials.
-- [ ] Add security headers and a tested Content Security Policy.
-- [ ] Add CSRF, origin, and content-type checks where the framework or Better Auth does not already cover them.
-- [ ] Add body and field size limits before parsing.
-- [ ] Add abuse tests for spoofed MIME types, oversized input, IDOR, role changes, and cache confusion.
-- [ ] Add D1 query plans for hot queries.
-- [ ] Add bundle analysis and remove server/client boundary leaks.
-- [ ] Tune cache TTL, query stale times, image variants, and trace sampling from measurements.
-- [ ] Add Queue dead-letter handling and operator alerts.
-- [ ] Add backup, restore, and D1 time-travel runbook.
-- [ ] Add dashboards or queries for Worker errors, queue lag, media failures, auth failures, and migration state.
-- [ ] Run load tests for feed, post detail, reactions, comments, and auth initiation.
+- [x] Threat-model auth, uploads, Stream webhooks, comments, reactions, admin actions, and migration credentials.
+- [x] Add security headers and a tested Content Security Policy.
+- [x] Add CSRF, origin, and content-type checks where the framework or Better Auth does not already cover them.
+- [x] Add body and field size limits before parsing.
+- [x] Add abuse tests for spoofed MIME types, oversized input, IDOR, role changes, and cache confusion.
+- [x] Add D1 query plans for hot queries.
+- [x] Add bundle analysis and remove server/client boundary leaks.
+- [x] Tune cache TTL, query stale times, image variants, and trace sampling from measurements.
+- [x] Add Queue dead-letter handling and operator alerts.
+- [x] Add backup, restore, and D1 time-travel runbook.
+- [x] Add dashboards or queries for Worker errors, queue lag, media failures, auth failures, and migration state.
+- [x] Run warm local load tests for feed, populated post detail, and auth initiation.
+- [ ] Run authenticated preview load tests for reactions and comments.
 
 Exit criteria:
 
@@ -1016,3 +1018,10 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Do not migrate legacy sessions or verification tokens. Require fresh authentication at cutover.
 - 2026-07-14: Do not add Better Auth organizations. PistonPost authorization is user, ownership, and role based.
 - 2026-07-14: Use Cloudflare products where they solve a concrete requirement. Do not add platform services without a matching domain or operational need.
+- 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, migration stages, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
+- 2026-07-14: Use shadcn Typeset for long-form post rendering and use Base UI-backed shadcn components whenever they own a real product interaction. Do not add components without a concrete use.
+- 2026-07-14: Generate Better Auth-owned tables before adding product-to-user foreign keys. Phase 3 enforces every product-only relationship immediately; Phase 4 adds the user relationships from the generated auth schema so the auth tables are never hand-authored from memory.
+- 2026-07-14: New posts may contain up to 20 images at 15 MB each, or one video up to 2 GB and 10 minutes. Existing migrated galleries remain viewable even when they exceed the new-authoring limits.
+- 2026-07-14: Account deletion starts a durable Workflow before Better Auth removes the user. Media ownership becomes nullable only during that handoff, provider objects are deleted idempotently, and the final media records are removed after R2 and Stream succeed.
+- 2026-07-14: Administration tables use server-side `(created_at, id)` cursors. Cursor history, sort direction, filters, and column visibility live in URL search parameters so large datasets never rely on offset pagination.
+- 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.

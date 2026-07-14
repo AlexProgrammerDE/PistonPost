@@ -126,10 +126,7 @@ The design direction is editorial and media-first with a restrained industrial P
 
 ```ts
 export function generateN(count: number) {
-  return Array.from(
-    { length: Math.max(0, Math.floor(count)) },
-    (_, index) => index + 1
-  )
+  return Array.from({ length: Math.max(0, Math.floor(count)) }, (_, index) => index + 1)
 }
 ```
 

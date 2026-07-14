@@ -9,38 +9,371 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as TermsRouteImport } from './routes/terms'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as MigrationRouteImport } from './routes/migration'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as UserUsernameRouteImport } from './routes/user.$username'
+import { Route as TagTagRouteImport } from './routes/tag.$tag'
+import { Route as PostPostIdRouteImport } from './routes/post.$postId'
+import { Route as AuthAuthViewRouteImport } from './routes/auth.$authView'
+import { Route as AdminSectionRouteImport } from './routes/admin.$section'
+import { Route as AccountSettingsRouteImport } from './routes/account.settings'
+import { Route as AccountPostsRouteImport } from './routes/account.posts'
+import { Route as AccountMediaRouteImport } from './routes/account.media'
+import { Route as AccountCommentsRouteImport } from './routes/account.comments'
+import { Route as AccountSettingsIndexRouteImport } from './routes/account.settings.index'
+import { Route as AccountPostsIndexRouteImport } from './routes/account.posts.index'
+import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
+import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
+import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhook'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AccountSettingsSettingsViewRouteImport } from './routes/account.settings.$settingsView'
+import { Route as AccountPostsNewRouteImport } from './routes/account.posts.new'
+import { Route as MediaVideoMediaIdPlayerRouteImport } from './routes/media.video.$mediaId.player'
+import { Route as MediaImageMediaIdVariantRouteImport } from './routes/media.image.$mediaId.$variant'
 
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MigrationRoute = MigrationRouteImport.update({
+  id: '/migration',
+  path: '/migration',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthIndexRoute = AuthIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthRoute,
+} as any)
+const UserUsernameRoute = UserUsernameRouteImport.update({
+  id: '/user/$username',
+  path: '/user/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TagTagRoute = TagTagRouteImport.update({
+  id: '/tag/$tag',
+  path: '/tag/$tag',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostPostIdRoute = PostPostIdRouteImport.update({
+  id: '/post/$postId',
+  path: '/post/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthAuthViewRoute = AuthAuthViewRouteImport.update({
+  id: '/$authView',
+  path: '/$authView',
+  getParentRoute: () => AuthRoute,
+} as any)
+const AdminSectionRoute = AdminSectionRouteImport.update({
+  id: '/admin/$section',
+  path: '/admin/$section',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountSettingsRoute = AccountSettingsRouteImport.update({
+  id: '/account/settings',
+  path: '/account/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountPostsRoute = AccountPostsRouteImport.update({
+  id: '/account/posts',
+  path: '/account/posts',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountMediaRoute = AccountMediaRouteImport.update({
+  id: '/account/media',
+  path: '/account/media',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountCommentsRoute = AccountCommentsRouteImport.update({
+  id: '/account/comments',
+  path: '/account/comments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountSettingsIndexRoute = AccountSettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountSettingsRoute,
+} as any)
+const AccountPostsIndexRoute = AccountPostsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountPostsRoute,
+} as any)
+const PostPostIdEditRoute = PostPostIdEditRouteImport.update({
+  id: '/edit',
+  path: '/edit',
+  getParentRoute: () => PostPostIdRoute,
+} as any)
+const MediaUploadMediaIdRoute = MediaUploadMediaIdRouteImport.update({
+  id: '/media/upload/$mediaId',
+  path: '/media/upload/$mediaId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiStreamWebhookRoute = ApiStreamWebhookRouteImport.update({
+  id: '/api/stream/webhook',
+  path: '/api/stream/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountSettingsSettingsViewRoute =
+  AccountSettingsSettingsViewRouteImport.update({
+    id: '/$settingsView',
+    path: '/$settingsView',
+    getParentRoute: () => AccountSettingsRoute,
+  } as any)
+const AccountPostsNewRoute = AccountPostsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => AccountPostsRoute,
+} as any)
+const MediaVideoMediaIdPlayerRoute = MediaVideoMediaIdPlayerRouteImport.update({
+  id: '/media/video/$mediaId/player',
+  path: '/media/video/$mediaId/player',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MediaImageMediaIdVariantRoute =
+  MediaImageMediaIdVariantRouteImport.update({
+    id: '/media/image/$mediaId/$variant',
+    path: '/media/image/$mediaId/$variant',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/migration': typeof MigrationRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/account/comments': typeof AccountCommentsRoute
+  '/account/media': typeof AccountMediaRoute
+  '/account/posts': typeof AccountPostsRouteWithChildren
+  '/account/settings': typeof AccountSettingsRouteWithChildren
+  '/admin/$section': typeof AdminSectionRoute
+  '/auth/$authView': typeof AuthAuthViewRoute
+  '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/tag/$tag': typeof TagTagRoute
+  '/user/$username': typeof UserUsernameRoute
+  '/auth/': typeof AuthIndexRoute
+  '/account/posts/new': typeof AccountPostsNewRoute
+  '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stream/webhook': typeof ApiStreamWebhookRoute
+  '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
+  '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/account/posts/': typeof AccountPostsIndexRoute
+  '/account/settings/': typeof AccountSettingsIndexRoute
+  '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
+  '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/migration': typeof MigrationRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/account/comments': typeof AccountCommentsRoute
+  '/account/media': typeof AccountMediaRoute
+  '/admin/$section': typeof AdminSectionRoute
+  '/auth/$authView': typeof AuthAuthViewRoute
+  '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/tag/$tag': typeof TagTagRoute
+  '/user/$username': typeof UserUsernameRoute
+  '/auth': typeof AuthIndexRoute
+  '/account/posts/new': typeof AccountPostsNewRoute
+  '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stream/webhook': typeof ApiStreamWebhookRoute
+  '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
+  '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/account/posts': typeof AccountPostsIndexRoute
+  '/account/settings': typeof AccountSettingsIndexRoute
+  '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
+  '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRouteWithChildren
+  '/migration': typeof MigrationRoute
+  '/privacy': typeof PrivacyRoute
+  '/terms': typeof TermsRoute
+  '/account/comments': typeof AccountCommentsRoute
+  '/account/media': typeof AccountMediaRoute
+  '/account/posts': typeof AccountPostsRouteWithChildren
+  '/account/settings': typeof AccountSettingsRouteWithChildren
+  '/admin/$section': typeof AdminSectionRoute
+  '/auth/$authView': typeof AuthAuthViewRoute
+  '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/tag/$tag': typeof TagTagRoute
+  '/user/$username': typeof UserUsernameRoute
+  '/auth/': typeof AuthIndexRoute
+  '/account/posts/new': typeof AccountPostsNewRoute
+  '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/stream/webhook': typeof ApiStreamWebhookRoute
+  '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
+  '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/account/posts/': typeof AccountPostsIndexRoute
+  '/account/settings/': typeof AccountSettingsIndexRoute
+  '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
+  '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/migration'
+    | '/privacy'
+    | '/terms'
+    | '/account/comments'
+    | '/account/media'
+    | '/account/posts'
+    | '/account/settings'
+    | '/admin/$section'
+    | '/auth/$authView'
+    | '/post/$postId'
+    | '/tag/$tag'
+    | '/user/$username'
+    | '/auth/'
+    | '/account/posts/new'
+    | '/account/settings/$settingsView'
+    | '/api/auth/$'
+    | '/api/stream/webhook'
+    | '/media/upload/$mediaId'
+    | '/post/$postId/edit'
+    | '/account/posts/'
+    | '/account/settings/'
+    | '/media/image/$mediaId/$variant'
+    | '/media/video/$mediaId/player'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/migration'
+    | '/privacy'
+    | '/terms'
+    | '/account/comments'
+    | '/account/media'
+    | '/admin/$section'
+    | '/auth/$authView'
+    | '/post/$postId'
+    | '/tag/$tag'
+    | '/user/$username'
+    | '/auth'
+    | '/account/posts/new'
+    | '/account/settings/$settingsView'
+    | '/api/auth/$'
+    | '/api/stream/webhook'
+    | '/media/upload/$mediaId'
+    | '/post/$postId/edit'
+    | '/account/posts'
+    | '/account/settings'
+    | '/media/image/$mediaId/$variant'
+    | '/media/video/$mediaId/player'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth'
+    | '/migration'
+    | '/privacy'
+    | '/terms'
+    | '/account/comments'
+    | '/account/media'
+    | '/account/posts'
+    | '/account/settings'
+    | '/admin/$section'
+    | '/auth/$authView'
+    | '/post/$postId'
+    | '/tag/$tag'
+    | '/user/$username'
+    | '/auth/'
+    | '/account/posts/new'
+    | '/account/settings/$settingsView'
+    | '/api/auth/$'
+    | '/api/stream/webhook'
+    | '/media/upload/$mediaId'
+    | '/post/$postId/edit'
+    | '/account/posts/'
+    | '/account/settings/'
+    | '/media/image/$mediaId/$variant'
+    | '/media/video/$mediaId/player'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRouteWithChildren
+  MigrationRoute: typeof MigrationRoute
+  PrivacyRoute: typeof PrivacyRoute
+  TermsRoute: typeof TermsRoute
+  AccountCommentsRoute: typeof AccountCommentsRoute
+  AccountMediaRoute: typeof AccountMediaRoute
+  AccountPostsRoute: typeof AccountPostsRouteWithChildren
+  AccountSettingsRoute: typeof AccountSettingsRouteWithChildren
+  AdminSectionRoute: typeof AdminSectionRoute
+  PostPostIdRoute: typeof PostPostIdRouteWithChildren
+  TagTagRoute: typeof TagTagRoute
+  UserUsernameRoute: typeof UserUsernameRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiStreamWebhookRoute: typeof ApiStreamWebhookRoute
+  MediaUploadMediaIdRoute: typeof MediaUploadMediaIdRoute
+  MediaImageMediaIdVariantRoute: typeof MediaImageMediaIdVariantRoute
+  MediaVideoMediaIdPlayerRoute: typeof MediaVideoMediaIdPlayerRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/migration': {
+      id: '/migration'
+      path: '/migration'
+      fullPath: '/migration'
+      preLoaderRoute: typeof MigrationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +381,220 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/': {
+      id: '/auth/'
+      path: '/'
+      fullPath: '/auth/'
+      preLoaderRoute: typeof AuthIndexRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/user/$username': {
+      id: '/user/$username'
+      path: '/user/$username'
+      fullPath: '/user/$username'
+      preLoaderRoute: typeof UserUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tag/$tag': {
+      id: '/tag/$tag'
+      path: '/tag/$tag'
+      fullPath: '/tag/$tag'
+      preLoaderRoute: typeof TagTagRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post/$postId': {
+      id: '/post/$postId'
+      path: '/post/$postId'
+      fullPath: '/post/$postId'
+      preLoaderRoute: typeof PostPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/$authView': {
+      id: '/auth/$authView'
+      path: '/$authView'
+      fullPath: '/auth/$authView'
+      preLoaderRoute: typeof AuthAuthViewRouteImport
+      parentRoute: typeof AuthRoute
+    }
+    '/admin/$section': {
+      id: '/admin/$section'
+      path: '/admin/$section'
+      fullPath: '/admin/$section'
+      preLoaderRoute: typeof AdminSectionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/settings': {
+      id: '/account/settings'
+      path: '/account/settings'
+      fullPath: '/account/settings'
+      preLoaderRoute: typeof AccountSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/posts': {
+      id: '/account/posts'
+      path: '/account/posts'
+      fullPath: '/account/posts'
+      preLoaderRoute: typeof AccountPostsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/media': {
+      id: '/account/media'
+      path: '/account/media'
+      fullPath: '/account/media'
+      preLoaderRoute: typeof AccountMediaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/comments': {
+      id: '/account/comments'
+      path: '/account/comments'
+      fullPath: '/account/comments'
+      preLoaderRoute: typeof AccountCommentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/settings/': {
+      id: '/account/settings/'
+      path: '/'
+      fullPath: '/account/settings/'
+      preLoaderRoute: typeof AccountSettingsIndexRouteImport
+      parentRoute: typeof AccountSettingsRoute
+    }
+    '/account/posts/': {
+      id: '/account/posts/'
+      path: '/'
+      fullPath: '/account/posts/'
+      preLoaderRoute: typeof AccountPostsIndexRouteImport
+      parentRoute: typeof AccountPostsRoute
+    }
+    '/post/$postId/edit': {
+      id: '/post/$postId/edit'
+      path: '/edit'
+      fullPath: '/post/$postId/edit'
+      preLoaderRoute: typeof PostPostIdEditRouteImport
+      parentRoute: typeof PostPostIdRoute
+    }
+    '/media/upload/$mediaId': {
+      id: '/media/upload/$mediaId'
+      path: '/media/upload/$mediaId'
+      fullPath: '/media/upload/$mediaId'
+      preLoaderRoute: typeof MediaUploadMediaIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/stream/webhook': {
+      id: '/api/stream/webhook'
+      path: '/api/stream/webhook'
+      fullPath: '/api/stream/webhook'
+      preLoaderRoute: typeof ApiStreamWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/settings/$settingsView': {
+      id: '/account/settings/$settingsView'
+      path: '/$settingsView'
+      fullPath: '/account/settings/$settingsView'
+      preLoaderRoute: typeof AccountSettingsSettingsViewRouteImport
+      parentRoute: typeof AccountSettingsRoute
+    }
+    '/account/posts/new': {
+      id: '/account/posts/new'
+      path: '/new'
+      fullPath: '/account/posts/new'
+      preLoaderRoute: typeof AccountPostsNewRouteImport
+      parentRoute: typeof AccountPostsRoute
+    }
+    '/media/video/$mediaId/player': {
+      id: '/media/video/$mediaId/player'
+      path: '/media/video/$mediaId/player'
+      fullPath: '/media/video/$mediaId/player'
+      preLoaderRoute: typeof MediaVideoMediaIdPlayerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/media/image/$mediaId/$variant': {
+      id: '/media/image/$mediaId/$variant'
+      path: '/media/image/$mediaId/$variant'
+      fullPath: '/media/image/$mediaId/$variant'
+      preLoaderRoute: typeof MediaImageMediaIdVariantRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface AuthRouteChildren {
+  AuthAuthViewRoute: typeof AuthAuthViewRoute
+  AuthIndexRoute: typeof AuthIndexRoute
+}
+
+const AuthRouteChildren: AuthRouteChildren = {
+  AuthAuthViewRoute: AuthAuthViewRoute,
+  AuthIndexRoute: AuthIndexRoute,
+}
+
+const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
+
+interface AccountPostsRouteChildren {
+  AccountPostsNewRoute: typeof AccountPostsNewRoute
+  AccountPostsIndexRoute: typeof AccountPostsIndexRoute
+}
+
+const AccountPostsRouteChildren: AccountPostsRouteChildren = {
+  AccountPostsNewRoute: AccountPostsNewRoute,
+  AccountPostsIndexRoute: AccountPostsIndexRoute,
+}
+
+const AccountPostsRouteWithChildren = AccountPostsRoute._addFileChildren(
+  AccountPostsRouteChildren,
+)
+
+interface AccountSettingsRouteChildren {
+  AccountSettingsSettingsViewRoute: typeof AccountSettingsSettingsViewRoute
+  AccountSettingsIndexRoute: typeof AccountSettingsIndexRoute
+}
+
+const AccountSettingsRouteChildren: AccountSettingsRouteChildren = {
+  AccountSettingsSettingsViewRoute: AccountSettingsSettingsViewRoute,
+  AccountSettingsIndexRoute: AccountSettingsIndexRoute,
+}
+
+const AccountSettingsRouteWithChildren = AccountSettingsRoute._addFileChildren(
+  AccountSettingsRouteChildren,
+)
+
+interface PostPostIdRouteChildren {
+  PostPostIdEditRoute: typeof PostPostIdEditRoute
+}
+
+const PostPostIdRouteChildren: PostPostIdRouteChildren = {
+  PostPostIdEditRoute: PostPostIdEditRoute,
+}
+
+const PostPostIdRouteWithChildren = PostPostIdRoute._addFileChildren(
+  PostPostIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRouteWithChildren,
+  MigrationRoute: MigrationRoute,
+  PrivacyRoute: PrivacyRoute,
+  TermsRoute: TermsRoute,
+  AccountCommentsRoute: AccountCommentsRoute,
+  AccountMediaRoute: AccountMediaRoute,
+  AccountPostsRoute: AccountPostsRouteWithChildren,
+  AccountSettingsRoute: AccountSettingsRouteWithChildren,
+  AdminSectionRoute: AdminSectionRoute,
+  PostPostIdRoute: PostPostIdRouteWithChildren,
+  TagTagRoute: TagTagRoute,
+  UserUsernameRoute: UserUsernameRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiStreamWebhookRoute: ApiStreamWebhookRoute,
+  MediaUploadMediaIdRoute: MediaUploadMediaIdRoute,
+  MediaImageMediaIdVariantRoute: MediaImageMediaIdVariantRoute,
+  MediaVideoMediaIdPlayerRoute: MediaVideoMediaIdPlayerRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

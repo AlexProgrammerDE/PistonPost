@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+  "rangeStrategy": "pin",
+  "packageRules": [
+    {
+      "description": "Group stable TanStack packages",
+      "groupName": "TanStack stable packages",
+      "matchPackageNames": ["/^@tanstack\\//"],
+      "matchPackageNamesExcluding": ["@tanstack/react-table"]
+    },
+    {
+      "description": "Hold Table v9 beta upgrades for manual review",
+      "groupName": "TanStack Table v9 beta",
+      "matchPackageNames": ["@tanstack/react-table"],
+      "dependencyDashboardApproval": true,
+      "automerge": false
+    },
+    {
+      "description": "Group Cloudflare runtime tooling",
+      "groupName": "Cloudflare packages",
+      "matchPackageNames": ["/^@cloudflare\\//", "wrangler"]
+    }
+  ]
+}

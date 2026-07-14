@@ -1,0 +1,95 @@
+.typeset {
+  --typeset-size: 1rem;
+  --typeset-leading: 1.75;
+  --typeset-flow: 1.25em;
+  color: var(--foreground);
+  font-size: var(--typeset-size);
+  line-height: var(--typeset-leading);
+  text-wrap: pretty;
+}
+
+.typeset > * + * {
+  margin-block-start: var(--typeset-flow);
+}
+
+.typeset :where(h1, h2, h3, h4) {
+  color: var(--foreground);
+  font-family: var(--font-heading);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.16;
+  text-wrap: balance;
+}
+
+.typeset h1 {
+  font-size: clamp(2rem, 6vw, 3.75rem);
+}
+
+.typeset h2 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+}
+
+.typeset h3 {
+  font-size: 1.25rem;
+}
+
+.typeset :where(ul, ol) {
+  padding-inline-start: 1.35rem;
+}
+
+.typeset ul {
+  list-style: square;
+}
+
+.typeset ol {
+  list-style: decimal;
+}
+
+.typeset li + li {
+  margin-block-start: 0.35em;
+}
+
+.typeset a {
+  color: var(--chart-4);
+  font-weight: 550;
+  text-decoration-line: underline;
+  text-decoration-thickness: 0.08em;
+  text-underline-offset: 0.2em;
+}
+
+.typeset blockquote {
+  border-inline-start: 3px solid var(--chart-3);
+  color: var(--muted-foreground);
+  font-family: var(--font-heading);
+  font-size: 1.1em;
+  padding-inline-start: 1rem;
+}
+
+.typeset :where(code, kbd) {
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.55);
+  background: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.85em;
+  padding: 0.12em 0.35em;
+}
+
+.typeset pre {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--muted);
+  padding: 1rem;
+}
+
+.typeset pre code {
+  border: 0;
+  background: transparent;
+  padding: 0;
+}
+
+.typeset-post {
+  --typeset-size: clamp(1rem, 0.95rem + 0.2vw, 1.125rem);
+  --typeset-leading: 1.78;
+  --typeset-flow: 1.4em;
+}

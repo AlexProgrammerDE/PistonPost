@@ -1,0 +1,23 @@
+{
+  "printWidth": 100,
+  "semi": false,
+  "singleQuote": false,
+  "trailingComma": "all",
+  "sortImports": true,
+  "sortTailwindcss": {
+    "stylesheet": "packages/ui/src/styles/globals.css",
+    "functions": ["cn", "cva"]
+  },
+  "ignorePatterns": [
+    ".agents/**",
+    ".claude/**",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/.output/**",
+    "**/coverage/**",
+    "**/drizzle/**",
+    "**/auth.generated.ts",
+    "**/routeTree.gen.ts",
+    "**/worker-configuration.d.ts"
+  ]
+}

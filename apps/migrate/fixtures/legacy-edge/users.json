@@ -1,0 +1,5 @@
+[
+  { "_id": "edge-user-one", "email": "one@example.com", "username": "Operator" },
+  { "_id": "edge-user-two", "email": "two@example.com", "username": "operator" },
+  { "_id": "edge-user-three", "email": "ONE@example.com", "username": "third" }
+]

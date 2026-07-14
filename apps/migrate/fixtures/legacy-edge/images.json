@@ -1,0 +1,4 @@
+[
+  { "_id": "edge-image-missing", "filename": "gone.webp" },
+  { "_id": "edge-image-orphan", "filename": "orphan.webp" }
+]

@@ -4,12 +4,19 @@ dist
 dist-ssr
 *.local
 .env*
+.dev.vars*
+!**/.dev.vars.example
 .tanstack
 .wrangler
 .output
 .vinxi
 __unconfig*
 todos.json
+coverage
+playwright-report
+test-results
+.migration
+reports/migration
 
 # turbo
 .turbo

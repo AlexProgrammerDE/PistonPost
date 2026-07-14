@@ -1,3 +1,8 @@
-# https://www.robotstxt.org/robotstxt.html
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /account/
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /_serverFn/
+
+Sitemap: https://example.invalid/sitemap.xml

@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "a1b2c3",
+    "authorId": "legacy-user-alex",
+    "type": "text",
+    "title": "First cut",
+    "body": "The first clean cut is always worth documenting.",
+    "tags": ["Machining", "Workshop"],
+    "createdAt": "2021-01-01T10:00:00.000Z",
+    "likes": ["legacy-user-sam"],
+    "hearts": ["legacy-user-sam"]
+  },
+  {
+    "_id": "d4e5f6",
+    "authorId": "legacy-user-alex",
+    "type": "images",
+    "title": "From stock to finish",
+    "body": "Two stages from the same afternoon.",
+    "imageIds": ["legacy-image-one", "legacy-image-two"],
+    "tags": ["Workshop", "Process"],
+    "unlisted": true,
+    "createdAt": "2021-01-02T10:00:00.000Z"
+  },
+  {
+    "_id": "g7h8i9",
+    "authorId": "legacy-user-sam",
+    "type": "video",
+    "title": "Finishing pass",
+    "videoId": "legacy-video-one",
+    "createdAt": "2021-04-02T10:00:00.000Z"
+  }
+]

@@ -1,8 +1,12 @@
-import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router"
+import type { QueryClient } from "@tanstack/react-query"
+import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
 
-import appCss from "@workspace/ui/globals.css?url"
+import { AppProviders } from "@/components/app-providers"
+import { AppShell } from "@/components/app-shell"
 
-export const Route = createRootRoute({
+import appCss from "@pistonpost/ui/globals.css?url"
+
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       {
@@ -13,8 +17,17 @@ export const Route = createRootRoute({
         content: "width=device-width, initial-scale=1",
       },
       {
-        title: "TanStack Start Starter",
+        title: "PistonPost",
       },
+      {
+        name: "description",
+        content: "Independent publishing for text, photography, and video.",
+      },
+      { name: "theme-color", content: "#f5f2ed" },
+      { property: "og:site_name", content: "PistonPost" },
+      { property: "og:type", content: "website" },
+      { property: "og:image", content: "/og-default.svg" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {
@@ -24,22 +37,41 @@ export const Route = createRootRoute({
     ],
   }),
   notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1>404</h1>
-      <p>The requested page could not be found.</p>
+    <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
+      <div className="typeset text-center">
+        <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
+          Error 404
+        </p>
+        <h1>That transmission is not here.</h1>
+        <p>It may have been deleted, moderated, or entered incorrectly.</p>
+      </div>
+    </main>
+  ),
+  errorComponent: ({ error }) => (
+    <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
+      <div className="typeset text-center">
+        <p className="font-mono text-xs tracking-[0.2em] text-destructive uppercase">
+          Unexpected failure
+        </p>
+        <h1>The press stopped.</h1>
+        <p>{error.message}</p>
+      </div>
     </main>
   ),
   shellComponent: RootDocument,
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { queryClient } = Route.useRouteContext()
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        {children}
+        <AppProviders queryClient={queryClient}>
+          <AppShell>{children}</AppShell>
+        </AppProviders>
         <Scripts />
       </body>
     </html>

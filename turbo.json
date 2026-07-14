@@ -1,24 +1,35 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "tui",
+  "globalDependencies": [
+    ".editorconfig",
+    ".oxfmtrc.json",
+    ".oxlintrc.json",
+    "bun.lock",
+    "package.json",
+    "tsconfig.json"
+  ],
+  "globalEnv": ["CI", "NODE_ENV"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "inputs": ["$TURBO_DEFAULT$", ".env*"],
-      "outputs": ["dist/**"]
-    },
-    "lint": {
-      "dependsOn": ["^lint"]
-    },
-    "format": {
-      "dependsOn": ["^format"]
+      "inputs": ["$TURBO_DEFAULT$", ".env*", "!**/.env*.local"],
+      "outputs": ["dist/**", ".output/**", "!.output/server/node_modules/**"],
+      "env": ["BETTER_AUTH_URL", "PUBLIC_APP_URL"]
     },
     "typecheck": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", "../../bunfig.toml", "../../tests/setup-dom.ts"],
+      "outputs": []
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "env": ["BETTER_AUTH_URL", "PUBLIC_APP_URL"]
     }
   }
 }

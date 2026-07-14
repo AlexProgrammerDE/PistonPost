@@ -1,0 +1,10 @@
+[
+  {
+    "_id": "legacy-video-one",
+    "ownerId": "legacy-user-sam",
+    "filename": "lathe-pass.mp4",
+    "mimeType": "video/mp4",
+    "duration": 18.5,
+    "createdAt": "2021-04-02T03:04:05.000Z"
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "_id": "legacy-reaction-dislike",
+    "postId": "a1b2c3",
+    "userId": "legacy-user-sam",
+    "type": "dislike",
+    "createdAt": "2021-01-01T11:05:00.000Z"
+  }
+]

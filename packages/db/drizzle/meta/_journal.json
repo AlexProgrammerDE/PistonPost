@@ -1,0 +1,48 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1784030049948,
+      "tag": "0000_initial-domain",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784030511137,
+      "tag": "0001_better-auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784042489534,
+      "tag": "0002_independent-reactions",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1784043444647,
+      "tag": "0003_notification-preferences",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1784043991576,
+      "tag": "0004_preserve-media-during-account-deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1784046140469,
+      "tag": "0005_preserve-legacy-content-limits",
+      "breakpoints": true
+    }
+  ]
+}

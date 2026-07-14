@@ -1,20 +1,14 @@
 {
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    "eslint.config.js",
-    "prettier.config.js",
-    "vite.config.ts"
-  ],
+  "include": ["**/*.ts", "**/*.tsx", "vite.config.ts"],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",
     "module": "ESNext",
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["vite/client"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "types": ["bun", "vite/client"],
     "paths": {
       "@/*": ["./src/*"],
-      "@workspace/ui/*": ["../../packages/ui/src/*"]
+      "@pistonpost/ui/*": ["../../packages/ui/src/*"]
     },
 
     /* Bundler mode */

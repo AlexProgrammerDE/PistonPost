@@ -1,0 +1,90 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import",
+    "react",
+    "react-perf",
+    "jsx-a11y",
+    "vitest"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "warn"
+  },
+  "rules": {
+    "react/no-array-index-key": "error",
+    "react/react-in-jsx-scope": "off",
+    "react-perf/jsx-no-new-array-as-prop": "off",
+    "react-perf/jsx-no-new-function-as-prop": "off",
+    "react-perf/jsx-no-jsx-as-prop": "off",
+    "react-perf/jsx-no-new-object-as-prop": "off",
+    "jsx-a11y/prefer-tag-over-role": "off",
+    "react/no-unstable-nested-components": ["error", { "allowAsProps": true }],
+    "unicorn/filename-case": [
+      "error",
+      {
+        "cases": {
+          "kebabCase": true,
+          "pascalCase": true
+        }
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["apps/web/src/components/auth/**/*.tsx"],
+      "rules": {
+        "eslint/no-await-in-loop": "off",
+        "typescript/no-unsafe-type-assertion": "off"
+      }
+    },
+    {
+      "files": [
+        "packages/ui/src/components/input-group.tsx",
+        "packages/ui/src/components/label.tsx",
+        "packages/ui/src/components/sonner.tsx",
+        "packages/ui/src/components/aspect-ratio.tsx",
+        "packages/ui/src/components/toggle-group.tsx"
+      ],
+      "rules": {
+        "jsx-a11y/click-events-have-key-events": "off",
+        "jsx-a11y/label-has-associated-control": "off",
+        "jsx-a11y/no-noninteractive-element-interactions": "off",
+        "jsx-a11y/prefer-tag-over-role": "off",
+        "typescript/no-unsafe-type-assertion": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "eslint/no-underscore-dangle": "off",
+        "typescript/no-unsafe-type-assertion": "off"
+      }
+    },
+    {
+      "files": ["packages/ui/src/components/calendar.tsx"],
+      "rules": {
+        "eslint/no-shadow": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "**/dist/**",
+    "**/.output/**",
+    "**/coverage/**",
+    "**/node_modules/**",
+    "**/drizzle/**",
+    "**/auth.generated.ts",
+    "**/routeTree.gen.ts",
+    "**/worker-configuration.d.ts"
+  ],
+  "env": {
+    "builtin": true,
+    "browser": true,
+    "node": true
+  }
+}
