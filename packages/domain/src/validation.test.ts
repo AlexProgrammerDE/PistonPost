@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { postDraftInputSchema } from "./validation"
 
-const common = { title: "Shop notes", tags: ["workshop"], visibility: "public" as const }
+const common = { title: "look at this", tags: ["art"], visibility: "public" as const }
 
 describe("post draft input", () => {
   test("accepts text, image, and video drafts", () => {

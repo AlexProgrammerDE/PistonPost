@@ -14,17 +14,13 @@ export const Route = createFileRoute("/account/posts/new")({
 function NewPost() {
   const viewer = Route.useLoaderData()
   return (
-    <main className="mx-auto w-full max-w-4xl px-4 py-12 sm:px-6 sm:py-20">
-      <div className="mb-12 grid gap-5 border-b pb-8 md:grid-cols-[minmax(0,1fr)_17rem] md:items-end">
-        <div className="typeset">
-          <p className="font-mono text-xs tracking-[0.2em] text-primary uppercase">Composer</p>
-          <h1>Start a new transmission</h1>
-        </div>
-        <p className="text-sm leading-6 text-muted-foreground">
-          Set the story first. Media uploads begin only when you publish, and failed work remains a
-          draft.
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+      <header className="mb-10 border-b pb-6">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">Make a post</h1>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+          Add some text, a set of pictures, or a video. You can check everything before posting.
         </p>
-      </div>
+      </header>
       <PostComposer authenticated={viewer !== null} />
     </main>
   )

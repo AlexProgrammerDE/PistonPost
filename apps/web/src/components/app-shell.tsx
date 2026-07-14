@@ -26,8 +26,8 @@ const PublicAccountMenu = lazy(() =>
   })),
 )
 
-const publicLinks = [
-  { to: "/" as const, label: "Latest" },
+const publicLinks = [{ to: "/" as const, label: "Latest" }]
+const legalLinks = [
   { to: "/privacy" as const, label: "Privacy" },
   { to: "/terms" as const, label: "Terms" },
 ]
@@ -41,19 +41,14 @@ export function AppShell({ children }: PropsWithChildren) {
   )
   return (
     <div className="flex min-h-svh flex-col" data-hydrated={hydrated}>
-      <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
-        <div className="mx-auto flex h-16 w-full max-w-[94rem] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 border-b bg-background">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-4 px-4 sm:px-6">
           <Link
             to="/"
-            className="group flex shrink-0 items-center gap-2"
+            className="shrink-0 font-heading text-xl font-extrabold tracking-[-0.045em]"
             aria-label="PistonPost home"
           >
-            <span className="grid size-8 place-items-center rounded-md border bg-foreground font-heading text-sm font-bold text-background transition-transform group-hover:-rotate-2">
-              PP
-            </span>
-            <span className="hidden font-heading text-lg font-semibold tracking-tight sm:inline">
-              PistonPost
-            </span>
+            piston<span className="text-primary">post</span>
           </Link>
 
           <NavigationMenu className="hidden md:flex">
@@ -78,7 +73,11 @@ export function AppShell({ children }: PropsWithChildren) {
             </Link>
             <Suspense
               fallback={
-                <Skeleton className="size-9 rounded-full" aria-label="Loading account menu" />
+                <Skeleton
+                  role="status"
+                  className="size-9 rounded-full"
+                  aria-label="Loading account menu"
+                />
               }
             >
               <PublicAccountMenu />
@@ -99,11 +98,21 @@ export function AppShell({ children }: PropsWithChildren) {
               </SheetTrigger>
               <SheetContent side="right">
                 <SheetHeader>
-                  <SheetTitle>PistonPost</SheetTitle>
-                  <SheetDescription>Independent text, photography, and video.</SheetDescription>
+                  <SheetTitle>pistonpost</SheetTitle>
+                  <SheetDescription>Posts, pictures, and videos.</SheetDescription>
                 </SheetHeader>
                 <nav className="flex flex-col gap-1 px-4" aria-label="Mobile navigation">
                   {publicLinks.map((item) => (
+                    <Link
+                      key={item.to}
+                      to={item.to}
+                      className="rounded-md px-3 py-3 text-base font-medium hover:bg-muted"
+                      onClick={() => setNavigationOpen(false)}
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                  {legalLinks.map((item) => (
                     <Link
                       key={item.to}
                       to={item.to}
@@ -129,12 +138,16 @@ export function AppShell({ children }: PropsWithChildren) {
 
       <div className="flex-1">{children}</div>
 
-      <footer className="border-t bg-muted/30">
-        <div className="mx-auto flex w-full max-w-[94rem] flex-col gap-3 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
-          <p>Built for the work worth sharing.</p>
-          <p className="font-mono text-xs tracking-[0.16em] uppercase">
-            PistonPost / independent publishing
-          </p>
+      <footer className="border-t">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">
+          <p className="font-heading font-semibold text-foreground">pistonpost</p>
+          <nav className="flex items-center gap-4" aria-label="Legal">
+            {legalLinks.map((item) => (
+              <Link key={item.to} to={item.to} className="hover:text-foreground hover:underline">
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </footer>
     </div>

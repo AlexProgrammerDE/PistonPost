@@ -145,7 +145,7 @@ function TagsField({ label, description }: FieldChromeProps) {
           ))}
           <ComboboxChipsInput
             id={field.name}
-            placeholder={field.state.value.length === 0 ? "photography, workshop" : "Add tag"}
+            placeholder={field.state.value.length === 0 ? "art, memes" : "Add tag"}
             onBlur={field.handleBlur}
             onKeyDown={(event) => {
               if (event.key !== "Enter" && event.key !== ",") return
@@ -189,7 +189,7 @@ function SubmitButton({ children, ...props }: ComponentProps<typeof Button>) {
     <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting]}>
       {([canSubmit, isSubmitting]) => (
         <Button type="submit" disabled={!canSubmit || isSubmitting} {...props}>
-          {isSubmitting ? "Publishing…" : children}
+          {isSubmitting ? "Working…" : children}
         </Button>
       )}
     </form.Subscribe>

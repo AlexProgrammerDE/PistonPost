@@ -52,8 +52,8 @@ async function createVerifiedSession(context: BrowserContext) {
     data: {
       email,
       password: TEST_PASSWORD,
-      name: "Workshop Author",
-      username: `workshop_${stamp}`,
+      name: "Moss",
+      username: `moss_${stamp}`,
     },
   })
   expect(signUp.status()).toBe(200)
@@ -79,24 +79,24 @@ async function createVerifiedSession(context: BrowserContext) {
 
 async function selectFormat(page: Page, format: "Text" | "Images" | "Video") {
   await page.locator('[data-hydrated="true"]').waitFor()
-  await page.getByLabel("Post format").click()
+  await page.getByLabel("Post type").click()
   await page.getByRole("option", { name: format, exact: true }).click()
 }
 
-async function fillStory(page: Page, title: string, tag: string) {
+async function fillPost(page: Page, title: string, tag: string) {
   await page.locator('[data-hydrated="true"]').waitFor()
   const titleInput = page.getByLabel("Title")
-  const previewTitle = page.getByRole("region", { name: "Reader view" }).locator("article h2")
+  const previewTitle = page.getByRole("region", { name: "Preview" }).locator("article h2")
   await titleInput.fill(title)
   await expect(previewTitle).toHaveText(title)
   const tags = page.getByLabel("Tags")
   await tags.fill(tag)
   await tags.press("Enter")
-  await expect(page.getByRole("region", { name: "Reader view" })).toContainText(`#${tag}`)
+  await expect(page.getByRole("region", { name: "Preview" })).toContainText(`#${tag}`)
 }
 
 test.describe.serial("authenticated authoring", () => {
-  test("publishes text and image posts and recovers failed image and video uploads", async ({
+  test("posts text and images and recovers failed image and video uploads", async ({
     context,
     page,
   }) => {
@@ -121,52 +121,48 @@ test.describe.serial("authenticated authoring", () => {
     await createVerifiedSession(context)
 
     await page.goto("/account/posts/new")
-    await expect(page.getByRole("heading", { name: "Start a new transmission" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
     await page.waitForTimeout(1_000)
     expect(pageErrors).toEqual([])
     expect(consoleErrors).toEqual([])
     expect(requestFailures).toEqual([])
-    await fillStory(page, "A note from the assembly floor", "workshop")
-    await page.getByLabel("Text").fill("The first local end-to-end transmission is running.")
-    await page.getByRole("button", { name: "Publish post" }).click()
+    await fillPost(page, "look at this little guy", "art")
+    await page.getByLabel("Text").fill("found this earlier and had to put it somewhere")
+    await page.getByRole("button", { name: "Post it" }).click()
     await page.waitForTimeout(1_000)
     expect(errorResponses).toEqual([])
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
-    await expect(
-      page.getByRole("heading", { name: "A note from the assembly floor" }),
-    ).toBeVisible()
+    await expect(page.getByRole("heading", { name: "look at this little guy" })).toBeVisible()
 
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")
-    await fillStory(page, "Two views of one small machine", "photography")
+    await fillPost(page, "two extremely important cats", "cats")
     const validPng = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
       "base64",
     )
     await page.getByLabel("Choose images to upload").setInputFiles([
-      { name: "machine-a.png", mimeType: "image/png", buffer: validPng },
-      { name: "machine-b.png", mimeType: "image/png", buffer: validPng },
+      { name: "cat-a.png", mimeType: "image/png", buffer: validPng },
+      { name: "cat-b.png", mimeType: "image/png", buffer: validPng },
     ])
     const altTextInputs = page.getByLabel("Alt text")
-    await altTextInputs.nth(0).fill("A brass gear on a taupe workbench")
-    await altTextInputs.nth(1).fill("The same gear viewed from above")
-    await page.getByRole("button", { name: "Publish post" }).click()
+    await altTextInputs.nth(0).fill("A small orange cat sitting on a blanket")
+    await altTextInputs.nth(1).fill("A gray cat looking directly at the camera")
+    await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
-    await expect(
-      page.getByRole("heading", { name: "Two views of one small machine" }),
-    ).toBeVisible()
+    await expect(page.getByRole("heading", { name: "two extremely important cats" })).toBeVisible()
 
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")
-    await fillStory(page, "A recoverable upload failure", "testing")
+    await fillPost(page, "this upload should recover", "testing")
     await page.getByLabel("Choose images to upload").setInputFiles({
       name: "broken.png",
       mimeType: "image/png",
       buffer: Buffer.from("this is not a PNG"),
     })
     await page.getByLabel("Alt text").fill("An intentionally invalid local test file")
-    await page.getByRole("button", { name: "Publish post" }).click()
-    await expect(page.getByRole("alert").getByText("Publishing stopped")).toBeVisible()
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page.getByRole("alert").getByText("Couldn’t post this")).toBeVisible()
     await expect(page).toHaveURL(/\/account\/posts\/new$/u)
 
     await page.route("https://upload.videodelivery.net/**", (route) =>
@@ -174,14 +170,14 @@ test.describe.serial("authenticated authoring", () => {
     )
     await page.goto("/account/posts/new")
     await selectFormat(page, "Video")
-    await fillStory(page, "A resumable video draft", "video")
+    await fillPost(page, "weekend video", "video")
     await page.getByLabel("Choose a video to upload").setInputFiles({
-      name: "workshop.mp4",
+      name: "weekend.mp4",
       mimeType: "video/mp4",
       buffer: Buffer.from("00000018667479706d703432000000006d70343269736f6d", "hex"),
     })
-    await page.getByRole("button", { name: "Publish post" }).click()
-    await expect(page.getByRole("alert").getByText("Publishing stopped")).toBeVisible({
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page.getByRole("alert").getByText("Couldn’t post this")).toBeVisible({
       timeout: 30_000,
     })
     await expect(page).toHaveURL(/\/account\/posts\/new$/u)

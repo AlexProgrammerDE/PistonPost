@@ -2,10 +2,10 @@ import AxeBuilder from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
 test.describe("public reading experience", () => {
-  test("renders the media wall at desktop and mobile widths", async ({ page }) => {
+  test("renders the public feed at desktop and mobile widths", async ({ page }) => {
     await page.goto("/")
 
-    await expect(page.getByRole("heading", { level: 1 })).toContainText("people who make things")
+    await expect(page.getByRole("heading", { level: 1, name: "Latest" })).toBeVisible()
     await expect(page.getByRole("navigation", { name: "Mobile navigation" })).toBeHidden()
 
     await page.setViewportSize({ width: 390, height: 844 })
@@ -22,7 +22,7 @@ test.describe("public reading experience", () => {
     expect(results.violations).toEqual([])
   })
 
-  test("publishes discovery controls without account routes", async ({ request }) => {
+  test("exposes discovery controls without account routes", async ({ request }) => {
     const [robots, sitemap] = await Promise.all([
       request.get("/robots.txt"),
       request.get("/sitemap.xml"),

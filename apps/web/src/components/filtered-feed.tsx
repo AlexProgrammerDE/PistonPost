@@ -29,7 +29,7 @@ export function FilteredFeed({
           <EmptyMedia variant="icon">
             <TriangleAlert />
           </EmptyMedia>
-          <EmptyTitle>Nothing published here yet</EmptyTitle>
+          <EmptyTitle>Nothing here yet</EmptyTitle>
           <EmptyDescription>{emptyMessage}</EmptyDescription>
         </EmptyHeader>
       </Empty>
@@ -38,7 +38,7 @@ export function FilteredFeed({
 
   return (
     <>
-      <div className="grid gap-x-12 gap-y-12 lg:grid-cols-2">
+      <div className="grid gap-10">
         {posts.map((post) => (
           <PostView key={post.id} post={post} />
         ))}

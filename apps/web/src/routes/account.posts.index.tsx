@@ -46,10 +46,7 @@ function MyPosts() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6 sm:py-16">
       <header className="mb-9 flex flex-col gap-4 border-b pb-7 sm:flex-row sm:items-end sm:justify-between">
-        <div className="typeset">
-          <p className="font-mono text-xs tracking-[0.18em] text-primary uppercase">Workshop log</p>
-          <h1>My posts</h1>
-        </div>
+        <h1 className="font-heading text-3xl font-bold tracking-tight">My posts</h1>
         <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
           New post
         </Button>
@@ -58,7 +55,7 @@ function MyPosts() {
         data={posts}
         columns={columns}
         getRowId={(post) => post.id}
-        emptyMessage="You have not created a post yet."
+        emptyMessage="You have not posted anything yet."
       />
     </main>
   )

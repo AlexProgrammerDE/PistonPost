@@ -16,8 +16,8 @@ function TermsPage() {
       <article className="typeset typeset-post">
         <h1>Terms</h1>
         <p>
-          PistonPost is a publishing service for text, photography, and video. Use it lawfully,
-          respect other people, and publish only material you have the right to share.
+          PistonPost is a place to share posts, pictures, and videos. Use it lawfully, respect other
+          people, and post only material you have the right to share.
         </p>
         <h2>Your content</h2>
         <p>
@@ -37,8 +37,8 @@ function TermsPage() {
         </p>
         <h2>Availability</h2>
         <p>
-          The service may change as it develops. We work to preserve published content and
-          historical links, but no online service can promise uninterrupted availability.
+          The service may change as it develops. We work to preserve posts and historical links, but
+          no online service can promise uninterrupted availability.
         </p>
       </article>
     </main>

@@ -29,21 +29,10 @@ function PublicFeed() {
   const posts = feed.data.pages.flatMap((page) => page.posts)
 
   return (
-    <main className="mx-auto w-full max-w-[94rem] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <div className="mb-12 grid gap-6 border-b pb-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-end">
-        <div className="max-w-4xl">
-          <p className="mb-3 font-mono text-xs font-semibold tracking-[0.2em] text-chart-4 uppercase">
-            Latest transmissions
-          </p>
-          <h1 className="font-heading text-4xl font-semibold tracking-[-0.04em] text-balance sm:text-6xl">
-            Work, process, and stories from people who make things.
-          </h1>
-        </div>
-        <p className="max-w-md text-sm leading-relaxed text-muted-foreground lg:justify-self-end">
-          A media wall for text, photography, and video. No engagement ranking, just the newest
-          public posts in order.
-        </p>
-      </div>
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-8 border-b pb-4">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">Latest</h1>
+      </header>
 
       {feed.fetchStatus === "paused" && (
         <Alert className="mb-8">
@@ -60,7 +49,7 @@ function PublicFeed() {
               <TriangleAlert />
             </EmptyMedia>
             <EmptyTitle>No public posts yet</EmptyTitle>
-            <EmptyDescription>The wall is ready for its first transmission.</EmptyDescription>
+            <EmptyDescription>Nothing has been posted yet.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
@@ -69,7 +58,7 @@ function PublicFeed() {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="grid gap-x-12 gap-y-12 lg:grid-cols-2">
+        <div className="grid gap-10">
           {posts.map((post) => (
             <PostView key={post.id} post={post} />
           ))}
@@ -93,13 +82,9 @@ function PublicFeed() {
 
 function FeedSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-[94rem] px-4 py-14 sm:px-6 lg:px-8">
-      <div className="mb-12 flex max-w-3xl flex-col gap-3">
-        <Skeleton className="h-3 w-32" />
-        <Skeleton className="h-14 w-full" />
-        <Skeleton className="h-14 w-4/5" />
-      </div>
-      <div className="grid gap-12 lg:grid-cols-2">
+    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
+      <Skeleton className="mb-8 h-8 w-24" />
+      <div className="grid gap-10">
         {generateN(4).map((identity) => (
           <div key={identity} className="flex flex-col gap-4 border-b pb-10">
             <div className="flex items-center gap-3">
@@ -120,7 +105,7 @@ function FeedError({ error, reset }: { readonly error: Error; readonly reset: ()
     <main className="mx-auto grid min-h-[60svh] w-full max-w-2xl place-items-center px-4">
       <Alert variant="destructive">
         <TriangleAlert />
-        <AlertTitle>The public wall could not be loaded</AlertTitle>
+        <AlertTitle>The feed could not be loaded</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
           <span>{error.message}</span>
           <Button variant="outline" onClick={reset}>

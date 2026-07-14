@@ -32,7 +32,9 @@ export function PublicAccountMenu() {
   const user = session.data?.user
 
   if (session.isPending) {
-    return <Skeleton className="size-9 rounded-full" aria-label="Loading account menu" />
+    return (
+      <Skeleton role="status" className="size-9 rounded-full" aria-label="Loading account menu" />
+    )
   }
 
   if (!user) {

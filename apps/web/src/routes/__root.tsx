@@ -21,9 +21,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         name: "description",
-        content: "Independent publishing for text, photography, and video.",
+        content: "Posts, pictures, videos, and whatever else is worth passing around.",
       },
-      { name: "theme-color", content: "#f5f2ed" },
+      { name: "theme-color", content: "#fff9ed" },
       { property: "og:site_name", content: "PistonPost" },
       { property: "og:type", content: "website" },
       { property: "og:image", content: "/og-default.svg" },
@@ -34,26 +34,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: appCss,
       },
+      { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
     ],
   }),
   notFoundComponent: () => (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
       <div className="typeset text-center">
-        <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-          Error 404
-        </p>
-        <h1>That transmission is not here.</h1>
-        <p>It may have been deleted, moderated, or entered incorrectly.</p>
+        <p className="text-sm font-medium text-muted-foreground">404</p>
+        <h1>This post isn’t here.</h1>
+        <p>It may have been deleted, hidden, or the address may be wrong.</p>
       </div>
     </main>
   ),
   errorComponent: ({ error }) => (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
       <div className="typeset text-center">
-        <p className="font-mono text-xs tracking-[0.2em] text-destructive uppercase">
-          Unexpected failure
-        </p>
-        <h1>The press stopped.</h1>
+        <p className="text-sm font-medium text-destructive">Something went wrong</p>
+        <h1>We couldn’t load this page.</h1>
         <p>{error.message}</p>
       </div>
     </main>

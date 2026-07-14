@@ -34,9 +34,8 @@ export const Route = createFileRoute("/account/media")({
 function MyMedia() {
   return (
     <main className="mx-auto w-full max-w-6xl px-4 py-12 sm:px-6">
-      <header className="typeset mb-9 border-b pb-7">
-        <p className="font-mono text-xs tracking-[0.18em] text-primary uppercase">Asset bay</p>
-        <h1>My media</h1>
+      <header className="mb-9 border-b pb-7">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">My media</h1>
       </header>
       <DataTable data={Route.useLoaderData()} columns={columns} getRowId={(row) => row.id} />
     </main>

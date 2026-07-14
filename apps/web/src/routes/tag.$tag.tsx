@@ -14,7 +14,7 @@ export const Route = createFileRoute("/tag/$tag")({
       { title: `#${params.tag} · PistonPost` },
       {
         name: "description",
-        content: `Recent public PistonPost transmissions tagged ${params.tag}.`,
+        content: `Latest PistonPost posts tagged ${params.tag}.`,
       },
     ],
     links: [{ rel: "canonical", href: `/tag/${params.tag}` }],
@@ -26,14 +26,9 @@ function TagFeed() {
   const { tag } = Route.useParams()
   const normalizedTag = tag.toLocaleLowerCase("en-US")
   return (
-    <main className="mx-auto w-full max-w-[94rem] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <header className="mb-10 border-b pb-6">
-        <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-          Tag archive
-        </p>
-        <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight sm:text-6xl">
-          #{tag}
-        </h1>
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-8 border-b pb-4">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">#{tag}</h1>
       </header>
       <FilteredFeed
         filters={{ tag: normalizedTag }}

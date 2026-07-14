@@ -55,7 +55,7 @@ const titleSchema = z
 const textSchema = z
   .string()
   .trim()
-  .min(1, "Write something before publishing.")
+  .min(1, "Write something before posting.")
   .max(1_000, "Use 1,000 characters or fewer.")
 const tagsSchema = z
   .array(z.string())
@@ -85,7 +85,7 @@ const defaultValues: ComposerValues = {
 
 function readableError(error: unknown) {
   if (error instanceof Error) return error.message
-  return "The post could not be published."
+  return "The post could not be posted."
 }
 
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
@@ -229,7 +229,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         const published = await publishPost({ data: { id: draft.id, version: draft.version } })
         releaseUploadPreviews(uploads)
         dispatch({ type: "reset" })
-        toast.success("Post published")
+        toast.success("Posted")
         await navigate({ to: "/post/$postId", params: { postId: published.id } })
       } catch (error) {
         setSubmitError(readableError(error))
@@ -244,9 +244,9 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
     return (
       <Alert>
         <TriangleAlert />
-        <AlertTitle>Sign in to publish</AlertTitle>
+        <AlertTitle>Sign in to post</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
-          <p>Your draft needs an account so uploads and ownership stay connected.</p>
+          <p>You need an account before you can save a draft or upload anything.</p>
           <Button
             onClick={() =>
               void navigate({ to: "/auth/$authView", params: { authView: "sign-in" } })
@@ -312,12 +312,12 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
     >
       <form.AppForm>
         <FieldSet>
-          <FieldLegend>Format</FieldLegend>
+          <FieldLegend>Type</FieldLegend>
           <form.AppField name="type">
             {(field) => (
               <field.SelectField
-                label="Post format"
-                description="Text is immediate. Images upload as a set. Video is resumable and publishes after encoding."
+                label="Post type"
+                description="Choose text, a set of pictures, or one video."
                 options={[
                   { label: "Text", value: "text" },
                   { label: "Images", value: "images" },
@@ -357,7 +357,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         <Separator />
 
         <FieldSet>
-          <FieldLegend>Story</FieldLegend>
+          <FieldLegend>Post</FieldLegend>
           <FieldGroup>
             <form.AppField name="title" validators={{ onBlur: titleSchema }}>
               {(field) => <field.TextField label="Title" maxLength={100} />}
@@ -369,7 +369,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
                     {(field) => (
                       <field.TextareaField
                         label="Text"
-                        description="Plain text only. Links are detected safely when the post is rendered."
+                        description="Plain text only. Links become clickable when the post is shown."
                         maxLength={1_000}
                         rows={9}
                       />
@@ -396,7 +396,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         <Separator />
 
         <FieldSet>
-          <FieldLegend>Delivery</FieldLegend>
+          <FieldLegend>Sharing</FieldLegend>
           <FieldGroup>
             <form.AppField name="tags" validators={{ onBlur: tagsSchema }}>
               {(field) => (
@@ -424,16 +424,16 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         {submitError ? (
           <Alert variant="destructive">
             <TriangleAlert />
-            <AlertTitle>Publishing stopped</AlertTitle>
+            <AlertTitle>Couldn’t post this</AlertTitle>
             <AlertDescription>{submitError}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-sm text-muted-foreground">
-            A draft is created before any media leaves your browser.
+            We save a draft before uploading pictures or video.
           </p>
-          <form.SubmitButton className="sm:min-w-36">Publish post</form.SubmitButton>
+          <form.SubmitButton className="sm:min-w-36">Post it</form.SubmitButton>
         </div>
       </form.AppForm>
     </form>
@@ -444,14 +444,13 @@ function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads:
   return (
     <section className="grid gap-5" aria-labelledby="composer-preview-title">
       <div>
-        <p className="font-mono text-xs tracking-[0.18em] text-primary uppercase">Preview</p>
-        <h2 id="composer-preview-title" className="mt-1 font-heading text-xl font-semibold">
-          Reader view
+        <h2 id="composer-preview-title" className="font-heading text-xl font-bold">
+          Preview
         </h2>
       </div>
       <article className="border-y bg-muted/15 py-6">
         <div className="typeset typeset-post">
-          <h2>{values.title.trim() || "Untitled transmission"}</h2>
+          <h2>{values.title.trim() || "Untitled post"}</h2>
           {values.type === "text" ? (
             <p>{values.textContent.trim() || "Your text will appear here."}</p>
           ) : null}
@@ -472,9 +471,7 @@ function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads:
         ) : null}
         {values.type === "video" && uploads[0] ? (
           <div className="mt-5 grid aspect-video place-items-center bg-foreground text-background">
-            <p className="font-mono text-xs tracking-[0.16em] uppercase">
-              Video selected · {uploads[0].file.name}
-            </p>
+            <p className="text-sm font-medium">Video selected · {uploads[0].file.name}</p>
           </div>
         ) : null}
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-muted-foreground">
@@ -546,7 +543,7 @@ function MediaPicker({
           }}
         />
         <span className="flex max-w-sm flex-col items-center gap-2">
-          <span className="grid size-10 place-items-center rounded-full border bg-background">
+          <span className="grid size-10 place-items-center border bg-background">
             <Upload />
           </span>
           <span className="font-medium">Choose {type === "images" ? "images" : "a video"}</span>

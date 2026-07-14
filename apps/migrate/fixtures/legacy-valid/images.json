@@ -2,21 +2,21 @@
   {
     "_id": "legacy-image-one",
     "ownerId": "legacy-user-alex",
-    "filename": "shop-floor.webp",
+    "filename": "sleepy-cat.webp",
     "mimeType": "image/webp",
     "width": 1600,
     "height": 1067,
-    "altText": "A warm machine shop floor",
+    "altText": "A sleepy orange cat curled up on a blanket",
     "createdAt": "2021-01-02T03:04:05.000Z"
   },
   {
     "_id": "legacy-image-two",
     "ownerId": "legacy-user-alex",
-    "filename": "finished-part.webp",
+    "filename": "tiny-fox.webp",
     "mimeType": "image/webp",
     "width": 1200,
     "height": 1200,
-    "altText": "A finished metal part",
+    "altText": "A tiny illustrated fox waving",
     "createdAt": "2021-01-02T03:04:06.000Z"
   }
 ]

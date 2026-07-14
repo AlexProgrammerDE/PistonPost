@@ -25,7 +25,7 @@ export const Route = createFileRoute("/post/$postId")({
       { title: loaderData ? `${loaderData.title} · PistonPost` : "Post · PistonPost" },
       {
         name: "description",
-        content: loaderData?.textContent?.slice(0, 155) ?? "A PistonPost transmission.",
+        content: loaderData?.textContent?.slice(0, 155) ?? "A post on PistonPost.",
       },
       { property: "og:title", content: loaderData?.title ?? "PistonPost" },
       { property: "og:type", content: "article" },
@@ -44,7 +44,7 @@ function PostDetail() {
   if (!post) return null
 
   return (
-    <main className="mx-auto w-full max-w-[94rem] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
+    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {post.visibility === "unlisted" && (
         <div className="mx-auto mb-8 flex max-w-5xl items-center gap-3 border-y bg-muted/30 px-3 py-3 text-sm">
           <Badge variant="outline">Unlisted</Badge>

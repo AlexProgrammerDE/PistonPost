@@ -141,12 +141,9 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
   return (
     <section className="mx-auto mt-10 max-w-5xl" aria-labelledby="discussion-title">
       <div className="flex flex-col gap-5 border-y py-6 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="font-mono text-xs tracking-[0.16em] text-primary uppercase">Response</p>
-          <h2 id="discussion-title" className="mt-1 font-heading text-2xl font-semibold">
-            Discussion
-          </h2>
-        </div>
+        <h2 id="discussion-title" className="font-heading text-2xl font-bold">
+          Comments
+        </h2>
         <ToggleGroup
           value={optimisticActive}
           onValueChange={updateReactions}
@@ -179,7 +176,7 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
                 {(field) => (
                   <field.TextareaField
                     label="Add a comment"
-                    placeholder="Add to the discussion"
+                    placeholder="Write a comment"
                     maxLength={250}
                     rows={3}
                   />
@@ -195,7 +192,7 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
             <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
               Sign in
             </Link>{" "}
-            to react or join the discussion.
+            to react or comment.
           </p>
         )}
 
@@ -203,7 +200,7 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
           <Empty className="min-h-48 border-y">
             <EmptyHeader>
               <EmptyTitle>No comments yet</EmptyTitle>
-              <EmptyDescription>Start a useful conversation about the work.</EmptyDescription>
+              <EmptyDescription>Be the first to say something.</EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : (

@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-14
+Last updated: 2026-07-15
 
 ## How to execute this plan
 
@@ -29,11 +29,28 @@ The repository was initialized with the exact requested command:
 bunx --bun shadcn@latest init --preset b1x9M8ZeJW --template start --monorepo --pointer
 ```
 
-The generated project is a Bun and Turborepo monorepo with apps/web and packages/ui. shadcn reports TanStack Start, Tailwind CSS v4, Base UI, Maia, Hugeicons, Outfit, Raleway, taupe theme, and amber chart colors.
+The generated project is a Bun and Turborepo monorepo with apps/web and packages/ui. The shadcn preset supplied TanStack Start, Tailwind CSS v4, Base UI, Maia, Hugeicons, and Outfit. The initial Raleway, taupe, and amber brand layer was replaced by the PistonPost identity defined below.
 
 ## Product objective
 
-Rebuild PistonPost as a fast, accessible, media-first publishing application on Cloudflare while preserving the useful behavior and data of the old Next.js and Java/MongoDB system.
+Rebuild PistonPost as a fast, accessible social feed for sharing art, images, videos, jokes, and everyday posts with familiar people. Preserve the useful behavior and data of the old Next.js and Java/MongoDB system without recasting the product as a professional publishing platform.
+
+## Product identity
+
+PistonPost is a small shared corner of the internet. It should feel casual, expressive, and content-led. The interface speaks plainly and leaves the personality to the people and posts inside it.
+
+The legacy archive makes that identity concrete: most posts are large image collections, especially recurring furry-art posts, mixed with memes, music links, videos, running jokes, short messages, and conversations between friends. The rewrite must feel natural around a post titled "hi" and around a gallery containing dozens of images.
+
+Identity principles:
+
+- Show posts before product explanation. The public feed has no marketing hero.
+- Use direct social language: post, posted, latest, comments, reactions, and visibility.
+- Keep technical terms such as published status inside code, schemas, administration, and operations where precision matters. Do not expose that vocabulary as a brand voice.
+- Use a quiet warm canvas, coral as the main accent, and yellow sparingly. Artwork and video provide most of the color.
+- Use friendly Outfit typography throughout instead of an editorial heading and body split.
+- Present multi-image posts as art and meme dumps with useful previews and a browsable full collection.
+- Keep the wordmark simple and lowercase in the interface.
+- Do not use industrial press language, transmission metaphors, portfolio language, furry mascots, paw motifs, forced slang, or self-consciously cute microcopy.
 
 The rewrite must support:
 
@@ -538,15 +555,16 @@ Do not proxy large video bodies through the Worker.
 
 ## UI system and experience
 
-The visual direction should feel like a contemporary independent publishing tool, not a generic analytics dashboard:
+The visual direction should feel like a clean community scrapbook without decorative scrapbook effects:
 
-- Warm taupe surfaces with amber as a functional accent.
-- Editorial typography using Raleway for headings and Outfit for body text.
-- Strong media framing and readable text measure.
-- A compact top-level navigation that gives the feed most of the screen.
-- Post cards with minimal container chrome and clear content hierarchy.
+- A quiet warm canvas with coral as the main action color and yellow used sparingly.
+- Friendly Outfit typography throughout, with weight and scale providing hierarchy.
+- A simple lowercase wordmark without literal piston, paw, or mascot imagery.
+- A single-column public feed that starts with posts instead of marketing copy.
+- Strong media framing, readable text measure, and minimal container chrome.
+- Multi-image feed previews that reveal several images and detail views that expose the full collection.
 - Detail pages that prioritize the post, then reactions and discussion.
-- Account and admin tables that are dense, calm, and keyboard-friendly.
+- Account and admin tables that are dense, calm, direct, and keyboard-friendly.
 - Responsive behavior designed deliberately for narrow screens.
 
 Use shadcn components as the default vocabulary:
@@ -1018,6 +1036,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Do not migrate legacy sessions or verification tokens. Require fresh authentication at cutover.
 - 2026-07-14: Do not add Better Auth organizations. PistonPost authorization is user, ownership, and role based.
 - 2026-07-14: Use Cloudflare products where they solve a concrete requirement. Do not add platform services without a matching domain or operational need.
+- 2026-07-15: Replace the industrial independent-publishing identity with a plain, content-first social identity grounded in the legacy archive. User-facing copy says post rather than transmission or publish, the feed starts with content, image collections receive first-class presentation, and the visual system uses Outfit with a warm neutral, coral, and yellow palette.
 - 2026-07-15: Import incomplete public image posts as partial galleries when at least one image survives. Omit incomplete unlisted posts and media used only by those posts. Keep empty public media posts and incomplete non-gallery media posts as cutover-blocking failures.
 - 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, migration stages, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
 - 2026-07-14: Use shadcn Typeset for long-form post rendering and use Base UI-backed shadcn components whenever they own a real product interaction. Do not add components without a concrete use.

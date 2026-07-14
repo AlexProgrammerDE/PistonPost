@@ -1,14 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
   <title id="title">PistonPost</title>
-  <desc id="description">Independent publishing for text, photography, and video.</desc>
-  <rect width="1200" height="630" fill="#f5f2ed"/>
-  <g stroke="#d6d3d1" stroke-width="1">
-    <path d="M300 0v630M600 0v630M900 0v630"/>
-    <path d="M0 157.5h1200M0 315h1200M0 472.5h1200"/>
+  <desc id="description">Posts, pictures, videos, and whatever else is worth passing around.</desc>
+  <rect width="1200" height="630" fill="#fff9ed"/>
+  <rect x="72" y="76" width="90" height="90" rx="14" fill="#dc3850"/>
+  <path fill="#fff9ed" d="M95 96h23.2c13.4 0 21.8 7.9 21.8 20 0 12.3-8.7 20.2-21.8 20.2h-8.4V150H95V96Zm14.8 12.7v14.8h7.3c5.3 0 8.2-2.5 8.2-7.5 0-4.8-2.9-7.3-8.2-7.3h-7.3Z"/>
+  <text x="72" y="340" fill="#2e2220" font-family="Outfit, sans-serif" font-size="100" font-weight="800" letter-spacing="-5">piston</text>
+  <text x="344" y="340" fill="#dc3850" font-family="Outfit, sans-serif" font-size="100" font-weight="800" letter-spacing="-5">post</text>
+  <g transform="translate(72 438)">
+    <rect width="88" height="88" fill="#ffe36e"/>
+    <rect x="104" width="150" height="88" fill="#f5a0ad"/>
+    <rect x="270" width="62" height="88" fill="#dc3850"/>
   </g>
-  <rect x="72" y="74" width="92" height="92" rx="16" fill="#1c1917"/>
-  <text x="118" y="133" text-anchor="middle" fill="#fffdf9" font-family="Arial, sans-serif" font-size="34" font-weight="700">PP</text>
-  <text x="72" y="318" fill="#1c1917" font-family="Arial, sans-serif" font-size="86" font-weight="700">PistonPost</text>
-  <text x="76" y="390" fill="#78716c" font-family="Arial, sans-serif" font-size="34">Work worth sharing.</text>
-  <text x="76" y="548" fill="#a16207" font-family="monospace" font-size="22" letter-spacing="5">TEXT / PHOTOGRAPHY / VIDEO</text>
+  <text x="1128" y="526" text-anchor="end" fill="#806a62" font-family="Outfit, sans-serif" font-size="24">post.pistonmaster.net</text>
 </svg>

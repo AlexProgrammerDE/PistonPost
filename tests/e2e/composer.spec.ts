@@ -5,9 +5,9 @@ test.describe("composer and media boundaries", () => {
   test("requires an account before exposing the composer", async ({ page }) => {
     await page.goto("/account/posts/new")
 
-    await expect(page.getByRole("heading", { name: "Start a new transmission" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
     await expect(
-      page.getByRole("alert").getByText("Sign in to publish", { exact: true }),
+      page.getByRole("alert").getByText("Sign in to post", { exact: true }),
     ).toBeVisible()
     await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible()
     const accessibility = await new AxeBuilder({ page }).analyze()

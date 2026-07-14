@@ -38,21 +38,19 @@ function ProfileFeed() {
   const website = safeWebsite(profile.website)
 
   return (
-    <main className="mx-auto w-full max-w-[94rem] px-4 py-10 sm:px-6 sm:py-14 lg:px-8">
-      <header className="mb-12 grid gap-6 border-b pb-8 sm:grid-cols-[auto_1fr] sm:items-end">
-        <Avatar className="size-24 sm:size-32">
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-10 grid gap-5 border-b pb-7 sm:grid-cols-[auto_1fr] sm:items-center">
+        <Avatar className="size-20 sm:size-24">
           {profile.image && <AvatarImage src={profile.image} alt="" />}
           <AvatarFallback className="font-heading text-2xl">
             {profile.name.slice(0, 2).toLocaleUpperCase("en-US")}
           </AvatarFallback>
         </Avatar>
         <div className="max-w-2xl">
-          <p className="font-mono text-xs tracking-[0.2em] text-muted-foreground uppercase">
-            @{profile.username}
-          </p>
-          <h1 className="mt-2 font-heading text-4xl font-semibold tracking-tight sm:text-6xl">
+          <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
             {profile.name}
           </h1>
+          <p className="mt-1 text-sm text-muted-foreground">@{profile.username}</p>
           {profile.bio && (
             <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
               {profile.bio}
@@ -70,7 +68,7 @@ function ProfileFeed() {
       </header>
       <FilteredFeed
         filters={{ username: normalizedUsername }}
-        emptyMessage={`${profile.name} has not published a public post yet.`}
+        emptyMessage={`${profile.name} has not posted anything here yet.`}
       />
     </main>
   )

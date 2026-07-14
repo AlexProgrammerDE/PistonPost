@@ -1,6 +1,6 @@
 # PistonPost
 
-PistonPost is a modern rewrite of the original media-focused social publishing app. The repository is a Bun and Turborepo monorepo built around TanStack Start, React 19, shadcn/ui on Base UI, and Cloudflare.
+PistonPost is a small social feed for sharing art, images, videos, jokes, and everyday posts with familiar people. This repository rebuilds the original app with TanStack Start, React 19, shadcn/ui on Base UI, Bun, Turborepo, and Cloudflare.
 
 The implementation roadmap is in [PLAN.md](./PLAN.md). Agents and contributors must read [AGENTS.md](./AGENTS.md) before changing the repository.
 

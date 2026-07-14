@@ -97,11 +97,10 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <header className="typeset mb-10 border-b pb-7">
-        <p className="font-mono text-xs tracking-[0.2em] text-primary uppercase">Revision</p>
-        <h1>Edit transmission</h1>
+        <h1>Edit post</h1>
         <p>
-          Changes use version {post.version}. If another session saves first, this editor stops
-          instead of overwriting it.
+          If this post changes in another session while you are editing, we will stop before
+          overwriting it.
         </p>
       </header>
 

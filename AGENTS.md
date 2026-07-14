@@ -102,7 +102,12 @@ Prefer root tasks for normal work. Run package-local commands when local configu
 
 ## UI and design
 
-The design direction is editorial and media-first with a restrained industrial PistonPost character. Use the generated Maia preset, taupe theme, amber charts, Outfit body type, Raleway headings, and Hugeicons. Avoid generic dashboard card grids, decorative gradients, glass effects, oversized marketing headings, and excessive rounded containers.
+The design direction is a content-first social feed: casual, warm, and slightly mischievous without trying to look cute. Use the generated Maia preset, a quiet warm canvas, coral as the main accent, yellow sparingly, Outfit typography, and Hugeicons. Let colorful posts provide most of the personality. Avoid corporate publishing language, industrial motifs, furry mascots, forced slang, generic dashboard card grids, decorative gradients, glass effects, oversized marketing headings, and excessive rounded containers.
+
+- Use plain social language in the interface. Prefer post, posted, latest, comments, and visibility over publish, transmission, archive, story, or delivery when speaking to users.
+- Do not place a marketing hero above the public feed. Show the content first.
+- Treat large image collections as normal art and meme dumps. Feed previews should reveal several images, and detail pages should make the full collection easy to browse.
+- Keep the PistonPost wordmark simple and lowercase in the interface. Do not add literal piston, paw, or mascot imagery.
 
 - Use shadcn/ui components idiomatically before writing custom primitives.
 - This project uses Base UI, not Radix. Use render props where Base UI expects them and do not use asChild.

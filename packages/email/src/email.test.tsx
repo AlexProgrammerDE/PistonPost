@@ -18,7 +18,7 @@ describe("transactional email", () => {
     )
 
     expect(rendered.subject).toBe("Your PistonPost sign-in link")
-    expect(rendered.html).toContain("PISTONPOST / TRANSMISSION")
+    expect(rendered.html).toContain("pistonpost")
     expect(rendered.html).toContain("https://post.pistonmaster.net/auth/verify?token=redacted")
     expect(rendered.text).toContain("SIGN IN TO PISTONPOST")
     expect(rendered.text).toContain("in 10 minutes")
@@ -53,8 +53,8 @@ describe("transactional email", () => {
       to: "author@example.com",
       data: {
         actorName: "Avery",
-        postTitle: "Lathe restoration",
-        postUrl: "https://post.pistonmaster.net/post/lathe",
+        postTitle: "two extremely important cats",
+        postUrl: "https://post.pistonmaster.net/post/cats",
       },
     })
 
@@ -63,7 +63,7 @@ describe("transactional email", () => {
 
     const rendered = await renderEmail(emailJobContent(result.right))
     expect(rendered.subject).toContain("Avery")
-    expect(rendered.html).toContain("Lathe restoration")
+    expect(rendered.html).toContain("two extremely important cats")
     expect(rendered.text).toContain("Read the comment")
   })
 

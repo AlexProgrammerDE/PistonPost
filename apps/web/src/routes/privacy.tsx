@@ -19,20 +19,20 @@ function PrivacyPage() {
       <article className="typeset typeset-post">
         <h1>Privacy</h1>
         <p>
-          PistonPost stores the information needed to operate your account, publish your posts,
-          deliver media, and protect the service from abuse.
+          PistonPost stores the information needed to run your account, show your posts and media,
+          and protect the service from abuse.
         </p>
         <h2>What we store</h2>
         <p>
           Account records include your email address, profile, security settings, and active
-          sessions. Published content includes posts, media, tags, comments, and reactions.
-          Operational systems retain limited security, delivery, and reliability events.
+          sessions. Content records include posts, media, tags, comments, and reactions. Operational
+          systems retain limited security, delivery, and reliability events.
         </p>
         <h2>How data is used</h2>
         <p>
-          Data is used to display the content you publish, authenticate your account, deliver
-          messages you requested, enforce moderation, and keep PistonPost reliable. Analytics
-          contain aggregate event data and do not replace application records.
+          Data is used to display what you post, authenticate your account, deliver messages you
+          requested, enforce moderation, and keep PistonPost reliable. Analytics contain aggregate
+          event data and do not replace application records.
         </p>
         <h2>Deletion and exports</h2>
         <p>
