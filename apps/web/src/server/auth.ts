@@ -10,6 +10,7 @@ import { eq } from "drizzle-orm"
 import { Effect } from "effect"
 
 import type { AppRequestContext } from "../server"
+import { requireEmailBinding } from "./email-binding"
 import { notificationEnabled } from "./notification-policy"
 
 async function readSecret(secret: string | SecretsStoreSecret) {
@@ -23,7 +24,7 @@ export async function createRequestAuth(context: AppRequestContext) {
     readSecret(env.BETTER_AUTH_SECRET),
     readSecret(env.TURNSTILE_SECRET),
   ])
-  const transport = createCloudflareEmailTransport(env.EMAIL)
+  const transport = createCloudflareEmailTransport(requireEmailBinding(env))
 
   const database = createD1Database(env.DB)
 
@@ -156,7 +157,7 @@ export async function sendSecurityNotification(
   )
     return
   const rendered = await renderEmail(securityNotificationMessage({ template }))
-  const transport = createCloudflareEmailTransport(context.env.EMAIL)
+  const transport = createCloudflareEmailTransport(requireEmailBinding(context.env))
   await Effect.runPromise(
     transport.send({
       ...rendered,

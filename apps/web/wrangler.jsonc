@@ -147,16 +147,6 @@
           "class_name": "AccountDeletionWorkflow",
         },
       ],
-      "send_email": [
-        {
-          "name": "EMAIL",
-          "destination_address": "staging-email-sink@pistonmaster.net",
-          "allowed_sender_addresses": [
-            "auth@transactional.pistonmaster.net",
-            "notifications@transactional.pistonmaster.net",
-          ],
-        },
-      ],
       "queues": {
         "producers": [{ "binding": "JOBS", "queue": "pistonpost-staging-jobs" }],
         "consumers": [

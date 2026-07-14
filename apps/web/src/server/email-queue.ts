@@ -10,6 +10,7 @@ import { and, eq, isNull, sql } from "drizzle-orm"
 import { Effect, Either } from "effect"
 
 import { deadLetterMetadata } from "./dead-letter"
+import { requireEmailBinding } from "./email-binding"
 import { internalJobSchema, type InternalJob } from "./jobs"
 import { writeOperationalEvent } from "./operational-events"
 
@@ -102,7 +103,7 @@ async function deliverEmailJob(body: unknown, env: Cloudflare.Env) {
 
   try {
     const rendered = await renderEmail(emailJobContent(job))
-    const transport = createCloudflareEmailTransport(env.EMAIL)
+    const transport = createCloudflareEmailTransport(requireEmailBinding(env))
     await Effect.runPromise(
       transport.send({
         ...rendered,
