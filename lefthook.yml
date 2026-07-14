@@ -6,6 +6,7 @@ pre-commit:
       run: bunx oxfmt --check {staged_files}
     lint:
       glob: "*.{js,jsx,ts,tsx}"
+      exclude: "*.d.ts"
       run: bunx oxlint --type-aware --deny-warnings {staged_files}
     typecheck:
       glob: "{apps,packages,tests}/**/*.{ts,tsx}"
