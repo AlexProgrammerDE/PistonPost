@@ -5,12 +5,14 @@ import { z } from "zod"
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
 import { Badge } from "@/components/ui/badge"
+import { galleryLayouts } from "@/lib/gallery-layout"
 import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
 import { createSeoHead } from "@/lib/seo"
 
 const postSearchSchema = z.object({
   image: z.coerce.number().int().min(0).max(149).optional().catch(undefined),
+  layout: z.enum(galleryLayouts).optional().catch(undefined),
 })
 
 export const Route = createFileRoute("/post/$postId")({
@@ -41,7 +43,7 @@ export const Route = createFileRoute("/post/$postId")({
 
 function PostDetail() {
   const { postId } = Route.useParams()
-  const { image = 0 } = Route.useSearch()
+  const { image, layout } = Route.useSearch()
   const post = useSuspenseQuery(postQueryOptions(postId)).data
   if (!post) return null
 
@@ -56,7 +58,7 @@ function PostDetail() {
           </p>
         </div>
       )}
-      <PostView post={post} detail selectedImageIndex={image} />
+      <PostView post={post} detail selectedImageIndex={image} galleryLayout={layout} />
       <SocialPanel
         postId={post.id}
         counts={post.reactions}

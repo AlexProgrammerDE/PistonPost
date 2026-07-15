@@ -1,10 +1,21 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 
 import { TriangleAlert } from "@/components/icons"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import type { PublicPostRead } from "@/db/public-read-model"
+import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { cn } from "@/lib/utils"
 
 function formatDate(date: Date) {
@@ -14,14 +25,60 @@ function formatDate(date: Date) {
   }).format(date)
 }
 
+function GalleryLayoutMenu({
+  postId,
+  layout,
+  selectedImageIndex,
+}: {
+  readonly postId: string
+  readonly layout: GalleryLayout
+  readonly selectedImageIndex: number | undefined
+}) {
+  const navigate = useNavigate()
+
+  function selectLayout(value: string) {
+    if (!isGalleryLayout(value) || value === layout) return
+
+    void navigate({
+      to: "/post/$postId",
+      params: { postId },
+      search:
+        value === "browser"
+          ? { image: selectedImageIndex ?? 0, layout: value }
+          : selectedImageIndex === undefined
+            ? { layout: value }
+            : { image: selectedImageIndex, layout: value },
+    })
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+        Gallery options
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuGroup>
+          <DropdownMenuLabel>Layout</DropdownMenuLabel>
+          <DropdownMenuRadioGroup value={layout} onValueChange={selectLayout}>
+            <DropdownMenuRadioItem value="masonry">Masonry</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="browser">Image browser</DropdownMenuRadioItem>
+          </DropdownMenuRadioGroup>
+        </DropdownMenuGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+
 function PostMedia({
   post,
   detail,
   selectedImageIndex,
+  galleryLayout,
 }: {
   readonly post: PublicPostRead
   readonly detail: boolean
-  readonly selectedImageIndex: number
+  readonly selectedImageIndex: number | undefined
+  readonly galleryLayout: GalleryLayout
 }) {
   if (post.media.length === 0) {
     if (post.type === "text") return null
@@ -70,41 +127,42 @@ function PostMedia({
   }
 
   if (detail) {
-    const selectedIndex = Math.min(selectedImageIndex, post.media.length - 1)
-    const selectedImage = post.media[selectedIndex] ?? post.media[0]
-    if (!selectedImage) return null
     return (
-      <div className="grid gap-3" aria-label={`${post.title} image collection`}>
-        <img
-          src={`/media/image/${selectedImage.id}/${variant}`}
-          alt={selectedImage.altText ?? post.title}
-          width={selectedImage.width ?? undefined}
-          height={selectedImage.height ?? undefined}
-          className="max-h-[85svh] w-full bg-muted object-contain"
-          fetchPriority="high"
-        />
-        <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
-          {post.media.map((image, index) => (
-            <Link
-              key={image.id}
-              to="/post/$postId"
-              params={{ postId: post.id }}
-              search={{ image: index }}
-              aria-label={`Show image ${String(index + 1)} of ${String(post.media.length)}`}
-              aria-current={index === selectedIndex ? "true" : undefined}
-              className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
-            >
-              <img
-                src={`/media/image/${image.id}/feed`}
-                alt=""
-                width={image.width ?? undefined}
-                height={image.height ?? undefined}
-                className="size-20 object-cover sm:size-24"
-                loading="lazy"
-              />
-            </Link>
-          ))}
-        </nav>
+      <div className="grid gap-3">
+        <div className="flex justify-end">
+          <GalleryLayoutMenu
+            postId={post.id}
+            layout={galleryLayout}
+            selectedImageIndex={selectedImageIndex}
+          />
+        </div>
+
+        {galleryLayout === "masonry" ? (
+          <ul
+            className="m-0 list-none columns-1 gap-2 p-0 sm:columns-2 lg:columns-3"
+            aria-label={`${post.title} image collection`}
+          >
+            {post.media.map((image, index) => (
+              <li key={image.id} className="break-inside-avoid pb-2">
+                <img
+                  src={`/media/image/${image.id}/${variant}`}
+                  alt={image.altText ?? post.title}
+                  width={image.width ?? undefined}
+                  height={image.height ?? undefined}
+                  className="w-full bg-muted object-contain"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  fetchPriority={index === 0 ? "high" : undefined}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <ImageBrowser
+            post={post}
+            selectedImageIndex={selectedImageIndex ?? 0}
+            variant={variant}
+          />
+        )}
       </div>
     )
   }
@@ -141,17 +199,69 @@ function PostMedia({
   )
 }
 
+function ImageBrowser({
+  post,
+  selectedImageIndex,
+  variant,
+}: {
+  readonly post: PublicPostRead
+  readonly selectedImageIndex: number
+  readonly variant: "detail" | "feed"
+}) {
+  const selectedIndex = Math.min(Math.max(selectedImageIndex, 0), post.media.length - 1)
+  const selectedImage = post.media[selectedIndex] ?? post.media[0]
+  if (!selectedImage) return null
+
+  return (
+    <div className="grid gap-3" aria-label={`${post.title} image collection`}>
+      <img
+        src={`/media/image/${selectedImage.id}/${variant}`}
+        alt={selectedImage.altText ?? post.title}
+        width={selectedImage.width ?? undefined}
+        height={selectedImage.height ?? undefined}
+        className="max-h-[85svh] w-full bg-muted object-contain"
+        fetchPriority="high"
+      />
+      <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
+        {post.media.map((image, index) => (
+          <Link
+            key={image.id}
+            to="/post/$postId"
+            params={{ postId: post.id }}
+            search={{ image: index, layout: "browser" }}
+            aria-label={`Show image ${String(index + 1)} of ${String(post.media.length)}`}
+            aria-current={index === selectedIndex ? "true" : undefined}
+            className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
+          >
+            <img
+              src={`/media/image/${image.id}/feed`}
+              alt=""
+              width={image.width ?? undefined}
+              height={image.height ?? undefined}
+              className="size-20 object-cover sm:size-24"
+              loading="lazy"
+            />
+          </Link>
+        ))}
+      </nav>
+    </div>
+  )
+}
+
 export function PostView({
   post,
   detail = false,
-  selectedImageIndex = 0,
+  selectedImageIndex,
+  galleryLayout,
 }: {
   readonly post: PublicPostRead
   readonly detail?: boolean
-  readonly selectedImageIndex?: number
+  readonly selectedImageIndex?: number | undefined
+  readonly galleryLayout?: GalleryLayout | undefined
 }) {
   const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
   const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
+  const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
 
   return (
     <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10")}>
@@ -197,7 +307,12 @@ export function PostView({
         )}
       </div>
 
-      <PostMedia post={post} detail={detail} selectedImageIndex={selectedImageIndex} />
+      <PostMedia
+        post={post}
+        detail={detail}
+        selectedImageIndex={selectedImageIndex}
+        galleryLayout={resolvedGalleryLayout}
+      />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {post.tags.map((tag) => (

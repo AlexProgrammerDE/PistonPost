@@ -559,7 +559,9 @@ The visual direction should feel like a clean community scrapbook without decora
 - A simple lowercase wordmark without literal piston, paw, or mascot imagery.
 - A single-column public feed that starts with posts instead of marketing copy.
 - Strong media framing, readable text measure, and minimal container chrome.
-- Multi-image feed previews that reveal several images and detail views that expose the full collection.
+- Multi-image feed previews that reveal several images. Detail views use responsive masonry by
+  default and a focused image browser for explicit shared-image links. Gallery options let readers
+  switch between both layouts.
 - Detail pages that prioritize the post, then reactions and discussion.
 - Account and admin tables that are dense, calm, direct, and keyboard-friendly.
 - Responsive behavior designed deliberately for narrow screens.
@@ -1048,3 +1050,7 @@ Record future changes here with date, decision, reason, and affected phases.
   screen has one primary object and action per row, so a list keeps status and actions readable on
   narrow screens without duplicating desktop and mobile presentations. Admin datasets remain on
   the shared TanStack Table boundary.
+- 2026-07-15: Keep multi-image post detail views in responsive masonry by default. URLs with an
+  explicit `?image=N` parameter open the focused image browser and select the matching social
+  preview. A gallery options menu writes an explicit `layout=masonry` or `layout=browser` override
+  to the URL. This affects Phase 5.

@@ -150,6 +150,46 @@ test.describe.serial("authenticated authoring", () => {
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "two extremely important cats" })).toBeVisible()
+    const postUrl = page.url()
+    const imageCollection = page.getByRole("list", {
+      name: "two extremely important cats image collection",
+    })
+    await expect(imageCollection.getByRole("img")).toHaveCount(2)
+    await expect(imageCollection).toHaveCSS("column-count", "3")
+    await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
+
+    await page.getByRole("button", { name: "Gallery options" }).click()
+    await expect(page.getByRole("menuitemradio", { name: "Masonry" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    )
+    await page.getByRole("menuitemradio", { name: "Image browser" }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get("layout")).toBe("browser")
+    await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("0")
+    await expect(page.getByRole("navigation", { name: "Choose an image" })).toBeVisible()
+
+    await page.getByRole("link", { name: "Show image 2 of 2" }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("1")
+    await expect(
+      page.getByRole("img", { name: "A gray cat looking directly at the camera" }),
+    ).toBeVisible()
+
+    await page.getByRole("button", { name: "Gallery options" }).click()
+    await page.getByRole("menuitemradio", { name: "Masonry" }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get("layout")).toBe("masonry")
+    await expect(imageCollection).toBeVisible()
+    await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect(imageCollection).toHaveCSS("column-count", "1")
+    await page.setViewportSize({ width: 1280, height: 720 })
+
+    await page.goto(`${postUrl}?image=1`)
+    await expect(page.getByRole("navigation", { name: "Choose an image" })).toBeVisible()
+    await expect(
+      page.getByRole("img", { name: "A gray cat looking directly at the camera" }),
+    ).toBeVisible()
+    await expect(page.getByRole("list", { name: /image collection/u })).toHaveCount(0)
 
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")
