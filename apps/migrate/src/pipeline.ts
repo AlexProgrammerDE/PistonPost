@@ -159,6 +159,19 @@ function applyMigration(
         selectedMedia,
         (media) =>
           Effect.gen(function* () {
+            const collection = media.kind === "video" ? "videos" : "images"
+            const alreadyImported = yield* operation("check-media", () =>
+              database.imported(collection, media.legacyId),
+            )
+            if (alreadyImported) {
+              return {
+                collection,
+                legacyId: media.legacyId,
+                targetTable: "media_assets",
+                targetId: media.id,
+                state: "already-present",
+              } satisfies ImportResult
+            }
             let persisted: PersistedMedia
             if (media.kind === "image") {
               yield* operation("upload-image", () =>
