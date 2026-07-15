@@ -158,6 +158,29 @@ test.describe.serial("authenticated authoring", () => {
     await expect(imageCollection).toHaveCSS("column-count", "3")
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
 
+    const secondImageTrigger = imageCollection.getByRole("button", {
+      name: "Expand image 2 of 2",
+    })
+    await secondImageTrigger.click()
+    const imageViewer = page.getByRole("dialog", {
+      name: "two extremely important cats image viewer",
+    })
+    await expect(imageViewer).toBeVisible()
+    await expect(
+      imageViewer
+        .getByRole("group", { name: "2 of 2" })
+        .getByRole("img", { name: "A gray cat looking directly at the camera" }),
+    ).toBeVisible()
+    await imageViewer.getByRole("button", { name: "Previous" }).click()
+    await expect(
+      imageViewer
+        .getByRole("group", { name: "1 of 2" })
+        .getByRole("img", { name: "A small orange cat sitting on a blanket" }),
+    ).toBeVisible()
+    await imageViewer.getByRole("button", { name: "Close" }).click()
+    await expect(imageViewer).toBeHidden()
+    await expect(secondImageTrigger).toBeFocused()
+
     await page.getByRole("button", { name: "Gallery options" }).click()
     await expect(page.getByRole("menuitemradio", { name: "Masonry" })).toHaveAttribute(
       "aria-checked",

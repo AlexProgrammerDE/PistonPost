@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router"
+import { lazy, Suspense, useState } from "react"
 
 import { TriangleAlert } from "@/components/icons"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
@@ -17,6 +18,10 @@ import {
 import type { PublicPostRead } from "@/db/public-read-model"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { cn } from "@/lib/utils"
+
+const ImageLightbox = lazy(() =>
+  import("@/components/ImageLightbox").then((module) => ({ default: module.ImageLightbox })),
+)
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -110,60 +115,61 @@ function PostMedia({
     )
   }
 
-  const variant = detail ? "detail" : "feed"
-  if (post.media.length === 1) {
-    const image = post.media[0]
-    if (!image) return null
+  return (
+    <PostImageMedia
+      post={post}
+      detail={detail}
+      selectedImageIndex={selectedImageIndex}
+      galleryLayout={galleryLayout}
+    />
+  )
+}
+
+function PostImageMedia({
+  post,
+  detail,
+  selectedImageIndex,
+  galleryLayout,
+}: {
+  readonly post: PublicPostRead
+  readonly detail: boolean
+  readonly selectedImageIndex: number | undefined
+  readonly galleryLayout: GalleryLayout
+}) {
+  if (detail) {
     return (
-      <img
-        src={`/media/image/${image.id}/${variant}`}
-        alt={image.altText ?? post.title}
-        width={image.width ?? undefined}
-        height={image.height ?? undefined}
-        className={cn("w-full bg-muted object-contain", detail ? "max-h-[85svh]" : "max-h-[46rem]")}
-        loading={detail ? "eager" : "lazy"}
+      <DetailPostImageMedia
+        post={post}
+        selectedImageIndex={selectedImageIndex}
+        galleryLayout={galleryLayout}
       />
     )
   }
 
-  if (detail) {
-    return (
-      <div className="grid gap-3">
-        <div className="flex justify-end">
-          <GalleryLayoutMenu
-            postId={post.id}
-            layout={galleryLayout}
-            selectedImageIndex={selectedImageIndex}
-          />
-        </div>
+  return <FeedPostImageMedia post={post} />
+}
 
-        {galleryLayout === "masonry" ? (
-          <ul
-            className="m-0 list-none columns-1 gap-2 p-0 sm:columns-2 lg:columns-3"
-            aria-label={`${post.title} image collection`}
-          >
-            {post.media.map((image, index) => (
-              <li key={image.id} className="break-inside-avoid pb-2">
-                <img
-                  src={`/media/image/${image.id}/${variant}`}
-                  alt={image.altText ?? post.title}
-                  width={image.width ?? undefined}
-                  height={image.height ?? undefined}
-                  className="w-full bg-muted object-contain"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  fetchPriority={index === 0 ? "high" : undefined}
-                />
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <ImageBrowser
-            post={post}
-            selectedImageIndex={selectedImageIndex ?? 0}
-            variant={variant}
-          />
-        )}
-      </div>
+function FeedPostImageMedia({ post }: { readonly post: PublicPostRead }) {
+  if (post.media.length === 1) {
+    const image = post.media[0]
+    if (!image) return null
+
+    return (
+      <Link
+        to="/post/$postId"
+        params={{ postId: post.id }}
+        className="block"
+        aria-label={`Open ${post.title}`}
+      >
+        <img
+          src={`/media/image/${image.id}/feed`}
+          alt={image.altText ?? post.title}
+          width={image.width ?? undefined}
+          height={image.height ?? undefined}
+          className="max-h-[46rem] w-full bg-muted object-contain"
+          loading="lazy"
+        />
+      </Link>
     )
   }
 
@@ -181,7 +187,7 @@ function PostMedia({
       {preview.map((image) => (
         <span key={image.id} className="relative block">
           <img
-            src={`/media/image/${image.id}/${variant}`}
+            src={`/media/image/${image.id}/feed`}
             alt={image.altText ?? ""}
             width={image.width ?? undefined}
             height={image.height ?? undefined}
@@ -199,14 +205,124 @@ function PostMedia({
   )
 }
 
+function DetailPostImageMedia({
+  post,
+  selectedImageIndex,
+  galleryLayout,
+}: {
+  readonly post: PublicPostRead
+  readonly selectedImageIndex: number | undefined
+  readonly galleryLayout: GalleryLayout
+}) {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  function openLightbox(index: number) {
+    setLightboxIndex(index)
+  }
+
+  function closeLightbox() {
+    setLightboxIndex(null)
+  }
+
+  function changeLightboxImage(index: number) {
+    setLightboxIndex(index)
+  }
+
+  const lightboxViewer =
+    lightboxIndex === null ? null : (
+      <Suspense fallback={null}>
+        <ImageLightbox
+          images={post.media}
+          title={post.title}
+          index={lightboxIndex}
+          onClose={closeLightbox}
+          onIndexChange={changeLightboxImage}
+        />
+      </Suspense>
+    )
+
+  if (post.media.length === 1) {
+    const image = post.media[0]
+    if (!image) return null
+
+    return (
+      <>
+        <button
+          type="button"
+          className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label={`Expand ${image.altText ?? post.title}`}
+          onClick={() => openLightbox(0)}
+        >
+          <img
+            src={`/media/image/${image.id}/detail`}
+            alt={image.altText ?? post.title}
+            width={image.width ?? undefined}
+            height={image.height ?? undefined}
+            className="max-h-[85svh] w-full object-contain"
+            loading="eager"
+          />
+        </button>
+        {lightboxViewer}
+      </>
+    )
+  }
+
+  return (
+    <div className="grid gap-3">
+      <div className="flex justify-end">
+        <GalleryLayoutMenu
+          postId={post.id}
+          layout={galleryLayout}
+          selectedImageIndex={selectedImageIndex}
+        />
+      </div>
+
+      {galleryLayout === "masonry" ? (
+        <ul
+          className="m-0 list-none columns-1 gap-2 p-0 sm:columns-2 lg:columns-3"
+          aria-label={`${post.title} image collection`}
+        >
+          {post.media.map((image, index) => (
+            <li key={image.id} className="break-inside-avoid pb-2">
+              <button
+                type="button"
+                className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label={`Expand image ${String(index + 1)} of ${String(post.media.length)}`}
+                onClick={() => openLightbox(index)}
+              >
+                <img
+                  src={`/media/image/${image.id}/feed`}
+                  alt={image.altText ?? post.title}
+                  width={image.width ?? undefined}
+                  height={image.height ?? undefined}
+                  className="w-full object-contain"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  fetchPriority={index === 0 ? "high" : undefined}
+                />
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <ImageBrowser
+          post={post}
+          selectedImageIndex={selectedImageIndex ?? 0}
+          onOpen={openLightbox}
+        />
+      )}
+      {lightboxViewer}
+    </div>
+  )
+}
+
 function ImageBrowser({
   post,
   selectedImageIndex,
-  variant,
+  onOpen,
 }: {
   readonly post: PublicPostRead
   readonly selectedImageIndex: number
-  readonly variant: "detail" | "feed"
+  readonly onOpen: (index: number) => void
 }) {
   const selectedIndex = Math.min(Math.max(selectedImageIndex, 0), post.media.length - 1)
   const selectedImage = post.media[selectedIndex] ?? post.media[0]
@@ -214,14 +330,21 @@ function ImageBrowser({
 
   return (
     <div className="grid gap-3" aria-label={`${post.title} image collection`}>
-      <img
-        src={`/media/image/${selectedImage.id}/${variant}`}
-        alt={selectedImage.altText ?? post.title}
-        width={selectedImage.width ?? undefined}
-        height={selectedImage.height ?? undefined}
-        className="max-h-[85svh] w-full bg-muted object-contain"
-        fetchPriority="high"
-      />
+      <button
+        type="button"
+        className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        aria-label={`Expand image ${String(selectedIndex + 1)} of ${String(post.media.length)}`}
+        onClick={() => onOpen(selectedIndex)}
+      >
+        <img
+          src={`/media/image/${selectedImage.id}/detail`}
+          alt={selectedImage.altText ?? post.title}
+          width={selectedImage.width ?? undefined}
+          height={selectedImage.height ?? undefined}
+          className="max-h-[85svh] w-full object-contain"
+          fetchPriority="high"
+        />
+      </button>
       <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
         {post.media.map((image, index) => (
           <Link

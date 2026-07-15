@@ -2,6 +2,8 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/outfit";
+@import "yet-another-react-lightbox/styles.css";
+@import "yet-another-react-lightbox/plugins/counter.css";
 @import "./typeset.css";
 
 @custom-variant dark (&:is(.dark *));
