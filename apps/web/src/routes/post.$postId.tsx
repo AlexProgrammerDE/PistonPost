@@ -5,9 +5,16 @@ import { z } from "zod"
 
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
+import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
+import { createSeoHead } from "@/lib/seo"
+
+const postSearchSchema = z.object({
+  image: z.coerce.number().int().min(0).max(149).optional().catch(undefined),
+})
 
 export const Route = createFileRoute("/post/$postId")({
+  validateSearch: postSearchSchema,
   loader: async ({ context, params }) => {
     const postId = z.string().trim().min(1).max(64).parse(params.postId)
     const post = await context.queryClient.ensureQueryData(postQueryOptions(postId))
@@ -20,21 +27,15 @@ export const Route = createFileRoute("/post/$postId")({
         ? "public, max-age=0, s-maxage=120, stale-while-revalidate=600"
         : "private, no-store",
   }),
-  head: ({ loaderData, params }) => ({
-    meta: [
-      { title: loaderData ? `${loaderData.title} · PistonPost` : "Post · PistonPost" },
-      {
-        name: "description",
-        content: loaderData?.textContent?.slice(0, 155) ?? "A post on PistonPost.",
-      },
-      { property: "og:title", content: loaderData?.title ?? "PistonPost" },
-      { property: "og:type", content: "article" },
-      ...(loaderData?.visibility === "unlisted"
-        ? [{ name: "robots", content: "noindex, nofollow" }]
-        : []),
-    ],
-    links: [{ rel: "canonical", href: `/post/${params.postId}` }],
-  }),
+  head: ({ loaderData, match }) =>
+    loaderData
+      ? createPostSeoHead(loaderData, match.search.image ?? 0)
+      : createSeoHead({
+          title: "Post · PistonPost",
+          description: "A post on PistonPost.",
+          path: match.pathname,
+          noIndex: true,
+        }),
   component: PostDetail,
 })
 

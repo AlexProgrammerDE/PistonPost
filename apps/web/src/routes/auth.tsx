@@ -5,6 +5,7 @@ import { getPublicRuntimeConfig } from "@/server/public-config"
 
 export const Route = createFileRoute("/auth")({
   loader: () => getPublicRuntimeConfig(),
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: AuthLayout,
 })
 

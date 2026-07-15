@@ -55,6 +55,14 @@ export type PublicProfileRead = {
   readonly image: string | null
 }
 
+export type PublicSitemapRecord = {
+  readonly postId: string
+  readonly postUpdatedAt: Date
+  readonly username: string
+  readonly profileUpdatedAt: Date
+  readonly tag: string | null
+}
+
 type BasePostRow = {
   readonly id: string
   readonly type: "text" | "images" | "video"
@@ -165,6 +173,27 @@ export async function getPublicProfileRead(database: D1DatabaseClient, username:
     .innerJoin(user, eq(user.id, profiles.userId))
     .where(eq(profiles.normalizedUsername, username.toLocaleLowerCase("en-US")))
     .get()
+}
+
+export async function listPublicSitemapRecords(
+  database: D1DatabaseClient,
+  limit = 49_997,
+): Promise<ReadonlyArray<PublicSitemapRecord>> {
+  return database
+    .select({
+      postId: posts.id,
+      postUpdatedAt: posts.updatedAt,
+      username: profiles.normalizedUsername,
+      profileUpdatedAt: profiles.updatedAt,
+      tag: tags.normalizedName,
+    })
+    .from(posts)
+    .innerJoin(profiles, eq(profiles.userId, posts.authorId))
+    .leftJoin(postTags, eq(postTags.postId, posts.id))
+    .leftJoin(tags, eq(tags.id, postTags.tagId))
+    .where(and(eq(posts.status, "published"), eq(posts.visibility, "public")))
+    .orderBy(desc(posts.updatedAt), desc(posts.id), postTags.ordinal)
+    .limit(Math.min(Math.max(limit, 1), 49_997))
 }
 
 async function hydratePublicPosts(

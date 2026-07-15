@@ -16,9 +16,25 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { TriangleAlert } from "@/components/icons"
 import { PostView } from "@/components/post-view"
 import { feedQueryOptions } from "@/lib/queries/posts"
+import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, createSeoHead } from "@/lib/seo"
 
 export const Route = createFileRoute("/")({
   loader: ({ context }) => context.queryClient.ensureInfiniteQueryData(feedQueryOptions()),
+  head: () =>
+    createSeoHead({
+      title: SITE_NAME,
+      description: SITE_DESCRIPTION,
+      path: "/",
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": absoluteUrl("/#website"),
+        name: SITE_NAME,
+        url: absoluteUrl("/"),
+        description: SITE_DESCRIPTION,
+        inLanguage: "en",
+      },
+    }),
   component: PublicFeed,
   pendingComponent: FeedSkeleton,
   errorComponent: FeedError,

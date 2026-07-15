@@ -8,6 +8,7 @@ import { getPublicRuntimeConfig } from "@/server/public-config"
 
 export const Route = createFileRoute("/account/settings")({
   loader: () => getPublicRuntimeConfig(),
+  head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: SettingsLayout,
 })
 

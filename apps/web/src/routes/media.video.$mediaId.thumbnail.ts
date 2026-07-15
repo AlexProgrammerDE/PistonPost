@@ -4,7 +4,7 @@ import { z } from "zod"
 import type { AppRequestContext } from "@/server"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
-async function videoPlayer({
+async function videoThumbnail({
   request,
   context,
   params,
@@ -19,15 +19,21 @@ async function videoPlayer({
   const video = await getDeliverableVideo(request, context, mediaId.data)
   if (!video) return new Response("Not found", { status: 404 })
 
+  const details = await context.env.STREAM.video(video.streamUid).details()
+  const thumbnail = new URL(details.thumbnail)
+  thumbnail.searchParams.set("width", "1200")
+  thumbnail.searchParams.set("height", "630")
+  thumbnail.searchParams.set("fit", "crop")
+
   return new Response(null, {
     status: 302,
     headers: {
-      Location: `https://iframe.videodelivery.net/${video.streamUid}`,
+      Location: thumbnail.toString(),
       "Cache-Control": video.publiclyCacheable ? "public, max-age=3600" : "private, no-store",
     },
   })
 }
 
-export const Route = createFileRoute("/media/video/$mediaId/player")({
-  server: { handlers: { GET: videoPlayer } },
+export const Route = createFileRoute("/media/video/$mediaId/thumbnail")({
+  server: { handlers: { GET: videoThumbnail, HEAD: videoThumbnail } },
 })

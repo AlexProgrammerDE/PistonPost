@@ -1,12 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router"
 
+import { absoluteUrl, createSeoHead } from "@/lib/seo"
+
 export const Route = createFileRoute("/terms")({
-  head: () => ({
-    meta: [
-      { title: "Terms · PistonPost" },
-      { name: "description", content: "The practical rules for using PistonPost." },
-    ],
-  }),
+  head: () => {
+    const description = "The practical rules for using PistonPost."
+    return createSeoHead({
+      title: "Terms · PistonPost",
+      description,
+      path: "/terms",
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": absoluteUrl("/terms"),
+        url: absoluteUrl("/terms"),
+        name: "PistonPost terms",
+        description,
+      },
+    })
+  },
   component: TermsPage,
 })
 

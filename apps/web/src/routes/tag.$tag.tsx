@@ -3,22 +3,30 @@ import { z } from "zod"
 
 import { FilteredFeed } from "@/components/filtered-feed"
 import { feedQueryOptions } from "@/lib/queries/posts"
+import { absoluteUrl, createSeoHead } from "@/lib/seo"
 
 export const Route = createFileRoute("/tag/$tag")({
   loader: ({ context, params }) => {
     const tag = z.string().trim().min(1).max(64).parse(params.tag).toLocaleLowerCase("en-US")
     return context.queryClient.ensureInfiniteQueryData(feedQueryOptions({ tag }))
   },
-  head: ({ params }) => ({
-    meta: [
-      { title: `#${params.tag} · PistonPost` },
-      {
-        name: "description",
-        content: `Latest PistonPost posts tagged ${params.tag}.`,
+  head: ({ params }) => {
+    const path = `/tag/${encodeURIComponent(params.tag.toLocaleLowerCase("en-US"))}`
+    const description = `Latest PistonPost posts tagged #${params.tag}.`
+    return createSeoHead({
+      title: `#${params.tag} · PistonPost`,
+      description,
+      path,
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "CollectionPage",
+        "@id": absoluteUrl(path),
+        url: absoluteUrl(path),
+        name: `#${params.tag}`,
+        description,
       },
-    ],
-    links: [{ rel: "canonical", href: `/tag/${params.tag}` }],
-  }),
+    })
+  },
   component: TagFeed,
 })
 

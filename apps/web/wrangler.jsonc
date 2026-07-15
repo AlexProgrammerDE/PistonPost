@@ -23,6 +23,8 @@
       "/health",
       "/media/*",
       "/post/*",
+      "/robots.txt",
+      "/sitemap.xml",
       "/tag/*",
       "/user/*",
     ],

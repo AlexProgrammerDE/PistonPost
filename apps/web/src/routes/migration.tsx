@@ -5,17 +5,26 @@ import { Separator } from "@pistonpost/ui/components/separator"
 import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { LogIn, Shield } from "@/components/icons"
+import { absoluteUrl, createSeoHead } from "@/lib/seo"
 
 export const Route = createFileRoute("/migration")({
-  head: () => ({
-    meta: [
-      { title: "Your PistonPost account · PistonPost" },
-      {
-        name: "description",
-        content: "How existing PistonPost members regain access after the platform migration.",
+  head: () => {
+    const description =
+      "How existing PistonPost members regain access after the platform migration."
+    return createSeoHead({
+      title: "Your PistonPost account · PistonPost",
+      description,
+      path: "/migration",
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "@id": absoluteUrl("/migration"),
+        url: absoluteUrl("/migration"),
+        name: "PistonPost account migration",
+        description,
       },
-    ],
-  }),
+    })
+  },
   component: MigrationGuidance,
 })
 

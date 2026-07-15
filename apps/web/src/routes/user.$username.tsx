@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import { FilteredFeed } from "@/components/filtered-feed"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
+import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
 
 export const Route = createFileRoute("/user/$username")({
   loader: async ({ context, params }) => {
@@ -20,13 +21,42 @@ export const Route = createFileRoute("/user/$username")({
     await context.queryClient.ensureInfiniteQueryData(feedQueryOptions({ username }))
     return profile
   },
-  head: ({ loaderData, params }) => ({
-    meta: [
-      { title: `${loaderData?.name ?? params.username} · PistonPost` },
-      { name: "description", content: loaderData?.bio ?? `Public posts from @${params.username}.` },
-    ],
-    links: [{ rel: "canonical", href: `/user/${params.username}` }],
-  }),
+  head: ({ loaderData, params }) => {
+    const username = loaderData?.username ?? params.username
+    const name = loaderData?.name ?? username
+    const description = truncateDescription(
+      loaderData?.bio ?? `Public posts from @${username} on PistonPost.`,
+    )
+    const path = `/user/${encodeURIComponent(username)}`
+    const profileUrl = absoluteUrl(path)
+    const website = safeWebsite(loaderData?.website ?? null)
+    return createSeoHead({
+      title: `${name} (@${username}) · ${SITE_NAME}`,
+      description,
+      path,
+      type: "profile",
+      image: loaderData?.image
+        ? { url: loaderData.image, alt: `${name}'s profile picture` }
+        : undefined,
+      twitterCard: "summary",
+      jsonLd: {
+        "@context": "https://schema.org",
+        "@type": "ProfilePage",
+        "@id": profileUrl,
+        url: profileUrl,
+        name: `${name} (@${username})`,
+        description,
+        mainEntity: {
+          "@type": "Person",
+          name,
+          alternateName: `@${username}`,
+          url: profileUrl,
+          image: loaderData?.image ? absoluteUrl(loaderData.image) : undefined,
+          sameAs: website ? [website] : undefined,
+        },
+      },
+    })
+  },
   component: ProfileFeed,
 })
 

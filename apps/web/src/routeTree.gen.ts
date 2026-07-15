@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MigrationRouteImport } from './routes/migration'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -32,12 +34,23 @@ import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhoo
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AccountSettingsSettingsViewRouteImport } from './routes/account.settings.$settingsView'
 import { Route as AccountPostsNewRouteImport } from './routes/account.posts.new'
+import { Route as MediaVideoMediaIdThumbnailRouteImport } from './routes/media.video.$mediaId.thumbnail'
 import { Route as MediaVideoMediaIdPlayerRouteImport } from './routes/media.video.$mediaId.player'
 import { Route as MediaImageMediaIdVariantRouteImport } from './routes/media.image.$mediaId.$variant'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -151,6 +164,12 @@ const AccountPostsNewRoute = AccountPostsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AccountPostsRoute,
 } as any)
+const MediaVideoMediaIdThumbnailRoute =
+  MediaVideoMediaIdThumbnailRouteImport.update({
+    id: '/media/video/$mediaId/thumbnail',
+    path: '/media/video/$mediaId/thumbnail',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const MediaVideoMediaIdPlayerRoute = MediaVideoMediaIdPlayerRouteImport.update({
   id: '/media/video/$mediaId/player',
   path: '/media/video/$mediaId/player',
@@ -168,6 +187,8 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/account/comments': typeof AccountCommentsRoute
   '/account/media': typeof AccountMediaRoute
@@ -189,11 +210,14 @@ export interface FileRoutesByFullPath {
   '/account/settings/': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
+  '/media/video/$mediaId/thumbnail': typeof MediaVideoMediaIdThumbnailRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/account/comments': typeof AccountCommentsRoute
   '/account/media': typeof AccountMediaRoute
@@ -213,6 +237,7 @@ export interface FileRoutesByTo {
   '/account/settings': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
+  '/media/video/$mediaId/thumbnail': typeof MediaVideoMediaIdThumbnailRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -220,6 +245,8 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/account/comments': typeof AccountCommentsRoute
   '/account/media': typeof AccountMediaRoute
@@ -241,6 +268,7 @@ export interface FileRoutesById {
   '/account/settings/': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
+  '/media/video/$mediaId/thumbnail': typeof MediaVideoMediaIdThumbnailRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -249,6 +277,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/migration'
     | '/privacy'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/account/comments'
     | '/account/media'
@@ -270,11 +300,14 @@ export interface FileRouteTypes {
     | '/account/settings/'
     | '/media/image/$mediaId/$variant'
     | '/media/video/$mediaId/player'
+    | '/media/video/$mediaId/thumbnail'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/migration'
     | '/privacy'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/account/comments'
     | '/account/media'
@@ -294,12 +327,15 @@ export interface FileRouteTypes {
     | '/account/settings'
     | '/media/image/$mediaId/$variant'
     | '/media/video/$mediaId/player'
+    | '/media/video/$mediaId/thumbnail'
   id:
     | '__root__'
     | '/'
     | '/auth'
     | '/migration'
     | '/privacy'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/account/comments'
     | '/account/media'
@@ -321,6 +357,7 @@ export interface FileRouteTypes {
     | '/account/settings/'
     | '/media/image/$mediaId/$variant'
     | '/media/video/$mediaId/player'
+    | '/media/video/$mediaId/thumbnail'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -328,6 +365,8 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   MigrationRoute: typeof MigrationRoute
   PrivacyRoute: typeof PrivacyRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   AccountCommentsRoute: typeof AccountCommentsRoute
   AccountMediaRoute: typeof AccountMediaRoute
@@ -342,6 +381,7 @@ export interface RootRouteChildren {
   MediaUploadMediaIdRoute: typeof MediaUploadMediaIdRoute
   MediaImageMediaIdVariantRoute: typeof MediaImageMediaIdVariantRoute
   MediaVideoMediaIdPlayerRoute: typeof MediaVideoMediaIdPlayerRoute
+  MediaVideoMediaIdThumbnailRoute: typeof MediaVideoMediaIdThumbnailRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -351,6 +391,20 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -507,6 +561,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountPostsNewRouteImport
       parentRoute: typeof AccountPostsRoute
     }
+    '/media/video/$mediaId/thumbnail': {
+      id: '/media/video/$mediaId/thumbnail'
+      path: '/media/video/$mediaId/thumbnail'
+      fullPath: '/media/video/$mediaId/thumbnail'
+      preLoaderRoute: typeof MediaVideoMediaIdThumbnailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/media/video/$mediaId/player': {
       id: '/media/video/$mediaId/player'
       path: '/media/video/$mediaId/player'
@@ -581,6 +642,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   MigrationRoute: MigrationRoute,
   PrivacyRoute: PrivacyRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   AccountCommentsRoute: AccountCommentsRoute,
   AccountMediaRoute: AccountMediaRoute,
@@ -595,6 +658,7 @@ const rootRouteChildren: RootRouteChildren = {
   MediaUploadMediaIdRoute: MediaUploadMediaIdRoute,
   MediaImageMediaIdVariantRoute: MediaImageMediaIdVariantRoute,
   MediaVideoMediaIdPlayerRoute: MediaVideoMediaIdPlayerRoute,
+  MediaVideoMediaIdThumbnailRoute: MediaVideoMediaIdThumbnailRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

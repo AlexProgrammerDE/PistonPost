@@ -3,8 +3,15 @@ import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/reac
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
+import { SITE_DESCRIPTION, createSeoHead } from "@/lib/seo"
 
 import appCss from "@pistonpost/ui/globals.css?url"
+
+const defaultSeo = createSeoHead({
+  title: "PistonPost",
+  description: SITE_DESCRIPTION,
+  path: "/",
+})
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
@@ -16,18 +23,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         name: "viewport",
         content: "width=device-width, initial-scale=1",
       },
-      {
-        title: "PistonPost",
-      },
-      {
-        name: "description",
-        content: "Posts, pictures, videos, and whatever else is worth passing around.",
-      },
+      { name: "format-detection", content: "telephone=no" },
+      { name: "application-name", content: "PistonPost" },
+      { name: "apple-mobile-web-app-title", content: "PistonPost" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "default" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "msapplication-TileColor", content: "#dc3850" },
+      { name: "msapplication-tap-highlight", content: "no" },
       { name: "theme-color", content: "#fff9ed" },
-      { property: "og:site_name", content: "PistonPost" },
-      { property: "og:type", content: "website" },
-      { property: "og:image", content: "/og-default.svg" },
-      { name: "twitter:card", content: "summary_large_image" },
+      ...defaultSeo.meta,
     ],
     links: [
       {
@@ -35,6 +40,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
+      { rel: "shortcut icon", href: "/favicon.ico" },
+      { rel: "manifest", href: "/manifest.json" },
     ],
   }),
   notFoundComponent: () => (

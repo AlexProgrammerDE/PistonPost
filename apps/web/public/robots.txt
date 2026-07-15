@@ -1,8 +1,0 @@
-User-agent: *
-Allow: /
-Disallow: /account/
-Disallow: /admin/
-Disallow: /auth/
-Disallow: /_serverFn/
-
-Sitemap: https://post.pistonmaster.net/sitemap.xml
