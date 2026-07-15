@@ -15,7 +15,7 @@ Options:
   --database <path>           Local rehearsal SQLite database
   --report <path>             Report directory or JSON path
   --resume, --run <run-id>    Resume or verify an existing run
-  --phase <phase>             users, posts, comments, reactions, images, videos, verify
+  --phase <phase>             users, posts, comments, reactions, images, videos, quarantine, verify
   --concurrency <n>           Media worker count, default 4
   --limit <n>                 Limit source records for a fixture run
   --user <legacy-id>          Restrict records to one legacy user

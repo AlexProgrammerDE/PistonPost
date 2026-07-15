@@ -9,6 +9,7 @@ export const migrationPhases = [
   "reactions",
   "images",
   "videos",
+  "quarantine",
   "verify",
 ] as const
 export type MigrationPhase = (typeof migrationPhases)[number]

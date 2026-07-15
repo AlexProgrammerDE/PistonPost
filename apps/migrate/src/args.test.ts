@@ -36,4 +36,10 @@ describe("migration arguments", () => {
       parseMigrationArgs(["dry-run", "--source", "/backup", "--concurrency", "0"]),
     ).toThrow("--concurrency")
   })
+
+  test("accepts a quarantine-only recovery phase", () => {
+    expect(
+      parseMigrationArgs(["apply", "--source", "/backup", "--phase", "quarantine"]),
+    ).toMatchObject({ phase: "quarantine" })
+  })
 })

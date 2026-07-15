@@ -197,7 +197,12 @@ function applyMigration(
         { concurrency: options.concurrency },
       )),
     )
-    if (options.phase === undefined || options.phase === "images" || options.phase === "videos") {
+    if (
+      options.phase === undefined ||
+      options.phase === "images" ||
+      options.phase === "videos" ||
+      options.phase === "quarantine"
+    ) {
       const filesByPath = new Map(inventory.files.map((file) => [file.relativePath, file]))
       const quarantineIssues = inventory.issues.filter(
         (issue) =>
@@ -220,7 +225,11 @@ function applyMigration(
                 } satisfies ImportResult
               }
               const phase = file.kind === "image" ? "images" : "videos"
-              if (options.phase !== undefined && options.phase !== phase) {
+              if (
+                options.phase !== undefined &&
+                options.phase !== "quarantine" &&
+                options.phase !== phase
+              ) {
                 return {
                   collection: phase,
                   legacyId: issue.legacyId ?? file.relativePath,
