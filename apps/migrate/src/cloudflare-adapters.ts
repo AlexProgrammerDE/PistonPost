@@ -58,6 +58,10 @@ export function cloudflareR2ClientOptions(
   return { accessKeyId, secretAccessKey, sessionToken }
 }
 
+export function shouldUseBasicStreamUpload(size: number) {
+  return size < 200_000_000
+}
+
 function record(value: unknown): value is Readonly<Record<string, unknown>> {
   return value !== null && typeof value === "object" && !Array.isArray(value)
 }
@@ -576,6 +580,32 @@ export class CloudflareStreamWriter implements MigrationVideoWriter {
 
   async upload(sourcePath: string, checksum: string, creator: string) {
     const details = await stat(sourcePath)
+    if (shouldUseBasicStreamUpload(details.size)) {
+      const form = new FormData()
+      form.append("file", Bun.file(sourcePath), basename(sourcePath))
+      const response = await fetch(this.endpoint, {
+        method: "POST",
+        headers: {
+          authorization: `Bearer ${this.configuration.apiToken}`,
+          "Upload-Creator": creator,
+        },
+        body: form,
+      })
+      const body: unknown = await response.json()
+      if (
+        !response.ok ||
+        !record(body) ||
+        body.success !== true ||
+        !record(body.result) ||
+        typeof body.result.uid !== "string"
+      ) {
+        throw new Error(
+          `Stream upload failed with status ${response.status}: ${cloudflareApiError(body)}`,
+        )
+      }
+      const videoStatus = await this.status(body.result.uid)
+      return { uid: body.result.uid, ready: videoStatus.ready }
+    }
     let uid: string | undefined
     await new Promise<void>((resolveUpload, reject) => {
       const upload = new Upload(createReadStream(sourcePath), {

@@ -4,6 +4,7 @@ import {
   cloudflareApiError,
   cloudflareR2BaseUrl,
   cloudflareR2ClientOptions,
+  shouldUseBasicStreamUpload,
 } from "./cloudflare-adapters"
 
 describe("Cloudflare migration adapters", () => {
@@ -26,5 +27,10 @@ describe("Cloudflare migration adapters", () => {
       "Invalid batch request.",
     )
     expect(cloudflareApiError(null)).toBe("Unknown Cloudflare API error.")
+  })
+
+  test("uses basic Stream uploads only below the 200 MB limit", () => {
+    expect(shouldUseBasicStreamUpload(199_999_999)).toBe(true)
+    expect(shouldUseBasicStreamUpload(200_000_000)).toBe(false)
   })
 })
