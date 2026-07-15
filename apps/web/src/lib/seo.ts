@@ -32,6 +32,7 @@ type SeoOptions = {
   readonly type?: "website" | "article" | "profile" | "video.other"
   readonly image?: SeoImage
   readonly video?: SeoVideo
+  readonly player?: SeoVideo
   readonly twitterCard?: "summary" | "summary_large_image" | "player"
   readonly noIndex?: boolean
   readonly publishedAt?: string
@@ -100,9 +101,14 @@ export function createSeoHead(options: SeoOptions) {
       { property: "og:video:type", content: options.video.type },
       { property: "og:video:width", content: options.video.width.toString() },
       { property: "og:video:height", content: options.video.height.toString() },
-      { name: "twitter:player", content: videoUrl },
-      { name: "twitter:player:width", content: options.video.width.toString() },
-      { name: "twitter:player:height", content: options.video.height.toString() },
+    )
+  }
+  if (options.player) {
+    const playerUrl = absoluteUrl(options.player.url)
+    meta.push(
+      { name: "twitter:player", content: playerUrl },
+      { name: "twitter:player:width", content: options.player.width.toString() },
+      { name: "twitter:player:height", content: options.player.height.toString() },
     )
   }
   if (options.noIndex) meta.push({ name: "robots", content: "noindex, nofollow" })

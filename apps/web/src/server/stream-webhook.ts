@@ -6,6 +6,7 @@ import { Effect, Either } from "effect"
 import { z } from "zod"
 
 import type { AppRequestContext } from "@/server"
+import { synchronizeVideoDownload } from "@/server/video-download"
 
 const streamPayload = z.object({
   uid: z.string().min(1),
@@ -107,6 +108,13 @@ export async function handleStreamWebhook(request: Request, context: AppRequestC
   const nextStatus = payload.readyToStream ? "ready" : failed ? "failed" : "processing"
   const transition = Effect.runSync(Effect.either(transitionMediaStatus(asset.status, nextStatus)))
   if (Either.isLeft(transition)) return new Response("OK", { status: 200 })
+  const providerMetadata = {
+    ...asset.providerMetadata,
+    streamState: payload.status.state,
+    ...(payload.status.errorReasonText
+      ? { streamError: payload.status.errorReasonText.slice(0, 200) }
+      : {}),
+  }
   await database
     .update(schema.mediaAssets)
     .set({
@@ -116,15 +124,33 @@ export async function handleStreamWebhook(request: Request, context: AppRequestC
       duration: payload.duration === undefined ? undefined : Math.round(payload.duration * 1000),
       byteSize: payload.size,
       finalizedAt: payload.readyToStream ? new Date() : undefined,
-      providerMetadata: {
-        ...asset.providerMetadata,
-        streamState: payload.status.state,
-        ...(payload.status.errorReasonText
-          ? { streamError: payload.status.errorReasonText.slice(0, 200) }
-          : {}),
-      },
+      providerMetadata,
     })
     .where(eq(schema.mediaAssets.id, asset.id))
+
+  if (payload.readyToStream) {
+    context.executionContext.waitUntil(
+      Effect.runPromise(
+        synchronizeVideoDownload(context.env.STREAM.video(payload.uid).downloads, providerMetadata),
+      )
+        .then((downloadMetadata) =>
+          database
+            .update(schema.mediaAssets)
+            .set({ providerMetadata: downloadMetadata })
+            .where(eq(schema.mediaAssets.id, asset.id)),
+        )
+        .catch((cause: unknown) => {
+          console.error(
+            JSON.stringify({
+              level: "error",
+              event: "stream.download-generation",
+              mediaId: asset.id,
+              error: cause instanceof Error ? cause.name : "VideoDownloadError",
+            }),
+          )
+        }),
+    )
+  }
 
   return new Response("OK", { status: 200 })
 }

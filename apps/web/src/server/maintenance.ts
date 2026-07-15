@@ -1,8 +1,10 @@
 import { createD1Database } from "@pistonpost/db/d1-database"
 import * as schema from "@pistonpost/db/schema"
-import { and, eq, inArray, isNull, lt, or } from "drizzle-orm"
+import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm"
+import { Effect } from "effect"
 
 import { mediaCleanupJob } from "./jobs"
+import { synchronizeVideoDownload } from "./video-download"
 
 async function drainOutbox(env: Cloudflare.Env) {
   const database = createD1Database(env.DB)
@@ -67,6 +69,61 @@ async function reconcileStream(env: Cloudflare.Env) {
           finalizedAt: video.readyToStream ? new Date() : undefined,
         })
         .where(eq(schema.mediaAssets.id, asset.id))
+
+      if (video.readyToStream) {
+        const row = await database
+          .select({ providerMetadata: schema.mediaAssets.providerMetadata })
+          .from(schema.mediaAssets)
+          .where(eq(schema.mediaAssets.id, asset.id))
+          .get()
+        if (row) {
+          const providerMetadata = await Effect.runPromise(
+            synchronizeVideoDownload(
+              env.STREAM.video(asset.streamUid).downloads,
+              row.providerMetadata,
+            ),
+          )
+          await database
+            .update(schema.mediaAssets)
+            .set({ providerMetadata })
+            .where(eq(schema.mediaAssets.id, asset.id))
+        }
+      }
+    }),
+  )
+}
+
+async function reconcileVideoDownloads(env: Cloudflare.Env) {
+  const database = createD1Database(env.DB)
+  const assets = await database
+    .select({
+      id: schema.mediaAssets.id,
+      streamUid: schema.mediaAssets.streamUid,
+      providerMetadata: schema.mediaAssets.providerMetadata,
+    })
+    .from(schema.mediaAssets)
+    .where(
+      and(
+        eq(schema.mediaAssets.kind, "video"),
+        eq(schema.mediaAssets.status, "ready"),
+        sql`coalesce(json_extract(${schema.mediaAssets.providerMetadata}, '$.streamDownloadStatus'), '') <> 'ready'`,
+      ),
+    )
+    .limit(25)
+
+  await Promise.all(
+    assets.map(async (asset) => {
+      if (!asset.streamUid) return
+      const providerMetadata = await Effect.runPromise(
+        synchronizeVideoDownload(
+          env.STREAM.video(asset.streamUid).downloads,
+          asset.providerMetadata,
+        ),
+      )
+      await database
+        .update(schema.mediaAssets)
+        .set({ providerMetadata })
+        .where(eq(schema.mediaAssets.id, asset.id))
     }),
   )
 }
@@ -85,6 +142,7 @@ export async function handleScheduled(_controller: ScheduledController, env: Clo
     drainOutbox(env),
     queueAbandonedMedia(env),
     reconcileStream(env),
+    reconcileVideoDownloads(env),
     cleanStagingObjects(env),
   ])
 }

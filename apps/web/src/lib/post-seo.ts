@@ -61,6 +61,12 @@ function postVideo(post: PublicPostRead) {
       width,
       height,
     } satisfies SeoVideo,
+    download: {
+      url: `/media/video/${media.id}/download`,
+      type: "video/mp4",
+      width,
+      height,
+    } satisfies SeoVideo,
   }
 }
 
@@ -100,8 +106,9 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
           uploadDate: post.publishedAt.toISOString(),
           thumbnailUrl: absoluteUrl(video.image.url),
           embedUrl: absoluteUrl(video.player.url),
-          width: video.player.width,
-          height: video.player.height,
+          contentUrl: absoluteUrl(video.download.url),
+          width: video.download.width,
+          height: video.download.height,
         }
       : undefined,
   }
@@ -112,7 +119,8 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     path,
     type: post.type === "video" ? "video.other" : "article",
     image,
-    video: video?.player,
+    video: video?.download,
+    player: video?.player,
     twitterCard: video ? "player" : image ? "summary_large_image" : "summary",
     noIndex: post.visibility === "unlisted",
     publishedAt: post.publishedAt.toISOString(),

@@ -14,6 +14,7 @@ export async function getDeliverableVideo(
     .select({
       streamUid: schema.mediaAssets.streamUid,
       ownerId: schema.mediaAssets.ownerId,
+      providerMetadata: schema.mediaAssets.providerMetadata,
       postStatus: schema.posts.status,
       visibility: schema.posts.visibility,
     })
@@ -38,6 +39,7 @@ export async function getDeliverableVideo(
 
   return {
     streamUid: row.streamUid,
+    providerMetadata: row.providerMetadata,
     publiclyCacheable: row.postStatus === "published" && row.visibility === "public",
   }
 }

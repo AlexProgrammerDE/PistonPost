@@ -75,7 +75,7 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary_large_image")
   })
 
-  it("adds video player, thumbnail, and dimensions", () => {
+  it("uses a direct MP4 for Open Graph and keeps the iframe player separate", () => {
     const post: PublicPostRead = {
       ...basePost,
       type: "video",
@@ -88,13 +88,20 @@ describe("SEO metadata", () => {
 
     expect(metaContent(head.meta, "property", "og:type")).toBe("video.other")
     expect(metaContent(head.meta, "property", "og:video")).toBe(
-      `${SITE_URL}/media/video/video-id/player`,
+      `${SITE_URL}/media/video/video-id/download`,
     )
+    expect(metaContent(head.meta, "property", "og:video:type")).toBe("video/mp4")
     expect(metaContent(head.meta, "property", "og:image")).toBe(
       `${SITE_URL}/media/video/video-id/thumbnail`,
     )
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("player")
+    expect(metaContent(head.meta, "name", "twitter:player")).toBe(
+      `${SITE_URL}/media/video/video-id/player`,
+    )
     expect(metaContent(head.meta, "name", "twitter:player:width")).toBe("1920")
+    expect(head.scripts[0]?.children).toContain(
+      `"contentUrl":"${SITE_URL}/media/video/video-id/download"`,
+    )
   })
 
   it("keeps unlisted posts out of indexes", () => {
