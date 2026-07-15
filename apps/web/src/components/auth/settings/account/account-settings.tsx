@@ -2,10 +2,7 @@ import { useAuth } from "@better-auth-ui/react"
 import { cn } from "@pistonpost/ui/lib/utils"
 import type { ComponentProps } from "react"
 
-import { componentIdentity } from "@/lib/component-identity"
-
 import { ChangeEmail } from "./change-email"
-import { UserProfile } from "./user-profile"
 
 export type AccountSettingsProps = {
   className?: string
@@ -14,13 +11,8 @@ export type AccountSettingsProps = {
 /**
  * Renders the account settings layout.
  *
- * Uses `emailAndPassword` and `plugins` from `useAuth()` to conditionally
- * show sections:
- * - `UserProfile` always renders.
- * - `ChangeEmail` renders when `emailAndPassword?.enabled` is truthy or the
- *   `magicLink` plugin is registered.
- * - Plugin-contributed account cards are rendered via the plugins array
- *   (e.g. `Appearance` from the theme plugin, multi-session accounts).
+ * Email is kept separate from the public profile so each identity field has
+ * one owner in the settings interface.
  */
 export function AccountSettings({
   className,
@@ -32,14 +24,7 @@ export function AccountSettings({
 
   return (
     <div className={cn("flex w-full flex-col gap-4 md:gap-6", className)} {...props}>
-      <UserProfile />
       {(emailAndPassword?.enabled || hasMagicLink) && <ChangeEmail />}
-      {plugins.flatMap(
-        (plugin) =>
-          plugin.accountCards?.map((Card) => (
-            <Card key={componentIdentity(plugin.id, "account-card", Card)} />
-          )) ?? [],
-      )}
     </div>
   )
 }

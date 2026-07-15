@@ -15,7 +15,7 @@ export type SecuritySettingsProps = {
  * Renders the security settings layout including password management, linked accounts, and active sessions.
  *
  * ChangePassword is rendered when password authentication is enabled; LinkedAccounts is rendered when social providers are present.
- * Each registered auth plugin may contribute `securityCards` (for example passkeys, delete-user).
+ * Each registered auth plugin may contribute `securityCards`, such as passkeys or two-factor authentication.
  *
  * @param className - Optional additional CSS class names for the outer container.
  * @returns The security settings container as a JSX element.

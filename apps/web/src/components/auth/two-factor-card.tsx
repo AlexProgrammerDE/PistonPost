@@ -2,6 +2,7 @@
 
 import { authClient } from "@pistonpost/auth/client"
 import { Alert, AlertDescription, AlertTitle } from "@pistonpost/ui/components/alert"
+import { Badge } from "@pistonpost/ui/components/badge"
 import { Button } from "@pistonpost/ui/components/button"
 import {
   Card,
@@ -17,7 +18,7 @@ import { Spinner } from "@pistonpost/ui/components/spinner"
 import { cn } from "@pistonpost/ui/lib/utils"
 import { type FormEvent, useState } from "react"
 
-import { Shield, TriangleAlert } from "@/components/icons"
+import { TriangleAlert } from "@/components/icons"
 
 type SetupState =
   | { readonly status: "idle" }
@@ -92,31 +93,24 @@ export function TwoFactorCard({ className }: { readonly className?: string }) {
 
   return (
     <div className={cn("flex flex-col gap-3", className)}>
-      <div className="flex items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-sm font-semibold">Two-factor authentication</h2>
-          <p className="text-sm text-muted-foreground">
-            Require a rotating authenticator code after your password.
-          </p>
-        </div>
-        <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-          {enabled ? "Enabled" : "Not enabled"}
-        </span>
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-semibold">Two-factor authentication</h2>
+        <p className="text-sm text-muted-foreground">
+          Require a rotating authenticator code after your password.
+        </p>
       </div>
 
       <Card>
-        <CardHeader>
-          <div className="flex items-start gap-3">
-            <div className="rounded-md border bg-muted p-2 text-muted-foreground">
-              <Shield />
-            </div>
-            <div className="flex flex-col gap-1">
-              <CardTitle>Authenticator app</CardTitle>
-              <CardDescription>
-                Keep the recovery codes somewhere safe. Each code works once.
-              </CardDescription>
-            </div>
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            <CardTitle>Authenticator app</CardTitle>
+            <CardDescription>
+              Keep the recovery codes somewhere safe. Each code works once.
+            </CardDescription>
           </div>
+          <Badge variant={enabled ? "secondary" : "outline"} className="shrink-0">
+            {enabled ? "Enabled" : "Not enabled"}
+          </Badge>
         </CardHeader>
         <CardContent>
           {error && (

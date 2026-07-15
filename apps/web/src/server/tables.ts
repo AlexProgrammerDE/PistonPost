@@ -2,10 +2,25 @@ import { createD1Database } from "@pistonpost/db/d1-database"
 import * as schema from "@pistonpost/db/schema"
 import type { EmailJob } from "@pistonpost/email"
 import { createServerFn } from "@tanstack/react-start"
-import { and, asc, desc, eq, gt, like, lt, or, sql, type SQL } from "drizzle-orm"
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  gt,
+  inArray,
+  isNull,
+  like,
+  lt,
+  ne,
+  or,
+  sql,
+  type SQL,
+} from "drizzle-orm"
 import { z } from "zod"
 
-import { cacheInvalidationJob } from "./jobs"
+import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
 import { notificationEnabled } from "./notification-policy"
 import { assertMutationOrigin, requireAdministrator, requireRequestSession } from "./session"
@@ -32,42 +47,7 @@ export const getMyPosts = createServerFn({ method: "GET" }).handler(async ({ con
     .limit(500)
 })
 
-export const getMyComments = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const session = await requireRequestSession(context)
-  return createD1Database(context.env.DB)
-    .select({
-      id: schema.comments.id,
-      content: schema.comments.content,
-      status: schema.comments.status,
-      createdAt: schema.comments.createdAt,
-      postId: schema.posts.id,
-      postTitle: schema.posts.title,
-    })
-    .from(schema.comments)
-    .innerJoin(schema.posts, eq(schema.posts.id, schema.comments.postId))
-    .where(eq(schema.comments.authorId, session.user.id))
-    .orderBy(desc(schema.comments.createdAt))
-    .limit(500)
-})
-
-export const getMyMedia = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const session = await requireRequestSession(context)
-  return createD1Database(context.env.DB)
-    .select({
-      id: schema.mediaAssets.id,
-      filename: schema.mediaAssets.originalFilename,
-      kind: schema.mediaAssets.kind,
-      status: schema.mediaAssets.status,
-      byteSize: schema.mediaAssets.byteSize,
-      createdAt: schema.mediaAssets.createdAt,
-    })
-    .from(schema.mediaAssets)
-    .where(eq(schema.mediaAssets.ownerId, session.user.id))
-    .orderBy(desc(schema.mediaAssets.createdAt))
-    .limit(500)
-})
-
-const adminSection = z.enum(["posts", "comments", "users", "media", "jobs", "audit", "migration"])
+const adminSection = z.enum(["posts", "comments", "users", "media", "jobs", "audit", "migrations"])
 const adminPageSize = 20
 const adminCursor = z.object({
   createdAt: z.coerce.date(),
@@ -187,7 +167,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
               id: schema.user.id,
               primary: schema.user.name,
               secondary: schema.profiles.username,
-              status: schema.user.role,
+              status: sql<string>`case when ${schema.user.banned} = 1 then 'banned' else coalesce(${schema.user.role}, 'user') end`,
               createdAt: schema.user.createdAt,
             })
             .from(schema.user)
@@ -260,7 +240,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
               id: schema.outbox.id,
               primary: schema.outbox.kind,
               secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
-              status: schema.outbox.lastError,
+              status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
               createdAt: schema.outbox.createdAt,
             })
             .from(schema.outbox)
@@ -278,14 +258,14 @@ export const getAdminRows = createServerFn({ method: "GET" })
             .orderBy(order(schema.outbox.createdAt), order(schema.outbox.id))
             .limit(adminPageSize + 1),
         )
-      case "migration":
+      case "migrations":
         return adminPage(
           await database
             .select({
               id: schema.migrationRuns.id,
               primary: schema.migrationRuns.sourceFingerprint,
-              secondary: schema.migrationRuns.state,
-              status: schema.migrationRuns.lastError,
+              secondary: sql<string>`coalesce(${schema.migrationRuns.lastError}, 'No reported error')`,
+              status: schema.migrationRuns.state,
               createdAt: schema.migrationRuns.startedAt,
             })
             .from(schema.migrationRuns)
@@ -305,6 +285,197 @@ export const getAdminRows = createServerFn({ method: "GET" })
         )
     }
     throw new Error("Unsupported administration section.")
+  })
+
+export const getAdminOverview = createServerFn({ method: "GET" }).handler(async ({ context }) => {
+  await requireAdministrator(context)
+  const database = createD1Database(context.env.DB)
+  const [posts, comments, users, failedMedia, pendingJobs, auditEvents, activeMigrations] =
+    await Promise.all([
+      database.select({ value: count() }).from(schema.posts).get(),
+      database.select({ value: count() }).from(schema.comments).get(),
+      database.select({ value: count() }).from(schema.user).get(),
+      database
+        .select({ value: count() })
+        .from(schema.mediaAssets)
+        .where(eq(schema.mediaAssets.status, "failed"))
+        .get(),
+      database
+        .select({ value: count() })
+        .from(schema.outbox)
+        .where(isNull(schema.outbox.processedAt))
+        .get(),
+      database.select({ value: count() }).from(schema.auditEvents).get(),
+      database
+        .select({ value: count() })
+        .from(schema.migrationRuns)
+        .where(ne(schema.migrationRuns.state, "complete"))
+        .get(),
+    ])
+
+  return {
+    posts: posts?.value ?? 0,
+    comments: comments?.value ?? 0,
+    users: users?.value ?? 0,
+    media: failedMedia?.value ?? 0,
+    jobs: pendingJobs?.value ?? 0,
+    audit: auditEvents?.value ?? 0,
+    migrations: activeMigrations?.value ?? 0,
+  }
+})
+
+export const updateAdminUser = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      id: z.string().min(1).max(128),
+      action: z.enum(["promote", "demote", "ban", "unban"]),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    assertMutationOrigin(context)
+    const session = await requireAdministrator(context)
+    if (session.user.id === data.id && (data.action === "demote" || data.action === "ban")) {
+      throw new Error("You cannot remove your own administrator access.")
+    }
+    const database = createD1Database(context.env.DB)
+    const target = await database
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.id, data.id))
+      .get()
+    if (!target) throw new Error("The user was not found.")
+
+    const userUpdate =
+      data.action === "promote"
+        ? { role: "admin", updatedAt: new Date() }
+        : data.action === "demote"
+          ? { role: "user", updatedAt: new Date() }
+          : data.action === "ban"
+            ? { banned: true, banReason: "Administrator action", updatedAt: new Date() }
+            : { banned: false, banReason: null, banExpires: null, updatedAt: new Date() }
+
+    await database.batch([
+      database.update(schema.user).set(userUpdate).where(eq(schema.user.id, data.id)),
+      database.insert(schema.auditEvents).values({
+        id: crypto.randomUUID(),
+        actorId: session.user.id,
+        action: `user.${data.action}`,
+        entityType: "user",
+        entityId: data.id,
+        metadata: {},
+      }),
+    ])
+    if (data.action === "ban") {
+      await database.delete(schema.session).where(eq(schema.session.userId, data.id))
+    }
+    return { id: data.id, action: data.action }
+  })
+
+export const retryAdminJob = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().min(1).max(256) }))
+  .handler(async ({ context, data }) => {
+    assertMutationOrigin(context)
+    const session = await requireAdministrator(context)
+    const database = createD1Database(context.env.DB)
+    const job = await database
+      .select({ payload: schema.outbox.payload, processedAt: schema.outbox.processedAt })
+      .from(schema.outbox)
+      .where(eq(schema.outbox.id, data.id))
+      .get()
+    if (!job) throw new Error("The job was not found.")
+    if (job.processedAt) throw new Error("This job has already completed.")
+    await database.batch([
+      database
+        .update(schema.outbox)
+        .set({ availableAt: new Date(), lastError: null })
+        .where(eq(schema.outbox.id, data.id)),
+      database.insert(schema.auditEvents).values({
+        id: crypto.randomUUID(),
+        actorId: session.user.id,
+        action: "job.retry",
+        entityType: "outbox",
+        entityId: data.id,
+        metadata: {},
+      }),
+    ])
+    context.executionContext.waitUntil(context.env.JOBS.send(job.payload))
+    return { id: data.id }
+  })
+
+export const cleanupAdminMedia = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ context, data }) => {
+    assertMutationOrigin(context)
+    const session = await requireAdministrator(context)
+    const database = createD1Database(context.env.DB)
+    const asset = await database
+      .select({ status: schema.mediaAssets.status })
+      .from(schema.mediaAssets)
+      .where(eq(schema.mediaAssets.id, data.id))
+      .get()
+    if (!asset) throw new Error("The media item was not found.")
+    if (
+      asset.status !== "pending" &&
+      asset.status !== "uploading" &&
+      asset.status !== "processing" &&
+      asset.status !== "failed"
+    ) {
+      throw new Error("Only unfinished or failed media can be removed here.")
+    }
+    const job = mediaCleanupJob(data.id)
+    await database.batch([
+      database
+        .insert(schema.outbox)
+        .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+        .onConflictDoNothing(),
+      database.insert(schema.auditEvents).values({
+        id: crypto.randomUUID(),
+        actorId: session.user.id,
+        action: "media.cleanup",
+        entityType: "media",
+        entityId: data.id,
+        metadata: {},
+      }),
+    ])
+    context.executionContext.waitUntil(context.env.JOBS.send(job))
+    return { id: data.id }
+  })
+
+export const getMigrationRunDetails = createServerFn({ method: "GET" })
+  .validator(z.object({ id: z.string().min(1).max(128) }))
+  .handler(async ({ context, data }) => {
+    await requireAdministrator(context)
+    const database = createD1Database(context.env.DB)
+    const run = await database
+      .select()
+      .from(schema.migrationRuns)
+      .where(eq(schema.migrationRuns.id, data.id))
+      .get()
+    if (!run) throw new Error("The migration run was not found.")
+    const [states, problems] = await Promise.all([
+      database
+        .select({ state: schema.migrationMappings.state, value: count() })
+        .from(schema.migrationMappings)
+        .where(eq(schema.migrationMappings.runId, data.id))
+        .groupBy(schema.migrationMappings.state),
+      database
+        .select({
+          id: schema.migrationMappings.id,
+          collection: schema.migrationMappings.sourceCollection,
+          legacyId: schema.migrationMappings.legacyId,
+          state: schema.migrationMappings.state,
+          reason: schema.migrationMappings.reason,
+        })
+        .from(schema.migrationMappings)
+        .where(
+          and(
+            eq(schema.migrationMappings.runId, data.id),
+            inArray(schema.migrationMappings.state, ["failed", "skipped"]),
+          ),
+        )
+        .limit(100),
+    ])
+    return { run, states, problems }
   })
 
 export const moderateEntity = createServerFn({ method: "POST" })

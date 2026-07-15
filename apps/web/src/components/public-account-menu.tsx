@@ -16,7 +16,7 @@ import { Skeleton } from "@pistonpost/ui/components/skeleton"
 import { cn } from "@pistonpost/ui/lib/utils"
 import { Link } from "@tanstack/react-router"
 
-import { LogIn, LogOut, Settings, User2 } from "@/components/icons"
+import { FileText, LogIn, LogOut, Settings, Shield, User2 } from "@/components/icons"
 
 function initials(name: string) {
   return name
@@ -82,41 +82,18 @@ export function PublicAccountMenu() {
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/account/posts" />}>
-          <User2 />
+          <FileText />
           My posts
         </DropdownMenuItem>
-        <DropdownMenuItem render={<Link to="/account/comments" />}>
-          <User2 />
-          My comments
-        </DropdownMenuItem>
-        <DropdownMenuItem render={<Link to="/account/media" />}>
-          <User2 />
-          My media
-        </DropdownMenuItem>
         {user.role === "admin" ? (
-          <DropdownMenuItem
-            render={
-              <Link
-                to="/admin/$section"
-                params={{ section: "posts" }}
-                search={{
-                  q: "",
-                  sort: "createdAt",
-                  direction: "desc",
-                  cursor: "",
-                  trail: "",
-                  hidden: "",
-                }}
-              />
-            }
-          >
-            <Settings />
+          <DropdownMenuItem render={<Link to="/admin" />}>
+            <Shield />
             Administration
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem
           render={
-            <Link to="/account/settings/$settingsView" params={{ settingsView: "account" }} />
+            <Link to="/account/settings/$settingsView" params={{ settingsView: "profile" }} />
           }
         >
           <Settings />

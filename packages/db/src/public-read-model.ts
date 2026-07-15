@@ -2,7 +2,17 @@ import type { PublicPostCursor } from "@pistonpost/domain"
 import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm"
 
 import type { D1DatabaseClient } from "./d1-database"
-import { mediaAssets, postMedia, postTags, posts, profiles, reactions, tags, user } from "./schema"
+import {
+  comments,
+  mediaAssets,
+  postMedia,
+  postTags,
+  posts,
+  profiles,
+  reactions,
+  tags,
+  user,
+} from "./schema"
 
 export type PublicPostMedia = {
   readonly id: string
@@ -27,6 +37,7 @@ export type PublicPostRead = {
   }
   readonly media: ReadonlyArray<PublicPostMedia>
   readonly tags: ReadonlyArray<{ readonly slug: string; readonly name: string }>
+  readonly commentCount: number
   readonly reactions: {
     readonly like: number
     readonly dislike: number
@@ -203,7 +214,7 @@ async function hydratePublicPosts(
   const postIds = postRows.map((post) => post.id)
   if (postIds.length === 0) return []
 
-  const [mediaRows, tagRows, reactionRows] = await Promise.all([
+  const [mediaRows, tagRows, reactionRows, commentRows] = await Promise.all([
     database
       .select({
         postId: postMedia.postId,
@@ -233,6 +244,11 @@ async function hydratePublicPosts(
       .from(reactions)
       .where(inArray(reactions.postId, postIds))
       .groupBy(reactions.postId, reactions.type),
+    database
+      .select({ postId: comments.postId, count: sql<number>`count(*)` })
+      .from(comments)
+      .where(and(inArray(comments.postId, postIds), eq(comments.status, "published")))
+      .groupBy(comments.postId),
   ])
 
   return postRows.map<PublicPostRead>((post) => {
@@ -255,6 +271,7 @@ async function hydratePublicPosts(
       },
       media: mediaRows.filter((media) => media.postId === post.id),
       tags: tagRows.filter((tag) => tag.postId === post.id),
+      commentCount: commentRows.find((row) => row.postId === post.id)?.count ?? 0,
       reactions: counts,
     }
   })

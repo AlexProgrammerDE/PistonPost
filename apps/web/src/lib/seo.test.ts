@@ -16,6 +16,7 @@ const basePost: PublicPostRead = {
   author: { username: "alex", name: "Alex", image: null },
   media: [],
   tags: [{ slug: "friends", name: "friends" }],
+  commentCount: 0,
   reactions: { like: 0, dislike: 0, heart: 0 },
 }
 

@@ -1,14 +1,7 @@
 import { Button } from "@pistonpost/ui/components/button"
-import {
-  Empty,
-  EmptyDescription,
-  EmptyHeader,
-  EmptyMedia,
-  EmptyTitle,
-} from "@pistonpost/ui/components/empty"
+import { Empty, EmptyHeader, EmptyTitle } from "@pistonpost/ui/components/empty"
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 
-import { TriangleAlert } from "@/components/icons"
 import { PostView } from "@/components/post-view"
 import { feedQueryOptions, type FeedFilters } from "@/lib/queries/posts"
 
@@ -24,13 +17,9 @@ export function FilteredFeed({
 
   if (posts.length === 0) {
     return (
-      <Empty className="min-h-80 border">
+      <Empty className="min-h-64 border-y">
         <EmptyHeader>
-          <EmptyMedia variant="icon">
-            <TriangleAlert />
-          </EmptyMedia>
-          <EmptyTitle>Nothing here yet</EmptyTitle>
-          <EmptyDescription>{emptyMessage}</EmptyDescription>
+          <EmptyTitle>{emptyMessage}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )

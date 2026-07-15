@@ -7,6 +7,7 @@ test.describe("authentication", () => {
     await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible()
     await expect(page.getByLabel("Email")).toBeVisible()
     await expect(page.getByLabel("Password")).toBeVisible()
+    await page.getByText("Other ways to sign in", { exact: true }).click()
     await expect(page.getByRole("link", { name: "Continue with Magic Link" })).toBeVisible()
     await expect(page.getByRole("link", { name: "Continue with username" })).toBeVisible()
     await expect(page.getByRole("link", { name: /forgot/i })).toBeVisible()
@@ -38,7 +39,8 @@ test.describe("authentication", () => {
   test("keeps auth responses out of public caches", async ({ request }) => {
     const response = await request.get("/api/auth/get-session")
 
-    expect(response.headers()["cache-control"]).toBe("private, no-store")
+    expect(response.headers()["cache-control"]).toContain("private")
+    expect(response.headers()["cache-control"]).toContain("no-store")
     expect(response.headers().vary).toContain("Cookie")
   })
 })

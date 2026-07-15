@@ -132,7 +132,8 @@ These can be proposed later. They must not complicate the initial data model or 
 - React 19 is the UI runtime.
 - TanStack Query owns server state and hydration.
 - TanStack Form owns complex forms with shared Zod validation.
-- TanStack Table v9 owns account and administrator data grids.
+- TanStack Table v9 owns administrator data grids. The account post screen uses a responsive
+  management list because each row is a single post with one primary action, not a dense dataset.
 - Tailwind CSS v4 and shadcn/ui provide the UI system.
 - Base UI is the primitive layer. Do not mix Radix APIs into generated components.
 
@@ -466,7 +467,8 @@ All email jobs must be idempotent. Queue payloads carry a template key and safe 
 ### Authenticated
 
 - /account/posts/new: post composer.
-- /account/posts: owner table with drafts, processing, published, unlisted, failed, moderated, and deleted filters.
+- /account/posts: responsive owner management list covering draft, processing, published,
+  unlisted, failed, moderated, and deleted states.
 - /post/$postId/edit: owner or admin editor.
 - /account/settings/profile.
 - /account/settings/security.
@@ -898,7 +900,7 @@ Exit criteria:
 - [x] Implement account deletion Workflow.
 - [x] Install and pin TanStack Table v9.
 - [x] Build shared table features and tests.
-- [x] Build account post management table.
+- [x] Build the responsive account post management view.
 - [x] Build admin posts, comments, users, media, audit, and migration tables.
 - [x] Add moderation actions with confirmations and audit events.
 - [x] Add URL-synchronized filters, sorting, pagination, and column visibility.
@@ -1046,3 +1048,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Account deletion starts a durable Workflow before Better Auth removes the user. Media ownership becomes nullable only during that handoff, provider objects are deleted idempotently, and the final media records are removed after R2 and Stream succeed.
 - 2026-07-14: Administration tables use server-side `(created_at, id)` cursors. Cursor history, sort direction, filters, and column visibility live in URL search parameters so large datasets never rely on offset pagination.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
+- 2026-07-15: Use a responsive management list for `/account/posts` instead of TanStack Table. The
+  screen has one primary object and action per row, so a list keeps status and actions readable on
+  narrow screens without duplicating desktop and mobile presentations. Admin datasets remain on
+  the shared TanStack Table boundary.

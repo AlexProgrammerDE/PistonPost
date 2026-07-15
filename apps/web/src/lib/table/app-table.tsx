@@ -5,6 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuCheckboxItem,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@pistonpost/ui/components/dropdown-menu"
@@ -105,10 +106,11 @@ export function DataTable<TData extends RowData>({
   data,
   columns,
   getRowId,
-  emptyMessage = "No records match this view.",
+  emptyMessage = "No results match this view.",
   urlState,
   onUrlStateChange,
   cursorPagination,
+  showColumnControls = false,
 }: {
   data: TData[]
   columns: Array<ColumnDef<typeof pistonPostTableFeatures, TData>>
@@ -117,6 +119,7 @@ export function DataTable<TData extends RowData>({
   urlState?: DataTableUrlState
   onUrlStateChange?: (next: DataTableUrlState) => void
   cursorPagination?: DataTableCursorPagination
+  showColumnControls?: boolean
 }) {
   const sorting: SortingState = urlState?.sort
     ? [{ id: urlState.sort, desc: urlState.direction === "desc" }]
@@ -166,38 +169,55 @@ export function DataTable<TData extends RowData>({
     },
     (state) => ({ pagination: state.pagination }),
   )
+  const hideableColumns = table.getAllLeafColumns().filter((column) => column.getCanHide())
+  const hasPagination = cursorPagination
+    ? cursorPagination.hasPrevious || cursorPagination.hasNext
+    : table.getPageCount() > 1
 
   return (
     <table.AppTable>
-      <div className="mb-3 flex justify-end">
-        <DropdownMenu>
-          <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
-            Columns
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
-            {table
-              .getAllLeafColumns()
-              .filter((column) => column.getCanHide())
-              .map((column) => (
-                <DropdownMenuCheckboxItem
-                  key={column.id}
-                  checked={column.getIsVisible()}
-                  onCheckedChange={(checked) => column.toggleVisibility(checked)}
-                >
-                  {column.id}
-                </DropdownMenuCheckboxItem>
-              ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
+      {showColumnControls && hideableColumns.length > 1 ? (
+        <div className="mb-3 flex justify-end">
+          <DropdownMenu>
+            <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+              Columns
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+              <DropdownMenuGroup>
+                {hideableColumns.map((column) => (
+                  <DropdownMenuCheckboxItem
+                    key={column.id}
+                    checked={column.getIsVisible()}
+                    onCheckedChange={(checked) => column.toggleVisibility(checked)}
+                  >
+                    {typeof column.columnDef.header === "string"
+                      ? column.columnDef.header
+                      : column.id}
+                  </DropdownMenuCheckboxItem>
+                ))}
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      ) : null}
       <div className="border-y">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} style={{ width: header.getSize() }}>
+                  <TableHead
+                    key={header.id}
+                    style={{ width: header.getSize() }}
+                    aria-sort={
+                      header.column.getIsSorted() === "asc"
+                        ? "ascending"
+                        : header.column.getIsSorted() === "desc"
+                          ? "descending"
+                          : undefined
+                    }
+                  >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
                       <button
                         type="button"
@@ -205,13 +225,11 @@ export function DataTable<TData extends RowData>({
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         <table.FlexRender header={header} />
-                        <span aria-hidden="true">
-                          {header.column.getIsSorted() === "asc"
-                            ? "↑"
-                            : header.column.getIsSorted() === "desc"
-                              ? "↓"
-                              : "↕"}
-                        </span>
+                        {header.column.getIsSorted() ? (
+                          <span aria-hidden="true">
+                            {header.column.getIsSorted() === "asc" ? "↑" : "↓"}
+                          </span>
+                        ) : null}
                       </button>
                     ) : (
                       <table.FlexRender header={header} />
@@ -236,50 +254,45 @@ export function DataTable<TData extends RowData>({
         {table.getRowModel().rows.length === 0 ? (
           <Empty className="min-h-56">
             <EmptyHeader>
-              <EmptyTitle>Nothing here</EmptyTitle>
+              <EmptyTitle>No results</EmptyTitle>
               <EmptyDescription>{emptyMessage}</EmptyDescription>
             </EmptyHeader>
           </Empty>
         ) : null}
       </div>
-      <table.Subscribe selector={(state) => state.pagination}>
-        {(paginationState) => (
-          <div className="mt-4 flex items-center justify-between gap-4 text-sm">
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <p>Page {cursorPagination?.page ?? paginationState.pageIndex + 1}</p>
-              <table.Subscribe selector={(state) => state.rowSelection}>
-                {() =>
-                  table.getSelectedRowModel().rows.length > 0 ? (
-                    <p>{table.getSelectedRowModel().rows.length} selected</p>
-                  ) : null
-                }
-              </table.Subscribe>
+      {hasPagination ? (
+        <table.Subscribe selector={(state) => state.pagination}>
+          {(paginationState) => (
+            <div className="mt-4 flex items-center justify-between gap-4 text-sm">
+              <p className="text-muted-foreground">
+                Page {cursorPagination?.page ?? paginationState.pageIndex + 1}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={
+                    cursorPagination ? !cursorPagination.hasPrevious : !table.getCanPreviousPage()
+                  }
+                  onClick={() =>
+                    cursorPagination ? cursorPagination.onPrevious() : table.previousPage()
+                  }
+                >
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={cursorPagination ? !cursorPagination.hasNext : !table.getCanNextPage()}
+                  onClick={() => (cursorPagination ? cursorPagination.onNext() : table.nextPage())}
+                >
+                  Next
+                </Button>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={
-                  cursorPagination ? !cursorPagination.hasPrevious : !table.getCanPreviousPage()
-                }
-                onClick={() =>
-                  cursorPagination ? cursorPagination.onPrevious() : table.previousPage()
-                }
-              >
-                Previous
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={cursorPagination ? !cursorPagination.hasNext : !table.getCanNextPage()}
-                onClick={() => (cursorPagination ? cursorPagination.onNext() : table.nextPage())}
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
-      </table.Subscribe>
+          )}
+        </table.Subscribe>
+      ) : null}
     </table.AppTable>
   )
 }

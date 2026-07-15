@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { ChangeAvatar } from "@/components/auth/settings/account/change-avatar"
 import { TriangleAlert } from "@/components/icons"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
@@ -43,8 +44,8 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
         await updateProfile({ data: value })
         await queryClient.invalidateQueries({ queryKey: ["profiles"] })
         toast.success("Profile updated")
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "The profile could not be updated.")
+      } catch {
+        setError("The profile could not be updated. Check the fields and try again.")
       }
     },
   })
@@ -60,6 +61,7 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
         <FieldSet>
           <FieldLegend>Public profile</FieldLegend>
           <FieldGroup>
+            <ChangeAvatar />
             <form.AppField name="name">
               {(field) => <field.TextField label="Display name" maxLength={80} />}
             </form.AppField>
@@ -102,8 +104,8 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
       try {
         await updateNotificationPreferences({ data: value })
         toast.success("Notification preferences updated")
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "Preferences could not be updated.")
+      } catch {
+        setError("Notification preferences could not be updated. Try again.")
       }
     },
   })
@@ -127,46 +129,57 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
                 />
               )}
             </form.AppField>
-            <form.AppField name="commentNotifications">
-              {(field) => (
-                <field.SwitchField
-                  label="Comments"
-                  description="A new comment appears on your post."
-                />
+            <form.Subscribe selector={(state) => state.values.emailNotifications}>
+              {(emailNotifications) => (
+                <>
+                  <form.AppField name="commentNotifications">
+                    {(field) => (
+                      <field.SwitchField
+                        label="Comments"
+                        description="A new comment appears on your post."
+                        disabled={!emailNotifications}
+                      />
+                    )}
+                  </form.AppField>
+                  <form.AppField name="replyNotifications">
+                    {(field) => (
+                      <field.SwitchField
+                        label="Replies"
+                        description="Someone replies to one of your comments."
+                        disabled={!emailNotifications}
+                      />
+                    )}
+                  </form.AppField>
+                  <form.AppField name="securityNotifications">
+                    {(field) => (
+                      <field.SwitchField
+                        label="Security"
+                        description="Important account and sign-in activity."
+                        disabled={!emailNotifications}
+                      />
+                    )}
+                  </form.AppField>
+                  <form.AppField name="moderationNotifications">
+                    {(field) => (
+                      <field.SwitchField
+                        label="Moderation"
+                        description="An administrator takes action on your content."
+                        disabled={!emailNotifications}
+                      />
+                    )}
+                  </form.AppField>
+                  <form.AppField name="productNotifications">
+                    {(field) => (
+                      <field.SwitchField
+                        label="Product updates"
+                        description="Occasional changes to PistonPost itself."
+                        disabled={!emailNotifications}
+                      />
+                    )}
+                  </form.AppField>
+                </>
               )}
-            </form.AppField>
-            <form.AppField name="replyNotifications">
-              {(field) => (
-                <field.SwitchField
-                  label="Replies"
-                  description="Someone replies to one of your comments."
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="securityNotifications">
-              {(field) => (
-                <field.SwitchField
-                  label="Security"
-                  description="Important account and sign-in activity."
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="moderationNotifications">
-              {(field) => (
-                <field.SwitchField
-                  label="Moderation"
-                  description="An administrator takes action on your content."
-                />
-              )}
-            </form.AppField>
-            <form.AppField name="productNotifications">
-              {(field) => (
-                <field.SwitchField
-                  label="Product updates"
-                  description="Occasional changes to PistonPost itself."
-                />
-              )}
-            </form.AppField>
+            </form.Subscribe>
           </FieldGroup>
         </FieldSet>
         <ErrorMessage message={error} />

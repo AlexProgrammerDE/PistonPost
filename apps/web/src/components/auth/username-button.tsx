@@ -16,7 +16,7 @@ export function UsernameButton({ view }: { readonly view?: AuthView }) {
       href={`${basePaths.auth}/${isUsernameView ? viewPaths.auth.signIn : "username"}`}
       className={cn(buttonVariants({ variant: "outline" }), "w-full")}
     >
-      <UserRoundCog />
+      <UserRoundCog data-icon="inline-start" />
       {isUsernameView
         ? localization.auth.continueWith.replace("{{provider}}", localization.auth.email)
         : "Continue with username"}

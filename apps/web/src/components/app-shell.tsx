@@ -1,24 +1,10 @@
-import { Button, buttonVariants } from "@pistonpost/ui/components/button"
-import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-} from "@pistonpost/ui/components/navigation-menu"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@pistonpost/ui/components/sheet"
+import { buttonVariants } from "@pistonpost/ui/components/button"
 import { Skeleton } from "@pistonpost/ui/components/skeleton"
 import { cn } from "@pistonpost/ui/lib/utils"
 import { Link } from "@tanstack/react-router"
-import { lazy, Suspense, useState, useSyncExternalStore, type PropsWithChildren } from "react"
+import { lazy, Suspense, useSyncExternalStore, type PropsWithChildren } from "react"
 
-import { Add, Menu } from "@/components/icons"
+import { Add } from "@/components/icons"
 
 const PublicAccountMenu = lazy(() =>
   import("@/components/public-account-menu").then((module) => ({
@@ -26,23 +12,28 @@ const PublicAccountMenu = lazy(() =>
   })),
 )
 
-const publicLinks = [{ to: "/" as const, label: "Latest" }]
 const legalLinks = [
   { to: "/privacy" as const, label: "Privacy" },
   { to: "/terms" as const, label: "Terms" },
 ]
 
 export function AppShell({ children }: PropsWithChildren) {
-  const [navigationOpen, setNavigationOpen] = useState(false)
   const hydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
     () => false,
   )
+
   return (
     <div className="flex min-h-svh flex-col" data-hydrated={hydrated}>
+      <a
+        href="#main-content"
+        className="sr-only fixed top-3 left-3 z-50 bg-background px-3 py-2 text-sm font-medium shadow-sm focus:not-sr-only"
+      >
+        Skip to content
+      </a>
       <header className="sticky top-0 z-40 border-b bg-background">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center gap-4 px-4 sm:px-6">
+        <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 sm:px-6">
           <Link
             to="/"
             className="shrink-0 font-heading text-xl font-extrabold tracking-[-0.045em]"
@@ -51,25 +42,16 @@ export function AppShell({ children }: PropsWithChildren) {
             piston<span className="text-primary">post</span>
           </Link>
 
-          <NavigationMenu className="hidden md:flex">
-            <NavigationMenuList>
-              {publicLinks.map((item) => (
-                <NavigationMenuItem key={item.to}>
-                  <NavigationMenuLink render={<Link to={item.to} />}>
-                    {item.label}
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              ))}
-            </NavigationMenuList>
-          </NavigationMenu>
-
           <div className="ml-auto flex items-center gap-2">
             <Link
               to="/account/posts/new"
-              className={cn(buttonVariants({ variant: "default" }), "hidden sm:inline-flex")}
+              className={cn(
+                buttonVariants({ variant: "default" }),
+                "size-9 px-0 sm:size-auto sm:px-3",
+              )}
             >
-              <Add />
-              New post
+              <Add data-icon="inline-start" />
+              <span className="sr-only sm:not-sr-only">New post</span>
             </Link>
             <Suspense
               fallback={
@@ -82,61 +64,13 @@ export function AppShell({ children }: PropsWithChildren) {
             >
               <PublicAccountMenu />
             </Suspense>
-            <Sheet open={navigationOpen} onOpenChange={setNavigationOpen}>
-              <SheetTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="md:hidden"
-                    aria-label="Open navigation"
-                    disabled={!hydrated}
-                  />
-                }
-              >
-                <Menu />
-              </SheetTrigger>
-              <SheetContent side="right">
-                <SheetHeader>
-                  <SheetTitle>pistonpost</SheetTitle>
-                  <SheetDescription>Posts, pictures, and videos.</SheetDescription>
-                </SheetHeader>
-                <nav className="flex flex-col gap-1 px-4" aria-label="Mobile navigation">
-                  {publicLinks.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className="rounded-md px-3 py-3 text-base font-medium hover:bg-muted"
-                      onClick={() => setNavigationOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  {legalLinks.map((item) => (
-                    <Link
-                      key={item.to}
-                      to={item.to}
-                      className="rounded-md px-3 py-3 text-base font-medium hover:bg-muted"
-                      onClick={() => setNavigationOpen(false)}
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                  <Link
-                    to="/account/posts/new"
-                    className="mt-4 rounded-md bg-primary px-3 py-3 font-medium text-primary-foreground"
-                    onClick={() => setNavigationOpen(false)}
-                  >
-                    New post
-                  </Link>
-                </nav>
-              </SheetContent>
-            </Sheet>
           </div>
         </div>
       </header>
 
-      <div className="flex-1">{children}</div>
+      <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
+        {children}
+      </div>
 
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">

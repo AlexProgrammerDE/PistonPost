@@ -41,6 +41,7 @@ export const Route = createFileRoute("/post/$postId")({
 
 function PostDetail() {
   const { postId } = Route.useParams()
+  const { image = 0 } = Route.useSearch()
   const post = useSuspenseQuery(postQueryOptions(postId)).data
   if (!post) return null
 
@@ -55,8 +56,12 @@ function PostDetail() {
           </p>
         </div>
       )}
-      <PostView post={post} detail />
-      <SocialPanel postId={post.id} counts={post.reactions} />
+      <PostView post={post} detail selectedImageIndex={image} />
+      <SocialPanel
+        postId={post.id}
+        counts={post.reactions}
+        imageCount={post.media.filter((media) => media.kind === "image").length}
+      />
     </main>
   )
 }

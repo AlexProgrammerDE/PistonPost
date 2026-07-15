@@ -79,8 +79,7 @@ async function createVerifiedSession(context: BrowserContext) {
 
 async function selectFormat(page: Page, format: "Text" | "Images" | "Video") {
   await page.locator('[data-hydrated="true"]').waitFor()
-  await page.getByLabel("Post type").click()
-  await page.getByRole("option", { name: format, exact: true }).click()
+  await page.getByRole("button", { name: format, exact: true }).click()
 }
 
 async function fillPost(page: Page, title: string, tag: string) {

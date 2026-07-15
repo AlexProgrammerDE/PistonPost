@@ -225,19 +225,28 @@ export function SignIn({ className, socialLayout, socialPosition = "bottom" }: S
 
                 <div className="flex flex-col gap-3">
                   <Button type="submit" disabled={isPending}>
-                    {signInEmailPending && <Spinner />}
+                    {signInEmailPending && <Spinner data-icon="inline-start" />}
 
                     {localization.auth.signIn}
                   </Button>
 
-                  {plugins.flatMap((plugin) =>
-                    (plugin.authButtons ?? []).map((AuthButton) => (
-                      <AuthButton
-                        key={componentIdentity(plugin.id, "sign-in", AuthButton)}
-                        view="signIn"
-                      />
-                    )),
-                  )}
+                  {plugins.some((plugin) => (plugin.authButtons?.length ?? 0) > 0) ? (
+                    <details>
+                      <summary className="cursor-pointer text-center text-sm text-muted-foreground hover:text-foreground">
+                        Other ways to sign in
+                      </summary>
+                      <div className="mt-3 flex flex-col gap-2">
+                        {plugins.flatMap((plugin) =>
+                          (plugin.authButtons ?? []).map((AuthButton) => (
+                            <AuthButton
+                              key={componentIdentity(plugin.id, "sign-in", AuthButton)}
+                              view="signIn"
+                            />
+                          )),
+                        )}
+                      </div>
+                    </details>
+                  ) : null}
                 </div>
               </FieldGroup>
             </form>

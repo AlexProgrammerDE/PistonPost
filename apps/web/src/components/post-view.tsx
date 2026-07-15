@@ -2,12 +2,10 @@ import type { PublicPostRead } from "@pistonpost/db/public-read-model"
 import { AspectRatio } from "@pistonpost/ui/components/aspect-ratio"
 import { Avatar, AvatarFallback, AvatarImage } from "@pistonpost/ui/components/avatar"
 import { Badge } from "@pistonpost/ui/components/badge"
-import { Separator } from "@pistonpost/ui/components/separator"
 import { cn } from "@pistonpost/ui/lib/utils"
 import { Link } from "@tanstack/react-router"
 
-import { Heart, ThumbsDown, ThumbsUp, TriangleAlert } from "@/components/icons"
-import { PostShareActions } from "@/components/post-share-actions"
+import { TriangleAlert } from "@/components/icons"
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -16,7 +14,15 @@ function formatDate(date: Date) {
   }).format(date)
 }
 
-function PostMedia({ post, detail }: { readonly post: PublicPostRead; readonly detail: boolean }) {
+function PostMedia({
+  post,
+  detail,
+  selectedImageIndex,
+}: {
+  readonly post: PublicPostRead
+  readonly detail: boolean
+  readonly selectedImageIndex: number
+}) {
   if (post.media.length === 0) {
     if (post.type === "text") return null
     return (
@@ -55,6 +61,8 @@ function PostMedia({ post, detail }: { readonly post: PublicPostRead; readonly d
       <img
         src={`/media/image/${image.id}/${variant}`}
         alt={image.altText ?? post.title}
+        width={image.width ?? undefined}
+        height={image.height ?? undefined}
         className={cn("w-full bg-muted object-contain", detail ? "max-h-[85svh]" : "max-h-[46rem]")}
         loading={detail ? "eager" : "lazy"}
       />
@@ -62,20 +70,41 @@ function PostMedia({ post, detail }: { readonly post: PublicPostRead; readonly d
   }
 
   if (detail) {
+    const selectedIndex = Math.min(selectedImageIndex, post.media.length - 1)
+    const selectedImage = post.media[selectedIndex] ?? post.media[0]
+    if (!selectedImage) return null
     return (
-      <div
-        className="columns-1 gap-2 sm:columns-2 lg:columns-3"
-        aria-label={`${post.title} image collection`}
-      >
-        {post.media.map((image) => (
-          <img
-            key={image.id}
-            src={`/media/image/${image.id}/${variant}`}
-            alt={image.altText ?? post.title}
-            className="mb-2 w-full break-inside-avoid bg-muted object-contain"
-            loading="lazy"
-          />
-        ))}
+      <div className="grid gap-3" aria-label={`${post.title} image collection`}>
+        <img
+          src={`/media/image/${selectedImage.id}/${variant}`}
+          alt={selectedImage.altText ?? post.title}
+          width={selectedImage.width ?? undefined}
+          height={selectedImage.height ?? undefined}
+          className="max-h-[85svh] w-full bg-muted object-contain"
+          fetchPriority="high"
+        />
+        <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
+          {post.media.map((image, index) => (
+            <Link
+              key={image.id}
+              to="/post/$postId"
+              params={{ postId: post.id }}
+              search={{ image: index }}
+              aria-label={`Show image ${String(index + 1)} of ${String(post.media.length)}`}
+              aria-current={index === selectedIndex ? "true" : undefined}
+              className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
+            >
+              <img
+                src={`/media/image/${image.id}/feed`}
+                alt=""
+                width={image.width ?? undefined}
+                height={image.height ?? undefined}
+                className="size-20 object-cover sm:size-24"
+                loading="lazy"
+              />
+            </Link>
+          ))}
+        </nav>
       </div>
     )
   }
@@ -96,6 +125,8 @@ function PostMedia({ post, detail }: { readonly post: PublicPostRead; readonly d
           <img
             src={`/media/image/${image.id}/${variant}`}
             alt={image.altText ?? ""}
+            width={image.width ?? undefined}
+            height={image.height ?? undefined}
             className="aspect-square w-full object-cover"
             loading="lazy"
           />
@@ -113,12 +144,14 @@ function PostMedia({ post, detail }: { readonly post: PublicPostRead; readonly d
 export function PostView({
   post,
   detail = false,
+  selectedImageIndex = 0,
 }: {
   readonly post: PublicPostRead
   readonly detail?: boolean
+  readonly selectedImageIndex?: number
 }) {
   const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
-  const imageCount = post.media.filter((media) => media.kind === "image").length
+  const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
 
   return (
     <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10")}>
@@ -164,7 +197,7 @@ export function PostView({
         )}
       </div>
 
-      <PostMedia post={post} detail={detail} />
+      <PostMedia post={post} detail={detail} selectedImageIndex={selectedImageIndex} />
 
       <div className="mt-5 flex flex-wrap items-center gap-2">
         {post.tags.map((tag) => (
@@ -176,28 +209,24 @@ export function PostView({
             #{tag.name}
           </Badge>
         ))}
-        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
-          {detail ? <PostShareActions postId={post.id} imageCount={imageCount} /> : null}
-          <div
-            className="flex items-center gap-3 text-xs text-muted-foreground"
-            aria-label="Reaction totals"
+        {!detail ? (
+          <Link
+            to="/post/$postId"
+            params={{ postId: post.id }}
+            hash="discussion"
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
           >
-            <span className="inline-flex items-center gap-1">
-              <ThumbsUp />
-              {post.reactions.like}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <ThumbsDown />
-              {post.reactions.dislike}
-            </span>
-            <span className="inline-flex items-center gap-1">
-              <Heart />
-              {post.reactions.heart}
-            </span>
-          </div>
-        </div>
+            {post.commentCount + reactionCount === 0 ? (
+              "Discuss"
+            ) : (
+              <>
+                {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"} ·{" "}
+                {reactionCount} {reactionCount === 1 ? "reaction" : "reactions"}
+              </>
+            )}
+          </Link>
+        ) : null}
       </div>
-      {detail && <Separator className="mt-10" />}
     </article>
   )
 }

@@ -20,6 +20,7 @@ import { z } from "zod"
 
 import { Trash2, TriangleAlert } from "@/components/icons"
 import { AuthenticationProvider } from "@/components/providers"
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { useAppForm } from "@/lib/forms/app-form"
 import { deletePost, getOwnedPostForEditing, updatePost } from "@/server/composer"
 import { getPublicRuntimeConfig } from "@/server/public-config"
@@ -75,8 +76,8 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
         })
         toast.success("Post updated")
         await navigate({ to: "/post/$postId", params: { postId: post.id } })
-      } catch (cause) {
-        setError(cause instanceof Error ? cause.message : "The post could not be updated.")
+      } catch {
+        setError("The post could not be updated. Reload the page and try again.")
       }
     },
   })
@@ -88,8 +89,8 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
       await deletePost({ data: { id: post.id, version: post.version } })
       toast.success("Post deleted")
       await navigate({ to: "/" })
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "The post could not be deleted.")
+    } catch {
+      setError("The post could not be deleted. Try again.")
       setDeleting(false)
     }
   }
@@ -112,6 +113,9 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
         }}
       >
         <form.AppForm>
+          <form.Subscribe selector={(state) => state.isDirty}>
+            {(isDirty) => <UnsavedChangesGuard enabled={isDirty} />}
+          </form.Subscribe>
           <FieldSet>
             <FieldLegend>Content</FieldLegend>
             <FieldGroup>
@@ -127,7 +131,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                 {(field) => (
                   <field.TagsField
                     label="Tags"
-                    description="Press Enter or comma after each tag."
+                    description="Add 1 to 5 tags. Press Enter, type a comma, or choose Add."
                   />
                 )}
               </form.AppField>
@@ -157,7 +161,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
           <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
             <AlertDialog>
               <AlertDialogTrigger render={<Button type="button" variant="destructive" />}>
-                <Trash2 />
+                <Trash2 data-icon="inline-start" />
                 Delete post
               </AlertDialogTrigger>
               <AlertDialogContent>

@@ -15,8 +15,10 @@ import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MigrationRouteImport } from './routes/migration'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
+import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UserUsernameRouteImport } from './routes/user.$username'
 import { Route as TagTagRouteImport } from './routes/tag.$tag'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
@@ -24,14 +26,13 @@ import { Route as AuthAuthViewRouteImport } from './routes/auth.$authView'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
 import { Route as AccountSettingsRouteImport } from './routes/account.settings'
 import { Route as AccountPostsRouteImport } from './routes/account.posts'
-import { Route as AccountMediaRouteImport } from './routes/account.media'
-import { Route as AccountCommentsRouteImport } from './routes/account.comments'
 import { Route as AccountSettingsIndexRouteImport } from './routes/account.settings.index'
 import { Route as AccountPostsIndexRouteImport } from './routes/account.posts.index'
 import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
 import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
 import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhook'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AdminMigrationsRunIdRouteImport } from './routes/admin.migrations.$runId'
 import { Route as AccountSettingsSettingsViewRouteImport } from './routes/account.settings.$settingsView'
 import { Route as AccountPostsNewRouteImport } from './routes/account.posts.new'
 import { Route as MediaVideoMediaIdThumbnailRouteImport } from './routes/media.video.$mediaId.thumbnail'
@@ -69,6 +70,11 @@ const AuthRoute = AuthRouteImport.update({
   path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -78,6 +84,11 @@ const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthRoute,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRoute,
 } as any)
 const UserUsernameRoute = UserUsernameRouteImport.update({
   id: '/user/$username',
@@ -100,9 +111,9 @@ const AuthAuthViewRoute = AuthAuthViewRouteImport.update({
   getParentRoute: () => AuthRoute,
 } as any)
 const AdminSectionRoute = AdminSectionRouteImport.update({
-  id: '/admin/$section',
-  path: '/admin/$section',
-  getParentRoute: () => rootRouteImport,
+  id: '/$section',
+  path: '/$section',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AccountSettingsRoute = AccountSettingsRouteImport.update({
   id: '/account/settings',
@@ -112,16 +123,6 @@ const AccountSettingsRoute = AccountSettingsRouteImport.update({
 const AccountPostsRoute = AccountPostsRouteImport.update({
   id: '/account/posts',
   path: '/account/posts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountMediaRoute = AccountMediaRouteImport.update({
-  id: '/account/media',
-  path: '/account/media',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountCommentsRoute = AccountCommentsRouteImport.update({
-  id: '/account/comments',
-  path: '/account/comments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AccountSettingsIndexRoute = AccountSettingsIndexRouteImport.update({
@@ -153,6 +154,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminMigrationsRunIdRoute = AdminMigrationsRunIdRouteImport.update({
+  id: '/migrations/$runId',
+  path: '/migrations/$runId',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AccountSettingsSettingsViewRoute =
   AccountSettingsSettingsViewRouteImport.update({
@@ -191,14 +197,13 @@ const MediaImageMediaIdVariantRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/account/comments': typeof AccountCommentsRoute
-  '/account/media': typeof AccountMediaRoute
   '/account/posts': typeof AccountPostsRouteWithChildren
   '/account/settings': typeof AccountSettingsRouteWithChildren
   '/admin/$section': typeof AdminSectionRoute
@@ -206,9 +211,11 @@ export interface FileRoutesByFullPath {
   '/post/$postId': typeof PostPostIdRouteWithChildren
   '/tag/$tag': typeof TagTagRoute
   '/user/$username': typeof UserUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/account/posts/new': typeof AccountPostsNewRoute
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/admin/migrations/$runId': typeof AdminMigrationsRunIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
@@ -227,16 +234,16 @@ export interface FileRoutesByTo {
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/account/comments': typeof AccountCommentsRoute
-  '/account/media': typeof AccountMediaRoute
   '/admin/$section': typeof AdminSectionRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/post/$postId': typeof PostPostIdRouteWithChildren
   '/tag/$tag': typeof TagTagRoute
   '/user/$username': typeof UserUsernameRoute
+  '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
   '/account/posts/new': typeof AccountPostsNewRoute
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/admin/migrations/$runId': typeof AdminMigrationsRunIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
@@ -251,14 +258,13 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/account/comments': typeof AccountCommentsRoute
-  '/account/media': typeof AccountMediaRoute
   '/account/posts': typeof AccountPostsRouteWithChildren
   '/account/settings': typeof AccountSettingsRouteWithChildren
   '/admin/$section': typeof AdminSectionRoute
@@ -266,9 +272,11 @@ export interface FileRoutesById {
   '/post/$postId': typeof PostPostIdRouteWithChildren
   '/tag/$tag': typeof TagTagRoute
   '/user/$username': typeof UserUsernameRoute
+  '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
   '/account/posts/new': typeof AccountPostsNewRoute
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/admin/migrations/$runId': typeof AdminMigrationsRunIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
@@ -284,14 +292,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/auth'
     | '/migration'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/terms'
-    | '/account/comments'
-    | '/account/media'
     | '/account/posts'
     | '/account/settings'
     | '/admin/$section'
@@ -299,9 +306,11 @@ export interface FileRouteTypes {
     | '/post/$postId'
     | '/tag/$tag'
     | '/user/$username'
+    | '/admin/'
     | '/auth/'
     | '/account/posts/new'
     | '/account/settings/$settingsView'
+    | '/admin/migrations/$runId'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/upload/$mediaId'
@@ -320,16 +329,16 @@ export interface FileRouteTypes {
     | '/robots.txt'
     | '/sitemap.xml'
     | '/terms'
-    | '/account/comments'
-    | '/account/media'
     | '/admin/$section'
     | '/auth/$authView'
     | '/post/$postId'
     | '/tag/$tag'
     | '/user/$username'
+    | '/admin'
     | '/auth'
     | '/account/posts/new'
     | '/account/settings/$settingsView'
+    | '/admin/migrations/$runId'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/upload/$mediaId'
@@ -343,14 +352,13 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/auth'
     | '/migration'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
     | '/terms'
-    | '/account/comments'
-    | '/account/media'
     | '/account/posts'
     | '/account/settings'
     | '/admin/$section'
@@ -358,9 +366,11 @@ export interface FileRouteTypes {
     | '/post/$postId'
     | '/tag/$tag'
     | '/user/$username'
+    | '/admin/'
     | '/auth/'
     | '/account/posts/new'
     | '/account/settings/$settingsView'
+    | '/admin/migrations/$runId'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/upload/$mediaId'
@@ -375,17 +385,15 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   MigrationRoute: typeof MigrationRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
-  AccountCommentsRoute: typeof AccountCommentsRoute
-  AccountMediaRoute: typeof AccountMediaRoute
   AccountPostsRoute: typeof AccountPostsRouteWithChildren
   AccountSettingsRoute: typeof AccountSettingsRouteWithChildren
-  AdminSectionRoute: typeof AdminSectionRoute
   PostPostIdRoute: typeof PostPostIdRouteWithChildren
   TagTagRoute: typeof TagTagRoute
   UserUsernameRoute: typeof UserUsernameRoute
@@ -442,6 +450,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -455,6 +470,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/'
       preLoaderRoute: typeof AuthIndexRouteImport
       parentRoute: typeof AuthRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/user/$username': {
       id: '/user/$username'
@@ -486,10 +508,10 @@ declare module '@tanstack/react-router' {
     }
     '/admin/$section': {
       id: '/admin/$section'
-      path: '/admin/$section'
+      path: '/$section'
       fullPath: '/admin/$section'
       preLoaderRoute: typeof AdminSectionRouteImport
-      parentRoute: typeof rootRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/account/settings': {
       id: '/account/settings'
@@ -503,20 +525,6 @@ declare module '@tanstack/react-router' {
       path: '/account/posts'
       fullPath: '/account/posts'
       preLoaderRoute: typeof AccountPostsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account/media': {
-      id: '/account/media'
-      path: '/account/media'
-      fullPath: '/account/media'
-      preLoaderRoute: typeof AccountMediaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account/comments': {
-      id: '/account/comments'
-      path: '/account/comments'
-      fullPath: '/account/comments'
-      preLoaderRoute: typeof AccountCommentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/account/settings/': {
@@ -560,6 +568,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/migrations/$runId': {
+      id: '/admin/migrations/$runId'
+      path: '/migrations/$runId'
+      fullPath: '/admin/migrations/$runId'
+      preLoaderRoute: typeof AdminMigrationsRunIdRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/account/settings/$settingsView': {
       id: '/account/settings/$settingsView'
@@ -605,6 +620,20 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AdminRouteChildren {
+  AdminSectionRoute: typeof AdminSectionRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+  AdminMigrationsRunIdRoute: typeof AdminMigrationsRunIdRoute
+}
+
+const AdminRouteChildren: AdminRouteChildren = {
+  AdminSectionRoute: AdminSectionRoute,
+  AdminIndexRoute: AdminIndexRoute,
+  AdminMigrationsRunIdRoute: AdminMigrationsRunIdRoute,
+}
+
+const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
 interface AuthRouteChildren {
   AuthAuthViewRoute: typeof AuthAuthViewRoute
@@ -660,17 +689,15 @@ const PostPostIdRouteWithChildren = PostPostIdRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   MigrationRoute: MigrationRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
-  AccountCommentsRoute: AccountCommentsRoute,
-  AccountMediaRoute: AccountMediaRoute,
   AccountPostsRoute: AccountPostsRouteWithChildren,
   AccountSettingsRoute: AccountSettingsRouteWithChildren,
-  AdminSectionRoute: AdminSectionRoute,
   PostPostIdRoute: PostPostIdRouteWithChildren,
   TagTagRoute: TagTagRoute,
   UserUsernameRoute: UserUsernameRoute,

@@ -5,7 +5,6 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
-  EmptyMedia,
   EmptyTitle,
 } from "@pistonpost/ui/components/empty"
 import { Skeleton } from "@pistonpost/ui/components/skeleton"
@@ -59,13 +58,10 @@ function PublicFeed() {
       )}
 
       {posts.length === 0 ? (
-        <Empty className="min-h-96 border">
+        <Empty className="min-h-80 border-y">
           <EmptyHeader>
-            <EmptyMedia variant="icon">
-              <TriangleAlert />
-            </EmptyMedia>
             <EmptyTitle>No public posts yet</EmptyTitle>
-            <EmptyDescription>Nothing has been posted yet.</EmptyDescription>
+            <EmptyDescription>Create the first post for this feed.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
@@ -116,14 +112,14 @@ function FeedSkeleton() {
   )
 }
 
-function FeedError({ error, reset }: { readonly error: Error; readonly reset: () => void }) {
+function FeedError({ reset }: { readonly error: Error; readonly reset: () => void }) {
   return (
     <main className="mx-auto grid min-h-[60svh] w-full max-w-2xl place-items-center px-4">
       <Alert variant="destructive">
         <TriangleAlert />
         <AlertTitle>The feed could not be loaded</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
-          <span>{error.message}</span>
+          <span>Check your connection and try again.</span>
           <Button variant="outline" onClick={reset}>
             Try again
           </Button>

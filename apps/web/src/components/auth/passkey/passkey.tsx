@@ -1,6 +1,5 @@
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { Button } from "@pistonpost/ui/components/button"
-import { Card, CardContent } from "@pistonpost/ui/components/card"
 import { useState } from "react"
 
 import { Fingerprint, X } from "@/components/icons"
@@ -20,37 +19,35 @@ export function Passkey({ passkey }: PasskeyProps) {
   const passkeyName = passkey.name || passkeyLocalization.passkey
 
   return (
-    <Card className="border-0 bg-transparent shadow-none ring-0">
-      <CardContent className="flex items-center gap-3">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-          <Fingerprint className="size-4.5" />
-        </div>
+    <div className="flex items-center gap-3 p-4 sm:p-6">
+      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
+        <Fingerprint className="size-4.5" />
+      </div>
 
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm leading-tight font-medium">{passkeyName}</span>
+      <div className="flex min-w-0 flex-col">
+        <span className="truncate text-sm leading-tight font-medium">{passkeyName}</span>
 
-          <span className="text-xs text-muted-foreground">
-            {new Date(passkey.createdAt).toLocaleString(undefined, {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
-          </span>
-        </div>
+        <span className="text-xs text-muted-foreground">
+          {new Date(passkey.createdAt).toLocaleString(undefined, {
+            dateStyle: "medium",
+            timeStyle: "short",
+          })}
+        </span>
+      </div>
 
-        <Button
-          className="ml-auto shrink-0"
-          variant="outline"
-          size="sm"
-          onClick={() => setDeleteOpen(true)}
-          aria-label={passkeyLocalization.deletePasskey.replace("{{name}}", passkeyName)}
-        >
-          <X />
+      <Button
+        className="ml-auto shrink-0"
+        variant="outline"
+        size="sm"
+        onClick={() => setDeleteOpen(true)}
+        aria-label={passkeyLocalization.deletePasskey.replace("{{name}}", passkeyName)}
+      >
+        <X />
 
-          {localization.settings.delete}
-        </Button>
+        {localization.settings.delete}
+      </Button>
 
-        <DeletePasskeyDialog open={deleteOpen} onOpenChange={setDeleteOpen} passkey={passkey} />
-      </CardContent>
-    </Card>
+      <DeletePasskeyDialog open={deleteOpen} onOpenChange={setDeleteOpen} passkey={passkey} />
+    </div>
   )
 }

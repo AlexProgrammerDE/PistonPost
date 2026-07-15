@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { postDraftInputSchema } from "@pistonpost/domain"
 import { Alert, AlertDescription, AlertTitle } from "@pistonpost/ui/components/alert"
+import { Badge } from "@pistonpost/ui/components/badge"
 import { Button } from "@pistonpost/ui/components/button"
 import { FieldGroup, FieldLegend, FieldSet } from "@pistonpost/ui/components/field"
 import { Input } from "@pistonpost/ui/components/input"
@@ -29,7 +30,8 @@ import { useEffect, useReducer, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
-import { Menu, Trash2, TriangleAlert, Upload } from "@/components/icons"
+import { GripVertical, Trash2, TriangleAlert, Upload } from "@/components/icons"
+import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { useAppForm } from "@/lib/forms/app-form"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
 import {
@@ -83,9 +85,17 @@ const defaultValues: ComposerValues = {
   mediaId: null,
 }
 
+const composerMessages = new Set([
+  "Choose at least one image.",
+  "Choose a video.",
+  "Video processing is taking longer than expected. The draft is still saved.",
+  "The video could not be processed.",
+])
+
 function readableError(error: unknown) {
-  if (error instanceof Error) return error.message
-  return "The post could not be posted."
+  if (error instanceof z.ZodError) return error.issues[0]?.message ?? "Check the post details."
+  if (error instanceof Error && composerMessages.has(error.message)) return error.message
+  return "The post could not be posted. Try again."
 }
 
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
@@ -95,7 +105,7 @@ async function waitForVideo(queryClient: QueryClient, assetId: string) {
     const [asset] = await queryClient.fetchQuery(ownedMediaStatusQueryOptions([assetId]))
     if (asset?.status === "ready") return
     if (asset?.status === "failed" || asset?.status === "deleted") {
-      throw new Error("Cloudflare Stream could not process this video.")
+      throw new Error("The video could not be processed.")
     }
     // The delay is part of the bounded reconciliation protocol.
     // eslint-disable-next-line no-await-in-loop
@@ -311,54 +321,28 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
       }}
     >
       <form.AppForm>
-        <FieldSet>
-          <FieldLegend>Type</FieldLegend>
-          <form.AppField name="type">
-            {(field) => (
-              <field.SelectField
-                label="Post type"
-                description="Choose text, a set of pictures, or one video."
-                options={[
-                  { label: "Text", value: "text" },
-                  { label: "Images", value: "images" },
-                  { label: "Video", value: "video" },
-                ]}
-              />
-            )}
-          </form.AppField>
-          <form.Subscribe selector={(state) => state.values.type}>
-            {(type) => <TypeSync type={type} onChange={changeType} />}
-          </form.Subscribe>
-        </FieldSet>
-
-        <Separator />
-
-        <form.Subscribe
-          selector={(state) =>
-            [
-              state.values.type,
-              state.values.title,
-              state.values.textContent,
-              state.values.tags,
-              state.values.visibility,
-              state.values.mediaIds,
-              state.values.mediaId,
-            ] as const
-          }
-        >
-          {([type, title, textContent, tags, visibility, mediaIds, mediaId]) => (
-            <ComposerPreview
-              values={{ type, title, textContent, tags, visibility, mediaIds, mediaId }}
-              uploads={uploads}
-            />
-          )}
+        <form.Subscribe selector={(state) => state.isDirty}>
+          {(isDirty) => <UnsavedChangesGuard enabled={isDirty} />}
         </form.Subscribe>
-
-        <Separator />
-
         <FieldSet>
           <FieldLegend>Post</FieldLegend>
           <FieldGroup>
+            <form.AppField name="type">
+              {(field) => (
+                <field.ChoiceField
+                  label="Post type"
+                  description="Choose text, a set of pictures, or one video."
+                  options={[
+                    { label: "Text", value: "text" },
+                    { label: "Images", value: "images" },
+                    { label: "Video", value: "video" },
+                  ]}
+                />
+              )}
+            </form.AppField>
+            <form.Subscribe selector={(state) => state.values.type}>
+              {(type) => <TypeSync type={type} onChange={changeType} />}
+            </form.Subscribe>
             <form.AppField name="title" validators={{ onBlur: titleSchema }}>
               {(field) => <field.TextField label="Title" maxLength={100} />}
             </form.AppField>
@@ -402,7 +386,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
               {(field) => (
                 <field.TagsField
                   label="Tags"
-                  description="Press Enter or comma after each tag. Add up to five."
+                  description="Add 1 to 5 tags. Press Enter, type a comma, or choose Add."
                 />
               )}
             </form.AppField>
@@ -421,6 +405,17 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
           </FieldGroup>
         </FieldSet>
 
+        <form.Subscribe selector={(state) => state.values}>
+          {(values) =>
+            values.title.trim() || values.textContent.trim() || uploads.length > 0 ? (
+              <>
+                <Separator />
+                <ComposerPreview values={values} uploads={uploads} />
+              </>
+            ) : null
+          }
+        </form.Subscribe>
+
         {submitError ? (
           <Alert variant="destructive">
             <TriangleAlert />
@@ -429,10 +424,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
           </Alert>
         ) : null}
 
-        <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            We save a draft before uploading pictures or video.
-          </p>
+        <div className="flex justify-end border-t pt-6">
           <form.SubmitButton className="sm:min-w-36">Post it</form.SubmitButton>
         </div>
       </form.AppForm>
@@ -476,9 +468,13 @@ function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads:
         ) : null}
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-muted-foreground">
           {values.tags.map((tag) => (
-            <span key={tag}>#{tag}</span>
+            <Badge key={tag} variant="secondary">
+              #{tag}
+            </Badge>
           ))}
-          <span className="ml-auto">{values.visibility}</span>
+          <Badge className="ml-auto" variant="outline">
+            {values.visibility === "public" ? "Public" : "Unlisted"}
+          </Badge>
         </div>
       </article>
     </section>
@@ -543,9 +539,7 @@ function MediaPicker({
           }}
         />
         <span className="flex max-w-sm flex-col items-center gap-2">
-          <span className="grid size-10 place-items-center border bg-background">
-            <Upload />
-          </span>
+          <Upload className="text-muted-foreground" />
           <span className="font-medium">Choose {type === "images" ? "images" : "a video"}</span>
           <span className="text-sm text-muted-foreground">{limit}</span>
         </span>
@@ -610,7 +604,7 @@ function SortableUpload({
             {...sortable.attributes}
             {...sortable.listeners}
           >
-            <Menu />
+            <GripVertical />
           </button>
           <p className="truncate text-sm font-medium">{item.file.name}</p>
         </div>
@@ -627,7 +621,8 @@ function SortableUpload({
               id={`alt-text-${item.clientId}`}
               value={item.altText}
               maxLength={300}
-              placeholder="Describe this image"
+              placeholder="Describe this image…"
+              autoComplete="off"
               disabled={item.status !== "queued"}
               onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
             />

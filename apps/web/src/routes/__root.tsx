@@ -1,5 +1,6 @@
+import { Button } from "@pistonpost/ui/components/button"
 import type { QueryClient } from "@tanstack/react-query"
-import { HeadContent, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
+import { HeadContent, Link, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
@@ -31,7 +32,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "msapplication-TileColor", content: "#dc3850" },
       { name: "msapplication-tap-highlight", content: "no" },
-      { name: "theme-color", content: "#fff9ed" },
+      {
+        name: "theme-color",
+        content: "#fff9ed",
+        media: "(prefers-color-scheme: light)",
+      },
+      {
+        name: "theme-color",
+        content: "#241b1b",
+        media: "(prefers-color-scheme: dark)",
+      },
       ...defaultSeo.meta,
     ],
     links: [
@@ -48,17 +58,26 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
       <div className="typeset text-center">
         <p className="text-sm font-medium text-muted-foreground">404</p>
-        <h1>This post isn’t here.</h1>
-        <p>It may have been deleted, hidden, or the address may be wrong.</p>
+        <h1>Page not found</h1>
+        <p>The address may be wrong, or the page may have moved.</p>
+        <Button className="mt-4" nativeButton={false} render={<Link to="/" />}>
+          Back to latest posts
+        </Button>
       </div>
     </main>
   ),
-  errorComponent: ({ error }) => (
+  errorComponent: ({ reset }) => (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
       <div className="typeset text-center">
         <p className="text-sm font-medium text-destructive">Something went wrong</p>
         <h1>We couldn’t load this page.</h1>
-        <p>{error.message}</p>
+        <p>Try again. If the problem continues, return to the latest posts.</p>
+        <div className="mt-4 flex justify-center gap-2">
+          <Button onClick={reset}>Try again</Button>
+          <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+            Go home
+          </Button>
+        </div>
       </div>
     </main>
   ),

@@ -13,7 +13,6 @@ import {
 } from "@pistonpost/ui/components/alert-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@pistonpost/ui/components/avatar"
 import { Button } from "@pistonpost/ui/components/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@pistonpost/ui/components/empty"
 import { Separator } from "@pistonpost/ui/components/separator"
 import { ToggleGroup, ToggleGroupItem } from "@pistonpost/ui/components/toggle-group"
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
@@ -22,6 +21,7 @@ import { startTransition, useOptimistic, useState } from "react"
 import { toast } from "sonner"
 
 import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "@/components/icons"
+import { PostShareActions } from "@/components/post-share-actions"
 import { useAppForm } from "@/lib/forms/app-form"
 import { discussionQueryOptions } from "@/lib/queries/social"
 import {
@@ -37,7 +37,15 @@ type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][n
 type CommentPage = DiscussionComment & { optimistic?: boolean }
 const reactionTypeSet = new Set<string>(reactionTypes)
 
-export function SocialPanel({ postId, counts }: { postId: string; counts: ReactionCounts }) {
+export function SocialPanel({
+  postId,
+  counts,
+  imageCount,
+}: {
+  postId: string
+  counts: ReactionCounts
+  imageCount: number
+}) {
   const queryClient = useQueryClient()
   const [confirmedCounts, setConfirmedCounts] = useState(counts)
   const discussion = useInfiniteQuery(discussionQueryOptions(postId))
@@ -139,30 +147,31 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
   }
 
   return (
-    <section className="mx-auto mt-10 max-w-5xl" aria-labelledby="discussion-title">
-      <div className="flex flex-col gap-5 border-y py-6 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="discussion-title" className="font-heading text-2xl font-bold">
-          Comments
-        </h2>
+    <section id="discussion" className="mx-auto mt-5 max-w-5xl" aria-labelledby="discussion-title">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
+        <PostShareActions postId={postId} imageCount={imageCount} />
         <ToggleGroup
           value={optimisticActive}
           onValueChange={updateReactions}
           variant="outline"
-          aria-label="Your reactions"
+          aria-label={firstPage?.viewerId ? "Your reaction" : "Reaction totals"}
         >
-          <ToggleGroupItem value="like" aria-label="Like">
+          <ToggleGroupItem value="like" aria-label="Like" disabled={!firstPage?.viewerId}>
             <ThumbsUp /> {displayedCounts.like}
           </ToggleGroupItem>
-          <ToggleGroupItem value="dislike" aria-label="Dislike">
+          <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={!firstPage?.viewerId}>
             <ThumbsDown /> {displayedCounts.dislike}
           </ToggleGroupItem>
-          <ToggleGroupItem value="heart" aria-label="Heart">
+          <ToggleGroupItem value="heart" aria-label="Heart" disabled={!firstPage?.viewerId}>
             <Heart /> {displayedCounts.heart}
           </ToggleGroupItem>
         </ToggleGroup>
       </div>
 
-      <div className="mt-8 grid gap-8">
+      <div className="mt-10 grid gap-8">
+        <h2 id="discussion-title" className="font-heading text-2xl font-bold">
+          Comments
+        </h2>
         {firstPage?.viewerId ? (
           <form
             className="grid gap-3"
@@ -176,7 +185,7 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
                 {(field) => (
                   <field.TextareaField
                     label="Add a comment"
-                    placeholder="Write a comment"
+                    placeholder="Write a comment…"
                     maxLength={250}
                     rows={3}
                   />
@@ -197,12 +206,7 @@ export function SocialPanel({ postId, counts }: { postId: string; counts: Reacti
         )}
 
         {optimisticComments.length === 0 && !discussion.isLoading ? (
-          <Empty className="min-h-48 border-y">
-            <EmptyHeader>
-              <EmptyTitle>No comments yet</EmptyTitle>
-              <EmptyDescription>Be the first to say something.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
+          <p className="border-y py-6 text-sm text-muted-foreground">No comments yet.</p>
         ) : (
           <div className="grid gap-0">
             {optimisticComments.map((comment) => {

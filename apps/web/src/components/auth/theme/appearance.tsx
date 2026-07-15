@@ -1,15 +1,8 @@
 "use client"
 
-import {
-  ThemePreviewDark,
-  ThemePreviewLight,
-  ThemePreviewSystem,
-  useAuthPlugin,
-} from "@better-auth-ui/react"
-import { Card, CardContent } from "@pistonpost/ui/components/card"
-import { Field, FieldContent, FieldLabel, FieldTitle } from "@pistonpost/ui/components/field"
-import { Label } from "@pistonpost/ui/components/label"
-import { RadioGroup, RadioGroupItem } from "@pistonpost/ui/components/radio-group"
+import { useAuthPlugin } from "@better-auth-ui/react"
+import { FieldDescription, FieldLegend, FieldSet } from "@pistonpost/ui/components/field"
+import { ToggleGroup, ToggleGroupItem } from "@pistonpost/ui/components/toggle-group"
 import { cn } from "@pistonpost/ui/lib/utils"
 import { useEffect, useState } from "react"
 
@@ -20,15 +13,6 @@ export type AppearanceProps = {
   className?: string
 }
 
-/**
- * Renders a theme selector card with visual theme previews.
- *
- * Displays a card containing radio buttons for selecting between system, light,
- * and dark themes. Each option shows a visual preview of the theme.
- *
- * @param className - Optional additional CSS class names for the card container.
- * @returns A JSX element containing the theme selector card.
- */
 export function Appearance({ className }: AppearanceProps) {
   const { useTheme, localization } = useAuthPlugin(themePlugin)
   const { theme, setTheme, themes = [] } = useTheme()
@@ -37,83 +21,39 @@ export function Appearance({ className }: AppearanceProps) {
   useEffect(() => setIsMounted(true), [])
 
   return (
-    <div>
-      <h2 className="mb-3 text-sm font-semibold">{localization.appearance}</h2>
-
-      <Card className={cn(className)}>
-        <CardContent>
-          <Field>
-            <Label>{localization.theme}</Label>
-
-            <RadioGroup
-              value={isMounted ? theme : ""}
-              onValueChange={setTheme}
-              className="grid grid-cols-2 gap-3 sm:grid-cols-3"
-              disabled={!isMounted || !theme}
-            >
-              {themes.includes("system") && (
-                <FieldLabel htmlFor="system">
-                  <Field orientation="horizontal">
-                    <FieldContent className="gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <FieldTitle>
-                          <Monitor className="size-4 text-muted-foreground" />
-
-                          {localization.system}
-                        </FieldTitle>
-
-                        <RadioGroupItem value="system" id="system" />
-                      </div>
-
-                      <ThemePreviewSystem className="w-full" />
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-              )}
-
-              {themes.includes("light") && (
-                <FieldLabel htmlFor="light">
-                  <Field orientation="horizontal">
-                    <FieldContent className="gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <FieldTitle>
-                          <Sun className="size-4 text-muted-foreground" />
-
-                          {localization.light}
-                        </FieldTitle>
-
-                        <RadioGroupItem value="light" id="light" />
-                      </div>
-
-                      <ThemePreviewLight className="w-full" />
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-              )}
-
-              {themes.includes("dark") && (
-                <FieldLabel htmlFor="dark">
-                  <Field orientation="horizontal">
-                    <FieldContent className="gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <FieldTitle>
-                          <Moon className="size-4 text-muted-foreground" />
-
-                          {localization.dark}
-                        </FieldTitle>
-
-                        <RadioGroupItem value="dark" id="dark" />
-                      </div>
-
-                      <ThemePreviewDark className="w-full" />
-                    </FieldContent>
-                  </Field>
-                </FieldLabel>
-              )}
-            </RadioGroup>
-          </Field>
-        </CardContent>
-      </Card>
-    </div>
+    <FieldSet className={cn(className)}>
+      <FieldLegend>{localization.theme}</FieldLegend>
+      <FieldDescription>Choose how PistonPost looks on this device.</FieldDescription>
+      <ToggleGroup
+        value={isMounted && theme ? [theme] : []}
+        onValueChange={(values) => {
+          const value = values[0]
+          if (value) setTheme(value)
+        }}
+        variant="outline"
+        className="grid w-full grid-cols-1 sm:grid-cols-3"
+        disabled={!isMounted || !theme}
+        aria-label={localization.theme}
+      >
+        {themes.includes("system") ? (
+          <ToggleGroupItem value="system" className="w-full">
+            <Monitor />
+            {localization.system}
+          </ToggleGroupItem>
+        ) : null}
+        {themes.includes("light") ? (
+          <ToggleGroupItem value="light" className="w-full">
+            <Sun />
+            {localization.light}
+          </ToggleGroupItem>
+        ) : null}
+        {themes.includes("dark") ? (
+          <ToggleGroupItem value="dark" className="w-full">
+            <Moon />
+            {localization.dark}
+          </ToggleGroupItem>
+        ) : null}
+      </ToggleGroup>
+    </FieldSet>
   )
 }

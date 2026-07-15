@@ -1,7 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, notFound } from "@tanstack/react-router"
 
-import { Settings } from "@/components/auth/settings/settings"
+import { DangerZone } from "@/components/auth/delete-user/danger-zone"
+import { AccountSettings } from "@/components/auth/settings/account/account-settings"
+import { SecuritySettings } from "@/components/auth/settings/security/security-settings"
+import { Appearance } from "@/components/auth/theme/appearance"
 import { NotificationSettingsForm, ProfileSettingsForm } from "@/components/product-settings"
+import { isSettingsView } from "@/lib/settings-views"
 import { getMyProductSettings } from "@/server/settings"
 
 export const Route = createFileRoute("/account/settings/$settingsView")({
@@ -15,6 +19,7 @@ export const Route = createFileRoute("/account/settings/$settingsView")({
 
 function SettingsView() {
   const { settingsView } = Route.useParams()
+  if (!isSettingsView(settingsView)) throw notFound()
   const productSettings = Route.useLoaderData()
   if (settingsView === "profile" && productSettings) {
     return <ProfileSettingsForm settings={productSettings} />
@@ -22,5 +27,9 @@ function SettingsView() {
   if (settingsView === "notifications" && productSettings) {
     return <NotificationSettingsForm settings={productSettings} />
   }
-  return <Settings path={settingsView} />
+  if (settingsView === "account") return <AccountSettings />
+  if (settingsView === "security") return <SecuritySettings />
+  if (settingsView === "appearance") return <Appearance />
+  if (settingsView === "danger") return <DangerZone />
+  throw notFound()
 }

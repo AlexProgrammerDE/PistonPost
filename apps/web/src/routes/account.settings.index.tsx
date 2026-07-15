@@ -4,7 +4,7 @@ export const Route = createFileRoute("/account/settings/")({
   beforeLoad: () => {
     throw redirect({
       to: "/account/settings/$settingsView",
-      params: { settingsView: "account" },
+      params: { settingsView: "profile" },
     })
   },
 })

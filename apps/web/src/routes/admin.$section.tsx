@@ -11,15 +11,16 @@ import {
 } from "@pistonpost/ui/components/alert-dialog"
 import { Badge } from "@pistonpost/ui/components/badge"
 import { Button } from "@pistonpost/ui/components/button"
-import { Checkbox } from "@pistonpost/ui/components/checkbox"
+import { Field, FieldDescription, FieldLabel } from "@pistonpost/ui/components/field"
 import { Input } from "@pistonpost/ui/components/input"
 import { Textarea } from "@pistonpost/ui/components/textarea"
 import { useMutation } from "@tanstack/react-query"
-import { Link, createFileRoute, useNavigate, useRouter } from "@tanstack/react-router"
-import { useState } from "react"
+import { Link, createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router"
+import { useDeferredValue, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { adminSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
 import {
   DataTable,
   createAppColumnHelper,
@@ -28,9 +29,15 @@ import {
   pushCursorTrail,
   type DataTableUrlState,
 } from "@/lib/table/app-table"
-import { getAdminRows, moderateEntity } from "@/server/tables"
+import {
+  cleanupAdminMedia,
+  getAdminRows,
+  moderateEntity,
+  retryAdminJob,
+  updateAdminUser,
+} from "@/server/tables"
 
-const sectionSchema = z.enum(["posts", "comments", "users", "media", "jobs", "audit", "migration"])
+const sectionSchema = z.enum(adminSections.map((section) => section.value))
 const searchSchema = z.object({
   q: z.string().catch(""),
   sort: z.string().catch("createdAt"),
@@ -41,59 +48,75 @@ const searchSchema = z.object({
 })
 type AdminRow = Awaited<ReturnType<typeof getAdminRows>>["rows"][number]
 const column = createAppColumnHelper<AdminRow>()
-const baseColumns = column.columns([
-  column.display({
-    id: "select",
-    enableHiding: false,
-    enableSorting: false,
-    header: ({ table }) => (
-      <Checkbox
-        aria-label="Select all rows on this page"
-        checked={table.getIsAllPageRowsSelected()}
-        indeterminate={table.getIsSomePageRowsSelected()}
-        onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
-      />
-    ),
-    cell: ({ row }) => (
-      <Checkbox
-        aria-label="Select row"
-        checked={row.getIsSelected()}
-        onCheckedChange={(checked) => row.toggleSelected(checked)}
-      />
-    ),
-  }),
-  column.accessor("primary", { header: "Record", enableSorting: false }),
-  column.accessor("secondary", { header: "Context", enableSorting: false }),
-  column.accessor("status", {
-    header: "State",
-    enableSorting: false,
-    cell: ({ getValue }) => <Badge variant="outline">{getValue() ?? "none"}</Badge>,
-  }),
-  column.accessor("createdAt", {
-    header: "Created",
-    cell: ({ getValue }) => getValue().toLocaleDateString("en"),
-  }),
-])
+
+function humanizeStatus(value: string | null) {
+  if (!value) return "None"
+  return value
+    .split("-")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ")
+}
+
+function ConfirmationAction({
+  label,
+  title,
+  description,
+  destructive = false,
+  disabled = false,
+  onConfirm,
+}: {
+  label: string
+  title: string
+  description: string
+  destructive?: boolean
+  disabled?: boolean
+  onConfirm: () => void
+}) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger
+        render={
+          <Button variant={destructive ? "destructive" : "outline"} size="sm" disabled={disabled} />
+        }
+      >
+        {label}
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            variant={destructive ? "destructive" : "default"}
+            disabled={disabled}
+            onClick={onConfirm}
+          >
+            {label}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+}
 
 function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | "comments" }) {
   const [reason, setReason] = useState("")
   const router = useRouter()
   const action = row.status === "moderated" ? "restore" : "hide"
+  const target = section === "posts" ? "post" : "comment"
   const mutation = useMutation({
-    mutationFn: () =>
-      moderateEntity({
-        data: {
-          target: section === "posts" ? "post" : "comment",
-          id: row.id,
-          action,
-          reason,
-        },
-      }),
+    mutationFn: () => moderateEntity({ data: { target, id: row.id, action, reason } }),
     onSuccess: async () => {
-      toast.success(action === "hide" ? "Content hidden" : "Content restored")
+      toast.success(
+        action === "hide"
+          ? `${humanizeStatus(target)} hidden`
+          : `${humanizeStatus(target)} restored`,
+      )
       await router.invalidate()
     },
-    onError: () => toast.error("The moderation action could not be applied."),
+    onError: () => toast.error(`The ${target} could not be updated.`),
   })
   return (
     <AlertDialog>
@@ -102,33 +125,164 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle className="capitalize">{action} this record?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {action === "hide" ? `Hide this ${target}?` : `Restore this ${target}?`}
+          </AlertDialogTitle>
           <AlertDialogDescription>
-            The action is enforced on the server and written to the audit log.
+            {action === "hide"
+              ? `The ${target} will stop appearing to other users.`
+              : `The ${target} will become visible again.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <label htmlFor={`moderation-reason-${row.id}`} className="grid gap-2 text-sm font-medium">
-          Reason
+        <Field>
+          <FieldLabel htmlFor={`moderation-reason-${row.id}`}>Reason</FieldLabel>
           <Textarea
             id={`moderation-reason-${row.id}`}
+            name="reason"
             value={reason}
             maxLength={500}
-            placeholder="Explain the moderation decision"
+            autoComplete="off"
+            placeholder="Explain the decision…"
             onChange={(event) => setReason(event.currentTarget.value)}
           />
-        </label>
+          <FieldDescription>This reason is saved in the audit log.</FieldDescription>
+        </Field>
         <AlertDialogFooter>
           <AlertDialogCancel>Cancel</AlertDialogCancel>
           <AlertDialogAction
+            variant={action === "hide" ? "destructive" : "default"}
             disabled={reason.trim().length < 3 || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "Applying…" : "Confirm"}
+            {mutation.isPending
+              ? "Saving…"
+              : action === "hide"
+                ? `Hide ${target}`
+                : `Restore ${target}`}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
   )
+}
+
+function UserActions({ row }: { row: AdminRow }) {
+  const router = useRouter()
+  const mutation = useMutation({
+    mutationFn: (action: "promote" | "demote" | "ban" | "unban") =>
+      updateAdminUser({ data: { id: row.id, action } }),
+    onSuccess: async () => {
+      toast.success("User access updated")
+      await router.invalidate()
+    },
+    onError: () => toast.error("The user’s access could not be updated."),
+  })
+  if (row.status === "banned") {
+    return (
+      <ConfirmationAction
+        label="Unban"
+        title="Restore this account?"
+        description="The user will be able to sign in again."
+        disabled={mutation.isPending}
+        onConfirm={() => mutation.mutate("unban")}
+      />
+    )
+  }
+  const roleAction = row.status === "admin" ? "demote" : "promote"
+  return (
+    <div className="flex gap-2">
+      <ConfirmationAction
+        label={roleAction === "promote" ? "Make admin" : "Make member"}
+        title={
+          roleAction === "promote" ? "Grant administrator access?" : "Remove administrator access?"
+        }
+        description={
+          roleAction === "promote"
+            ? "This user will be able to manage content, users, and operations."
+            : "This user will lose access to administration pages."
+        }
+        disabled={mutation.isPending}
+        onConfirm={() => mutation.mutate(roleAction)}
+      />
+      <ConfirmationAction
+        label="Ban"
+        title="Ban this account?"
+        description="Active sessions will be revoked and the user will not be able to sign in."
+        destructive
+        disabled={mutation.isPending}
+        onConfirm={() => mutation.mutate("ban")}
+      />
+    </div>
+  )
+}
+
+function MediaAction({ row }: { row: AdminRow }) {
+  const router = useRouter()
+  const mutation = useMutation({
+    mutationFn: () => cleanupAdminMedia({ data: { id: row.id } }),
+    onSuccess: async () => {
+      toast.success("Media cleanup queued")
+      await router.invalidate()
+    },
+    onError: () => toast.error("The media cleanup could not be queued."),
+  })
+  if (!row.status || !["pending", "uploading", "processing", "failed"].includes(row.status)) {
+    return null
+  }
+  return (
+    <ConfirmationAction
+      label="Remove"
+      title="Remove this unfinished media?"
+      description="The original file and any incomplete provider upload will be cleaned up."
+      destructive
+      disabled={mutation.isPending}
+      onConfirm={() => mutation.mutate()}
+    />
+  )
+}
+
+function JobAction({ row }: { row: AdminRow }) {
+  const router = useRouter()
+  const mutation = useMutation({
+    mutationFn: () => retryAdminJob({ data: { id: row.id } }),
+    onSuccess: async () => {
+      toast.success("Job queued again")
+      await router.invalidate()
+    },
+    onError: () => toast.error("The job could not be queued again."),
+  })
+  if (row.status === "complete") return null
+  return (
+    <ConfirmationAction
+      label="Retry"
+      title="Retry this job?"
+      description="The existing job payload will be sent to the queue again."
+      disabled={mutation.isPending}
+      onConfirm={() => mutation.mutate()}
+    />
+  )
+}
+
+function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
+  if (section === "posts" || section === "comments") {
+    return <ModerationAction row={row} section={section} />
+  }
+  if (section === "users") return <UserActions row={row} />
+  if (section === "media") return <MediaAction row={row} />
+  if (section === "jobs") return <JobAction row={row} />
+  if (section === "migrations") {
+    return (
+      <Button
+        nativeButton={false}
+        variant="outline"
+        size="sm"
+        render={<Link to="/admin/migrations/$runId" params={{ runId: row.id }} />}
+      >
+        View report
+      </Button>
+    )
+  }
+  return null
 }
 
 export const Route = createFileRoute("/admin/$section")({
@@ -144,10 +298,7 @@ export const Route = createFileRoute("/admin/$section")({
       },
     }),
   head: ({ params }) => ({
-    meta: [
-      { title: `${params.section} administration · PistonPost` },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: `${getAdminSection(params.section)?.label ?? "Administration"} · PistonPost` }],
   }),
   component: AdminTable,
 })
@@ -156,71 +307,125 @@ function AdminTable() {
   const result = Route.useLoaderData()
   const { section } = Route.useParams()
   const search = Route.useSearch()
-  const { q } = search
+  const parsedSection = sectionSchema.safeParse(section)
+  if (!parsedSection.success) throw notFound()
+  return (
+    <AdminTableView
+      key={parsedSection.data}
+      result={result}
+      section={parsedSection.data}
+      search={search}
+    />
+  )
+}
+
+function AdminTableView({
+  result,
+  section,
+  search,
+}: {
+  result: Awaited<ReturnType<typeof getAdminRows>>
+  section: AdminSection
+  search: z.infer<typeof searchSchema>
+}) {
+  const details = getAdminSection(section)
+  if (!details) throw notFound()
   const navigate = useNavigate()
   const trail = parseCursorTrail(search.trail)
-  const sections = sectionSchema.options
-  const columns =
-    section === "posts" || section === "comments"
-      ? column.columns([
-          ...baseColumns,
-          column.display({
-            id: "moderation",
-            header: "",
-            cell: ({ row }) => <ModerationAction row={row.original} section={section} />,
-          }),
-        ])
-      : baseColumns
+  const [query, setQuery] = useState(search.q)
+  const deferredQuery = useDeferredValue(query)
+
+  useEffect(() => {
+    if (deferredQuery === search.q) return
+    void navigate({
+      to: "/admin/$section",
+      params: { section },
+      search: { ...search, q: deferredQuery, cursor: "", trail: "" },
+      replace: true,
+    })
+  }, [deferredQuery, navigate, search, section])
+
+  const columns = column.columns([
+    column.accessor("primary", {
+      header: details.primaryLabel,
+      enableSorting: false,
+      cell: ({ getValue }) => <span className="block max-w-96 truncate">{getValue()}</span>,
+    }),
+    column.accessor("secondary", {
+      header: details.secondaryLabel,
+      enableSorting: false,
+      cell: ({ getValue }) => (
+        <span className="block max-w-72 truncate text-muted-foreground">{getValue()}</span>
+      ),
+    }),
+    column.accessor("status", {
+      header: details.statusLabel,
+      enableSorting: false,
+      cell: ({ getValue }) =>
+        section === "audit" ? (
+          <code className="block max-w-56 truncate text-xs text-muted-foreground">
+            {getValue() ?? "None"}
+          </code>
+        ) : (
+          <Badge variant="outline">{humanizeStatus(getValue())}</Badge>
+        ),
+    }),
+    column.accessor("createdAt", {
+      header: "Created",
+      cell: ({ getValue }) => getValue().toLocaleDateString("en"),
+    }),
+    column.display({
+      id: "actions",
+      header: "",
+      enableHiding: false,
+      enableSorting: false,
+      cell: ({ row }) => <RowAction row={row.original} section={section} />,
+    }),
+  ])
+
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
-      <header className="mb-8 grid gap-6 border-b pb-7 lg:grid-cols-[1fr_auto] lg:items-end">
-        <h1 className="font-heading text-3xl font-bold tracking-tight capitalize">{section}</h1>
-        <nav className="flex flex-wrap gap-1" aria-label="Administration">
-          {sections.map((item) => (
-            <Button
-              key={item}
-              nativeButton={false}
-              variant={item === section ? "default" : "ghost"}
-              size="sm"
-              render={
-                <Link
-                  to="/admin/$section"
-                  params={{ section: item }}
-                  search={{
-                    q: "",
-                    sort: "createdAt",
-                    direction: "desc",
-                    cursor: "",
-                    trail: "",
-                    hidden: "",
-                  }}
-                />
-              }
-            >
-              {item}
-            </Button>
-          ))}
-        </nav>
+      <header className="mb-6 border-b pb-6">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">{details.label}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{details.description}</p>
       </header>
+      <nav className="mb-6 flex overflow-x-auto border-b" aria-label="Administration">
+        {adminSections.map((item) => (
+          <Link
+            key={item.value}
+            to="/admin/$section"
+            params={{ section: item.value }}
+            search={{
+              q: "",
+              sort: "createdAt",
+              direction: "desc",
+              cursor: "",
+              trail: "",
+              hidden: "",
+            }}
+            aria-current={item.value === section ? "page" : undefined}
+            className="shrink-0 border-b-2 border-transparent px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground"
+          >
+            {item.label}
+          </Link>
+        ))}
+      </nav>
       <div className="mb-5 max-w-sm">
         <Input
-          aria-label="Filter records"
-          placeholder="Filter records"
-          defaultValue={q}
-          onChange={(event) =>
-            void navigate({
-              to: "/admin/$section",
-              params: { section },
-              search: { ...search, q: event.currentTarget.value, cursor: "", trail: "" },
-              replace: true,
-            })
-          }
+          aria-label={details.searchPlaceholder.replace("…", "")}
+          name="admin-search"
+          type="search"
+          autoComplete="off"
+          placeholder={details.searchPlaceholder}
+          value={query}
+          onChange={(event) => setQuery(event.currentTarget.value)}
         />
       </div>
       <DataTable
         data={result.rows}
         columns={columns}
         getRowId={(row) => row.id}
+        emptyMessage={`No ${details.label.toLocaleLowerCase("en-US")} match this view.`}
         urlState={{
           sort: search.sort,
           direction: search.direction,
