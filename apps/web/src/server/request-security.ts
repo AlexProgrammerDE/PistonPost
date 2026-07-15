@@ -66,15 +66,15 @@ export function validateRequestSecurity(request: Request, expectedOrigin: string
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
-  "connect-src 'self' https://challenges.cloudflare.com https://upload.videodelivery.net https://*.cloudflarestream.com",
+  "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com",
   "font-src 'self' data:",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "frame-src https://challenges.cloudflare.com https://iframe.videodelivery.net",
+  "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com",
   "img-src 'self' data: blob:",
   "media-src 'self' blob: https://*.videodelivery.net",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com",
+  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "worker-src 'self' blob:",
 ].join("; ")

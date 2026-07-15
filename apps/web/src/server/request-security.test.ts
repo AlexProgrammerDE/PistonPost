@@ -48,10 +48,26 @@ describe("request security", () => {
   test("sets CSP and browser hardening headers", () => {
     const request = new Request(origin)
     const response = applySecurityHeaders(request, new Response("ok"), true)
+    const policy = response.headers.get("Content-Security-Policy")
 
-    expect(response.headers.get("Content-Security-Policy")).toContain("frame-ancestors 'none'")
+    expect(policy).toContain("frame-ancestors 'none'")
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff")
     expect(response.headers.get("X-Frame-Options")).toBe("DENY")
     expect(response.headers.get("Strict-Transport-Security")).toContain("includeSubDomains")
+  })
+
+  test("allows browser resources required by configured Cloudflare services", () => {
+    const response = applySecurityHeaders(new Request(origin), new Response("ok"), true)
+    const policy = response.headers.get("Content-Security-Policy")
+
+    expect(policy).toContain(
+      "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com",
+    )
+    expect(policy).toContain(
+      "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com",
+    )
+    expect(policy).toContain(
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+    )
   })
 })
