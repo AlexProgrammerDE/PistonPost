@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "@/components/icons"
 import { PostShareActions } from "@/components/post-share-actions"
+import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,7 +19,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -219,7 +220,9 @@ export function SocialPanel({
                   className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-5"
                 >
                   <Avatar>
-                    {comment.authorImage ? <AvatarImage src={comment.authorImage} alt="" /> : null}
+                    {comment.authorImage ? (
+                      <ResponsiveAvatarImage src={comment.authorImage} sizes="2rem" alt="" />
+                    ) : null}
                     <AvatarFallback className="text-foreground">
                       {comment.authorName.slice(0, 2).toUpperCase()}
                     </AvatarFallback>

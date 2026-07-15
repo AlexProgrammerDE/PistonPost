@@ -5,7 +5,8 @@ import type { User } from "better-auth"
 import type { ReactNode } from "react"
 
 import { User2 } from "@/components/icons"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
@@ -47,8 +48,9 @@ export function UserAvatar({ className, user, isPending, fallback }: UserAvatarP
 
   return (
     <Avatar className={cn("size-8 rounded-full bg-muted text-sm text-foreground", className)}>
-      <AvatarImage
+      <ResponsiveAvatarImage
         src={resolvedUser?.image ?? undefined}
+        sizes="2rem"
         alt={resolvedUser?.displayUsername || resolvedUser?.name || resolvedUser?.email}
       />
 

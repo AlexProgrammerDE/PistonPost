@@ -4,6 +4,11 @@ import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
+import {
+  isResponsiveMediaImageVariant,
+  parseResponsiveMediaWidth,
+  responsiveMediaImageMaxWidth,
+} from "@/lib/media-image"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 
@@ -31,6 +36,8 @@ async function deliverImage({
 }) {
   const input = routeInput.safeParse(params)
   if (!input.success) return new Response("Not found", { status: 404 })
+  const requestedWidth = parseResponsiveMediaWidth(new URL(request.url).searchParams.get("width"))
+  if (requestedWidth === null) return new Response("Not found", { status: 404 })
 
   const database = createD1Database(context.env.DB)
   const rows = await database
@@ -48,6 +55,14 @@ async function deliverImage({
   const row = rows[0]
   if (!row?.asset.r2Key) return new Response("Not found", { status: 404 })
 
+  if (requestedWidth !== undefined) {
+    if (!isResponsiveMediaImageVariant(input.data.variant)) {
+      return new Response("Not found", { status: 404 })
+    }
+    const maxWidth = responsiveMediaImageMaxWidth(row.asset, input.data.variant)
+    if (requestedWidth > maxWidth) return new Response("Not found", { status: 404 })
+  }
+
   const isPublished = row.postStatus === "published"
   if (!isPublished && row.asset.kind !== "avatar") {
     const auth = await createRequestAuth(context)
@@ -59,8 +74,14 @@ async function deliverImage({
   if (!object) return new Response("Not found", { status: 404 })
 
   const selected = variants[input.data.variant]
+  const transform: ImageTransform =
+    requestedWidth === undefined
+      ? { width: selected.width, height: selected.height, fit: selected.fit }
+      : input.data.variant === "avatar"
+        ? { width: requestedWidth, height: requestedWidth, fit: "cover" }
+        : { width: requestedWidth, fit: "scale-down" }
   const transformed = await context.env.IMAGES.input(object.body)
-    .transform({ width: selected.width, height: selected.height, fit: selected.fit })
+    .transform(transform)
     .output({ format: "image/webp", quality: selected.quality, anim: false })
   const response = transformed.response()
   const headers = new Headers(response.headers)

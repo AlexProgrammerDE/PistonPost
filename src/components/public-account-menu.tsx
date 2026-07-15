@@ -4,7 +4,8 @@ import { Link } from "@tanstack/react-router"
 
 import { authClient } from "@/auth/client"
 import { FileText, LogIn, LogOut, Settings, Shield, User2 } from "@/components/icons"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -59,7 +60,7 @@ export function PublicAccountMenu() {
         className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <Avatar>
-          {user.image ? <AvatarImage src={user.image} alt="" /> : null}
+          {user.image ? <ResponsiveAvatarImage src={user.image} sizes="2rem" alt="" /> : null}
           <AvatarFallback className="text-foreground">
             {initials(label) || <User2 />}
           </AvatarFallback>

@@ -3,7 +3,8 @@ import { createFileRoute, notFound } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { FilteredFeed } from "@/components/filtered-feed"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
 import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
 
@@ -71,7 +72,13 @@ function ProfileFeed() {
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <header className="mb-10 grid gap-5 border-b pb-7 sm:grid-cols-[auto_1fr] sm:items-center">
         <Avatar className="size-20 sm:size-24">
-          {profile.image && <AvatarImage src={profile.image} alt="" />}
+          {profile.image && (
+            <ResponsiveAvatarImage
+              src={profile.image}
+              sizes="(min-width: 640px) 6rem, 5rem"
+              alt=""
+            />
+          )}
           <AvatarFallback className="font-heading text-2xl">
             {profile.name.slice(0, 2).toLocaleUpperCase("en-US")}
           </AvatarFallback>

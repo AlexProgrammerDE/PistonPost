@@ -12,6 +12,7 @@ import Counter from "yet-another-react-lightbox/plugins/counter"
 import Zoom from "yet-another-react-lightbox/plugins/zoom"
 
 import type { PublicPostMedia } from "@/db/public-read-model"
+import { DETAIL_IMAGE_WIDTHS, createMediaImageSources, mediaImageUrl } from "@/lib/media-image"
 
 const lightboxPlugins = [Counter, Zoom]
 
@@ -75,11 +76,17 @@ export function ImageLightbox({
 }) {
   const slides = useMemo<ReadonlyArray<SlideImage>>(
     () =>
-      images.map((image) => ({
-        src: `/media/image/${image.id}/detail`,
-        alt: image.altText ?? title,
-        ...(image.width && image.height ? { width: image.width, height: image.height } : undefined),
-      })),
+      images.map((image) => {
+        const srcSet = createMediaImageSources(image, "detail", DETAIL_IMAGE_WIDTHS)
+        return {
+          src: mediaImageUrl(image.id, "detail"),
+          alt: image.altText ?? title,
+          ...(image.width && image.height
+            ? { width: image.width, height: image.height }
+            : undefined),
+          ...(srcSet.length > 0 ? { srcSet } : undefined),
+        }
+      }),
     [images, title],
   )
 

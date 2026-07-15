@@ -14,6 +14,7 @@ export function FilteredFeed({
 }) {
   const feed = useSuspenseInfiniteQuery(feedQueryOptions(filters))
   const posts = feed.data.pages.flatMap((page) => page.posts)
+  const firstPostId = posts[0]?.id
 
   if (posts.length === 0) {
     return (
@@ -29,7 +30,7 @@ export function FilteredFeed({
     <>
       <div className="grid gap-10">
         {posts.map((post) => (
-          <PostView key={post.id} post={post} />
+          <PostView key={post.id} post={post} priority={post.id === firstPostId} />
         ))}
       </div>
       {feed.hasNextPage && (

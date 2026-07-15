@@ -42,6 +42,7 @@ export const Route = createFileRoute("/")({
 function PublicFeed() {
   const feed = useSuspenseInfiniteQuery(feedQueryOptions())
   const posts = feed.data.pages.flatMap((page) => page.posts)
+  const firstPostId = posts[0]?.id
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
@@ -72,7 +73,7 @@ function PublicFeed() {
       ) : (
         <div className="grid gap-10">
           {posts.map((post) => (
-            <PostView key={post.id} post={post} />
+            <PostView key={post.id} post={post} priority={post.id === firstPostId} />
           ))}
         </div>
       )}

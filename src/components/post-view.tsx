@@ -2,8 +2,10 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { lazy, Suspense, useState } from "react"
 
 import { TriangleAlert } from "@/components/icons"
+import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
+import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -17,11 +19,19 @@ import {
 } from "@/components/ui/dropdown-menu"
 import type { PublicPostRead } from "@/db/public-read-model"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
+import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
 
 const ImageLightbox = lazy(() =>
   import("@/components/ImageLightbox").then((module) => ({ default: module.ImageLightbox })),
 )
+
+const feedImageSizes = "(max-width: 639px) calc(100vw - 2rem), 45rem"
+const feedPreviewImageSizes = "(max-width: 639px) calc((100vw - 2.25rem) / 2), 22.375rem"
+const detailImageSizes = "(max-width: 639px) calc(100vw - 2rem), 61rem"
+const masonryImageSizes =
+  "(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc((100vw - 3.5rem) / 2), 20rem"
+const galleryThumbnailSizes = "(min-width: 640px) 6rem, 5rem"
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -77,11 +87,13 @@ function GalleryLayoutMenu({
 function PostMedia({
   post,
   detail,
+  priority,
   selectedImageIndex,
   galleryLayout,
 }: {
   readonly post: PublicPostRead
   readonly detail: boolean
+  readonly priority: boolean
   readonly selectedImageIndex: number | undefined
   readonly galleryLayout: GalleryLayout
 }) {
@@ -119,6 +131,7 @@ function PostMedia({
     <PostImageMedia
       post={post}
       detail={detail}
+      priority={priority}
       selectedImageIndex={selectedImageIndex}
       galleryLayout={galleryLayout}
     />
@@ -128,11 +141,13 @@ function PostMedia({
 function PostImageMedia({
   post,
   detail,
+  priority,
   selectedImageIndex,
   galleryLayout,
 }: {
   readonly post: PublicPostRead
   readonly detail: boolean
+  readonly priority: boolean
   readonly selectedImageIndex: number | undefined
   readonly galleryLayout: GalleryLayout
 }) {
@@ -146,10 +161,16 @@ function PostImageMedia({
     )
   }
 
-  return <FeedPostImageMedia post={post} />
+  return <FeedPostImageMedia post={post} priority={priority} />
 }
 
-function FeedPostImageMedia({ post }: { readonly post: PublicPostRead }) {
+function FeedPostImageMedia({
+  post,
+  priority,
+}: {
+  readonly post: PublicPostRead
+  readonly priority: boolean
+}) {
   if (post.media.length === 1) {
     const image = post.media[0]
     if (!image) return null
@@ -161,19 +182,21 @@ function FeedPostImageMedia({ post }: { readonly post: PublicPostRead }) {
         className="block"
         aria-label={`Open ${post.title}`}
       >
-        <img
-          src={`/media/image/${image.id}/feed`}
+        <ResponsiveMediaImage
+          image={image}
+          variant="feed"
+          sizes={feedImageSizes}
           alt={image.altText ?? post.title}
-          width={image.width ?? undefined}
-          height={image.height ?? undefined}
           className="max-h-[46rem] w-full bg-muted object-contain"
-          loading="lazy"
+          loading={priority ? "eager" : "lazy"}
+          fetchPriority={priority ? "high" : undefined}
         />
       </Link>
     )
   }
 
   const preview = post.media.slice(0, 4)
+  const priorityImage = preview[0]
   const finalPreviewImage = preview.at(-1)
   const hiddenImageCount = post.media.length - preview.length
 
@@ -186,13 +209,14 @@ function FeedPostImageMedia({ post }: { readonly post: PublicPostRead }) {
     >
       {preview.map((image) => (
         <span key={image.id} className="relative block">
-          <img
-            src={`/media/image/${image.id}/feed`}
+          <ResponsiveMediaImage
+            image={image}
+            variant="feed"
+            sizes={feedPreviewImageSizes}
             alt={image.altText ?? ""}
-            width={image.width ?? undefined}
-            height={image.height ?? undefined}
             className="aspect-square w-full object-cover"
-            loading="lazy"
+            loading={priority && image.id === priorityImage?.id ? "eager" : "lazy"}
+            fetchPriority={priority && image.id === priorityImage?.id ? "high" : undefined}
           />
           {hiddenImageCount > 0 && image.id === finalPreviewImage?.id ? (
             <span className="absolute inset-0 grid place-items-center bg-foreground/70 text-2xl font-bold text-background">
@@ -253,13 +277,14 @@ function DetailPostImageMedia({
           aria-label={`Expand ${image.altText ?? post.title}`}
           onClick={() => openLightbox(0)}
         >
-          <img
-            src={`/media/image/${image.id}/detail`}
+          <ResponsiveMediaImage
+            image={image}
+            variant="detail"
+            sizes={detailImageSizes}
             alt={image.altText ?? post.title}
-            width={image.width ?? undefined}
-            height={image.height ?? undefined}
             className="max-h-[85svh] w-full object-contain"
             loading="eager"
+            fetchPriority="high"
           />
         </button>
         {lightboxViewer}
@@ -290,11 +315,11 @@ function DetailPostImageMedia({
                 aria-label={`Expand image ${String(index + 1)} of ${String(post.media.length)}`}
                 onClick={() => openLightbox(index)}
               >
-                <img
-                  src={`/media/image/${image.id}/feed`}
+                <ResponsiveMediaImage
+                  image={image}
+                  variant="feed"
+                  sizes={masonryImageSizes}
                   alt={image.altText ?? post.title}
-                  width={image.width ?? undefined}
-                  height={image.height ?? undefined}
                   className="w-full object-contain"
                   loading={index === 0 ? "eager" : "lazy"}
                   fetchPriority={index === 0 ? "high" : undefined}
@@ -336,12 +361,13 @@ function ImageBrowser({
         aria-label={`Expand image ${String(selectedIndex + 1)} of ${String(post.media.length)}`}
         onClick={() => onOpen(selectedIndex)}
       >
-        <img
-          src={`/media/image/${selectedImage.id}/detail`}
+        <ResponsiveMediaImage
+          image={selectedImage}
+          variant="detail"
+          sizes={detailImageSizes}
           alt={selectedImage.altText ?? post.title}
-          width={selectedImage.width ?? undefined}
-          height={selectedImage.height ?? undefined}
           className="max-h-[85svh] w-full object-contain"
+          loading="eager"
           fetchPriority="high"
         />
       </button>
@@ -356,11 +382,12 @@ function ImageBrowser({
             aria-current={index === selectedIndex ? "true" : undefined}
             className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
           >
-            <img
-              src={`/media/image/${image.id}/feed`}
+            <ResponsiveMediaImage
+              image={image}
+              variant="feed"
+              sizes={galleryThumbnailSizes}
+              widths={GALLERY_THUMBNAIL_WIDTHS}
               alt=""
-              width={image.width ?? undefined}
-              height={image.height ?? undefined}
               className="size-20 object-cover sm:size-24"
               loading="lazy"
             />
@@ -374,11 +401,13 @@ function ImageBrowser({
 export function PostView({
   post,
   detail = false,
+  priority = false,
   selectedImageIndex,
   galleryLayout,
 }: {
   readonly post: PublicPostRead
   readonly detail?: boolean
+  readonly priority?: boolean
   readonly selectedImageIndex?: number | undefined
   readonly galleryLayout?: GalleryLayout | undefined
 }) {
@@ -391,7 +420,9 @@ export function PostView({
       <header className="mb-4 flex items-center gap-3">
         <Link to="/user/$username" params={{ username: post.author.username }}>
           <Avatar size="lg">
-            {post.author.image && <AvatarImage src={post.author.image} alt="" />}
+            {post.author.image && (
+              <ResponsiveAvatarImage src={post.author.image} sizes="2.5rem" alt="" />
+            )}
             <AvatarFallback className="text-foreground">{initials}</AvatarFallback>
           </Avatar>
         </Link>
@@ -433,6 +464,7 @@ export function PostView({
       <PostMedia
         post={post}
         detail={detail}
+        priority={priority}
         selectedImageIndex={selectedImageIndex}
         galleryLayout={resolvedGalleryLayout}
       />
