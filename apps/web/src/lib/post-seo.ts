@@ -11,8 +11,6 @@ import {
 } from "./seo"
 
 function postDescription(post: PublicPostRead) {
-  if (post.textContent) return truncateDescription(post.textContent)
-
   const tags = post.tags.map((tag) => `#${tag.name}`).join(" ")
   const suffix = tags ? ` · ${tags}` : ""
   if (post.type === "images") {
@@ -24,22 +22,29 @@ function postDescription(post: PublicPostRead) {
   if (post.type === "video") {
     return truncateDescription(`Video by ${post.author.name}${suffix}`)
   }
-  return truncateDescription(`Post by ${post.author.name}${suffix}`)
+  const content = post.textContent ? ` · ${post.textContent}` : ""
+  return truncateDescription(`Post by ${post.author.name}${suffix}${content}`)
 }
 
-function selectedPostImage(post: PublicPostRead, selectedImageIndex: number): SeoImage | undefined {
-  const images = post.media.filter((media) => media.kind === "image")
+function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
+  return post.media
+    .filter((media) => media.kind === "image")
+    .map((image) => ({
+      url: `/media/image/${image.id}/og`,
+      alt: image.altText ?? post.title,
+      type: "image/webp",
+      width: 1200,
+      height: 630,
+    }))
+}
+
+function selectedPostImage(
+  images: ReadonlyArray<SeoImage>,
+  selectedImageIndex: number,
+): SeoImage | undefined {
   if (images.length === 0) return undefined
   const index = Math.min(Math.max(selectedImageIndex, 0), images.length - 1)
-  const image = images[index]
-  if (!image) return undefined
-  return {
-    url: `/media/image/${image.id}/og`,
-    alt: image.altText ?? post.title,
-    type: "image/webp",
-    width: 1200,
-    height: 630,
-  }
+  return images[index]
 }
 
 function postVideo(post: PublicPostRead) {
@@ -75,7 +80,9 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   const authorUrl = absoluteUrl(`/user/${encodeURIComponent(post.author.username)}`)
   const description = postDescription(post)
   const video = post.type === "video" ? postVideo(post) : undefined
-  const image = post.type === "images" ? selectedPostImage(post, selectedImageIndex) : video?.image
+  const galleryImages = post.type === "images" ? postImages(post) : []
+  const image =
+    post.type === "images" ? selectedPostImage(galleryImages, selectedImageIndex) : video?.image
   const canonical = absoluteUrl(path)
   const jsonLd: JsonLdObject = {
     "@context": "https://schema.org",
@@ -97,7 +104,12 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
       url: absoluteUrl("/"),
     },
     keywords: post.tags.map((tag) => tag.name),
-    image: image ? absoluteUrl(image.url) : undefined,
+    image:
+      galleryImages.length > 0
+        ? galleryImages.map((galleryImage) => absoluteUrl(galleryImage.url))
+        : image
+          ? [absoluteUrl(image.url)]
+          : undefined,
     video: video
       ? {
           "@type": "VideoObject",
@@ -114,7 +126,10 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   }
 
   return createSeoHead({
-    title: `${post.title} · ${SITE_NAME}`,
+    title:
+      post.type === "video"
+        ? `${post.title} · ${post.author.name} · ${SITE_NAME}`
+        : `${post.title} · ${SITE_NAME}`,
     description,
     path,
     type: post.type === "video" ? "video.other" : "article",

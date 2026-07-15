@@ -7,6 +7,7 @@ import { cn } from "@pistonpost/ui/lib/utils"
 import { Link } from "@tanstack/react-router"
 
 import { Heart, ThumbsDown, ThumbsUp, TriangleAlert } from "@/components/icons"
+import { PostShareActions } from "@/components/post-share-actions"
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
@@ -117,6 +118,7 @@ export function PostView({
   readonly detail?: boolean
 }) {
   const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
+  const imageCount = post.media.filter((media) => media.kind === "image").length
 
   return (
     <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10")}>
@@ -174,22 +176,25 @@ export function PostView({
             #{tag.name}
           </Badge>
         ))}
-        <div
-          className="ml-auto flex items-center gap-3 text-xs text-muted-foreground"
-          aria-label="Reaction totals"
-        >
-          <span className="inline-flex items-center gap-1">
-            <ThumbsUp />
-            {post.reactions.like}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <ThumbsDown />
-            {post.reactions.dislike}
-          </span>
-          <span className="inline-flex items-center gap-1">
-            <Heart />
-            {post.reactions.heart}
-          </span>
+        <div className="ml-auto flex flex-wrap items-center justify-end gap-3">
+          {detail ? <PostShareActions postId={post.id} imageCount={imageCount} /> : null}
+          <div
+            className="flex items-center gap-3 text-xs text-muted-foreground"
+            aria-label="Reaction totals"
+          >
+            <span className="inline-flex items-center gap-1">
+              <ThumbsUp />
+              {post.reactions.like}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <ThumbsDown />
+              {post.reactions.dislike}
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <Heart />
+              {post.reactions.heart}
+            </span>
+          </div>
         </div>
       </div>
       {detail && <Separator className="mt-10" />}

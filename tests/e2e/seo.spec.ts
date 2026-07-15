@@ -16,9 +16,8 @@ test("serves complete public metadata and discovery documents", async ({ page, r
     "content",
     "@AlexProgrammer3",
   )
-  await expect(page.locator('script[type="application/ld+json"]')).toContainText(
-    '"@type":"WebSite"',
-  )
+  const structuredData = await page.locator('script[type="application/ld+json"]').textContent()
+  expect(structuredData).toContain('"@type":"WebSite"')
 
   const image = await request.get("/og-default.png")
   expect(image.ok()).toBe(true)

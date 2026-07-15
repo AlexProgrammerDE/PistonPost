@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test"
 import type { PublicPostRead } from "@pistonpost/db/public-read-model"
 
 import { createPostSeoHead } from "./post-seo"
+import { createPostShareLinks } from "./post-share-links"
 import { SITE_URL, absoluteUrl, createSeoHead, truncateDescription } from "./seo"
 
 const basePost: PublicPostRead = {
@@ -73,6 +74,35 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "og:image")).toBe(`${SITE_URL}/media/image/second/og`)
     expect(metaContent(head.meta, "property", "og:image:alt")).toBe("A sleepy fox")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary_large_image")
+    expect(head.scripts[0]?.children).toContain(
+      `"image":["${SITE_URL}/media/image/first/og","${SITE_URL}/media/image/second/og"]`,
+    )
+  })
+
+  it("preserves author and tag context in post metadata", () => {
+    const textHead = createPostSeoHead(basePost)
+    const videoHead = createPostSeoHead({
+      ...basePost,
+      type: "video",
+      textContent: null,
+      media: [
+        { id: "video-id", kind: "video", width: 1920, height: 1080, duration: 12, altText: null },
+      ],
+    })
+
+    expect(metaContent(textHead.meta, "name", "description")).toContain("Post by Alex · #friends")
+    expect(metaContent(videoHead.meta, "property", "og:title")).toBe(
+      "look at this · Alex · PistonPost",
+    )
+  })
+
+  it("builds the legacy multi-image share bundle with distinct social-card URLs", () => {
+    const links = createPostShareLinks("post one", 8)
+
+    expect(links.postUrl).toBe(`${SITE_URL}/post/post%20one`)
+    expect(links.imageUrls).toHaveLength(5)
+    expect(links.imageUrls[0]).toBe(`${SITE_URL}/post/post%20one?image=0`)
+    expect(links.imageUrls[4]).toBe(`${SITE_URL}/post/post%20one?image=4`)
   })
 
   it("uses a direct MP4 for Open Graph and keeps the iframe player separate", () => {
