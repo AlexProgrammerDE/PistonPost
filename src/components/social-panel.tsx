@@ -1,0 +1,292 @@
+"use client"
+
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
+import { startTransition, useOptimistic, useState } from "react"
+import { toast } from "sonner"
+
+import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "@/components/icons"
+import { PostShareActions } from "@/components/post-share-actions"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { useAppForm } from "@/lib/forms/app-form"
+import { discussionQueryOptions } from "@/lib/queries/social"
+import {
+  applyOptimisticReaction,
+  optimisticReactionCounts,
+  reactionTypes,
+  type ReactionCounts,
+  type ReactionType,
+} from "@/lib/social-state"
+import { createComment, deleteComment, getDiscussion, setReaction } from "@/server/social"
+
+type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][number]
+type CommentPage = DiscussionComment & { optimistic?: boolean }
+const reactionTypeSet = new Set<string>(reactionTypes)
+
+export function SocialPanel({
+  postId,
+  counts,
+  imageCount,
+}: {
+  postId: string
+  counts: ReactionCounts
+  imageCount: number
+}) {
+  const queryClient = useQueryClient()
+  const [confirmedCounts, setConfirmedCounts] = useState(counts)
+  const discussion = useInfiniteQuery(discussionQueryOptions(postId))
+  const firstPage = discussion.data?.pages[0]
+  const active = firstPage?.viewerReactions ?? []
+  const [optimisticActive, setOptimisticActive] = useOptimistic(
+    active,
+    (current: ReactionType[], update: { type: ReactionType; active: boolean }) =>
+      applyOptimisticReaction(current, update),
+  )
+  const comments: CommentPage[] =
+    discussion.data?.pages.flatMap((page) => page.comments.map((comment) => ({ ...comment }))) ?? []
+  const [optimisticComments, addOptimisticComment] = useOptimistic(
+    comments,
+    (current, pending: CommentPage) => [pending, ...current],
+  )
+
+  const reactionMutation = useMutation({
+    mutationFn: (input: { type: ReactionType; active: boolean }) =>
+      setReaction({ data: { postId, ...input } }),
+    onSuccess: async (nextCounts) => {
+      setConfirmedCounts({
+        like: nextCounts.like ?? 0,
+        dislike: nextCounts.dislike ?? 0,
+        heart: nextCounts.heart ?? 0,
+      })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["discussion", postId] }),
+        queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
+      ])
+    },
+    onError: () => toast.error("The reaction could not be saved."),
+  })
+
+  const commentMutation = useMutation({
+    mutationFn: (content: string) => createComment({ data: { postId, content } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discussion", postId] }),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => deleteComment({ data: { id } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discussion", postId] }),
+    onError: () => toast.error("The comment could not be deleted."),
+  })
+
+  const form = useAppForm({
+    defaultValues: { content: "" },
+    onSubmit: async ({ value }) => {
+      const content = value.content.trim()
+      if (!content || !firstPage?.viewerId) return
+      const pendingId = `pending-${crypto.randomUUID()}`
+      startTransition(async () => {
+        addOptimisticComment({
+          id: pendingId,
+          content,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          authorId: firstPage.viewerId ?? "",
+          authorName: "You",
+          authorUsername: "you",
+          authorImage: null,
+          optimistic: true,
+        })
+        try {
+          await commentMutation.mutateAsync(content)
+          form.reset()
+        } catch {
+          toast.error("The comment could not be posted.")
+        }
+      })
+    },
+  })
+
+  const displayedCounts = optimisticReactionCounts(confirmedCounts, active, optimisticActive)
+
+  function updateReactions(next: unknown[]) {
+    if (!firstPage?.viewerId) {
+      toast.error("Sign in to react.")
+      return
+    }
+    const selected = new Set(
+      next.filter(
+        (value): value is ReactionType => typeof value === "string" && reactionTypeSet.has(value),
+      ),
+    )
+    const type = reactionTypes.find(
+      (candidate) => selected.has(candidate) !== optimisticActive.includes(candidate),
+    )
+    if (!type) return
+    const isActive = selected.has(type)
+    startTransition(async () => {
+      setOptimisticActive({ type, active: isActive })
+      try {
+        await reactionMutation.mutateAsync({ type, active: isActive })
+      } catch {
+        // React restores the confirmed state when this transition settles.
+      }
+    })
+  }
+
+  return (
+    <section id="discussion" className="mx-auto mt-5 max-w-5xl" aria-labelledby="discussion-title">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
+        <PostShareActions postId={postId} imageCount={imageCount} />
+        <ToggleGroup
+          value={optimisticActive}
+          onValueChange={updateReactions}
+          variant="outline"
+          aria-label={firstPage?.viewerId ? "Your reaction" : "Reaction totals"}
+        >
+          <ToggleGroupItem value="like" aria-label="Like" disabled={!firstPage?.viewerId}>
+            <ThumbsUp /> {displayedCounts.like}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={!firstPage?.viewerId}>
+            <ThumbsDown /> {displayedCounts.dislike}
+          </ToggleGroupItem>
+          <ToggleGroupItem value="heart" aria-label="Heart" disabled={!firstPage?.viewerId}>
+            <Heart /> {displayedCounts.heart}
+          </ToggleGroupItem>
+        </ToggleGroup>
+      </div>
+
+      <div className="mt-10 grid gap-8">
+        <h2 id="discussion-title" className="font-heading text-2xl font-bold">
+          Comments
+        </h2>
+        {firstPage?.viewerId ? (
+          <form
+            className="grid gap-3"
+            onSubmit={(event) => {
+              event.preventDefault()
+              void form.handleSubmit()
+            }}
+          >
+            <form.AppForm>
+              <form.AppField name="content">
+                {(field) => (
+                  <field.TextareaField
+                    label="Add a comment"
+                    placeholder="Write a comment…"
+                    maxLength={250}
+                    rows={3}
+                  />
+                )}
+              </form.AppField>
+              <div className="flex justify-end">
+                <form.SubmitButton>Post comment</form.SubmitButton>
+              </div>
+            </form.AppForm>
+          </form>
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
+              Sign in
+            </Link>{" "}
+            to react or comment.
+          </p>
+        )}
+
+        {optimisticComments.length === 0 && !discussion.isLoading ? (
+          <p className="border-y py-6 text-sm text-muted-foreground">No comments yet.</p>
+        ) : (
+          <div className="grid gap-0">
+            {optimisticComments.map((comment) => {
+              const canDelete =
+                !comment.optimistic &&
+                (comment.authorId === firstPage?.viewerId || firstPage?.viewerRole === "admin")
+              return (
+                <article
+                  key={comment.id}
+                  className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-5"
+                >
+                  <Avatar>
+                    {comment.authorImage ? <AvatarImage src={comment.authorImage} alt="" /> : null}
+                    <AvatarFallback className="text-foreground">
+                      {comment.authorName.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="font-semibold">{comment.authorName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        @{comment.authorUsername}
+                      </span>
+                      {comment.optimistic ? (
+                        <span className="text-xs text-muted-foreground">Sending…</span>
+                      ) : null}
+                      {canDelete ? (
+                        <AlertDialog>
+                          <AlertDialogTrigger
+                            render={
+                              <Button
+                                className="ml-auto"
+                                variant="ghost"
+                                size="icon-xs"
+                                aria-label="Delete comment"
+                              />
+                            }
+                          >
+                            <Trash2 />
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                The comment text will be removed from the discussion.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Keep comment</AlertDialogCancel>
+                              <AlertDialogAction
+                                variant="destructive"
+                                disabled={deleteMutation.isPending}
+                                onClick={() => deleteMutation.mutate(comment.id)}
+                              >
+                                Delete comment
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      ) : null}
+                    </div>
+                    <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{comment.content}</p>
+                  </div>
+                  <Separator className="col-span-2" />
+                </article>
+              )
+            })}
+          </div>
+        )}
+
+        {discussion.hasNextPage ? (
+          <Button
+            variant="outline"
+            disabled={discussion.isFetchingNextPage}
+            onClick={() => discussion.fetchNextPage()}
+          >
+            {discussion.isFetchingNextPage ? "Loading…" : "Load earlier comments"}
+          </Button>
+        ) : null}
+      </div>
+    </section>
+  )
+}

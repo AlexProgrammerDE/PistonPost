@@ -1,83 +1,52 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "ignoreExportsUsedInFile": true,
-  "workspaces": {
-    ".": {
-      "entry": [
-        "playwright.config.ts",
-        "scripts/**/*.ts",
-        "tests/setup-dom.ts",
-        "tests/e2e/**/*.ts"
-      ],
-      "project": ["*.ts", "scripts/**/*.ts", "tests/**/*.ts"],
-      "ignoreDependencies": [
-        "@testing-library/react",
-        "happy-dom",
-        "oxfmt",
-        "oxlint",
-        "oxlint-tsgolint"
-      ]
-    },
-    "apps/web": {
-      "entry": [
-        "src/lib/auth/auth-plugin.ts",
-        "src/router.tsx",
-        "src/routes/**/*.{ts,tsx}",
-        "vite.config.ts"
-      ],
-      "project": ["src/**/*.{ts,tsx}", "vite.config.ts"],
-      "ignore": [
-        "src/routeTree.gen.ts",
-        "src/components/auth/**",
-        "src/lib/auth/api-key-plugin.ts",
-        "src/lib/auth/multi-session-plugin.ts",
-        "src/lib/auth/organization-plugin.tsx"
-      ],
-      "ignoreDependencies": [
-        "@hugeicons/core-free-icons",
-        "@hugeicons/react",
-        "@tanstack/react-pacer",
-        "@tanstack/react-devtools",
-        "@tanstack/react-router-devtools",
-        "@tanstack/router-plugin",
-        "cloudflare",
-        "lucide-react",
-        "tailwindcss"
-      ]
-    },
-    "apps/migrate": {
-      "entry": ["src/index.ts", "src/**/*.test.ts"],
-      "project": ["src/**/*.ts"]
-    },
-    "packages/db": {
-      "entry": ["src/index.ts", "src/schema/index.ts", "drizzle.config.ts"],
-      "project": ["src/**/*.ts", "drizzle.config.ts"],
-      "ignoreDependencies": ["drizzle-kit"]
-    },
-    "packages/auth": {
-      "entry": ["src/index.ts", "src/client.ts", "src/server.ts", "auth-schema.config.ts"],
-      "project": ["src/**/*.ts", "auth-schema.config.ts"]
-    },
-    "packages/domain": {
-      "entry": ["src/index.ts", "src/*.ts"],
-      "project": ["src/**/*.ts"]
-    },
-    "packages/email": {
-      "entry": ["src/index.ts"],
-      "project": ["src/**/*.{ts,tsx}"]
-    },
-    "packages/ui": {
-      "entry": ["src/components/**/*.tsx", "src/lib/**/*.ts", "src/styles/**/*.css"],
-      "project": ["src/**/*.{ts,tsx}"],
-      "ignoreDependencies": [
-        "@hugeicons/core-free-icons",
-        "@hugeicons/react",
-        "@tailwindcss/vite",
-        "shadcn",
-        "tailwindcss",
-        "tw-animate-css",
-        "zod"
-      ]
-    }
-  }
+  "entry": [
+    "auth-schema.config.ts",
+    "drizzle.config.ts",
+    "playwright.config.ts",
+    "vite.config.ts",
+    "scripts/**/*.ts",
+    "tests/e2e/**/*.ts",
+    "src/lib/auth/auth-plugin.ts",
+    "src/router.tsx",
+    "src/routes/**/*.{ts,tsx}",
+    "src/components/ui/**/*.tsx",
+    "src/styles/**/*.css",
+    "tools/migrate/src/index.ts",
+    "tools/migrate/src/**/*.test.ts"
+  ],
+  "project": [
+    "*.ts",
+    "scripts/**/*.ts",
+    "tests/**/*.ts",
+    "src/**/*.{ts,tsx}",
+    "tools/migrate/src/**/*.ts"
+  ],
+  "ignore": [
+    "src/routeTree.gen.ts",
+    "src/components/auth/**",
+    "src/lib/auth/api-key-plugin.ts",
+    "src/lib/auth/multi-session-plugin.ts",
+    "src/lib/auth/organization-plugin.tsx"
+  ],
+  "ignoreDependencies": [
+    "@hugeicons/core-free-icons",
+    "@hugeicons/react",
+    "@tailwindcss/vite",
+    "@tanstack/react-devtools",
+    "@tanstack/react-router-devtools",
+    "@tanstack/router-plugin",
+    "@tanstack/react-pacer",
+    "cloudflare",
+    "drizzle-kit",
+    "lucide-react",
+    "oxfmt",
+    "oxlint",
+    "oxlint-tsgolint",
+    "shadcn",
+    "tailwindcss",
+    "tw-animate-css",
+    "zod"
+  ]
 }

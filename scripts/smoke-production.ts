@@ -30,3 +30,4 @@ const results = await Promise.all(
 )
 
 process.stdout.write(`${JSON.stringify({ origin: baseUrl.origin, results }, null, 2)}\n`)
+import process from "node:process"

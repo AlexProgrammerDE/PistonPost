@@ -29,7 +29,7 @@ The repository was initialized with the exact requested command:
 bunx --bun shadcn@latest init --preset b1x9M8ZeJW --template start --monorepo --pointer
 ```
 
-The generated project is a Bun and Turborepo monorepo with apps/web and packages/ui. The shadcn preset supplied TanStack Start, Tailwind CSS v4, Base UI, Maia, Hugeicons, and Outfit. The initial Raleway, taupe, and amber brand layer was replaced by the PistonPost identity defined below.
+The generated project started as a Bun and Turborepo monorepo with `apps/web` and `packages/ui`. It was flattened into one Bun package on 2026-07-15 because the repository has one product, one dependency graph, and one deployable Worker. The shadcn preset supplied TanStack Start, Tailwind CSS v4, Base UI, Maia, Hugeicons, and Outfit. The initial Raleway, taupe, and amber brand layer was replaced by the PistonPost identity defined below.
 
 ## Product objective
 
@@ -119,12 +119,12 @@ These can be proposed later. They must not complicate the initial data model or 
 ### Repository
 
 - Bun is the package manager and script runtime.
-- Turborepo orchestrates workspace tasks.
+- One root package owns dependencies, scripts, generated files, and build tooling.
 - Oxc provides linting and formatting through Oxlint and Oxfmt.
-- TypeScript remains strict. Use the native TypeScript preview only if it passes the complete workspace and editor support is acceptable.
-- apps/web is the only deployable production Worker.
-- apps/migrate is an operator-run Bun CLI, never deployed publicly.
-- Shared packages expose narrow entrypoints and avoid dependency cycles.
+- TypeScript remains strict. The Worker application and migration CLI use separate root TypeScript configurations because they target Cloudflare and Bun respectively.
+- The root TanStack Start application is the only deployable production Worker.
+- `tools/migrate` is an operator-run Bun CLI, never deployed publicly.
+- Internal boundaries remain explicit under `src`, without workspace package manifests or package-level dependency indirection.
 
 ### Web application
 
@@ -163,44 +163,39 @@ Do not add Durable Objects, KV, Vectorize, Browser Rendering, or Workers AI just
 
 ```text
 PistonPost/
-├── apps/
-│   ├── web/
-│   │   ├── src/
-│   │   │   ├── components/
-│   │   │   ├── features/
-│   │   │   ├── lib/
-│   │   │   ├── routes/
-│   │   │   └── server/
-│   │   ├── tests/
-│   │   ├── components.json
-│   │   ├── drizzle.config.ts
-│   │   ├── vite.config.ts
-│   │   └── wrangler.jsonc
-│   └── migrate/
-│       ├── src/
-│       │   ├── commands/
-│       │   ├── readers/
-│       │   ├── transforms/
-│       │   ├── writers/
-│       │   └── verification/
-│       └── package.json
-├── packages/
+├── src/
 │   ├── auth/
-│   ├── config/
+│   ├── components/
+│   │   ├── auth/
+│   │   └── ui/
 │   ├── db/
-│   │   ├── src/schema/
-│   │   └── drizzle/
+│   │   └── schema/
 │   ├── domain/
 │   ├── email/
-│   └── ui/
+│   ├── lib/
+│   ├── routes/
+│   ├── server/
+│   └── styles/
+├── tools/
+│   └── migrate/
+│       ├── fixtures/
+│       └── src/
+├── drizzle/
+├── public/
+├── tests/
 ├── .github/workflows/
 ├── AGENTS.md
 ├── CLAUDE.md
 ├── PLAN.md
 ├── README.md
+├── components.json
+├── drizzle.config.ts
 ├── lefthook.yml
 ├── package.json
-└── turbo.json
+├── tsconfig.json
+├── tsconfig.migrate.json
+├── vite.config.ts
+└── wrangler.jsonc
 ```
 
 ## Runtime request flow
@@ -392,11 +387,11 @@ Use cursor pagination based on publishedAt plus id or createdAt plus id. Do not 
 
 Use Better Auth minimal with the Drizzle adapter and a request-scoped D1 database. Mirror EnderDash's proven separation:
 
-- Server factory in packages/auth.
-- Runtime binding resolution in apps/web.
-- Client configuration in packages/auth/client.
-- Better Auth UI provider and route views in apps/web.
-- React Email templates in packages/email.
+- Server factory in `src/auth`.
+- Runtime binding resolution in `src/server`.
+- Client configuration in `src/auth/client`.
+- Better Auth UI provider and route views in `src/components/auth` and `src/routes`.
+- React Email templates in `src/email`.
 - Cloudflare Email transport behind a small interface.
 
 Initial authentication capabilities:
@@ -613,7 +608,7 @@ Do not put every section inside a Card. Use borders, separators, typography, and
 ### Table v9
 
 - Pin the exact beta version.
-- Create a shared DataTable shell in apps/web or packages/ui only after separating domain-free table UI from product-specific columns.
+- Create a shared DataTable shell under `src/lib/table` only after separating domain-free table UI from product-specific columns.
 - Build sorting, filtering, column visibility, row selection, pagination, expansion, and URL-state features as reusable v9 features.
 - Use stable row IDs.
 - Keep v9 state in its store or atom model.
@@ -744,7 +739,7 @@ Report:
 - [x] Create the repository with the requested shadcn TanStack Start monorepo command.
 - [x] Verify Base UI, Maia, Hugeicons, fonts, colors, and aliases through shadcn info.
 - [x] Add PLAN.md, AGENTS.md, CLAUDE.md, and a project README.
-- [x] Rename package names to a consistent @pistonpost/* convention.
+- [x] Consolidate package metadata under the root PistonPost package.
 - [x] Record the exact current dependency versions and replace latest ranges with deliberate compatible ranges.
 - [ ] Add LICENSE after confirming the desired license for the rewrite.
 - [x] Add EditorConfig and normalize line endings.
@@ -760,19 +755,19 @@ bun run typecheck
 bun run build
 ```
 
-### Phase 1: Modern workspace tooling
+### Phase 1: Modern project tooling
 
 - [x] Replace ESLint and Prettier with Oxlint and Oxfmt.
 - [x] Add shared Oxc configuration and editor recommendations.
-- [x] Add root check, fix, test, ci, and package-filtered scripts.
-- [x] Configure Turborepo inputs, outputs, global dependencies, environment inputs, and persistent tasks.
-- [x] Add Bun test setup with Happy DOM and Testing Library.
+- [x] Add root check, fix, test, ci, and runtime-focused scripts.
+- [x] Configure direct root scripts for deterministic build, test, typecheck, and deployment tasks.
+- [x] Configure focused Bun test suites without replacing server runtime Web APIs globally.
 - [x] Add Playwright for end-to-end tests.
 - [x] Add Knip for unused exports and dependencies.
 - [x] Add Lefthook with staged Oxc checks and appropriate type/tests.
 - [x] Add Renovate configuration with grouped TanStack and Cloudflare updates.
 - [x] Add GitHub Actions for install, generated-file verification, check, typecheck, test, build, and Wrangler dry run.
-- [x] Cache Bun and Turborepo artifacts in CI.
+- [x] Keep CI installation and validation deterministic from the root lockfile.
 - [x] Ensure hooks are fast enough for normal commits and never bypassed.
 
 Exit gate:
@@ -803,7 +798,7 @@ Exit criteria:
 
 ### Phase 3: D1, Drizzle, and domain foundation
 
-- [x] Create packages/db and packages/domain.
+- [x] Create `src/db` and `src/domain` boundaries.
 - [x] Define schema for profiles, settings, posts, tags, media, comments, reactions, audit, outbox, and migration tracking.
 - [x] Generate the first Drizzle migration. Do not hand-edit it.
 - [x] Add D1 database factory and transaction helpers.
@@ -822,10 +817,10 @@ Exit criteria:
 
 ### Phase 4: Better Auth, Better Auth UI, captcha, and email
 
-- [x] Create packages/auth and packages/email.
+- [x] Create `src/auth` and `src/email` boundaries.
 - [x] Install compatible Better Auth, passkey, Better Auth UI, Harmony, React Email, and Turnstile packages.
 - [x] Generate Better Auth schema for the selected plugins.
-- [x] Integrate generated auth schema into packages/db and generate Drizzle migration.
+- [x] Integrate generated auth schema into `src/db` and generate the Drizzle migration.
 - [x] Build request-scoped auth factory with D1 Drizzle adapter.
 - [x] Add auth client and typed session helpers.
 - [x] Add email/password, verification, magic link, email OTP, username, passkey, 2FA, admin, HIBP, Harmony, captcha, and optional multi-session plugins.
@@ -915,7 +910,7 @@ Exit criteria:
 
 ### Phase 8: Migration tooling
 
-- [x] Create apps/migrate with analyze, dry-run, apply, resume, and verify commands.
+- [x] Create `tools/migrate` with analyze, dry-run, apply, resume, and verify commands.
 - [x] Support Mongo exports and the actual mounted backup format.
 - [x] Build deterministic transforms for every legacy entity.
 - [x] Add Cloudflare D1, R2, and Stream writers behind interfaces.
@@ -1010,7 +1005,7 @@ Production deployment:
 - Run smoke tests.
 - Do not deploy from uncommitted local state.
 
-Use path filters only after proving they do not skip required shared-package checks. Shared configuration, lockfile, schema, or runtime changes should invalidate every relevant task.
+Use path filters only after proving they do not skip required application checks. Shared configuration, lockfile, schema, or runtime changes should invalidate every relevant task.
 
 ## Definition of done
 
@@ -1032,7 +1027,8 @@ The rewrite is complete when:
 
 Record future changes here with date, decision, reason, and affected phases.
 
-- 2026-07-14: Use a single TanStack Start Worker for the initial product. This keeps SSR, auth, API, and Cloudflare bindings in one request boundary while shared packages preserve modularity.
+- 2026-07-14: Use a single TanStack Start Worker for the initial product. This keeps SSR, auth, API, and Cloudflare bindings in one request boundary while explicit source folders preserve modularity.
+- 2026-07-15: Flatten the repository into one Bun package. PistonPost is one application with one deployable Worker, so workspace manifests and Turborepo added indirection without an independent release or ownership boundary. Keep auth, database, domain, email, and UI boundaries under `src`; keep the operator-run migration CLI under `tools/migrate` with its own TypeScript configuration.
 - 2026-07-14: Use Base UI because the requested shadcn preset generated Base UI and the user explicitly requested it.
 - 2026-07-14: Treat TanStack Table v9 as an exact-pinned beta and TanStack Form as the current compatible 1.x line.
 - 2026-07-14: Do not migrate legacy sessions or verification tokens. Require fresh authentication at cutover.

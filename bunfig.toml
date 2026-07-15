@@ -1,6 +1,2 @@
 [install]
 linker = "hoisted"
-
-[test]
-preload = ["./tests/setup-dom.ts"]
-root = "."

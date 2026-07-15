@@ -1,35 +1,38 @@
 # PistonPost
 
-PistonPost is a small social feed for sharing art, images, videos, jokes, and everyday posts with familiar people. This repository rebuilds the original app with TanStack Start, React 19, shadcn/ui on Base UI, Bun, Turborepo, and Cloudflare.
+PistonPost is a small social feed for sharing art, images, videos, jokes, and everyday posts with familiar people. It uses TanStack Start, React 19, shadcn/ui on Base UI, Bun, Effect, Drizzle, and Cloudflare.
 
 The implementation roadmap is in [PLAN.md](./PLAN.md). Agents and contributors must read [AGENTS.md](./AGENTS.md) before changing the repository.
 
-## Workspace
+## Repository layout
 
-The repository currently contains:
+PistonPost is one Bun package and one deployable Cloudflare Worker:
 
-- `apps/web`: the TanStack Start application and Cloudflare Worker entrypoint.
-- `apps/migrate`: the resumable Bun CLI for legacy BSON and static-media imports.
-- `packages/ui`: shared shadcn/ui components, fonts, styles, and UI utilities.
+- `src`: application routes, components, server code, auth, domain logic, database code, email, and shared utilities.
+- `src/components/ui`: shadcn/ui components and Base UI primitives.
+- `drizzle`: generated D1 migrations and Drizzle metadata.
+- `tools/migrate`: the resumable, operator-run legacy migration CLI and its fixtures.
 - `tests`: shared browser and DOM test setup.
 - `docs`: operator and architecture documentation.
 
-Product packages are added only when their phase owns a real boundary. The implementation status and acceptance gates remain in [PLAN.md](./PLAN.md).
+The folders under `src` keep architectural concerns visible without creating separate workspace packages. `tools/migrate` has a dedicated TypeScript configuration because it runs in Bun rather than the Cloudflare Worker, but it uses the same root dependency graph.
 
 ## Development
+
+Install dependencies and start the application:
 
 ```bash
 bun install
 bun run dev
 ```
 
-The web application runs through the Cloudflare Vite plugin on port 3000. Add shadcn components from the repository root:
+The Cloudflare Vite development server runs on port 3000. Add shadcn components from the repository root:
 
 ```bash
-bunx --bun shadcn@latest add <component> -c apps/web
+bunx --bun shadcn@latest add <component>
 ```
 
-Run the local CI gate with:
+Run the complete local CI gate with:
 
 ```bash
 bun run ci
@@ -38,10 +41,12 @@ bun run ci
 Useful focused commands include:
 
 ```bash
-bun run dev:web
 bun run test:web
+bun run test:migrate
 bun run typecheck:web
+bun run typecheck:migrate
 bun run cf:typegen
+bun run db:check
 bun run wrangler:dry-run
 ```
 
@@ -49,7 +54,7 @@ The Worker exposes a shallow `GET /health` endpoint. Public document responses r
 
 See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before creating staging or production resources.
 
-Production releases use the manually approved `Deploy production` GitHub Actions workflow. The workflow builds the Cloudflare Vite application with the production environment selected, prepares the ignored deployment configuration from protected GitHub environment values, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning guide and cutover runbook before triggering it.
+Production releases use the manually approved `Deploy production` GitHub Actions workflow. The workflow builds the Worker with the production environment selected, prepares the ignored deployment configuration from protected GitHub environment values, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning guide and cutover runbook before triggering it.
 
 ## Legacy migration
 
@@ -63,7 +68,7 @@ Run the complete local rehearsal, then run it again to confirm idempotency:
 
 ```bash
 bun run migrate apply \
-  --source apps/migrate/fixtures/legacy-valid \
+  --source tools/migrate/fixtures/legacy-valid \
   --database .migration/rehearsal.sqlite \
   --report reports/migration
 ```

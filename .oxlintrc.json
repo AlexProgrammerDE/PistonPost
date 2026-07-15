@@ -36,7 +36,7 @@
   },
   "overrides": [
     {
-      "files": ["apps/web/src/components/auth/**/*.tsx"],
+      "files": ["src/components/auth/**/*.tsx"],
       "rules": {
         "eslint/no-await-in-loop": "off",
         "typescript/no-unsafe-type-assertion": "off"
@@ -44,11 +44,11 @@
     },
     {
       "files": [
-        "packages/ui/src/components/input-group.tsx",
-        "packages/ui/src/components/label.tsx",
-        "packages/ui/src/components/sonner.tsx",
-        "packages/ui/src/components/aspect-ratio.tsx",
-        "packages/ui/src/components/toggle-group.tsx"
+        "src/components/ui/input-group.tsx",
+        "src/components/ui/label.tsx",
+        "src/components/ui/sonner.tsx",
+        "src/components/ui/aspect-ratio.tsx",
+        "src/components/ui/toggle-group.tsx"
       ],
       "rules": {
         "jsx-a11y/click-events-have-key-events": "off",
@@ -66,7 +66,7 @@
       }
     },
     {
-      "files": ["packages/ui/src/components/calendar.tsx"],
+      "files": ["src/components/ui/calendar.tsx"],
       "rules": {
         "eslint/no-shadow": "off"
       }
@@ -78,18 +78,18 @@
     "**/coverage/**",
     "**/node_modules/**",
     "**/drizzle/**",
-    "apps/web/src/components/auth/api-key/**",
-    "apps/web/src/components/auth/email/**",
-    "apps/web/src/components/auth/multi-session/**",
-    "apps/web/src/components/auth/organization/**",
-    "apps/web/src/components/auth/username/**",
-    "apps/web/src/components/auth/settings/account/user-profile.tsx",
-    "apps/web/src/components/auth/settings/settings.tsx",
-    "apps/web/src/components/auth/user/user-button.tsx",
-    "apps/web/src/components/auth/user/user-view.tsx",
-    "apps/web/src/lib/auth/api-key-plugin.ts",
-    "apps/web/src/lib/auth/multi-session-plugin.ts",
-    "apps/web/src/lib/auth/organization-plugin.tsx",
+    "src/components/auth/api-key/**",
+    "src/components/auth/email/**",
+    "src/components/auth/multi-session/**",
+    "src/components/auth/organization/**",
+    "src/components/auth/username/**",
+    "src/components/auth/settings/account/user-profile.tsx",
+    "src/components/auth/settings/settings.tsx",
+    "src/components/auth/user/user-button.tsx",
+    "src/components/auth/user/user-view.tsx",
+    "src/lib/auth/api-key-plugin.ts",
+    "src/lib/auth/multi-session-plugin.ts",
+    "src/lib/auth/organization-plugin.tsx",
     "**/auth.generated.ts",
     "**/routeTree.gen.ts",
     "**/worker-configuration.d.ts"

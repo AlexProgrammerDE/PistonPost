@@ -9,7 +9,7 @@ pre-commit:
       exclude: "*.d.ts"
       run: bunx oxlint --type-aware --deny-warnings --no-error-on-unmatched-pattern {staged_files}
     typecheck:
-      glob: "{apps,packages,tests}/**/*.{ts,tsx}"
+      glob: "**/*.{ts,tsx}"
       run: bun run typecheck
 
 commit-msg:

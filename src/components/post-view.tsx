@@ -1,0 +1,232 @@
+import { Link } from "@tanstack/react-router"
+
+import { TriangleAlert } from "@/components/icons"
+import { AspectRatio } from "@/components/ui/aspect-ratio"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import type { PublicPostRead } from "@/db/public-read-model"
+import { cn } from "@/lib/utils"
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeZone: "UTC",
+  }).format(date)
+}
+
+function PostMedia({
+  post,
+  detail,
+  selectedImageIndex,
+}: {
+  readonly post: PublicPostRead
+  readonly detail: boolean
+  readonly selectedImageIndex: number
+}) {
+  if (post.media.length === 0) {
+    if (post.type === "text") return null
+    return (
+      <div className="grid aspect-[16/9] place-items-center border bg-muted/40 text-muted-foreground">
+        <div className="flex max-w-xs flex-col items-center gap-2 px-6 text-center">
+          <TriangleAlert />
+          <p className="text-sm font-medium">This post has missing or unavailable media.</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (post.type === "video") {
+    const video = post.media[0]
+    if (!video) return null
+    return (
+      <AspectRatio ratio={16 / 9} className="overflow-hidden bg-black">
+        <iframe
+          src={`/media/video/${video.id}/player`}
+          title={`Video: ${post.title}`}
+          className="size-full border-0"
+          sandbox="allow-scripts allow-presentation"
+          allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          loading={detail ? "eager" : "lazy"}
+        />
+      </AspectRatio>
+    )
+  }
+
+  const variant = detail ? "detail" : "feed"
+  if (post.media.length === 1) {
+    const image = post.media[0]
+    if (!image) return null
+    return (
+      <img
+        src={`/media/image/${image.id}/${variant}`}
+        alt={image.altText ?? post.title}
+        width={image.width ?? undefined}
+        height={image.height ?? undefined}
+        className={cn("w-full bg-muted object-contain", detail ? "max-h-[85svh]" : "max-h-[46rem]")}
+        loading={detail ? "eager" : "lazy"}
+      />
+    )
+  }
+
+  if (detail) {
+    const selectedIndex = Math.min(selectedImageIndex, post.media.length - 1)
+    const selectedImage = post.media[selectedIndex] ?? post.media[0]
+    if (!selectedImage) return null
+    return (
+      <div className="grid gap-3" aria-label={`${post.title} image collection`}>
+        <img
+          src={`/media/image/${selectedImage.id}/${variant}`}
+          alt={selectedImage.altText ?? post.title}
+          width={selectedImage.width ?? undefined}
+          height={selectedImage.height ?? undefined}
+          className="max-h-[85svh] w-full bg-muted object-contain"
+          fetchPriority="high"
+        />
+        <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
+          {post.media.map((image, index) => (
+            <Link
+              key={image.id}
+              to="/post/$postId"
+              params={{ postId: post.id }}
+              search={{ image: index }}
+              aria-label={`Show image ${String(index + 1)} of ${String(post.media.length)}`}
+              aria-current={index === selectedIndex ? "true" : undefined}
+              className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
+            >
+              <img
+                src={`/media/image/${image.id}/feed`}
+                alt=""
+                width={image.width ?? undefined}
+                height={image.height ?? undefined}
+                className="size-20 object-cover sm:size-24"
+                loading="lazy"
+              />
+            </Link>
+          ))}
+        </nav>
+      </div>
+    )
+  }
+
+  const preview = post.media.slice(0, 4)
+  const finalPreviewImage = preview.at(-1)
+  const hiddenImageCount = post.media.length - preview.length
+
+  return (
+    <Link
+      to="/post/$postId"
+      params={{ postId: post.id }}
+      className="grid grid-cols-2 gap-1 overflow-hidden bg-muted"
+      aria-label={`Open ${post.title}, ${post.media.length.toString()} images`}
+    >
+      {preview.map((image) => (
+        <span key={image.id} className="relative block">
+          <img
+            src={`/media/image/${image.id}/${variant}`}
+            alt={image.altText ?? ""}
+            width={image.width ?? undefined}
+            height={image.height ?? undefined}
+            className="aspect-square w-full object-cover"
+            loading="lazy"
+          />
+          {hiddenImageCount > 0 && image.id === finalPreviewImage?.id ? (
+            <span className="absolute inset-0 grid place-items-center bg-foreground/70 text-2xl font-bold text-background">
+              +{hiddenImageCount}
+            </span>
+          ) : null}
+        </span>
+      ))}
+    </Link>
+  )
+}
+
+export function PostView({
+  post,
+  detail = false,
+  selectedImageIndex = 0,
+}: {
+  readonly post: PublicPostRead
+  readonly detail?: boolean
+  readonly selectedImageIndex?: number
+}) {
+  const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
+  const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
+
+  return (
+    <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10")}>
+      <header className="mb-4 flex items-center gap-3">
+        <Link to="/user/$username" params={{ username: post.author.username }}>
+          <Avatar size="lg">
+            {post.author.image && <AvatarImage src={post.author.image} alt="" />}
+            <AvatarFallback className="text-foreground">{initials}</AvatarFallback>
+          </Avatar>
+        </Link>
+        <div className="min-w-0 flex-1">
+          <Link
+            to="/user/$username"
+            params={{ username: post.author.username }}
+            className="block truncate text-sm font-semibold hover:underline"
+          >
+            {post.author.name}
+          </Link>
+          <p className="text-xs text-muted-foreground">
+            @{post.author.username} ·{" "}
+            <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt)}</time>
+          </p>
+        </div>
+        {post.visibility === "unlisted" && <Badge variant="outline">Unlisted</Badge>}
+      </header>
+
+      <div className="mb-4 flex flex-col gap-3">
+        {detail ? (
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-5xl">
+            {post.title}
+          </h1>
+        ) : (
+          <h2 className="font-heading text-2xl font-bold tracking-tight text-balance">
+            <Link to="/post/$postId" params={{ postId: post.id }} className="hover:underline">
+              {post.title}
+            </Link>
+          </h2>
+        )}
+        {post.textContent && (
+          <div className={cn("typeset whitespace-pre-wrap", detail && "typeset-post max-w-3xl")}>
+            <p>{post.textContent}</p>
+          </div>
+        )}
+      </div>
+
+      <PostMedia post={post} detail={detail} selectedImageIndex={selectedImageIndex} />
+
+      <div className="mt-5 flex flex-wrap items-center gap-2">
+        {post.tags.map((tag) => (
+          <Badge
+            key={tag.slug}
+            variant="secondary"
+            render={<Link to="/tag/$tag" params={{ tag: tag.slug }} />}
+          >
+            #{tag.name}
+          </Badge>
+        ))}
+        {!detail ? (
+          <Link
+            to="/post/$postId"
+            params={{ postId: post.id }}
+            hash="discussion"
+            className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+          >
+            {post.commentCount + reactionCount === 0 ? (
+              "Discuss"
+            ) : (
+              <>
+                {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"} ·{" "}
+                {reactionCount} {reactionCount === 1 ? "reaction" : "reactions"}
+              </>
+            )}
+          </Link>
+        ) : null}
+      </div>
+    </article>
+  )
+}

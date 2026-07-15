@@ -47,28 +47,23 @@ jobs:
         run: bun run generated:check && bun run ci
 
       - name: Build production Worker
-        working-directory: apps/web
         env:
           CLOUDFLARE_ENV: production
         run: bun run build
 
       - name: Prepare production configuration
-        working-directory: apps/web
         run: bun run deploy:prepare:production
 
       - name: Verify production deployment
-        working-directory: apps/web
         run: >-
           bunx wrangler deploy --config dist/server/wrangler.json --dry-run
           --x-provision=false --x-auto-create=false
 
       - name: Confirm existing production database
-        working-directory: apps/web
         run: bunx wrangler d1 info DB --config dist/server/wrangler.json --json
 
       - name: Record D1 Time Travel bookmark
         id: bookmark
-        working-directory: apps/web
         run: |
           bookmark="$(bunx wrangler d1 time-travel info DB --config dist/server/wrangler.json --json | jq -r 'if type == "array" then .[0].bookmark else .bookmark end')"
           test -n "$bookmark"
@@ -76,15 +71,12 @@ jobs:
           echo "D1 bookmark recorded before migration." >> "$GITHUB_STEP_SUMMARY"
 
       - name: List unapplied migrations
-        working-directory: apps/web
         run: bunx wrangler d1 migrations list DB --config dist/server/wrangler.json --remote
 
       - name: Apply generated migrations
-        working-directory: apps/web
         run: bunx wrangler d1 migrations apply DB --config dist/server/wrangler.json --remote
 
       - name: Deploy tagged Worker version
-        working-directory: apps/web
         run: |
           subject="$(git log -1 --pretty=%s)"
           bunx wrangler deploy --config dist/server/wrangler.json --tag "$GITHUB_SHA" --message "$subject" --x-provision=false --x-auto-create=false

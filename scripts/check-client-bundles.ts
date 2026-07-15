@@ -1,8 +1,8 @@
 import { stat } from "node:fs/promises"
 import { resolve } from "node:path"
 
-const clientDirectory = resolve("apps/web/dist/client/assets")
-const forbiddenMarkers = ["@pistonpost/db", "cloudflare:workers", "migration_mappings"]
+const clientDirectory = resolve("dist/client/assets")
+const forbiddenMarkers = ["@/db", "cloudflare:workers", "migration_mappings"]
 const maximumChunkBytes = 600 * 1024
 const maximumTotalBytes = 2_500_000
 
@@ -14,7 +14,7 @@ for await (const path of new Bun.Glob("**/*.js").scan({ cwd: clientDirectory, ab
 
 if (files.length === 0) throw new Error("No production client JavaScript bundles were found.")
 
-const localSecrets = Bun.file(resolve("apps/web/.dev.vars"))
+const localSecrets = Bun.file(resolve(".dev.vars"))
 const secretValues = (await localSecrets.exists())
   ? (await localSecrets.text())
       .split(/\r?\n/)

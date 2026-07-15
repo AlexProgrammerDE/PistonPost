@@ -79,10 +79,10 @@ Inspect the binding summary and confirm that no preview resource appears in the 
 
 ## Configure secrets
 
-Local development uses an ignored `apps/web/.dev.vars` file. Start from the committed example:
+Local development uses an ignored root `.dev.vars` file. Start from the committed example:
 
 ```bash
-cp apps/web/.dev.vars.example apps/web/.dev.vars
+cp .dev.vars.example .dev.vars
 ```
 
 Production secrets belong in Cloudflare Secrets Store. PistonPost documents secret names, never values. Expected names include:

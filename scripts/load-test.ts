@@ -125,3 +125,4 @@ process.stdout.write(
 )
 
 if (reports.some((report) => report.failures > 0)) process.exitCode = 1
+import process from "node:process"
