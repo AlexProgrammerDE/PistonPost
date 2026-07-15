@@ -26,14 +26,22 @@
         "vite.config.ts"
       ],
       "project": ["src/**/*.{ts,tsx}", "vite.config.ts"],
-      "ignore": ["src/routeTree.gen.ts"],
+      "ignore": [
+        "src/routeTree.gen.ts",
+        "src/components/auth/**",
+        "src/lib/auth/api-key-plugin.ts",
+        "src/lib/auth/multi-session-plugin.ts",
+        "src/lib/auth/organization-plugin.tsx"
+      ],
       "ignoreDependencies": [
         "@hugeicons/core-free-icons",
         "@hugeicons/react",
+        "@tanstack/react-pacer",
         "@tanstack/react-devtools",
         "@tanstack/react-router-devtools",
         "@tanstack/router-plugin",
         "cloudflare",
+        "lucide-react",
         "tailwindcss"
       ]
     },
