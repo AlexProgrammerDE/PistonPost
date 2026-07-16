@@ -7,18 +7,6 @@
     "*.config.ts",
     "worker-configuration.d.ts"
   ],
-  "exclude": [
-    "src/components/auth/api-key/**",
-    "src/components/auth/email/**",
-    "src/components/auth/multi-session/**",
-    "src/components/auth/organization/**",
-    "src/components/auth/settings/settings.tsx",
-    "src/components/auth/user/user-button.tsx",
-    "src/components/auth/user/user-view.tsx",
-    "src/lib/auth/api-key-plugin.ts",
-    "src/lib/auth/multi-session-plugin.ts",
-    "src/lib/auth/organization-plugin.tsx"
-  ],
   "compilerOptions": {
     "target": "ES2022",
     "jsx": "react-jsx",

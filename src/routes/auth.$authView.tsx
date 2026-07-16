@@ -1,27 +1,24 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, notFound } from "@tanstack/react-router"
 
 import { Auth } from "@/components/auth/auth"
+import { getAuthViewLabel, isAuthViewPath } from "@/lib/auth-ui-metadata"
 
 export const Route = createFileRoute("/auth/$authView")({
+  beforeLoad: ({ params }) => {
+    if (!isAuthViewPath(params.authView)) throw notFound()
+  },
   component: AuthView,
   head: ({ params }) => ({
     meta: [
       {
-        title: `${formatViewName(params.authView)} | PistonPost`,
+        title: `${getAuthViewLabel(params.authView)} | PistonPost`,
       },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
 })
 
-function formatViewName(value: string) {
-  return value
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ")
-}
-
 function AuthView() {
   const { authView } = Route.useParams()
-  return <Auth path={authView} />
+  return <Auth path={authView} socialLayout="horizontal" className="w-full max-w-sm" />
 }

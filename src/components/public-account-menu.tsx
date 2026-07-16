@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "@better-auth-ui/react"
 import { Link } from "@tanstack/react-router"
 import { FileText, LogIn, LogOut, Settings, Shield, User2 } from "lucide-react"
 
@@ -29,7 +30,7 @@ function initials(name: string) {
 }
 
 export function PublicAccountMenu() {
-  const session = authClient.useSession()
+  const session = useSession(authClient)
   const user = session.data?.user
 
   if (session.isPending) {
@@ -101,7 +102,7 @@ export function PublicAccountMenu() {
           Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => void authClient.signOut()}>
+        <DropdownMenuItem render={<Link to="/auth/$authView" params={{ authView: "sign-out" }} />}>
           <LogOut />
           Sign out
         </DropdownMenuItem>

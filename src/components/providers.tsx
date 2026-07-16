@@ -8,6 +8,7 @@ import type { ComponentPropsWithoutRef, PropsWithChildren } from "react"
 import { authClient } from "@/auth/client"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { TurnstileWidget } from "@/components/turnstile-widget"
+import { authSettingsViewPaths, authViewPaths } from "@/lib/auth-ui-metadata"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
@@ -47,6 +48,7 @@ export function AuthenticationProvider({
       queryClient={queryClient}
       Link={RouterLink}
       navigate={({ to, replace }) => navigate({ to, replace })}
+      redirectTo="/"
       avatar={{
         extension: "inherit",
         resize: preserveAvatarOriginal,
@@ -71,25 +73,15 @@ export function AuthenticationProvider({
         requireEmailVerification: true,
       }}
       basePaths={{ auth: "/auth", settings: "/account/settings" }}
-      additionalFields={[
-        {
-          name: "username",
-          label: "Username",
-          placeholder: "garage-name",
-          required: true,
-          type: "string",
-          signUp: "above",
-          validate: (value) => {
-            if (typeof value !== "string" || !/^[a-zA-Z0-9_-]{3,32}$/.test(value)) {
-              throw new Error(
-                "Use 3 to 32 letters, numbers, underscores, or hyphens for your username.",
-              )
-            }
-          },
-        },
-      ]}
+      viewPaths={{ auth: authViewPaths, settings: authSettingsViewPaths }}
       plugins={[
-        usernamePlugin(),
+        usernamePlugin({
+          isUsernameAvailable: true,
+          minUsernameLength: 1,
+          maxUsernameLength: 32,
+          usernamePrefix: "@",
+          localization: { usernamePlaceholder: "garage-name" },
+        }),
         magicLinkPlugin(),
         passkeyPlugin(),
         twoFactorPlugin(),

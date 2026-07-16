@@ -1,11 +1,9 @@
 import { createFileRoute, notFound } from "@tanstack/react-router"
 
-import { DangerZone } from "@/components/auth/delete-user/danger-zone"
-import { AccountSettings } from "@/components/auth/settings/account/account-settings"
-import { SecuritySettings } from "@/components/auth/settings/security/security-settings"
-import { Appearance } from "@/components/auth/theme/appearance"
+import { Settings } from "@/components/auth/settings/settings"
 import { SettingsPanelSkeleton } from "@/components/LoadingStates"
 import { NotificationSettingsForm, ProfileSettingsForm } from "@/components/product-settings"
+import { authSettingsViewPaths } from "@/lib/auth-ui-metadata"
 import { isSettingsView } from "@/lib/settings-views"
 import { getMyProductSettings } from "@/server/settings"
 
@@ -29,9 +27,11 @@ function SettingsView() {
   if (settingsView === "notifications" && productSettings) {
     return <NotificationSettingsForm settings={productSettings} />
   }
-  if (settingsView === "account") return <AccountSettings />
-  if (settingsView === "security") return <SecuritySettings />
-  if (settingsView === "appearance") return <Appearance />
-  if (settingsView === "danger") return <DangerZone />
+  if (
+    settingsView === authSettingsViewPaths.account ||
+    settingsView === authSettingsViewPaths.security
+  ) {
+    return <Settings path={settingsView} hideNav />
+  }
   throw notFound()
 }

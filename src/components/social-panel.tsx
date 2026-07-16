@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "@better-auth-ui/react"
 import {
   useMutation,
   useQuery,
@@ -61,7 +62,7 @@ export function SocialPanel({
   const queryClient = useQueryClient()
   const [confirmedCounts, setConfirmedCounts] = useState(counts)
   const discussion = useSuspenseInfiniteQuery(discussionQueryOptions(postId))
-  const session = authClient.useSession()
+  const session = useSession(authClient)
   const sessionUserId = session.data?.user.id ?? null
   const viewer = useQuery({
     ...discussionViewerQueryOptions(postId, sessionUserId ?? "anonymous"),
