@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Heart, History, MessageCircle, Send, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
-import { startTransition, useOptimistic, useState } from "react"
+import { startTransition, useEffect, useOptimistic, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
@@ -35,6 +35,11 @@ import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
+  observedVerticalPosition,
+  shouldShowPostActionDock,
+  type ObservedVerticalPosition,
+} from "@/lib/post-action-dock"
+import {
   discussionKeys,
   discussionQueryOptions,
   discussionViewerQueryOptions,
@@ -52,16 +57,68 @@ type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][n
 type CommentPage = DiscussionComment & { optimistic?: boolean }
 const reactionTypeSet = new Set<string>(reactionTypes)
 
+function ReactionControls({
+  active,
+  counts,
+  disabled,
+  label,
+  onValueChange,
+  variant,
+}: {
+  readonly active: ReactionType[]
+  readonly counts: ReactionCounts
+  readonly disabled: boolean
+  readonly label: string
+  readonly onValueChange: (next: unknown[]) => void
+  readonly variant: "default" | "outline"
+}) {
+  return (
+    <ToggleGroup
+      value={active}
+      onValueChange={onValueChange}
+      variant={variant}
+      size="sm"
+      aria-label={label}
+    >
+      <ToggleGroupItem value="like" aria-label="Like" disabled={disabled}>
+        <ThumbsUp aria-hidden="true" /> {counts.like}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={disabled}>
+        <ThumbsDown aria-hidden="true" /> {counts.dislike}
+      </ToggleGroupItem>
+      <ToggleGroupItem value="heart" aria-label="Heart" disabled={disabled}>
+        <Heart aria-hidden="true" /> {counts.heart}
+      </ToggleGroupItem>
+    </ToggleGroup>
+  )
+}
+
+function elementPosition(element: Element): ObservedVerticalPosition {
+  const bounds = element.getBoundingClientRect()
+  return observedVerticalPosition({
+    isIntersecting: bounds.bottom > 0 && bounds.top < window.innerHeight,
+    top: bounds.top,
+    bottom: bounds.bottom,
+  })
+}
+
 export function SocialPanel({
   postId,
   counts,
+  commentCount,
   imageCount,
 }: {
   postId: string
   counts: ReactionCounts
+  commentCount: number
   imageCount: number
 }) {
   const queryClient = useQueryClient()
+  const footerActionsRef = useRef<HTMLElement | null>(null)
+  const [contentStartPosition, setContentStartPosition] =
+    useState<ObservedVerticalPosition>("visible")
+  const [footerActionsPosition, setFooterActionsPosition] =
+    useState<ObservedVerticalPosition>("below")
   const [confirmedCounts, setConfirmedCounts] = useState(counts)
   const discussion = useSuspenseInfiniteQuery(discussionQueryOptions(postId))
   const session = useSession(authClient)
@@ -87,6 +144,33 @@ export function SocialPanel({
     (current, pending: CommentPage) => [pending, ...current],
   )
 
+  useEffect(() => {
+    const contentStart = document.getElementById("post-engagement-start")
+    const footerActions = footerActionsRef.current
+    if (!contentStart || !footerActions || typeof IntersectionObserver === "undefined") {
+      return undefined
+    }
+
+    setContentStartPosition(elementPosition(contentStart))
+    setFooterActionsPosition(elementPosition(footerActions))
+
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        const position = observedVerticalPosition({
+          isIntersecting: entry.isIntersecting,
+          top: entry.boundingClientRect.top,
+          bottom: entry.boundingClientRect.bottom,
+        })
+        if (entry.target === contentStart) setContentStartPosition(position)
+        if (entry.target === footerActions) setFooterActionsPosition(position)
+      }
+    })
+
+    observer.observe(contentStart)
+    observer.observe(footerActions)
+    return () => observer.disconnect()
+  }, [postId])
+
   const reactionMutation = useMutation({
     mutationFn: (input: { type: ReactionType; active: boolean }) =>
       setReaction({ data: { postId, ...input } }),
@@ -106,12 +190,22 @@ export function SocialPanel({
 
   const commentMutation = useMutation({
     mutationFn: (content: string) => createComment({ data: { postId, content } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
+        queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
+      ])
+    },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteComment({ data: { id } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
+        queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
+      ])
+    },
     onError: () => toast.error("The comment could not be deleted."),
   })
 
@@ -144,6 +238,7 @@ export function SocialPanel({
   })
 
   const displayedCounts = optimisticReactionCounts(confirmedCounts, active, optimisticActive)
+  const showActionDock = shouldShowPostActionDock(contentStartPosition, footerActionsPosition)
 
   function updateReactions(next: unknown[]) {
     if (!viewerId) {
@@ -172,29 +267,54 @@ export function SocialPanel({
 
   return (
     <section id="discussion" className="mx-auto mt-5 max-w-5xl" aria-labelledby="discussion-title">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
+      {showActionDock ? (
+        <nav
+          className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-[env(safe-area-inset-bottom)]"
+          aria-label="Quick post actions"
+        >
+          <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:px-6">
+            <PostShareActions postId={postId} imageCount={imageCount} variant="ghost" />
+            <ReactionControls
+              active={optimisticActive}
+              counts={displayedCounts}
+              disabled={viewerPending || !viewerId}
+              label={viewerId ? "Your quick reactions" : "Quick reaction totals"}
+              onValueChange={updateReactions}
+              variant="default"
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              nativeButton={false}
+              render={<Link to="/post/$postId" params={{ postId }} hash="discussion" />}
+            >
+              <MessageCircle aria-hidden="true" data-icon="inline-start" />
+              <span className="hidden sm:inline">Comments</span>
+              {commentCount}
+            </Button>
+          </div>
+        </nav>
+      ) : null}
+
+      <nav
+        ref={footerActionsRef}
+        className="flex flex-wrap items-center justify-between gap-3 border-y py-3"
+        aria-label="Post actions"
+      >
         <PostShareActions postId={postId} imageCount={imageCount} />
         {viewerPending ? (
           <DiscussionViewerSkeleton />
         ) : (
-          <ToggleGroup
-            value={optimisticActive}
+          <ReactionControls
+            active={optimisticActive}
+            counts={displayedCounts}
+            disabled={!viewerId}
+            label={viewerId ? "Your reaction" : "Reaction totals"}
             onValueChange={updateReactions}
             variant="outline"
-            aria-label={viewerId ? "Your reaction" : "Reaction totals"}
-          >
-            <ToggleGroupItem value="like" aria-label="Like" disabled={!viewerId}>
-              <ThumbsUp aria-hidden="true" /> {displayedCounts.like}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={!viewerId}>
-              <ThumbsDown aria-hidden="true" /> {displayedCounts.dislike}
-            </ToggleGroupItem>
-            <ToggleGroupItem value="heart" aria-label="Heart" disabled={!viewerId}>
-              <Heart aria-hidden="true" /> {displayedCounts.heart}
-            </ToggleGroupItem>
-          </ToggleGroup>
+          />
         )}
-      </div>
+      </nav>
 
       <div className="mt-10 grid gap-8">
         <h2

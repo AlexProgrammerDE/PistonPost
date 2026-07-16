@@ -1,6 +1,7 @@
 "use client"
 
 import { Copy, Link2 } from "lucide-react"
+import type { ComponentProps } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -25,9 +26,11 @@ async function copyToClipboard(value: string, successMessage: string) {
 export function PostShareActions({
   postId,
   imageCount,
+  variant = "outline",
 }: {
   readonly postId: string
   readonly imageCount: number
+  readonly variant?: ComponentProps<typeof Button>["variant"]
 }) {
   function shareLinks() {
     return createPostShareLinks(postId, imageCount, window.location.origin)
@@ -35,7 +38,7 @@ export function PostShareActions({
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+      <DropdownMenuTrigger render={<Button type="button" variant={variant} size="sm" />}>
         <Link2 aria-hidden="true" data-icon="inline-start" />
         Share
       </DropdownMenuTrigger>

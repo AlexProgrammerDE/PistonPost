@@ -89,6 +89,7 @@ function PostDetail() {
         <SocialPanel
           postId={post.id}
           counts={post.reactions}
+          commentCount={post.commentCount}
           imageCount={post.media.filter((media) => media.kind === "image").length}
         />
       </Suspense>

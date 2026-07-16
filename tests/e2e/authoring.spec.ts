@@ -247,6 +247,8 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(imageCollection.getByRole("img")).toHaveCount(2)
     await expect(imageCollection).toHaveCSS("column-count", "3")
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
+    await expect(page.getByText("2 images", { exact: true })).toBeVisible()
+    await expect(page.getByRole("link", { name: "0 comments" })).toBeVisible()
 
     const secondImageTrigger = imageCollection.getByRole("button", {
       name: "Expand image 2 of 2",
@@ -280,6 +282,14 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect.poll(() => new URL(page.url()).searchParams.get("layout")).toBe("browser")
     await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("0")
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toBeVisible()
+    await expect(page.getByText("Image 1 of 2")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Previous" })).toBeDisabled()
+    await page.getByRole("button", { name: "Next" }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("1")
+    await expect(page.getByText("Image 2 of 2")).toBeVisible()
+    await expect(page.getByRole("button", { name: "Next" })).toBeDisabled()
+    await page.getByRole("button", { name: "Previous" }).click()
+    await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("0")
 
     await page.getByRole("link", { name: "Show image 2 of 2" }).click()
     await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("1")
@@ -320,6 +330,14 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(
       page.getByRole("list", { name: /image collection/u }).getByRole("img"),
     ).toHaveCount(20)
+    const longGallery = page.getByRole("list", { name: /image collection/u })
+    await longGallery.getByRole("button").nth(9).scrollIntoViewIfNeeded()
+    const quickActions = page.getByRole("navigation", { name: "Quick post actions" })
+    await expect(quickActions).toBeVisible()
+    await quickActions.getByRole("link", { name: "Comments 0" }).click()
+    await expect(page).toHaveURL(/#discussion$/u)
+    await expect(quickActions).toHaveCount(0)
+    await expect(page.getByRole("navigation", { name: "Post actions" })).toBeVisible()
 
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")

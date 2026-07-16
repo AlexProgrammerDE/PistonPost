@@ -1,13 +1,16 @@
 import { Link, useNavigate } from "@tanstack/react-router"
 import {
+  ArrowLeft,
+  ArrowRight,
   Eye,
   GalleryHorizontal,
+  Images,
   LayoutGrid,
   Link2,
   MessageCircle,
   TriangleAlert,
 } from "lucide-react"
-import { lazy, Suspense, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { MarkdownContent } from "@/components/MarkdownContent"
@@ -74,6 +77,33 @@ function PostViewCount({ count }: { readonly count: number }) {
   )
 }
 
+function PostImageCount({ count }: { readonly count: number }) {
+  const noun = count === 1 ? "image" : "images"
+
+  return (
+    <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+      <Images aria-hidden="true" className="size-3.5" />
+      {exactNumberFormat.format(count)} {noun}
+    </span>
+  )
+}
+
+function PostCommentCount({ postId, count }: { readonly postId: string; readonly count: number }) {
+  const noun = count === 1 ? "comment" : "comments"
+
+  return (
+    <Link
+      to="/post/$postId"
+      params={{ postId }}
+      hash="discussion"
+      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
+    >
+      <MessageCircle aria-hidden="true" className="size-3.5" />
+      {exactNumberFormat.format(count)} {noun}
+    </Link>
+  )
+}
+
 function GalleryLayoutMenu({
   postId,
   layout,
@@ -122,6 +152,47 @@ function GalleryLayoutMenu({
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+function PostDetailMetadata({
+  post,
+  galleryLayout,
+  selectedImageIndex,
+}: {
+  readonly post: PublicPostRead
+  readonly galleryLayout: GalleryLayout
+  readonly selectedImageIndex: number | undefined
+}) {
+  return (
+    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-y py-3">
+      {post.tags.map((tag) => (
+        <Badge
+          key={tag.slug}
+          variant="secondary"
+          render={<Link to="/tag/$tag" params={{ tag: tag.slug }} />}
+        >
+          #{tag.name}
+        </Badge>
+      ))}
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-x-4 gap-y-2",
+          post.tags.length > 0 ? "ml-auto justify-end" : undefined,
+        )}
+      >
+        {post.type === "images" ? <PostImageCount count={post.media.length} /> : null}
+        <PostViewCount count={post.viewCount} />
+        <PostCommentCount postId={post.id} count={post.commentCount} />
+        {post.type === "images" && post.media.length > 1 ? (
+          <GalleryLayoutMenu
+            postId={post.id}
+            layout={galleryLayout}
+            selectedImageIndex={selectedImageIndex}
+          />
+        ) : null}
+      </div>
+    </div>
   )
 }
 
@@ -337,14 +408,6 @@ function DetailPostImageMedia({
 
   return (
     <div className="grid gap-3">
-      <div className="flex justify-end">
-        <GalleryLayoutMenu
-          postId={post.id}
-          layout={galleryLayout}
-          selectedImageIndex={selectedImageIndex}
-        />
-      </div>
-
       {galleryLayout === "masonry" ? (
         <ul
           className="m-0 list-none columns-1 gap-2 p-0 sm:columns-2 lg:columns-3"
@@ -394,12 +457,63 @@ function ImageBrowser({
   readonly selectedImageIndex: number
   readonly onOpen: (index: number) => void
 }) {
+  const navigate = useNavigate()
+  const selectedThumbnailRef = useRef<HTMLAnchorElement | null>(null)
   const selectedIndex = Math.min(Math.max(selectedImageIndex, 0), post.media.length - 1)
   const selectedImage = post.media[selectedIndex] ?? post.media[0]
+
+  useEffect(() => {
+    const selectedThumbnail = selectedThumbnailRef.current
+    const thumbnailStrip = selectedThumbnail?.parentElement
+    if (!selectedThumbnail || !thumbnailStrip) return
+
+    const centeredPosition =
+      selectedThumbnail.offsetLeft -
+      (thumbnailStrip.clientWidth - selectedThumbnail.clientWidth) / 2
+    thumbnailStrip.scrollTo({
+      left: Math.max(0, centeredPosition),
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    })
+  }, [selectedIndex])
+
   if (!selectedImage) return null
+
+  function selectImage(index: number) {
+    void navigate({
+      to: "/post/$postId",
+      params: { postId: post.id },
+      search: { image: index, layout: "browser" },
+    })
+  }
 
   return (
     <div className="grid gap-3" aria-label={`${post.title} image collection`}>
+      <div className="flex items-center justify-between gap-3 border-y py-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={selectedIndex === 0}
+          onClick={() => selectImage(selectedIndex - 1)}
+        >
+          <ArrowLeft aria-hidden="true" data-icon="inline-start" />
+          Previous
+        </Button>
+        <p className="text-sm text-muted-foreground" aria-live="polite">
+          Image <span className="font-medium text-foreground">{selectedIndex + 1}</span> of{" "}
+          {post.media.length}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={selectedIndex === post.media.length - 1}
+          onClick={() => selectImage(selectedIndex + 1)}
+        >
+          Next
+          <ArrowRight aria-hidden="true" data-icon="inline-end" />
+        </Button>
+      </div>
       <button
         type="button"
         className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -422,6 +536,7 @@ function ImageBrowser({
         {post.media.map((image, index) => (
           <Link
             key={image.id}
+            ref={index === selectedIndex ? selectedThumbnailRef : undefined}
             to="/post/$postId"
             params={{ postId: post.id }}
             search={{ image: index, layout: "browser" }}
@@ -518,6 +633,17 @@ export function PostView({
         )}
       </div>
 
+      {detail ? (
+        <PostDetailMetadata
+          post={post}
+          galleryLayout={resolvedGalleryLayout}
+          selectedImageIndex={selectedImageIndex}
+        />
+      ) : null}
+      {detail ? (
+        <span id="post-engagement-start" className="block h-px" aria-hidden="true" />
+      ) : null}
+
       <PostMedia
         post={post}
         detail={detail}
@@ -526,19 +652,19 @@ export function PostView({
         galleryLayout={resolvedGalleryLayout}
       />
 
-      <div className="mt-5 flex flex-wrap items-center gap-2">
-        {post.tags.map((tag) => (
-          <Badge
-            key={tag.slug}
-            variant="secondary"
-            render={<Link to="/tag/$tag" params={{ tag: tag.slug }} />}
-          >
-            #{tag.name}
-          </Badge>
-        ))}
-        <div className="ml-auto flex items-center gap-3">
-          <PostViewCount count={post.viewCount} />
-          {!detail ? (
+      {!detail ? (
+        <div className="mt-5 flex flex-wrap items-center gap-2">
+          {post.tags.map((tag) => (
+            <Badge
+              key={tag.slug}
+              variant="secondary"
+              render={<Link to="/tag/$tag" params={{ tag: tag.slug }} />}
+            >
+              #{tag.name}
+            </Badge>
+          ))}
+          <div className="ml-auto flex items-center gap-3">
+            <PostViewCount count={post.viewCount} />
             <Link
               to="/post/$postId"
               params={{ postId: post.id }}
@@ -555,9 +681,9 @@ export function PostView({
                 </>
               )}
             </Link>
-          ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </article>
   )
 }
