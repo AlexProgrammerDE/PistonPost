@@ -43,7 +43,9 @@ Preview traces sample every request. Production traces use the committed 5 perce
 
 The 2026-07-14 warm development baseline used 50 requests per scenario at concurrency 10 against a populated local D1. Feed, post-detail, and sign-in scenarios ran concurrently with no failures. They each sustained about 12.7 requests per second; p95 was 857.1 ms for the feed, 857.8 ms for post detail, and 914.7 ms for sign-in. A cold 100-request pass also completed without failures but included 15 to 21 second Vite compilation outliers. These are development diagnostics, not production service-level objectives.
 
-The production client build contains 68 JavaScript chunks totaling 1,850,606 bytes. The largest raw chunk is 452,887 bytes. CI rejects any chunk above 600 KiB, total JavaScript above 2.5 MB, server-only package markers, or a local secret value in client output.
+The production client build contains 82 JavaScript chunks totaling 2,047,872 bytes. The largest raw
+chunk is 554,637 bytes. CI rejects any chunk above 600 KiB, total JavaScript above 2.5 MB,
+server-only package markers, or a local secret value in client output.
 
 Run the same public baseline with:
 

@@ -14,6 +14,7 @@ const PublicAccountMenu = lazy(() =>
 
 const legalLinks = [
   { to: "/privacy" as const, label: "Privacy" },
+  { to: "/cookie-policy" as const, label: "Cookies" },
   { to: "/terms" as const, label: "Terms" },
 ]
 

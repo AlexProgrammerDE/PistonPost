@@ -143,8 +143,28 @@ Add these environment variables:
 - `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the five Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
+- `PRODUCTION_POSTHOG_KEY`: the public project key used by the production browser build.
 
 The base URL determines the Worker Custom Domain. It must be an HTTPS origin without a path, query, port, or fragment. The hostname must belong to an active zone in the same Cloudflare account.
+
+PostHog variables are public build configuration, not Worker secrets. Leave the key blank to build
+without browser analytics. Before enabling it, configure the PostHog project to discard IP data and
+verify that the project key belongs to PistonPost.
+
+Production browser events use PostHog's
+[managed reverse proxy](https://posthog.com/docs/advanced/proxy) at
+`https://t.pistonmaster.net`. The deployment workflow pins that origin as the SDK `api_host` and the
+SDK uses `https://eu.posthog.com` as its `ui_host`, as required for an EU Cloud proxy. The proxy CNAME
+must remain DNS-only in Cloudflare. Do not attach it to the PistonPost Worker or enable Cloudflare's
+orange-cloud proxy because PostHog manages its routing and certificate.
+
+PistonPost bundles the slim SDK with its toolbar extension while keeping replay, heatmaps, surveys,
+and the other analytics extensions disabled. Analytics ingestion and the toolbar script load through
+`https://t.pistonmaster.net`. Following PostHog's
+[toolbar CSP guidance](https://posthog.com/docs/advanced/content-security-policy#enabling-the-toolbar),
+the Content Security Policy also permits `https://*.posthog.com` for toolbar scripts, connections,
+images, styles, fonts, and media. Update the SDK configuration, deployment workflow, and policy
+together before changing the proxy origin or enabled extensions.
 
 The production workflow performs these steps in order:
 

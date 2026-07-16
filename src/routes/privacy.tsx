@@ -41,8 +41,15 @@ function PrivacyPage() {
         <h2>How data is used</h2>
         <p>
           Data is used to display what you post, authenticate your account, deliver messages you
-          requested, enforce moderation, and keep PistonPost reliable. Analytics contain aggregate
-          event data and do not replace application records.
+          requested, enforce moderation, and keep PistonPost reliable.
+        </p>
+        <h2>Analytics</h2>
+        <p>
+          Cloudflare Analytics Engine records aggregate operational events and post views. Optional
+          PostHog analytics stay disabled until you allow them and receive only anonymous route
+          categories. PistonPost disables PostHog autocapture, session replay, and person profiles,
+          and removes dynamic URLs and content before sending an event. Read the{" "}
+          <a href="/cookie-policy">Cookie Policy</a> for details and preference controls.
         </p>
         <h2>Deletion and exports</h2>
         <p>

@@ -49,6 +49,21 @@ bun run wrangler:dry-run
 
 The Worker exposes a shallow `GET /health` endpoint. Public document responses receive a short shared-cache policy only when the request is anonymous and the application has not already selected a stricter policy. Authenticated, mutation, auth, admin, draft, preview, and unlisted responses stay private or `no-store`.
 
+## Browser analytics
+
+Post views and aggregate operational events use Cloudflare Analytics Engine. PistonPost also supports
+consent-gated PostHog page analytics using the same provider pattern as the EnderDash website. Copy
+`.env.example` to `.env.local` and add a PistonPost public project key to enable it locally:
+
+```bash
+cp .env.example .env.local
+```
+
+PostHog stays disabled when `VITE_PUBLIC_POSTHOG_KEY` is blank. `VITE_PUBLIC_POSTHOG_HOST` defaults
+to the [PostHog managed reverse proxy](https://posthog.com/docs/advanced/proxy) at
+`https://t.pistonmaster.net`. The client uses memory-only persistence and sends anonymous route
+categories without dynamic post IDs, usernames, tag names, page titles, referrers, or query strings.
+
 See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before creating staging or production resources.
 
 Production releases use the manually approved `Deploy production` GitHub Actions workflow. The workflow builds the Worker with the production environment selected, prepares the ignored deployment configuration from protected GitHub environment values, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning and backup guides before triggering it.

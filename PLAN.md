@@ -150,7 +150,9 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 - Email Service sends Better Auth and product emails.
 - Turnstile protects authentication and abuse-sensitive mutations.
 - Rate Limiting bindings protect broad anonymous, authenticated, auth, comment, reaction, and upload classes.
-- Analytics Engine records privacy-safe product and operational events.
+- Analytics Engine records privacy-safe product and operational events, including post views.
+- Consent-gated PostHog records anonymous browser page views by stable route class without content,
+  identity, or dynamic URL properties.
 - Workers Cache caches explicitly public document and feed responses only.
 - Secrets Store provides production secrets.
 - Cron triggers schedule orphan cleanup, reconciliation, retention, and delivery retries.
@@ -651,6 +653,15 @@ Use Analytics Engine for aggregate, operationally useful events:
 
 Do not send email, username, post text, comment text, exact IP, auth tokens, or raw user-agent strings. Use opaque IDs only where retention and deletion policy are clear.
 
+Use PostHog only for consented browser page analytics. Keep persistence in memory, disable
+autocapture, replay, heatmaps, exceptions, and person profiles, and rewrite dynamic routes to stable
+classes before capture. Send production browser events through `https://t.pistonmaster.net` instead
+of directly to PostHog. This is a PostHog-managed EU Cloud reverse proxy, so initialize the SDK with
+the proxy as `api_host` and `https://eu.posthog.com` as `ui_host`. Configure the PostHog project to
+discard IP data. A missing public project key must disable the integration without affecting the
+application. Keep the PostHog toolbar extension available and allow the regional PostHog assets it
+requires in the Content Security Policy.
+
 ## Retained migration state
 
 The retired legacy importer is no longer part of the repository or release process. Keep `migration_runs` and `migration_mappings` unchanged for now so historical state remains available for direct database inspection. Removing those tables requires a separate schema change and generated Drizzle migration.
@@ -972,3 +983,9 @@ Record future changes here with date, decision, reason, and affected phases.
   initial scope was implemented. A private `/following` navbar destination combines public posts
   from followed accounts and followed tags, while profile and tag pages own the follow controls.
   This affects Phases 3, 5, 7, and 9.
+- 2026-07-16: Add EnderDash-style consent-gated PostHog browser analytics alongside Cloudflare
+  Analytics Engine. PistonPost keeps post-view tracking in Analytics Engine and limits PostHog to
+  anonymous route classes with memory-only persistence and sensitive capture features disabled.
+  Production ingestion uses PostHog's managed EU Cloud proxy at `https://t.pistonmaster.net`, with
+  the CSP permitting that proxy and the PostHog cloud resources required by the toolbar. This affects
+  Phases 2, 5, 9, and 10.

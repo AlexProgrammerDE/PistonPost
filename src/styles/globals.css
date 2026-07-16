@@ -2,8 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/outfit";
+@import "vanilla-cookieconsent/dist/cookieconsent.css";
 @import "yet-another-react-lightbox/styles.css";
 @import "yet-another-react-lightbox/plugins/counter.css";
+@import "./cookie-consent.css";
 @import "./typeset.css";
 
 @custom-variant dark (&:is(.dark *));

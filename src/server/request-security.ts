@@ -66,16 +66,16 @@ export function validateRequestSecurity(request: Request, expectedOrigin: string
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
-  "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com",
-  "font-src 'self' data:",
+  "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
+  "font-src 'self' data: https://*.posthog.com",
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com",
-  "img-src 'self' data: blob:",
-  "media-src 'self' blob: https://*.videodelivery.net",
+  "img-src 'self' data: blob: https://*.posthog.com",
+  "media-src 'self' blob: https://*.videodelivery.net https://*.posthog.com",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
-  "style-src 'self' 'unsafe-inline'",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://t.pistonmaster.net https://*.posthog.com",
+  "style-src 'self' 'unsafe-inline' https://*.posthog.com",
   "worker-src 'self' blob:",
 ].join("; ")
 
