@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test"
 import {
   createManagedAvatarSrcSet,
   createMediaImageSources,
+  isMediaImageVariantAllowed,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
 } from "./media-image"
@@ -46,5 +47,13 @@ describe("responsive media images", () => {
         )
         .join(", "),
     )
+  })
+
+  it("keeps avatar originals behind the avatar-only delivery variant", () => {
+    expect(isMediaImageVariantAllowed("avatar", "avatar")).toBeTrue()
+    expect(isMediaImageVariantAllowed("avatar", "detail")).toBeFalse()
+    expect(isMediaImageVariantAllowed("image", "avatar")).toBeFalse()
+    expect(isMediaImageVariantAllowed("image", "detail")).toBeTrue()
+    expect(isMediaImageVariantAllowed("video", "thumbnail")).toBeFalse()
   })
 })

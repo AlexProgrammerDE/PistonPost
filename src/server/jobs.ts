@@ -27,10 +27,21 @@ export function mediaCleanupJob(mediaId: string): InternalJob {
   }
 }
 
-export function cacheInvalidationJob(postId: string, authorUsername?: string): InternalJob {
+export function cacheInvalidationPathsJob(
+  scope: string,
+  paths: ReadonlyArray<string>,
+): InternalJob {
   return {
     type: "cache.invalidate",
-    idempotencyKey: `cache.invalidate:${postId}:${crypto.randomUUID()}`,
-    paths: ["/", `/post/${postId}`, ...(authorUsername ? [`/user/${authorUsername}`] : [])],
+    idempotencyKey: `cache.invalidate:${scope}:${crypto.randomUUID()}`,
+    paths: [...paths],
   }
+}
+
+export function cacheInvalidationJob(postId: string, authorUsername?: string): InternalJob {
+  return cacheInvalidationPathsJob(`post:${postId}`, [
+    "/",
+    `/post/${postId}`,
+    ...(authorUsername ? [`/user/${authorUsername}`] : []),
+  ])
 }

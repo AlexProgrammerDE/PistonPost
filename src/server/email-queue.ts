@@ -35,6 +35,7 @@ async function deliverInternalJob(job: InternalJob, env: Cloudflare.Env) {
     const asset = await database
       .select({
         id: schema.mediaAssets.id,
+        kind: schema.mediaAssets.kind,
         r2Key: schema.mediaAssets.r2Key,
         streamUid: schema.mediaAssets.streamUid,
         status: schema.mediaAssets.status,
@@ -43,6 +44,14 @@ async function deliverInternalJob(job: InternalJob, env: Cloudflare.Env) {
       .where(eq(schema.mediaAssets.id, job.mediaId))
       .get()
     if (asset && asset.status !== "deleted") {
+      if (asset.kind === "avatar") {
+        const currentAvatar = await database
+          .select({ userId: schema.profiles.userId })
+          .from(schema.profiles)
+          .where(eq(schema.profiles.avatarMediaId, asset.id))
+          .get()
+        if (currentAvatar) throw new Error("A current avatar cannot be removed.")
+      }
       if (asset.r2Key) await env.MEDIA.delete(asset.r2Key)
       if (asset.streamUid) await env.STREAM.video(asset.streamUid).delete()
       await database.batch([

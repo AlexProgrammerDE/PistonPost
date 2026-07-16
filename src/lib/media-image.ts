@@ -53,6 +53,13 @@ export function isResponsiveMediaImageVariant(
   return variant === "avatar" || variant === "feed" || variant === "detail"
 }
 
+export function isMediaImageVariantAllowed(
+  kind: "image" | "video" | "avatar",
+  variant: MediaImageVariant,
+) {
+  return kind === "avatar" ? variant === "avatar" : kind === "image" && variant !== "avatar"
+}
+
 export function responsiveMediaImageMaxWidth(
   image: Pick<MediaImageDimensions, "width" | "height">,
   variant: ResponsiveMediaImageVariant,

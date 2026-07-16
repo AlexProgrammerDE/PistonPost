@@ -14,9 +14,21 @@ import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 import { themePlugin } from "@/lib/auth/theme-plugin"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
+import {
+  preserveAvatarOriginal,
+  removeManagedAvatar,
+  uploadManagedAvatar,
+} from "@/lib/uploads/avatar-upload"
 
 function RouterLink({ href, ...props }: ComponentPropsWithoutRef<AuthConfig["Link"]>) {
   return <Link to={href} {...props} />
+}
+
+async function invalidateAvatarQueries(queryClient: QueryClient) {
+  await Promise.all([
+    queryClient.invalidateQueries({ queryKey: ["profiles"] }),
+    queryClient.invalidateQueries({ queryKey: ["posts"] }),
+  ])
 }
 
 export function AuthenticationProvider({
@@ -35,6 +47,19 @@ export function AuthenticationProvider({
       queryClient={queryClient}
       Link={RouterLink}
       navigate={({ to, replace }) => navigate({ to, replace })}
+      avatar={{
+        extension: "inherit",
+        resize: preserveAvatarOriginal,
+        upload: async (file) => {
+          const image = await uploadManagedAvatar(file)
+          await invalidateAvatarQueries(queryClient)
+          return image
+        },
+        delete: async () => {
+          await removeManagedAvatar()
+          await invalidateAvatarQueries(queryClient)
+        },
+      }}
       emailAndPassword={{
         enabled: true,
         confirmPassword: true,

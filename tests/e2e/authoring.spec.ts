@@ -8,6 +8,10 @@ import { generateN } from "../../src/lib/generate-n"
 
 const CAPTCHA_TEST_TOKEN = "XXXX.DUMMY.TOKEN.XXXX"
 const TEST_PASSWORD = "PistonPost-Test-2026!"
+const VALID_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+  "base64",
+)
 
 async function verificationUrlSince(startedAt: number) {
   const temporaryEntries = await readdir(tmpdir(), { withFileTypes: true })
@@ -97,6 +101,34 @@ async function fillPost(page: Page, title: string, tag: string) {
 }
 
 test.describe.serial("authenticated authoring", () => {
+  test("uploads, serves, and deletes a managed avatar", async ({ context, page }) => {
+    await createVerifiedSession(context)
+    await page.goto("/account/settings/profile")
+    await page.locator('[data-hydrated="true"]').waitFor()
+
+    await page.getByLabel("Avatar").setInputFiles({
+      name: "moss-avatar.png",
+      mimeType: "image/png",
+      buffer: VALID_PNG,
+    })
+    await expect(page.getByText("Avatar changed successfully")).toBeVisible()
+
+    const avatar = page.locator('img[src*="/media/image/"][src$="/avatar"]').first()
+    await expect(avatar).toBeVisible()
+    const avatarSource = await avatar.getAttribute("src")
+    expect(avatarSource).not.toBeNull()
+    if (!avatarSource) throw new Error("The managed avatar URL was not rendered.")
+
+    const avatarResponse = await context.request.get(`${avatarSource}?width=96`)
+    expect(avatarResponse.status()).toBe(200)
+    expect(avatarResponse.headers()["content-type"]).toContain("image/webp")
+
+    await page.getByRole("button", { name: "Change avatar" }).click()
+    await page.getByRole("menuitem", { name: "Delete avatar" }).click()
+    await expect(page.getByText("Avatar deleted successfully")).toBeVisible()
+    await expect.poll(async () => (await context.request.get(avatarSource)).status()).toBe(404)
+  })
+
   test("posts text and images and recovers failed image and video uploads", async ({
     context,
     page,
@@ -138,13 +170,9 @@ test.describe.serial("authenticated authoring", () => {
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")
     await fillPost(page, "two extremely important cats", "cats")
-    const validPng = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
-      "base64",
-    )
     await page.getByLabel("Choose images to upload").setInputFiles([
-      { name: "cat-a.png", mimeType: "image/png", buffer: validPng },
-      { name: "cat-b.png", mimeType: "image/png", buffer: validPng },
+      { name: "cat-a.png", mimeType: "image/png", buffer: VALID_PNG },
+      { name: "cat-b.png", mimeType: "image/png", buffer: VALID_PNG },
     ])
     const altTextInputs = page.getByLabel("Alt text")
     await altTextInputs.nth(0).fill("A small orange cat sitting on a blanket")
@@ -223,7 +251,7 @@ test.describe.serial("authenticated authoring", () => {
       generateN(20).map((number) => ({
         name: `gallery-${number.toString().padStart(2, "0")}.png`,
         mimeType: "image/png",
-        buffer: validPng,
+        buffer: VALID_PNG,
       })),
     )
     await page.getByRole("button", { name: "Post it" }).click()

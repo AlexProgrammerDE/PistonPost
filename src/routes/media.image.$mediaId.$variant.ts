@@ -5,6 +5,7 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import {
+  isMediaImageVariantAllowed,
   isResponsiveMediaImageVariant,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
@@ -45,15 +46,24 @@ async function deliverImage({
       asset: schema.mediaAssets,
       postStatus: schema.posts.status,
       visibility: schema.posts.visibility,
+      avatarOwnerId: schema.profiles.userId,
     })
     .from(schema.mediaAssets)
     .leftJoin(schema.postMedia, eq(schema.postMedia.mediaId, schema.mediaAssets.id))
     .leftJoin(schema.posts, eq(schema.posts.id, schema.postMedia.postId))
+    .leftJoin(schema.profiles, eq(schema.profiles.avatarMediaId, schema.mediaAssets.id))
     .where(
       and(eq(schema.mediaAssets.id, input.data.mediaId), eq(schema.mediaAssets.status, "ready")),
     )
   const row = rows[0]
   if (!row?.asset.r2Key) return new Response("Not found", { status: 404 })
+  const avatarRequest = input.data.variant === "avatar"
+  if (
+    !isMediaImageVariantAllowed(row.asset.kind, input.data.variant) ||
+    (avatarRequest && !row.avatarOwnerId)
+  ) {
+    return new Response("Not found", { status: 404 })
+  }
 
   if (requestedWidth !== undefined) {
     if (!isResponsiveMediaImageVariant(input.data.variant)) {
@@ -89,8 +99,10 @@ async function deliverImage({
   headers.set("X-Content-Type-Options", "nosniff")
   headers.set(
     "Cache-Control",
-    isPublished && row.visibility === "public"
-      ? "public, max-age=31536000, immutable"
+    (isPublished && row.visibility === "public") || row.asset.kind === "avatar"
+      ? row.asset.kind === "avatar"
+        ? "public, max-age=3600"
+        : "public, max-age=31536000, immutable"
       : "private, no-store",
   )
   return new Response(response.body, { status: response.status, headers })

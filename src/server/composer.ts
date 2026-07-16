@@ -6,12 +6,12 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { postDraftInputSchema } from "@/domain"
+import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 import { createStreamDirectUpload } from "@/server/stream-direct-upload"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 
-const MAX_IMAGE_BYTES = 15 * 1024 * 1024
 const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024
 const MAX_IMAGES_PER_POST = 20
 const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
@@ -81,8 +81,8 @@ export const createPostDraft = createServerFn({ method: "POST" })
 const imageIntentInput = z.object({
   postId: z.string().min(1).max(64),
   filename: z.string().trim().min(1).max(255),
-  mimeType: z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"]),
-  byteSize: z.number().int().min(1).max(MAX_IMAGE_BYTES),
+  mimeType: z.enum(IMAGE_UPLOAD_MIME_TYPES),
+  byteSize: z.number().int().min(1).max(MAX_IMAGE_UPLOAD_BYTES),
   altText: z.string().trim().max(300),
 })
 
