@@ -1,7 +1,7 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 
+import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { PostTimeline } from "@/components/PostTimeline"
-import { Button } from "@/components/ui/button"
 import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import { feedQueryOptions, type FeedFilters } from "@/lib/queries/posts"
 
@@ -28,17 +28,14 @@ export function FilteredFeed({
   return (
     <>
       <PostTimeline posts={posts} />
-      {feed.hasNextPage && (
-        <div className="mt-10 flex justify-center">
-          <Button
-            variant="outline"
-            disabled={feed.isFetchingNextPage}
-            onClick={() => feed.fetchNextPage()}
-          >
-            {feed.isFetchingNextPage ? "Loading posts…" : "Load older posts"}
-          </Button>
-        </div>
-      )}
+      <InfiniteScrollTrigger
+        hasNextPage={feed.hasNextPage}
+        isFetching={feed.isFetching}
+        isFetchingNextPage={feed.isFetchingNextPage}
+        isFetchNextPageError={feed.isFetchNextPageError}
+        isPaused={feed.fetchStatus === "paused"}
+        onLoadMore={feed.fetchNextPage}
+      />
     </>
   )
 }

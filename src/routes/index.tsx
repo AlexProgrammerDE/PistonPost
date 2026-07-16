@@ -3,6 +3,7 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { TriangleAlert } from "lucide-react"
 import { Suspense } from "react"
 
+import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { PostTimeline } from "@/components/PostTimeline"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -86,17 +87,14 @@ function PublicFeedResults() {
         <PostTimeline posts={posts} />
       )}
 
-      {feed.hasNextPage && (
-        <div className="mt-10 flex justify-center">
-          <Button
-            variant="outline"
-            disabled={feed.isFetchingNextPage}
-            onClick={() => feed.fetchNextPage()}
-          >
-            {feed.isFetchingNextPage ? "Loading posts…" : "Load older posts"}
-          </Button>
-        </div>
-      )}
+      <InfiniteScrollTrigger
+        hasNextPage={feed.hasNextPage}
+        isFetching={feed.isFetching}
+        isFetchingNextPage={feed.isFetchingNextPage}
+        isFetchNextPageError={feed.isFetchNextPageError}
+        isPaused={feed.fetchStatus === "paused"}
+        onLoadMore={feed.fetchNextPage}
+      />
     </>
   )
 }
