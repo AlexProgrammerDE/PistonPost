@@ -24,3 +24,4 @@ reports/migration
 
 # typescript
 *.tsbuildinfo
+.idea
