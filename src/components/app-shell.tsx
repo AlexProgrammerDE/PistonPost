@@ -38,6 +38,7 @@ export function AppShell({ children }: PropsWithChildren) {
             to="/"
             className="shrink-0 font-heading text-xl font-extrabold tracking-[-0.045em]"
             aria-label="PistonPost home"
+            translate="no"
           >
             piston<span className="text-primary">post</span>
           </Link>
@@ -74,7 +75,14 @@ export function AppShell({ children }: PropsWithChildren) {
 
       <footer className="border-t">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:px-6">
-          <p className="font-heading font-semibold text-foreground">pistonpost</p>
+          <Link
+            to="/"
+            className="shrink-0 font-heading text-xl font-extrabold tracking-[-0.045em] text-foreground"
+            aria-label="PistonPost home"
+            translate="no"
+          >
+            piston<span className="text-primary">post</span>
+          </Link>
           <nav className="flex items-center gap-4" aria-label="Legal">
             {legalLinks.map((item) => (
               <Link key={item.to} to={item.to} className="hover:text-foreground hover:underline">

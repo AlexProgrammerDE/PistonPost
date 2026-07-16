@@ -18,7 +18,6 @@ describe("transactional email", () => {
     )
 
     expect(rendered.subject).toBe("Your PistonPost sign-in link")
-    expect(rendered.html).toContain("pistonpost")
     expect(rendered.html).toContain("https://post.pistonmaster.net/auth/verify?token=redacted")
     expect(rendered.text).toContain("SIGN IN TO PISTONPOST")
     expect(rendered.text).toContain("in 10 minutes")

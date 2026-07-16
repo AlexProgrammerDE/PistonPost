@@ -53,7 +53,9 @@ export function PistonPostEmail({ content }: { readonly content: EmailContent })
       <Preview>{content.preview}</Preview>
       <Body style={styles.body}>
         <Container style={styles.container}>
-          <Text style={styles.brand}>pistonpost</Text>
+          <Text style={styles.brand}>
+            piston<span style={styles.brandAccent}>post</span>
+          </Text>
           <Heading style={styles.heading}>{content.heading}</Heading>
           <Text style={styles.message}>{content.message}</Text>
           {content.code ? (
@@ -103,11 +105,15 @@ const styles = {
     padding: "32px",
   },
   brand: {
-    color: "#dc3850",
-    fontSize: "18px",
+    color: "#2e2220",
+    fontFamily: 'Outfit, "Helvetica Neue", Helvetica, sans-serif',
+    fontSize: "20px",
     fontWeight: "800",
-    letterSpacing: "-0.5px",
+    letterSpacing: "-0.9px",
+    lineHeight: "28px",
+    margin: 0,
   },
+  brandAccent: { color: "#dc3850" },
   heading: { fontSize: "28px", lineHeight: "34px", margin: "20px 0 12px" },
   message: { color: "#65504a", fontSize: "16px", lineHeight: "25px" },
   codePlate: {
