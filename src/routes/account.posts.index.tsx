@@ -1,9 +1,27 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
+import {
+  CircleCheck,
+  EyeOff,
+  FilePenLine,
+  FileText,
+  LoaderCircle,
+  Pencil,
+  Plus,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react"
 
 import { ManagementPageSkeleton } from "@/components/LoadingStates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { getMyPosts } from "@/server/tables"
 
 export const Route = createFileRoute("/account/posts/")({
@@ -15,13 +33,13 @@ export const Route = createFileRoute("/account/posts/")({
   pendingComponent: ManagementPageSkeleton,
 })
 
-const statusLabels = {
-  draft: "Draft",
-  processing: "Processing",
-  published: "Published",
-  moderated: "Hidden",
-  deleted: "Deleted",
-  failed: "Needs attention",
+const statusDetails = {
+  draft: { icon: FilePenLine, label: "Draft" },
+  processing: { icon: LoaderCircle, label: "Processing" },
+  published: { icon: CircleCheck, label: "Published" },
+  moderated: { icon: EyeOff, label: "Hidden" },
+  deleted: { icon: Trash2, label: "Deleted" },
+  failed: { icon: TriangleAlert, label: "Needs attention" },
 } as const
 
 function MyPosts() {
@@ -38,14 +56,25 @@ function MyPosts() {
       {posts.length === 0 ? (
         <Empty className="min-h-64 border-y">
           <EmptyHeader>
+            <EmptyMedia>
+              <FileText aria-hidden="true" className="size-8 text-muted-foreground" />
+            </EmptyMedia>
             <EmptyTitle>No posts yet</EmptyTitle>
             <EmptyDescription>Your drafts and published posts will appear here.</EmptyDescription>
           </EmptyHeader>
+          <EmptyContent>
+            <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
+              <Plus aria-hidden="true" data-icon="inline-start" />
+              Create a post
+            </Button>
+          </EmptyContent>
         </Empty>
       ) : (
         <div className="border-y">
           {posts.map((post) => {
             const destination = post.status === "published" ? "/post/$postId" : "/post/$postId/edit"
+            const status = statusDetails[post.status]
+            const StatusIcon = status.icon
             return (
               <article
                 key={post.id}
@@ -65,7 +94,8 @@ function MyPosts() {
                   )}
                   <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                     <Badge variant={post.status === "failed" ? "destructive" : "outline"}>
-                      {statusLabels[post.status]}
+                      <StatusIcon aria-hidden="true" data-icon="inline-start" />
+                      {status.label}
                     </Badge>
                     <span className="capitalize">{post.type}</span>
                     <span>{post.visibility === "public" ? "Public" : "Unlisted"}</span>
@@ -87,6 +117,7 @@ function MyPosts() {
                     size="sm"
                     render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
                   >
+                    <Pencil aria-hidden="true" data-icon="inline-start" />
                     {post.status === "published" ? "Edit" : "Edit details"}
                   </Button>
                 )}

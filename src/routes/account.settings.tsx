@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router"
 import { Link, useLocation } from "@tanstack/react-router"
+import { Bell, KeyRound, ShieldCheck, UserRound } from "lucide-react"
 
 import { SettingsLayoutSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
@@ -29,14 +30,23 @@ function SettingsLayout() {
         <nav className="mb-8 grid grid-cols-2 border-b sm:flex" aria-label="Account settings">
           {settingsViews.map((view) => {
             const active = location.pathname.endsWith(`/${view.value}`)
+            const ViewIcon =
+              view.value === "profile"
+                ? UserRound
+                : view.value === "notifications"
+                  ? Bell
+                  : view.value === "security"
+                    ? ShieldCheck
+                    : KeyRound
             return (
               <Link
                 key={view.value}
                 to="/account/settings/$settingsView"
                 params={{ settingsView: view.value }}
                 aria-current={active ? "page" : undefined}
-                className="border-b-2 border-transparent px-3 py-3 text-center text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground sm:shrink-0 sm:text-left"
+                className="inline-flex items-center justify-center gap-1.5 border-b-2 border-transparent px-3 py-3 text-center text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground sm:shrink-0 sm:justify-start sm:text-left"
               >
+                <ViewIcon aria-hidden="true" className="size-4" />
                 {view.label}
               </Link>
             )

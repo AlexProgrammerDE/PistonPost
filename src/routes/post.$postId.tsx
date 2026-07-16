@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { Link2 } from "lucide-react"
 import { Suspense, useEffect, useRef } from "react"
 import { z } from "zod"
 
@@ -66,7 +67,10 @@ function PostDetail() {
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {post.visibility === "unlisted" && (
         <div className="mx-auto mb-8 flex max-w-5xl items-center gap-3 border-y bg-muted/30 px-3 py-3 text-sm">
-          <Badge variant="outline">Unlisted</Badge>
+          <Badge variant="outline">
+            <Link2 aria-hidden="true" data-icon="inline-start" />
+            Unlisted
+          </Badge>
           <p>
             Anyone with this link can view this post. It is not private and does not appear in
             public feeds.

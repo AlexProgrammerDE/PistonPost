@@ -1,5 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { ExternalLink, MapPin } from "lucide-react"
 import { lazy, Suspense } from "react"
 import { z } from "zod"
 
@@ -110,9 +111,19 @@ function ProfileFeed() {
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
-              {profile.location && <span>{profile.location}</span>}
+              {profile.location && (
+                <span className="inline-flex items-center gap-1.5">
+                  <MapPin aria-hidden="true" className="size-4" />
+                  {profile.location}
+                </span>
+              )}
               {website && (
-                <a href={website} rel="me noreferrer" className="underline underline-offset-4">
+                <a
+                  href={website}
+                  rel="me noreferrer"
+                  className="inline-flex items-center gap-1.5 underline underline-offset-4"
+                >
+                  <ExternalLink aria-hidden="true" className="size-4" />
                   Website
                 </a>
               )}

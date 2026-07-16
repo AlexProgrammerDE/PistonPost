@@ -1,4 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
+import { ChevronRight } from "lucide-react"
 
 import { AdminOverviewSkeleton } from "@/components/LoadingStates"
 import { adminSections } from "@/lib/admin-sections"
@@ -43,8 +44,9 @@ function AdminOverview() {
                 {section.description}
               </span>
             </span>
-            <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
               {counts[section.value]}
+              <ChevronRight aria-hidden="true" className="size-4" />
             </span>
           </Link>
         ))}

@@ -22,6 +22,7 @@ import {
   type RowData,
   type SortingState,
 } from "@tanstack/react-table"
+import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Columns3, SearchX } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -32,7 +33,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import {
   Table,
   TableBody,
@@ -181,6 +182,7 @@ export function DataTable<TData extends RowData>({
         <div className="mb-3 flex justify-end">
           <DropdownMenu>
             <DropdownMenuTrigger render={<Button variant="outline" size="sm" />}>
+              <Columns3 aria-hidden="true" data-icon="inline-start" />
               Columns
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -226,10 +228,10 @@ export function DataTable<TData extends RowData>({
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         <table.FlexRender header={header} />
-                        {header.column.getIsSorted() ? (
-                          <span aria-hidden="true">
-                            {header.column.getIsSorted() === "asc" ? "↑" : "↓"}
-                          </span>
+                        {header.column.getIsSorted() === "asc" ? (
+                          <ArrowUp aria-hidden="true" className="size-3.5" />
+                        ) : header.column.getIsSorted() === "desc" ? (
+                          <ArrowDown aria-hidden="true" className="size-3.5" />
                         ) : null}
                       </button>
                     ) : (
@@ -255,6 +257,9 @@ export function DataTable<TData extends RowData>({
         {table.getRowModel().rows.length === 0 ? (
           <Empty className="min-h-56">
             <EmptyHeader>
+              <EmptyMedia>
+                <SearchX aria-hidden="true" className="size-8 text-muted-foreground" />
+              </EmptyMedia>
               <EmptyTitle>No results</EmptyTitle>
               <EmptyDescription>{emptyMessage}</EmptyDescription>
             </EmptyHeader>
@@ -279,6 +284,7 @@ export function DataTable<TData extends RowData>({
                     cursorPagination ? cursorPagination.onPrevious() : table.previousPage()
                   }
                 >
+                  <ChevronLeft aria-hidden="true" data-icon="inline-start" />
                   Previous
                 </Button>
                 <Button
@@ -288,6 +294,7 @@ export function DataTable<TData extends RowData>({
                   onClick={() => (cursorPagination ? cursorPagination.onNext() : table.nextPage())}
                 >
                   Next
+                  <ChevronRight aria-hidden="true" data-icon="inline-end" />
                 </Button>
               </div>
             </div>

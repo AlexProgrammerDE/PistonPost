@@ -1,5 +1,6 @@
 import type { QueryClient } from "@tanstack/react-query"
 import { HeadContent, Link, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
+import { ArrowLeft, House, RotateCcw } from "lucide-react"
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
@@ -63,6 +64,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         <h1>Page not found</h1>
         <p>The address may be wrong, or the page may have moved.</p>
         <Button data-not-typeset className="mt-4" nativeButton={false} render={<Link to="/" />}>
+          <ArrowLeft aria-hidden="true" data-icon="inline-start" />
           Back to latest posts
         </Button>
       </div>
@@ -75,8 +77,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         <h1>We couldn’t load this page.</h1>
         <p>Try again. If the problem continues, return to the latest posts.</p>
         <div className="not-typeset mt-4 flex justify-center gap-2">
-          <Button onClick={reset}>Try again</Button>
+          <Button onClick={reset}>
+            <RotateCcw aria-hidden="true" data-icon="inline-start" />
+            Try again
+          </Button>
           <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+            <House aria-hidden="true" data-icon="inline-start" />
             Go home
           </Button>
         </div>

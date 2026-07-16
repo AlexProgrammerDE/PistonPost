@@ -36,7 +36,7 @@ export function PostShareActions({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
-        <Link2 data-icon="inline-start" />
+        <Link2 aria-hidden="true" data-icon="inline-start" />
         Share
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
@@ -44,7 +44,7 @@ export function PostShareActions({
           <DropdownMenuItem
             onClick={() => void copyToClipboard(shareLinks().postUrl, "Post link copied.")}
           >
-            <Link2 />
+            <Link2 aria-hidden="true" />
             Copy post link
           </DropdownMenuItem>
           {imageCount > 1 ? (
@@ -56,7 +56,7 @@ export function PostShareActions({
                 )
               }
             >
-              <Copy />
+              <Copy aria-hidden="true" />
               Copy image links
             </DropdownMenuItem>
           ) : null}

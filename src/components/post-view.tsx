@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { TriangleAlert } from "lucide-react"
+import { GalleryHorizontal, LayoutGrid, Link2, MessageCircle, TriangleAlert } from "lucide-react"
 import { lazy, Suspense, useState } from "react"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
@@ -75,14 +75,21 @@ function GalleryLayoutMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+        <LayoutGrid aria-hidden="true" data-icon="inline-start" />
         Gallery options
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <DropdownMenuGroup>
           <DropdownMenuLabel>Layout</DropdownMenuLabel>
           <DropdownMenuRadioGroup value={layout} onValueChange={selectLayout}>
-            <DropdownMenuRadioItem value="masonry">Masonry</DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="browser">Image browser</DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="masonry">
+              <LayoutGrid aria-hidden="true" />
+              Masonry
+            </DropdownMenuRadioItem>
+            <DropdownMenuRadioItem value="browser">
+              <GalleryHorizontal aria-hidden="true" />
+              Image browser
+            </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuGroup>
       </DropdownMenuContent>
@@ -108,7 +115,7 @@ function PostMedia({
     return (
       <div className="grid aspect-[16/9] place-items-center border bg-muted/40 text-muted-foreground">
         <div className="flex max-w-xs flex-col items-center gap-2 px-6 text-center">
-          <TriangleAlert />
+          <TriangleAlert aria-hidden="true" />
           <p className="text-sm font-medium">This post has missing or unavailable media.</p>
         </div>
       </div>
@@ -453,7 +460,12 @@ export function PostView({
             <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt)}</time>
           </p>
         </div>
-        {post.visibility === "unlisted" && <Badge variant="outline">Unlisted</Badge>}
+        {post.visibility === "unlisted" && (
+          <Badge variant="outline">
+            <Link2 aria-hidden="true" data-icon="inline-start" />
+            Unlisted
+          </Badge>
+        )}
       </header>
 
       <div className="mb-4 flex flex-col gap-3">
@@ -503,8 +515,9 @@ export function PostView({
             to="/post/$postId"
             params={{ postId: post.id }}
             hash="discussion"
-            className="ml-auto text-xs text-muted-foreground hover:text-foreground hover:underline"
+            className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
           >
+            <MessageCircle aria-hidden="true" className="size-3.5" />
             {post.commentCount + reactionCount === 0 ? (
               "Discuss"
             ) : (

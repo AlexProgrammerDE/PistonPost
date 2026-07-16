@@ -1,7 +1,7 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { TriangleAlert } from "lucide-react"
+import { Bell, Save, TriangleAlert, UserRound } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
@@ -20,7 +20,7 @@ type ProductSettings = Awaited<ReturnType<typeof getMyProductSettings>>
 function ErrorMessage({ message }: { message: string | null }) {
   return message ? (
     <Alert variant="destructive">
-      <TriangleAlert />
+      <TriangleAlert aria-hidden="true" />
       <AlertTitle>Settings not saved</AlertTitle>
       <AlertDescription>{message}</AlertDescription>
     </Alert>
@@ -59,7 +59,10 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
     >
       <form.AppForm>
         <FieldSet>
-          <FieldLegend>Public profile</FieldLegend>
+          <FieldLegend className="flex items-center gap-2">
+            <UserRound aria-hidden="true" className="size-4 text-muted-foreground" />
+            Public profile
+          </FieldLegend>
           <FieldGroup>
             <ChangeAvatar />
             <form.AppField name="name">
@@ -81,7 +84,10 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
         </FieldSet>
         <ErrorMessage message={error} />
         <div className="flex justify-end border-t pt-5">
-          <form.SubmitButton>Save profile</form.SubmitButton>
+          <form.SubmitButton>
+            <Save aria-hidden="true" data-icon="inline-start" />
+            Save profile
+          </form.SubmitButton>
         </div>
       </form.AppForm>
     </form>
@@ -119,7 +125,10 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
     >
       <form.AppForm>
         <FieldSet>
-          <FieldLegend>Email notifications</FieldLegend>
+          <FieldLegend className="flex items-center gap-2">
+            <Bell aria-hidden="true" className="size-4 text-muted-foreground" />
+            Email notifications
+          </FieldLegend>
           <FieldGroup>
             <form.AppField name="emailNotifications">
               {(field) => (
@@ -184,7 +193,10 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
         </FieldSet>
         <ErrorMessage message={error} />
         <div className="flex justify-end border-t pt-5">
-          <form.SubmitButton>Save preferences</form.SubmitButton>
+          <form.SubmitButton>
+            <Save aria-hidden="true" data-icon="inline-start" />
+            Save preferences
+          </form.SubmitButton>
         </div>
       </form.AppForm>
     </form>

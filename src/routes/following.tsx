@@ -1,5 +1,6 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { LogIn, Newspaper, UsersRound } from "lucide-react"
 import { Suspense } from "react"
 
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
@@ -11,6 +12,7 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
 import { followingFeedQueryOptions } from "@/lib/queries/posts"
@@ -46,6 +48,9 @@ function FollowingFeed() {
       ) : (
         <Empty className="min-h-80">
           <EmptyHeader>
+            <EmptyMedia>
+              <UsersRound aria-hidden="true" className="size-8 text-muted-foreground" />
+            </EmptyMedia>
             <EmptyTitle>Sign in to see your Following feed</EmptyTitle>
             <EmptyDescription>
               Follow people and tags to keep their posts together here.
@@ -56,6 +61,7 @@ function FollowingFeed() {
               nativeButton={false}
               render={<Link to="/auth/$authView" params={{ authView: "sign-in" }} />}
             >
+              <LogIn aria-hidden="true" data-icon="inline-start" />
               Sign in
             </Button>
           </EmptyContent>
@@ -73,6 +79,9 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
     return (
       <Empty className="min-h-80">
         <EmptyHeader>
+          <EmptyMedia>
+            <UsersRound aria-hidden="true" className="size-8 text-muted-foreground" />
+          </EmptyMedia>
           <EmptyTitle>Your Following feed is empty</EmptyTitle>
           <EmptyDescription>
             Follow someone or a tag, then their public posts will appear here.
@@ -80,6 +89,7 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
         </EmptyHeader>
         <EmptyContent>
           <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+            <Newspaper aria-hidden="true" data-icon="inline-start" />
             Browse the timeline
           </Button>
         </EmptyContent>

@@ -3,6 +3,7 @@
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
+import { UserCheck, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
@@ -51,6 +52,7 @@ export function FollowButton({
         nativeButton={false}
         render={<Link to="/auth/$authView" params={{ authView: "sign-in" }} />}
       >
+        <UserPlus aria-hidden="true" data-icon="inline-start" />
         Follow
       </Button>
     )
@@ -67,7 +69,13 @@ export function FollowButton({
       disabled={mutation.isPending}
       onClick={() => mutation.mutate(!following)}
     >
-      {mutation.isPending ? <Spinner data-icon="inline-start" /> : null}
+      {mutation.isPending ? (
+        <Spinner data-icon="inline-start" />
+      ) : following ? (
+        <UserCheck aria-hidden="true" data-icon="inline-start" />
+      ) : (
+        <UserPlus aria-hidden="true" data-icon="inline-start" />
+      )}
       {following ? "Following" : "Follow"}
     </Button>
   )

@@ -1,8 +1,9 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
+import { SearchX } from "lucide-react"
 
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { PostTimeline } from "@/components/PostTimeline"
-import { Empty, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { feedQueryOptions, type FeedFilters } from "@/lib/queries/posts"
 
 export function FilteredFeed({
@@ -19,6 +20,9 @@ export function FilteredFeed({
     return (
       <Empty className="min-h-64">
         <EmptyHeader>
+          <EmptyMedia>
+            <SearchX aria-hidden="true" className="size-8 text-muted-foreground" />
+          </EmptyMedia>
           <EmptyTitle>{emptyMessage}</EmptyTitle>
         </EmptyHeader>
       </Empty>

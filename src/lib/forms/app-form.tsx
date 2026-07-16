@@ -1,6 +1,7 @@
 "use client"
 
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
+import { Plus, Tag, type LucideIcon } from "lucide-react"
 import { useState, type ComponentProps } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -98,13 +99,21 @@ function TextareaField({
   )
 }
 
+type FieldOption = {
+  icon?: LucideIcon
+  label: string
+  value: string
+}
+
 type SelectFieldProps = FieldChromeProps & {
-  options: ReadonlyArray<{ label: string; value: string }>
+  options: ReadonlyArray<FieldOption>
 }
 
 function SelectField({ label, description, options }: SelectFieldProps) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const selectedOption = options.find((option) => option.value === field.state.value)
+  const SelectedIcon = selectedOption?.icon
 
   return (
     <Field data-invalid={invalid}>
@@ -115,15 +124,26 @@ function SelectField({ label, description, options }: SelectFieldProps) {
         onValueChange={(value) => field.handleChange(value ?? "")}
       >
         <SelectTrigger id={field.name} className="w-full" aria-invalid={invalid}>
-          <SelectValue />
+          <SelectValue>
+            {selectedOption ? (
+              <>
+                {SelectedIcon ? <SelectedIcon aria-hidden="true" /> : null}
+                {selectedOption.label}
+              </>
+            ) : null}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            {options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
+            {options.map((option) => {
+              const OptionIcon = option.icon
+              return (
+                <SelectItem key={option.value} value={option.value}>
+                  {OptionIcon ? <OptionIcon aria-hidden="true" /> : null}
+                  {option.label}
+                </SelectItem>
+              )
+            })}
           </SelectGroup>
         </SelectContent>
       </Select>
@@ -150,11 +170,15 @@ function ChoiceField({ label, description, options }: SelectFieldProps) {
         className="grid w-full grid-cols-3"
         aria-labelledby={`${field.name}-label`}
       >
-        {options.map((option) => (
-          <ToggleGroupItem key={option.value} value={option.value} className="w-full">
-            {option.label}
-          </ToggleGroupItem>
-        ))}
+        {options.map((option) => {
+          const OptionIcon = option.icon
+          return (
+            <ToggleGroupItem key={option.value} value={option.value} className="w-full">
+              {OptionIcon ? <OptionIcon aria-hidden="true" data-icon="inline-start" /> : null}
+              {option.label}
+            </ToggleGroupItem>
+          )
+        })}
       </ToggleGroup>
       {description ? <FieldDescription>{description}</FieldDescription> : null}
       {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
@@ -191,6 +215,7 @@ function TagsField({ label, description }: FieldChromeProps) {
         }}
       >
         <ComboboxChips aria-invalid={invalid}>
+          <Tag aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
           {field.state.value.map((tag) => (
             <ComboboxChip key={tag}>{tag}</ComboboxChip>
           ))}
@@ -216,6 +241,7 @@ function TagsField({ label, description }: FieldChromeProps) {
             disabled={!draft.trim() || field.state.value.length >= 5}
             onClick={() => commitTags(draft)}
           >
+            <Plus aria-hidden="true" data-icon="inline-start" />
             Add
           </Button>
         </ComboboxChips>

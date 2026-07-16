@@ -8,7 +8,7 @@ import {
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
+import { Heart, History, MessageCircle, Send, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import { startTransition, useOptimistic, useState } from "react"
 import { toast } from "sonner"
 
@@ -30,6 +30,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
@@ -182,20 +183,24 @@ export function SocialPanel({
             aria-label={viewerId ? "Your reaction" : "Reaction totals"}
           >
             <ToggleGroupItem value="like" aria-label="Like" disabled={!viewerId}>
-              <ThumbsUp /> {displayedCounts.like}
+              <ThumbsUp aria-hidden="true" /> {displayedCounts.like}
             </ToggleGroupItem>
             <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={!viewerId}>
-              <ThumbsDown /> {displayedCounts.dislike}
+              <ThumbsDown aria-hidden="true" /> {displayedCounts.dislike}
             </ToggleGroupItem>
             <ToggleGroupItem value="heart" aria-label="Heart" disabled={!viewerId}>
-              <Heart /> {displayedCounts.heart}
+              <Heart aria-hidden="true" /> {displayedCounts.heart}
             </ToggleGroupItem>
           </ToggleGroup>
         )}
       </div>
 
       <div className="mt-10 grid gap-8">
-        <h2 id="discussion-title" className="font-heading text-2xl font-bold">
+        <h2
+          id="discussion-title"
+          className="flex items-center gap-2 font-heading text-2xl font-bold"
+        >
+          <MessageCircle aria-hidden="true" className="size-5 text-muted-foreground" />
           Comments
         </h2>
         {viewerPending ? (
@@ -220,7 +225,10 @@ export function SocialPanel({
                 )}
               </form.AppField>
               <div className="flex justify-end">
-                <form.SubmitButton>Post comment</form.SubmitButton>
+                <form.SubmitButton>
+                  <Send aria-hidden="true" data-icon="inline-start" />
+                  Post comment
+                </form.SubmitButton>
               </div>
             </form.AppForm>
           </form>
@@ -278,7 +286,7 @@ export function SocialPanel({
                               />
                             }
                           >
-                            <Trash2 />
+                            <Trash2 aria-hidden="true" />
                           </AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
@@ -294,6 +302,7 @@ export function SocialPanel({
                                 disabled={deleteMutation.isPending}
                                 onClick={() => deleteMutation.mutate(comment.id)}
                               >
+                                <Trash2 aria-hidden="true" data-icon="inline-start" />
                                 Delete comment
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -316,6 +325,11 @@ export function SocialPanel({
             disabled={discussion.isFetchingNextPage}
             onClick={() => discussion.fetchNextPage()}
           >
+            {discussion.isFetchingNextPage ? (
+              <Spinner aria-hidden="true" data-icon="inline-start" />
+            ) : (
+              <History aria-hidden="true" data-icon="inline-start" />
+            )}
             {discussion.isFetchingNextPage ? "Loading…" : "Load earlier comments"}
           </Button>
         ) : null}

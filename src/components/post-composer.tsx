@@ -18,7 +18,21 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { GripVertical, Trash2, TriangleAlert, Upload } from "lucide-react"
+import {
+  FileText,
+  Globe2,
+  GripVertical,
+  Images,
+  Link2,
+  LogIn,
+  Send,
+  Share2,
+  SquarePen,
+  Trash2,
+  TriangleAlert,
+  Upload,
+  Video,
+} from "lucide-react"
 import { useEffect, useReducer, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -267,7 +281,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
   if (!authenticated) {
     return (
       <Alert>
-        <TriangleAlert />
+        <TriangleAlert aria-hidden="true" />
         <AlertTitle>Sign in to post</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
           <p>You need an account before you can save a draft or upload anything.</p>
@@ -276,6 +290,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
               void navigate({ to: "/auth/$authView", params: { authView: "sign-in" } })
             }
           >
+            <LogIn aria-hidden="true" data-icon="inline-start" />
             Sign in
           </Button>
         </AlertDescription>
@@ -350,7 +365,10 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
           )}
         </form.Subscribe>
         <FieldSet>
-          <FieldLegend>Post</FieldLegend>
+          <FieldLegend className="flex items-center gap-2">
+            <SquarePen aria-hidden="true" className="size-4 text-muted-foreground" />
+            Post
+          </FieldLegend>
           <FieldGroup>
             <form.AppField name="type">
               {(field) => (
@@ -358,9 +376,9 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
                   label="Post type"
                   description="Choose text, a set of pictures, or one video."
                   options={[
-                    { label: "Text", value: "text" },
-                    { label: "Images", value: "images" },
-                    { label: "Video", value: "video" },
+                    { icon: FileText, label: "Text", value: "text" },
+                    { icon: Images, label: "Images", value: "images" },
+                    { icon: Video, label: "Video", value: "video" },
                   ]}
                 />
               )}
@@ -405,7 +423,10 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         <Separator />
 
         <FieldSet>
-          <FieldLegend>Sharing</FieldLegend>
+          <FieldLegend className="flex items-center gap-2">
+            <Share2 aria-hidden="true" className="size-4 text-muted-foreground" />
+            Sharing
+          </FieldLegend>
           <FieldGroup>
             <form.AppField name="tags" validators={{ onBlur: tagsSchema }}>
               {(field) => (
@@ -421,8 +442,8 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
                   label="Visibility"
                   description="Unlisted means anyone with the link can view it. It is not private."
                   options={[
-                    { label: "Public", value: "public" },
-                    { label: "Unlisted", value: "unlisted" },
+                    { icon: Globe2, label: "Public", value: "public" },
+                    { icon: Link2, label: "Unlisted", value: "unlisted" },
                   ]}
                 />
               )}
@@ -443,14 +464,17 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
 
         {submitError ? (
           <Alert variant="destructive">
-            <TriangleAlert />
+            <TriangleAlert aria-hidden="true" />
             <AlertTitle>Couldn’t post this</AlertTitle>
             <AlertDescription>{submitError}</AlertDescription>
           </Alert>
         ) : null}
 
         <div className="flex justify-end border-t pt-6">
-          <form.SubmitButton className="sm:min-w-36">Post it</form.SubmitButton>
+          <form.SubmitButton className="sm:min-w-36">
+            <Send aria-hidden="true" data-icon="inline-start" />
+            Post it
+          </form.SubmitButton>
         </div>
       </form.AppForm>
     </form>
@@ -502,6 +526,11 @@ function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads:
             </Badge>
           ))}
           <Badge className="ml-auto" variant="outline">
+            {values.visibility === "public" ? (
+              <Globe2 aria-hidden="true" data-icon="inline-start" />
+            ) : (
+              <Link2 aria-hidden="true" data-icon="inline-start" />
+            )}
             {values.visibility === "public" ? "Public" : "Unlisted"}
           </Badge>
         </div>
@@ -570,7 +599,7 @@ function MediaPicker({
           }}
         />
         <span className="flex max-w-sm flex-col items-center gap-2">
-          <Upload className="text-muted-foreground" />
+          <Upload aria-hidden="true" className="text-muted-foreground" />
           <span className="font-medium">Choose {type === "images" ? "images" : "a video"}</span>
           <span className="text-sm text-muted-foreground">{limit}</span>
         </span>
@@ -635,7 +664,7 @@ function SortableUpload({
             {...sortable.attributes}
             {...sortable.listeners}
           >
-            <GripVertical />
+            <GripVertical aria-hidden="true" />
           </button>
           <p className="truncate text-sm font-medium">{item.file.name}</p>
         </div>
@@ -675,7 +704,7 @@ function SortableUpload({
         disabled={item.status === "ready"}
         onClick={() => onRemove(item)}
       >
-        <Trash2 />
+        <Trash2 aria-hidden="true" />
       </Button>
     </div>
   )

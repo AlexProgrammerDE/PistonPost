@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Trash2, TriangleAlert } from "lucide-react"
+import { FilePenLine, Globe2, Link2, Save, Trash2, TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -119,7 +119,10 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
             {(isDirty) => <UnsavedChangesGuard enabled={isDirty} />}
           </form.Subscribe>
           <FieldSet>
-            <FieldLegend>Content</FieldLegend>
+            <FieldLegend className="flex items-center gap-2">
+              <FilePenLine aria-hidden="true" className="size-4 text-muted-foreground" />
+              Content
+            </FieldLegend>
             <FieldGroup>
               <form.AppField name="title">
                 {(field) => <field.TextField label="Title" maxLength={100} />}
@@ -143,8 +146,8 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                     label="Visibility"
                     description="Unlisted posts remain accessible to anyone holding the link."
                     options={[
-                      { label: "Public", value: "public" },
-                      { label: "Unlisted", value: "unlisted" },
+                      { icon: Globe2, label: "Public", value: "public" },
+                      { icon: Link2, label: "Unlisted", value: "unlisted" },
                     ]}
                   />
                 )}
@@ -154,7 +157,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
 
           {error ? (
             <Alert variant="destructive">
-              <TriangleAlert />
+              <TriangleAlert aria-hidden="true" />
               <AlertTitle>Change not saved</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
             </Alert>
@@ -163,7 +166,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
           <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
             <AlertDialog>
               <AlertDialogTrigger render={<Button type="button" variant="destructive" />}>
-                <Trash2 data-icon="inline-start" />
+                <Trash2 aria-hidden="true" data-icon="inline-start" />
                 Delete post
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -181,12 +184,16 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                     disabled={deleting}
                     onClick={() => void removePost()}
                   >
+                    {deleting ? null : <Trash2 aria-hidden="true" data-icon="inline-start" />}
                     {deleting ? "Deleting…" : "Delete post"}
                   </AlertDialogAction>
                 </AlertDialogFooter>
               </AlertDialogContent>
             </AlertDialog>
-            <form.SubmitButton>Save changes</form.SubmitButton>
+            <form.SubmitButton>
+              <Save aria-hidden="true" data-icon="inline-start" />
+              Save changes
+            </form.SubmitButton>
           </div>
         </form.AppForm>
       </form>

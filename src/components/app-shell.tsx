@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { Plus } from "lucide-react"
+import { Newspaper, Plus, UsersRound } from "lucide-react"
 import { lazy, Suspense, useSyncExternalStore, type PropsWithChildren } from "react"
 
 import { buttonVariants } from "@/components/ui/button"
@@ -47,17 +47,19 @@ export function AppShell({ children }: PropsWithChildren) {
           <nav className="ml-4 flex items-center gap-4 sm:ml-5" aria-label="Main navigation">
             <Link
               to="/"
-              className="text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
               activeOptions={{ exact: true }}
               activeProps={{ "aria-current": "page" }}
             >
+              <Newspaper aria-hidden="true" className="hidden size-4 sm:block" />
               Timeline
             </Link>
             <Link
               to="/following"
-              className="text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
               activeProps={{ "aria-current": "page" }}
             >
+              <UsersRound aria-hidden="true" className="hidden size-4 sm:block" />
               Following
             </Link>
           </nav>
@@ -70,7 +72,7 @@ export function AppShell({ children }: PropsWithChildren) {
                 "w-10 px-0 sm:w-auto sm:px-4",
               )}
             >
-              <Plus data-icon="inline-start" />
+              <Plus aria-hidden="true" data-icon="inline-start" />
               <span className="sr-only sm:not-sr-only">New post</span>
             </Link>
             <Suspense

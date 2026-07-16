@@ -46,7 +46,7 @@ export function PublicAccountMenu() {
         params={{ authView: "sign-in" }}
         className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
       >
-        <LogIn />
+        <LogIn aria-hidden="true" data-icon="inline-start" />
         Sign in
       </Link>
     )
@@ -63,7 +63,7 @@ export function PublicAccountMenu() {
         <Avatar>
           {user.image ? <ResponsiveAvatarImage src={user.image} sizes="2rem" alt="" /> : null}
           <AvatarFallback className="text-foreground">
-            {initials(label) || <User2 />}
+            {initials(label) || <User2 aria-hidden="true" />}
           </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
@@ -79,17 +79,17 @@ export function PublicAccountMenu() {
           <DropdownMenuItem
             render={<Link to="/user/$username" params={{ username: user.username }} />}
           >
-            <User2 />
+            <User2 aria-hidden="true" />
             Public profile
           </DropdownMenuItem>
         ) : null}
         <DropdownMenuItem render={<Link to="/account/posts" />}>
-          <FileText />
+          <FileText aria-hidden="true" />
           My posts
         </DropdownMenuItem>
         {user.role === "admin" ? (
           <DropdownMenuItem render={<Link to="/admin" />}>
-            <Shield />
+            <Shield aria-hidden="true" />
             Administration
           </DropdownMenuItem>
         ) : null}
@@ -98,12 +98,12 @@ export function PublicAccountMenu() {
             <Link to="/account/settings/$settingsView" params={{ settingsView: "profile" }} />
           }
         >
-          <Settings />
+          <Settings aria-hidden="true" />
           Settings
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem render={<Link to="/auth/$authView" params={{ authView: "sign-out" }} />}>
-          <LogOut />
+          <LogOut aria-hidden="true" />
           Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

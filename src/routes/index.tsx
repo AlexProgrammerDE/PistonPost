@@ -1,6 +1,6 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { TriangleAlert } from "lucide-react"
+import { Newspaper, Plus, RotateCcw, TriangleAlert } from "lucide-react"
 import { Suspense } from "react"
 
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
@@ -13,6 +13,7 @@ import {
   EmptyContent,
   EmptyDescription,
   EmptyHeader,
+  EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
 import { feedQueryOptions } from "@/lib/queries/posts"
@@ -65,7 +66,7 @@ function PublicFeedResults() {
     <>
       {feed.fetchStatus === "paused" && (
         <Alert className="mb-8">
-          <TriangleAlert />
+          <TriangleAlert aria-hidden="true" />
           <AlertTitle>You are offline</AlertTitle>
           <AlertDescription>Showing the posts already stored in this browser.</AlertDescription>
         </Alert>
@@ -74,11 +75,15 @@ function PublicFeedResults() {
       {posts.length === 0 ? (
         <Empty className="min-h-80">
           <EmptyHeader>
+            <EmptyMedia>
+              <Newspaper aria-hidden="true" className="size-8 text-muted-foreground" />
+            </EmptyMedia>
             <EmptyTitle>No public posts yet</EmptyTitle>
             <EmptyDescription>Create the first post for this feed.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
             <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
+              <Plus aria-hidden="true" data-icon="inline-start" />
               Create a post
             </Button>
           </EmptyContent>
@@ -103,11 +108,12 @@ function FeedError({ reset }: { readonly error: Error; readonly reset: () => voi
   return (
     <main className="mx-auto grid min-h-[60svh] w-full max-w-2xl place-items-center px-4">
       <Alert variant="destructive">
-        <TriangleAlert />
+        <TriangleAlert aria-hidden="true" />
         <AlertTitle>The feed could not be loaded</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
           <span>Check your connection and try again.</span>
           <Button variant="outline" onClick={reset}>
+            <RotateCcw aria-hidden="true" data-icon="inline-start" />
             Try again
           </Button>
         </AlertDescription>

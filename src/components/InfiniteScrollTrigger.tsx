@@ -1,5 +1,6 @@
 "use client"
 
+import { History, RotateCcw, WifiOff } from "lucide-react"
 import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -53,11 +54,16 @@ export function InfiniteScrollTrigger({
       : isFetchingNextPage
         ? "Loading posts…"
         : "Load older posts"
+  const ActionIcon = isPaused ? WifiOff : isFetchNextPageError ? RotateCcw : History
 
   return (
     <div ref={triggerRef} className="mt-10 flex justify-center">
       <Button variant="outline" disabled={isFetching || isPaused} onClick={() => void onLoadMore()}>
-        {isFetchingNextPage ? <Spinner aria-hidden="true" /> : null}
+        {isFetchingNextPage ? (
+          <Spinner aria-hidden="true" data-icon="inline-start" />
+        ) : (
+          <ActionIcon aria-hidden="true" data-icon="inline-start" />
+        )}
         {label}
       </Button>
       <span className="sr-only" aria-live="polite">
