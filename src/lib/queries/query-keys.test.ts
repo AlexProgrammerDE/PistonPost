@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import { adminRowsKeys } from "./admin"
+import { followKeys } from "./follows"
 import { discussionKeys } from "./social"
 
 describe("server-state query keys", () => {
@@ -27,5 +28,22 @@ describe("server-state query keys", () => {
 
     expect(adminRowsKeys.list(input)).toEqual(["admin", "rows", input])
     expect(adminRowsKeys.list({ ...input, query: "video" })).not.toEqual(adminRowsKeys.list(input))
+  })
+
+  test("keeps follow state separate for each viewer and target", () => {
+    const target = { kind: "user" as const, username: "author" }
+
+    expect(followKeys.state("viewer-one", target)).toEqual([
+      "follows",
+      "state",
+      "viewer-one",
+      target,
+    ])
+    expect(followKeys.state("viewer-one", target)).not.toEqual(
+      followKeys.state("viewer-two", target),
+    )
+    expect(followKeys.state("viewer-one", target)).not.toEqual(
+      followKeys.state("viewer-one", { kind: "tag", tag: "art" }),
+    )
   })
 })

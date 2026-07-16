@@ -27,6 +27,10 @@ export function canDeleteComment(actor: Actor, commentAuthorId: string) {
   return isOwner(actor, commentAuthorId) || isAdministrator(actor)
 }
 
+export function canFollowUser(viewerId: string, targetUserId: string) {
+  return viewerId !== targetUserId
+}
+
 export function requireAuthenticated(actor: Actor, action: string) {
   return actor.kind === "authenticated"
     ? Effect.succeed(actor)

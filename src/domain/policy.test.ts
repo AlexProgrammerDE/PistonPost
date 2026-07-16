@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
 import type { Actor, Post } from "./model"
-import { canDeleteComment, canManagePost, canViewPost } from "./policy"
+import { canDeleteComment, canFollowUser, canManagePost, canViewPost } from "./policy"
 
 const anonymous: Actor = { kind: "anonymous" }
 const owner: Actor = { kind: "authenticated", userId: "owner", roles: [] }
@@ -52,5 +52,10 @@ describe("post policy", () => {
     expect(canDeleteComment(owner, "owner")).toBeTrue()
     expect(canDeleteComment(admin, "owner")).toBeTrue()
     expect(canDeleteComment(other, "owner")).toBeFalse()
+  })
+
+  it("prevents users from following themselves", () => {
+    expect(canFollowUser("viewer", "author")).toBeTrue()
+    expect(canFollowUser("viewer", "viewer")).toBeFalse()
   })
 })

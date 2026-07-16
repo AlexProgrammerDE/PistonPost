@@ -56,6 +56,7 @@ The rewrite must support:
 
 - Email-based accounts and modern account security.
 - Public profiles with usernames, avatars, bio, website, and location.
+- User and tag follows with a private feed that combines both sources.
 - Text, image-gallery, and video posts.
 - Public, unlisted, draft, moderated, and deleted lifecycle states.
 - Up to five normalized tags per post, preserving the old tag contract.
@@ -345,6 +346,13 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 
 Changing reaction type updates the row. Removing a reaction deletes it. Aggregate counts are queried or projected, never trusted from the client.
 
+#### userFollows and tagFollows
+
+- userFollows.followerId and followedUserId form the primary key.
+- Self-follows are rejected by domain policy and a database check.
+- tagFollows.userId and tagId form the primary key.
+- Follow rows cascade when either account or tag is deleted.
+
 #### auditEvents
 
 - id, actorId, action, entityType, entityId.
@@ -373,6 +381,8 @@ At minimum:
 - postTags by tagId and postId.
 - comments by postId, status, and createdAt.
 - reactions by postId and type.
+- userFollows by followedUserId and followerId.
+- tagFollows by tagId and userId.
 - profiles by normalizedUsername.
 - mediaAssets by ownerId, status, and createdAt.
 - outbox by processedAt and availableAt.
@@ -458,6 +468,7 @@ All email jobs must be idempotent. Queue payloads carry a template key and safe 
 
 ### Authenticated
 
+- /following: public posts from followed users or followed tags, deduplicated and cursor paginated.
 - /account/posts/new: post composer.
 - /account/posts: responsive owner management list covering draft, processing, published,
   unlisted, failed, moderated, and deleted states.
@@ -620,7 +631,7 @@ Workers Cache is enabled, but code decides what is safe:
 - Public home, tag, profile, and published-post documents may use short edge TTL plus stale-while-revalidate.
 - Static assets use content hashes and immutable caching.
 - Public image variants can use long cache lifetimes.
-- Better Auth, account, admin, mutation, preview, draft, unlisted, and viewer-personalized responses use private or no-store.
+- Better Auth, account, admin, following, mutation, preview, draft, unlisted, and viewer-personalized responses use private or no-store.
 - Reaction state for the current viewer must not leak into a public cached response. Return aggregate public counts separately from viewer state or keep the response private.
 - Invalidate or version public cached documents after publish, edit, moderation, or delete.
 
@@ -803,6 +814,7 @@ Exit criteria:
 - [x] Implement optimistic like, dislike, heart, and clear reaction mutations.
 - [x] Implement comment creation and deletion.
 - [x] Add comment and reaction rate limits.
+- [x] Implement user and tag follows with a private Following feed.
 - [x] Implement profile and preference forms.
 - [x] Implement account deletion Workflow.
 - [x] Install and pin TanStack Table v9.
@@ -956,3 +968,7 @@ Record future changes here with date, decision, reason, and affected phases.
   components. Import icons directly from `lucide-react` so application code follows generated
   shadcn usage and does not depend on a local icon barrel. This affects the shared UI system across
   Phases 4 to 7.
+- 2026-07-16: Add user and tag following as an explicit product expansion requested after the
+  initial scope was implemented. A private `/following` navbar destination combines public posts
+  from followed accounts and followed tags, while profile and tag pages own the follow controls.
+  This affects Phases 3, 5, 7, and 9.

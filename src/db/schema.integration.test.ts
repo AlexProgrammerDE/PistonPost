@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
+import { eq } from "drizzle-orm"
+
 import { createPost, createUser } from "./factories"
-import { postTags, posts, profiles, reactions, tags, user } from "./schema"
+import { postTags, posts, profiles, reactions, tagFollows, tags, user, userFollows } from "./schema"
 import { createMigratedTestDatabase } from "./test-database"
 
 let close: (() => void) | undefined
@@ -97,6 +99,35 @@ describe("domain schema", () => {
           .map(({ type }) => type),
       ),
     ).toEqual(new Set(["like", "dislike", "heart"]))
+  })
+
+  it("enforces stable user and tag follow relationships", () => {
+    const db = database()
+    db.insert(user)
+      .values([
+        createUser({ id: "viewer", email: "viewer@example.com" }),
+        createUser({ id: "author", email: "author@example.com" }),
+      ])
+      .run()
+    db.insert(tags).values({ id: "art", displayName: "Art", normalizedName: "art" }).run()
+
+    expect(() =>
+      db.insert(userFollows).values({ followerId: "viewer", followedUserId: "viewer" }).run(),
+    ).toThrow()
+
+    db.insert(userFollows).values({ followerId: "viewer", followedUserId: "author" }).run()
+    db.insert(tagFollows).values({ userId: "viewer", tagId: "art" }).run()
+
+    expect(() =>
+      db.insert(userFollows).values({ followerId: "viewer", followedUserId: "author" }).run(),
+    ).toThrow()
+    expect(db.select().from(userFollows).all()).toHaveLength(1)
+    expect(db.select().from(tagFollows).all()).toHaveLength(1)
+
+    db.delete(user).where(eq(user.id, "viewer")).run()
+
+    expect(db.select().from(userFollows).all()).toHaveLength(0)
+    expect(db.select().from(tagFollows).all()).toHaveLength(0)
   })
 
   it("rejects published posts without a publication timestamp", () => {

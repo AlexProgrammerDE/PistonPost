@@ -27,6 +27,15 @@ describe("applyResponseCachePolicy", () => {
     expect(response.headers.get("Cache-Control")).toBe(PRIVATE_CACHE_CONTROL)
   })
 
+  it("never places the Following feed in the public document cache", () => {
+    const response = applyResponseCachePolicy(
+      new Request("https://post.pistonmaster.net/following"),
+      new Response("following"),
+    )
+
+    expect(response.headers.get("Cache-Control")).toBe(PRIVATE_CACHE_CONTROL)
+  })
+
   it("keeps mutations and responses that set cookies private", () => {
     const mutation = applyResponseCachePolicy(
       new Request("https://post.pistonmaster.net/post/example", { method: "POST" }),

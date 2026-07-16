@@ -3,7 +3,7 @@ import { check, index, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-
 
 import { user } from "./auth.generated"
 import { now, timestamp } from "./common"
-import { posts } from "./posts"
+import { posts, tags } from "./posts"
 
 export const comments = sqliteTable(
   "comments",
@@ -49,5 +49,40 @@ export const reactions = sqliteTable(
     primaryKey({ columns: [table.postId, table.userId, table.type] }),
     index("reactions_post_type_idx").on(table.postId, table.type),
     check("reactions_type_check", sql`${table.type} in ('like', 'dislike', 'heart')`),
+  ],
+)
+
+export const userFollows = sqliteTable(
+  "user_follows",
+  {
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    followedUserId: text("followed_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().default(now),
+  },
+  (table) => [
+    primaryKey({ columns: [table.followerId, table.followedUserId] }),
+    index("user_follows_followed_user_idx").on(table.followedUserId, table.followerId),
+    check("user_follows_not_self_check", sql`${table.followerId} <> ${table.followedUserId}`),
+  ],
+)
+
+export const tagFollows = sqliteTable(
+  "tag_follows",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tags.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().default(now),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.tagId] }),
+    index("tag_follows_tag_idx").on(table.tagId, table.userId),
   ],
 )

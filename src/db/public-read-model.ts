@@ -1,8 +1,9 @@
 import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 
 import type { PublicPostCursor } from "@/domain"
 
-import type { D1DatabaseClient } from "./d1-database"
+import type * as databaseSchema from "./schema"
 import {
   comments,
   mediaAssets,
@@ -11,9 +12,13 @@ import {
   posts,
   profiles,
   reactions,
+  tagFollows,
   tags,
   user,
+  userFollows,
 } from "./schema"
+
+type ReadDatabase = BaseSQLiteDatabase<"sync" | "async", unknown, typeof databaseSchema>
 
 export type PublicPostMedia = {
   readonly id: string
@@ -53,6 +58,7 @@ export type PublicFeedInput = {
   readonly limit: number
   readonly tag?: string
   readonly username?: string
+  readonly followingUserId?: string
 }
 
 export type PublicFeedPage = {
@@ -89,7 +95,7 @@ type BasePostRow = {
 }
 
 export async function listPublicPostReads(
-  database: D1DatabaseClient,
+  database: ReadDatabase,
   input: PublicFeedInput,
 ): Promise<PublicFeedPage> {
   const limit = Math.min(Math.max(input.limit, 1), 30)
@@ -105,6 +111,21 @@ export async function listPublicPostReads(
         inner join ${tags} on ${tags.id} = ${postTags.tagId}
         where ${postTags.postId} = ${posts.id}
           and ${tags.normalizedName} = ${input.tag}
+      )`
+    : undefined
+  const followingFilter = input.followingUserId
+    ? sql`(
+        exists (
+          select 1 from ${userFollows}
+          where ${userFollows.followerId} = ${input.followingUserId}
+            and ${userFollows.followedUserId} = ${posts.authorId}
+        )
+        or exists (
+          select 1 from ${postTags}
+          inner join ${tagFollows} on ${tagFollows.tagId} = ${postTags.tagId}
+          where ${postTags.postId} = ${posts.id}
+            and ${tagFollows.userId} = ${input.followingUserId}
+        )
       )`
     : undefined
 
@@ -131,6 +152,7 @@ export async function listPublicPostReads(
         eq(posts.visibility, "public"),
         cursorFilter,
         tagFilter,
+        followingFilter,
         input.username ? eq(profiles.normalizedUsername, input.username) : undefined,
       ),
     )
@@ -150,7 +172,7 @@ export async function listPublicPostReads(
   }
 }
 
-export async function getPublishedPostRead(database: D1DatabaseClient, id: string) {
+export async function getPublishedPostRead(database: ReadDatabase, id: string) {
   const row = await database
     .select({
       id: posts.id,
@@ -177,7 +199,7 @@ export async function getPublishedPostRead(database: D1DatabaseClient, id: strin
 }
 
 export async function getPublishedPostTrackingContext(
-  database: D1DatabaseClient,
+  database: ReadDatabase,
   id: string,
 ): Promise<PublishedPostTrackingContext | null> {
   const post = await database
@@ -189,7 +211,7 @@ export async function getPublishedPostTrackingContext(
   return post ?? null
 }
 
-export async function getPublicProfileRead(database: D1DatabaseClient, username: string) {
+export async function getPublicProfileRead(database: ReadDatabase, username: string) {
   return database
     .select({
       username: profiles.username,
@@ -209,7 +231,7 @@ export async function getPublicProfileRead(database: D1DatabaseClient, username:
 }
 
 export async function listPublicSitemapRecords(
-  database: D1DatabaseClient,
+  database: ReadDatabase,
   limit = 49_997,
 ): Promise<ReadonlyArray<PublicSitemapRecord>> {
   return database
@@ -229,10 +251,7 @@ export async function listPublicSitemapRecords(
     .limit(Math.min(Math.max(limit, 1), 49_997))
 }
 
-async function hydratePublicPosts(
-  database: D1DatabaseClient,
-  postRows: ReadonlyArray<BasePostRow>,
-) {
+async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArray<BasePostRow>) {
   const postIds = postRows.map((post) => post.id)
   if (postIds.length === 0) return []
 

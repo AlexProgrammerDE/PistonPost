@@ -50,4 +50,25 @@ describe("hot D1 query plans", () => {
         ORDER BY created_at DESC LIMIT 21`),
     ).toContain("media_assets_owner_status_created_idx")
   })
+
+  test("uses relationship indexes for the Following feed", () => {
+    const followingPlan = plan(`SELECT id FROM posts
+      WHERE status = 'published' AND visibility = 'public'
+        AND (
+          exists (
+            select 1 from user_follows
+            where follower_id = 'viewer' and followed_user_id = posts.author_id
+          )
+          or exists (
+            select 1 from post_tags
+            inner join tag_follows on tag_follows.tag_id = post_tags.tag_id
+            where post_tags.post_id = posts.id and tag_follows.user_id = 'viewer'
+          )
+        )
+      ORDER BY published_at DESC, id DESC LIMIT 13`)
+
+    expect(followingPlan).toContain("posts_discovery_idx")
+    expect(followingPlan).toContain("sqlite_autoindex_user_follows_1")
+    expect(followingPlan).toContain("sqlite_autoindex_tag_follows_1")
+  })
 })
