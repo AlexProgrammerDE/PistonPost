@@ -55,7 +55,7 @@ export function MagicLinkButton({ view }: MagicLinkButtonProps) {
         isPending && "pointer-events-none opacity-50",
       )}
     >
-      {isMagicLinkView ? <Lock data-icon="inline-start" /> : <Mail data-icon="inline-start" />}
+      {isMagicLinkView ? <Lock /> : <Mail />}
 
       {localization.auth.continueWith.replace(
         "{{provider}}",

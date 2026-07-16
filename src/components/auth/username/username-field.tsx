@@ -1,21 +1,16 @@
-"use client"
-
 import {
   type UsernameAuthClient,
   useAuth,
   useAuthPlugin,
-  useIsUsernameAvailable
+  useIsUsernameAvailable,
 } from "@better-auth-ui/react"
 import { useDebouncer } from "@tanstack/react-pacer"
-import { Check, X } from "lucide-react"
 import { useState } from "react"
+
 import type { AdditionalFieldProps } from "@/components/auth/additional-field"
+import { Check, X } from "@/components/icons"
 import { Field, FieldError } from "@/components/ui/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from "@/components/ui/input-group"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
@@ -26,18 +21,14 @@ import { usernamePlugin } from "@/lib/auth/username-plugin"
  * validation (minLength, required, etc.) — availability feedback is shown
  * via the icon and `aria-label` without affecting the field's invalid state.
  */
-export function UsernameField({
-  name,
-  field,
-  isPending
-}: AdditionalFieldProps) {
+export function UsernameField({ name, field, isPending }: AdditionalFieldProps) {
   const { authClient, localization: authLocalization } = useAuth()
   const {
     localization,
     minUsernameLength,
     maxUsernameLength,
     isUsernameAvailable: checkAvailability,
-    usernamePrefix
+    usernamePrefix,
   } = useAuthPlugin(usernamePlugin)
 
   const currentUsername = String(field.defaultValue ?? "")
@@ -48,9 +39,9 @@ export function UsernameField({
     mutate: requestAvailability,
     data: availability,
     error: availabilityError,
-    reset: resetAvailability
+    reset: resetAvailability,
   } = useIsUsernameAvailable(authClient as UsernameAuthClient, {
-    onError: () => {}
+    onError: () => {},
   })
 
   const debouncer = useDebouncer(
@@ -63,7 +54,7 @@ export function UsernameField({
 
       requestAvailability({ username: trimmed })
     },
-    { wait: 500 }
+    { wait: 500 },
   )
 
   function handleChange(next: string) {
@@ -84,11 +75,7 @@ export function UsernameField({
       <Label htmlFor={name}>{field.label}</Label>
 
       <InputGroup>
-        {usernamePrefix && (
-          <InputGroupAddon align="inline-start">
-            {usernamePrefix}
-          </InputGroupAddon>
-        )}
+        {usernamePrefix && <InputGroupAddon align="inline-start">{usernamePrefix}</InputGroupAddon>}
 
         <InputGroupInput
           id={name}
@@ -108,14 +95,8 @@ export function UsernameField({
             const msg = el.validity.valueMissing
               ? authLocalization.auth.fieldRequired
               : el.validity.tooShort
-                ? authLocalization.auth.tooShort.replace(
-                    "{{min}}",
-                    String(minUsernameLength)
-                  )
-                : authLocalization.auth.tooLong.replace(
-                    "{{max}}",
-                    String(maxUsernameLength)
-                  )
+                ? authLocalization.auth.tooShort.replace("{{min}}", String(minUsernameLength))
+                : authLocalization.auth.tooLong.replace("{{max}}", String(maxUsernameLength))
             setError(msg)
           }}
           aria-invalid={!!error}
@@ -134,9 +115,9 @@ export function UsernameField({
             }
           >
             {availability?.available ? (
-              <Check className="size-4 text-foreground" />
+              <Check className="text-foreground" />
             ) : availabilityError || availability?.available === false ? (
-              <X className="size-4 text-destructive" />
+              <X className="text-destructive" />
             ) : (
               <Spinner />
             )}

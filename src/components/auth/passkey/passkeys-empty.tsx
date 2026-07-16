@@ -2,7 +2,9 @@
 
 import { useAuthPlugin } from "@better-auth-ui/react"
 
+import { Fingerprint } from "@/components/icons"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 
 export type PasskeysEmptyProps = {
@@ -13,16 +15,22 @@ export function PasskeysEmpty({ onAddPress }: PasskeysEmptyProps) {
   const { localization: passkeyLocalization } = useAuthPlugin(passkeyPlugin)
 
   return (
-    <div className="flex flex-col items-center justify-center gap-4 p-4 sm:p-6">
-      <div className="flex flex-col items-center justify-center gap-1 text-center">
-        <p className="text-sm font-semibold">{passkeyLocalization.noPasskeys}</p>
+    <Card className="border-0 bg-transparent shadow-none ring-0">
+      <CardContent className="flex flex-col items-center justify-center gap-4">
+        <div className="flex size-10 items-center justify-center rounded-md bg-muted">
+          <Fingerprint className="size-4.5" />
+        </div>
 
-        <p className="text-xs text-muted-foreground">{passkeyLocalization.passkeysDescription}</p>
-      </div>
+        <div className="flex flex-col items-center justify-center gap-1 text-center">
+          <p className="text-sm font-semibold">{passkeyLocalization.noPasskeys}</p>
 
-      <Button size="sm" onClick={onAddPress}>
-        {passkeyLocalization.addPasskey}
-      </Button>
-    </div>
+          <p className="text-xs text-muted-foreground">{passkeyLocalization.passkeysDescription}</p>
+        </div>
+
+        <Button size="sm" onClick={onAddPress}>
+          {passkeyLocalization.addPasskey}
+        </Button>
+      </CardContent>
+    </Card>
   )
 }

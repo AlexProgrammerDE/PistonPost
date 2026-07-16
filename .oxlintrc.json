@@ -82,7 +82,6 @@
     "src/components/auth/email/**",
     "src/components/auth/multi-session/**",
     "src/components/auth/organization/**",
-    "src/components/auth/username/**",
     "src/components/auth/settings/account/user-profile.tsx",
     "src/components/auth/settings/settings.tsx",
     "src/components/auth/user/user-button.tsx",

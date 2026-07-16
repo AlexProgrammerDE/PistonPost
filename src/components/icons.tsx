@@ -29,7 +29,6 @@ import {
   ThumbsUpIcon,
   Unlink01Icon,
   Upload04Icon,
-  UserAccountIcon,
   UserIcon,
   FavouriteIcon,
   DragDropVerticalIcon,
@@ -74,5 +73,4 @@ export const Heart = createIcon(FavouriteIcon)
 export const TriangleAlert = createIcon(Alert02Icon)
 export const Upload = createIcon(Upload04Icon)
 export const User2 = createIcon(UserIcon)
-export const UserRoundCog = createIcon(UserAccountIcon)
 export const X = createIcon(Cancel01Icon)

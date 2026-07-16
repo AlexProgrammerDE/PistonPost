@@ -1,10 +1,25 @@
 import { createAuthPlugin } from "@better-auth-ui/core"
+import {
+  usernamePlugin as coreUsernamePlugin,
+  type UsernamePluginOptions,
+} from "@better-auth-ui/core/plugins"
 
-import { UsernameButton } from "@/components/auth/username-button"
-import { UsernameSignIn } from "@/components/auth/username-sign-in"
+import { SignInUsername } from "@/components/auth/username/sign-in-username"
+import { UsernameField } from "@/components/auth/username/username-field"
 
-export const usernamePlugin = createAuthPlugin("username", () => ({
-  viewPaths: { auth: { username: "username" } },
-  authButtons: [UsernameButton],
-  views: { auth: { username: UsernameSignIn } },
-}))
+export const usernamePlugin = createAuthPlugin(
+  coreUsernamePlugin.id,
+  (options: UsernamePluginOptions = {}) => {
+    const core = coreUsernamePlugin(options)
+
+    return {
+      ...core,
+      additionalFields: core.additionalFields?.map((field) =>
+        field.name === "username" ? Object.assign({}, field, { render: UsernameField }) : field,
+      ),
+      views: {
+        auth: { signIn: SignInUsername },
+      },
+    }
+  },
+)

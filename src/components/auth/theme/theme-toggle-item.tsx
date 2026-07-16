@@ -29,7 +29,7 @@ function handleTabsKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
 }
 
 /**
- * Theme toggle dropdown item used inside the account menu. Callers are responsible
+ * Theme toggle dropdown item used inside `UserButton`. Callers are responsible
  * for ensuring theming is configured before rendering this component.
  */
 export function ThemeToggleItem() {

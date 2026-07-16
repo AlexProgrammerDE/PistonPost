@@ -36,11 +36,14 @@ export function Passkeys({ className }: PasskeysProps) {
       <div className="flex items-end justify-between gap-3">
         <h2 className="truncate text-sm font-semibold">{passkeyLocalization.passkeys}</h2>
 
-        {!isPending && passkeys?.length ? (
-          <Button className="shrink-0" size="sm" onClick={() => setAddOpen(true)}>
-            {passkeyLocalization.addPasskey}
-          </Button>
-        ) : null}
+        <Button
+          className="shrink-0"
+          size="sm"
+          disabled={isPending}
+          onClick={() => setAddOpen(true)}
+        >
+          {passkeyLocalization.addPasskey}
+        </Button>
       </div>
 
       <Card className="p-0">

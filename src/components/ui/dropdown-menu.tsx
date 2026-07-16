@@ -1,3 +1,5 @@
+"use client"
+
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { ArrowRight01Icon, Tick02Icon } from "@hugeicons/core-free-icons"
 import { HugeiconsIcon } from "@hugeicons/react"

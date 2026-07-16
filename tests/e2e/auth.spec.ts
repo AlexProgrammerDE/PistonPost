@@ -1,21 +1,14 @@
 import { expect, test } from "@playwright/test"
 
 test.describe("authentication", () => {
-  test("offers password, magic-link, username, and recovery entry points", async ({ page }) => {
+  test("offers username, password, magic-link, and recovery entry points", async ({ page }) => {
     await page.goto("/auth/sign-in")
 
-    await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible()
-    await expect(page.getByLabel("Email")).toBeVisible()
+    await expect(page.getByRole("heading", { name: /sign in/i })).toBeVisible()
+    await expect(page.getByLabel("Username")).toHaveAttribute("placeholder", "Username or email")
     await expect(page.getByLabel("Password")).toBeVisible()
-    await page.getByText("Other ways to sign in", { exact: true }).click()
     await expect(page.getByRole("link", { name: "Continue with Magic Link" })).toBeVisible()
-    await expect(page.getByRole("link", { name: "Continue with username" })).toBeVisible()
     await expect(page.getByRole("link", { name: /forgot/i })).toBeVisible()
-
-    await page.getByRole("link", { name: "Continue with username" }).click()
-    await expect(page).toHaveURL(/\/auth\/username$/)
-    await expect(page.getByRole("heading", { name: "Sign in with your username" })).toBeVisible()
-    await expect(page.getByLabel("Username")).toBeVisible()
 
     await page.goto("/auth/magic-link")
     await expect(page.getByRole("heading", { name: /magic link/i })).toBeVisible()

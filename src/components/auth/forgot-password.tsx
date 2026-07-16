@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuth, useFetchOptions, useRequestPasswordReset } from "@better-auth-ui/react"
 import { type SyntheticEvent, useState } from "react"
 import { toast } from "sonner"

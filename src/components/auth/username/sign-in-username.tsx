@@ -1,3 +1,5 @@
+"use client"
+
 import { authMutationKeys } from "@better-auth-ui/core"
 import {
   type UsernameAuthClient,
@@ -5,14 +7,12 @@ import {
   useAuthPlugin,
   useFetchOptions,
   useSignInEmail,
-  useSignInUsername
+  useSignInUsername,
 } from "@better-auth-ui/react"
 import { useIsMutating } from "@tanstack/react-query"
 import { type SyntheticEvent, useState } from "react"
-import {
-  ProviderButtons,
-  type SocialLayout
-} from "@/components/auth/provider-buttons"
+
+import { ProviderButtons, type SocialLayout } from "@/components/auth/provider-buttons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -21,12 +21,13 @@ import {
   FieldDescription,
   FieldError,
   FieldGroup,
-  FieldSeparator
+  FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
+import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 export type SignInUsernameProps = {
@@ -47,7 +48,7 @@ function isEmail(value: string): boolean {
 export function SignInUsername({
   className,
   socialLayout,
-  socialPosition = "bottom"
+  socialPosition = "bottom",
 }: SignInUsernameProps) {
   const {
     authClient,
@@ -59,7 +60,7 @@ export function SignInUsername({
     socialProviders,
     viewPaths,
     navigate,
-    Link
+    Link,
   } = useAuth()
 
   const { fetchOptions, resetFetchOptions } = useFetchOptions()
@@ -68,28 +69,28 @@ export function SignInUsername({
 
   const [password, setPassword] = useState("")
 
-  const { mutate: signInEmail, isPending: isSignInEmailPending } =
-    useSignInEmail(authClient, {
-      onError: (error, { email }) => {
-        setPassword("")
+  const { mutate: signInEmail, isPending: isSignInEmailPending } = useSignInEmail(authClient, {
+    onError: (error, { email }) => {
+      setPassword("")
 
-        if (error.error?.code === "EMAIL_NOT_VERIFIED") {
-          sessionStorage.setItem("better-auth-ui.verify-email", email)
-          navigate({
-            to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`
-          })
-        }
-
-        resetFetchOptions()
-      },
-      onSuccess: () => {
-        sessionStorage.removeItem("better-auth-ui.verify-email")
-        navigate({ to: redirectTo })
+      if (error.error?.code === "EMAIL_NOT_VERIFIED") {
+        sessionStorage.setItem("better-auth-ui.verify-email", email)
+        navigate({
+          to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`,
+        })
       }
-    })
 
-  const { mutate: signInUsername, isPending: isSignInUsernamePending } =
-    useSignInUsername(authClient as UsernameAuthClient, {
+      resetFetchOptions()
+    },
+    onSuccess: () => {
+      sessionStorage.removeItem("better-auth-ui.verify-email")
+      navigate({ to: redirectTo })
+    },
+  })
+
+  const { mutate: signInUsername, isPending: isSignInUsernamePending } = useSignInUsername(
+    authClient as UsernameAuthClient,
+    {
       onError: (error) => {
         setPassword("")
 
@@ -97,7 +98,7 @@ export function SignInUsername({
           sessionStorage.removeItem("better-auth-ui.verify-email")
 
           navigate({
-            to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`
+            to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`,
           })
         }
 
@@ -106,21 +107,20 @@ export function SignInUsername({
       onSuccess: () => {
         sessionStorage.removeItem("better-auth-ui.verify-email")
         navigate({ to: redirectTo })
-      }
-    })
+      },
+    },
+  )
 
   const signInMutating = useIsMutating({
-    mutationKey: authMutationKeys.signIn.all
+    mutationKey: authMutationKeys.signIn.all,
   })
   const signUpMutating = useIsMutating({
-    mutationKey: authMutationKeys.signUp.all
+    mutationKey: authMutationKeys.signUp.all,
   })
   const isPending = signInMutating + signUpMutating > 0
   const isSignInPending = isSignInEmailPending || isSignInUsernamePending
 
-  const Captcha = plugins.find(
-    (plugin) => plugin.captchaComponent
-  )?.captchaComponent
+  const Captcha = plugins.find((plugin) => plugin.captchaComponent)?.captchaComponent
 
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string
@@ -139,25 +139,24 @@ export function SignInUsername({
         email,
         password,
         ...(emailAndPassword?.rememberMe ? { rememberMe } : {}),
-        fetchOptions
+        fetchOptions,
       })
     } else {
       signInUsername({
         username: email,
         password,
         ...(emailAndPassword?.rememberMe ? { rememberMe } : {}),
-        fetchOptions
+        fetchOptions,
       })
     }
   }
 
-  const showSeparator =
-    emailAndPassword?.enabled && socialProviders && socialProviders.length > 0
+  const showSeparator = emailAndPassword?.enabled && socialProviders && socialProviders.length > 0
 
   return (
     <Card className={cn("w-full max-w-sm", className)}>
       <CardHeader>
-        <CardTitle className="text-xl font-semibold">
+        <CardTitle role="heading" aria-level={2} className="text-xl font-semibold">
           {localization.auth.signIn}
         </CardTitle>
       </CardHeader>
@@ -171,7 +170,7 @@ export function SignInUsername({
               )}
 
               {showSeparator && (
-                <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card m-0 text-xs flex items-center">
+                <FieldSeparator className="m-0 flex items-center text-xs *:data-[slot=field-separator-content]:bg-card">
                   {localization.auth.or}
                 </FieldSeparator>
               )}
@@ -189,15 +188,13 @@ export function SignInUsername({
                     name="email"
                     type="text"
                     autoComplete="username"
-                    placeholder={
-                      usernameLocalization.usernameOrEmailPlaceholder
-                    }
+                    placeholder={usernameLocalization.usernameOrEmailPlaceholder}
                     required
                     disabled={isPending}
                     onChange={() => {
                       setFieldErrors((prev) => ({
                         ...prev,
-                        email: undefined
+                        email: undefined,
                       }))
                     }}
                     onInvalid={(e) => {
@@ -205,7 +202,7 @@ export function SignInUsername({
 
                       setFieldErrors((prev) => ({
                         ...prev,
-                        email: localization.auth.fieldRequired
+                        email: localization.auth.fieldRequired,
                       }))
                     }}
                     aria-invalid={!!fieldErrors.email}
@@ -228,7 +225,7 @@ export function SignInUsername({
 
                       setFieldErrors((prev) => ({
                         ...prev,
-                        password: undefined
+                        password: undefined,
                       }))
                     }}
                     placeholder={localization.auth.passwordPlaceholder}
@@ -244,18 +241,12 @@ export function SignInUsername({
                       const msg = el.validity.valueMissing
                         ? localization.auth.fieldRequired
                         : el.validity.tooShort
-                          ? localization.auth.tooShort.replace(
-                              "{{min}}",
-                              String(min)
-                            )
-                          : localization.auth.tooLong.replace(
-                              "{{max}}",
-                              String(max)
-                            )
+                          ? localization.auth.tooShort.replace("{{min}}", String(min))
+                          : localization.auth.tooLong.replace("{{max}}", String(max))
 
                       setFieldErrors((prev) => ({
                         ...prev,
-                        password: msg
+                        password: msg,
                       }))
                     }}
                     aria-invalid={!!fieldErrors.password}
@@ -267,40 +258,31 @@ export function SignInUsername({
                 {emailAndPassword.rememberMe && (
                   <Field className="my-1">
                     <div className="flex items-center gap-3">
-                      <Checkbox
-                        id="rememberMe"
-                        name="rememberMe"
-                        disabled={isPending}
-                      />
+                      <Checkbox id="rememberMe" name="rememberMe" disabled={isPending} />
 
-                      <Label
-                        htmlFor="rememberMe"
-                        className="cursor-pointer text-sm font-normal"
-                      >
+                      <Label htmlFor="rememberMe" className="cursor-pointer text-sm font-normal">
                         {localization.auth.rememberMe}
                       </Label>
                     </div>
                   </Field>
                 )}
 
-                {Captcha && (
-                  <div className="flex justify-center">{Captcha}</div>
-                )}
+                {Captcha && <div className="flex justify-center">{Captcha}</div>}
 
                 <div className="flex flex-col gap-3">
                   <Button type="submit" disabled={isPending}>
-                    {isSignInPending && <Spinner />}
+                    {isSignInPending && <Spinner data-icon="inline-start" />}
 
                     {localization.auth.signIn}
                   </Button>
 
                   {plugins.flatMap((plugin) =>
-                    (plugin.authButtons ?? []).map((AuthButton, index) => (
+                    (plugin.authButtons ?? []).map((AuthButton) => (
                       <AuthButton
-                        key={`${plugin.id}-${index.toString()}`}
+                        key={componentIdentity(plugin.id, "sign-in", AuthButton)}
                         view="signIn"
                       />
-                    ))
+                    )),
                   )}
                 </div>
               </FieldGroup>
@@ -310,7 +292,7 @@ export function SignInUsername({
           {socialPosition === "bottom" && (
             <>
               {showSeparator && (
-                <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card text-xs flex items-center">
+                <FieldSeparator className="flex items-center text-xs *:data-[slot=field-separator-content]:bg-card">
                   {localization.auth.or}
                 </FieldSeparator>
               )}
@@ -322,7 +304,7 @@ export function SignInUsername({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 items-center w-full mt-4">
+        <div className="mt-4 flex w-full flex-col items-center gap-3">
           {emailAndPassword?.enabled && emailAndPassword?.forgotPassword && (
             <Link
               href={`${basePaths.auth}/${viewPaths.auth.forgotPassword}`}
