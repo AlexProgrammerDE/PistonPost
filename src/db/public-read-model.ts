@@ -9,6 +9,7 @@ import {
   mediaAssets,
   postMedia,
   postTags,
+  postViewCounts,
   posts,
   profiles,
   reactions,
@@ -45,6 +46,7 @@ export type PublicPostRead = {
   }
   readonly media: ReadonlyArray<PublicPostMedia>
   readonly tags: ReadonlyArray<{ readonly slug: string; readonly name: string }>
+  readonly viewCount: number
   readonly commentCount: number
   readonly reactions: {
     readonly like: number
@@ -92,6 +94,7 @@ type BasePostRow = {
   readonly authorNormalizedUsername: string
   readonly authorName: string
   readonly authorImage: string | null
+  readonly viewCount: number
 }
 
 export async function listPublicPostReads(
@@ -142,10 +145,12 @@ export async function listPublicPostReads(
       authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
       authorImage: user.image,
+      viewCount: sql<number>`coalesce(${postViewCounts.viewCount}, 0)`,
     })
     .from(posts)
     .innerJoin(user, eq(user.id, posts.authorId))
     .innerJoin(profiles, eq(profiles.userId, posts.authorId))
+    .leftJoin(postViewCounts, eq(postViewCounts.postId, posts.id))
     .where(
       and(
         eq(posts.status, "published"),
@@ -186,10 +191,12 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
       authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
       authorImage: user.image,
+      viewCount: sql<number>`coalesce(${postViewCounts.viewCount}, 0)`,
     })
     .from(posts)
     .innerJoin(user, eq(user.id, posts.authorId))
     .innerJoin(profiles, eq(profiles.userId, posts.authorId))
+    .leftJoin(postViewCounts, eq(postViewCounts.postId, posts.id))
     .where(and(eq(posts.id, id), eq(posts.status, "published")))
     .get()
 
@@ -314,6 +321,7 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
       },
       media: mediaRows.filter((media) => media.postId === post.id),
       tags: tagRows.filter((tag) => tag.postId === post.id),
+      viewCount: post.viewCount,
       commentCount: commentRows.find((row) => row.postId === post.id)?.count ?? 0,
       reactions: counts,
     }

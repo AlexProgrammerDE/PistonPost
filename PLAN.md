@@ -989,3 +989,7 @@ Record future changes here with date, decision, reason, and affected phases.
   Production ingestion uses PostHog's managed EU Cloud proxy at `https://t.pistonmaster.net`, with
   the CSP permitting that proxy and the PostHog cloud resources required by the toolbar. This affects
   Phases 2, 5, 9, and 10.
+- 2026-07-16: Show privacy-safe aggregate view totals on public post surfaces. D1 stores only each
+  post's total count, while the existing hashed per-address rate-limit key reduces rapid repeat
+  counting without retaining viewer identities. Analytics Engine remains the operational event
+  stream. This affects Phases 5 and 9.

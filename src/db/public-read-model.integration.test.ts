@@ -2,7 +2,16 @@ import { afterEach, describe, expect, it } from "bun:test"
 
 import { createPost, createUser } from "./factories"
 import { listPublicPostReads } from "./public-read-model"
-import { postTags, posts, profiles, tagFollows, tags, user, userFollows } from "./schema"
+import {
+  posts,
+  postTags,
+  postViewCounts,
+  profiles,
+  tagFollows,
+  tags,
+  user,
+  userFollows,
+} from "./schema"
 import { createMigratedTestDatabase } from "./test-database"
 
 let close: (() => void) | undefined
@@ -70,6 +79,7 @@ describe("following feed read model", () => {
         }),
       ])
       .run()
+    database.insert(postViewCounts).values({ postId: "followed", viewCount: 42 }).run()
     database.insert(tags).values({ id: "art", displayName: "Art", normalizedName: "art" }).run()
     database
       .insert(postTags)
@@ -88,6 +98,7 @@ describe("following feed read model", () => {
     })
 
     expect(page.posts.map((post) => post.id)).toEqual(["followed-and-tagged", "tagged", "followed"])
+    expect(page.posts.map((post) => post.viewCount)).toEqual([0, 0, 42])
     expect(page.nextCursor).toBeNull()
   })
 })

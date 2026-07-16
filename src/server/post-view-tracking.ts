@@ -7,6 +7,7 @@ export type TrackablePost = {
 type PostViewTrackingDependencies = {
   readonly analytics: Pick<AnalyticsEngineDataset, "writeDataPoint">
   readonly findPublishedPost: (postId: string) => Promise<TrackablePost | null>
+  readonly incrementViewCount: (postId: string) => Promise<number | null>
   readonly limiter: Pick<RateLimit, "limit">
 }
 
@@ -31,18 +32,25 @@ export async function recordPostView(
   try {
     const key = await createRateLimitKey(input.address, input.postId)
     const rateLimit = await dependencies.limiter.limit({ key })
-    if (!rateLimit.success) return false
+    if (!rateLimit.success) return null
 
     const post = await dependencies.findPublishedPost(input.postId)
-    if (!post) return false
+    if (!post) return null
 
-    dependencies.analytics.writeDataPoint({
-      indexes: [post.id],
-      blobs: ["post.view", post.id, post.type, post.visibility],
-      doubles: [1],
-    })
-    return true
+    const viewCount = await dependencies.incrementViewCount(post.id)
+    if (viewCount === null) return null
+
+    try {
+      dependencies.analytics.writeDataPoint({
+        indexes: [post.id],
+        blobs: ["post.view", post.id, post.type, post.visibility],
+        doubles: [1],
+      })
+    } catch {
+      // The public aggregate is the source of truth. Telemetry must not undo a counted view.
+    }
+    return viewCount
   } catch {
-    return false
+    return null
   }
 }

@@ -1,5 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router"
-import { GalleryHorizontal, LayoutGrid, Link2, MessageCircle, TriangleAlert } from "lucide-react"
+import {
+  Eye,
+  GalleryHorizontal,
+  LayoutGrid,
+  Link2,
+  MessageCircle,
+  TriangleAlert,
+} from "lucide-react"
 import { lazy, Suspense, useState } from "react"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
@@ -38,12 +45,32 @@ const detailImageSizes = "(max-width: 639px) calc(100vw - 2rem), 61rem"
 const masonryImageSizes =
   "(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc((100vw - 3.5rem) / 2), 20rem"
 const galleryThumbnailSizes = "(min-width: 640px) 6rem, 5rem"
+const compactNumberFormat = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+})
+const exactNumberFormat = new Intl.NumberFormat("en")
 
 function formatDate(date: Date) {
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeZone: "UTC",
   }).format(date)
+}
+
+function PostViewCount({ count }: { readonly count: number }) {
+  const exactCount = exactNumberFormat.format(count)
+  const noun = count === 1 ? "view" : "views"
+
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+      title={`${exactCount} ${noun}`}
+    >
+      <Eye aria-hidden="true" className="size-3.5" />
+      {compactNumberFormat.format(count)} {noun}
+    </span>
+  )
 }
 
 function GalleryLayoutMenu({
@@ -510,24 +537,27 @@ export function PostView({
             #{tag.name}
           </Badge>
         ))}
-        {!detail ? (
-          <Link
-            to="/post/$postId"
-            params={{ postId: post.id }}
-            hash="discussion"
-            className="ml-auto inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            <MessageCircle aria-hidden="true" className="size-3.5" />
-            {post.commentCount + reactionCount === 0 ? (
-              "Discuss"
-            ) : (
-              <>
-                {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"} ·{" "}
-                {reactionCount} {reactionCount === 1 ? "reaction" : "reactions"}
-              </>
-            )}
-          </Link>
-        ) : null}
+        <div className="ml-auto flex items-center gap-3">
+          <PostViewCount count={post.viewCount} />
+          {!detail ? (
+            <Link
+              to="/post/$postId"
+              params={{ postId: post.id }}
+              hash="discussion"
+              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
+            >
+              <MessageCircle aria-hidden="true" className="size-3.5" />
+              {post.commentCount + reactionCount === 0 ? (
+                "Discuss"
+              ) : (
+                <>
+                  {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"} ·{" "}
+                  {reactionCount} {reactionCount === 1 ? "reaction" : "reactions"}
+                </>
+              )}
+            </Link>
+          ) : null}
+        </div>
       </div>
     </article>
   )

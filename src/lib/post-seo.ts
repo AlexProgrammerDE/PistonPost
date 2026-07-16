@@ -96,6 +96,11 @@ function postInteractionStatistics(post: PublicPostRead): ReadonlyArray<JsonLdOb
   return [
     {
       "@type": "InteractionCounter",
+      interactionType: "https://schema.org/ViewAction",
+      userInteractionCount: post.viewCount,
+    },
+    {
+      "@type": "InteractionCounter",
       interactionType: "https://schema.org/LikeAction",
       userInteractionCount: post.reactions.like,
     },

@@ -4,6 +4,7 @@ import { Effect } from "effect"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
+import { incrementPostViewCount } from "@/db/post-view-repository"
 import {
   getPublishedPostRead,
   getPublishedPostTrackingContext,
@@ -48,11 +49,12 @@ export const trackPostView = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.string().trim().min(1).max(64) }))
   .handler(async ({ context, data }) => {
     const headers = getRequestHeaders()
-    const tracked = await recordPostView(
+    const database = createD1Database(context.env.DB)
+    const viewCount = await recordPostView(
       {
         analytics: context.env.ANALYTICS,
-        findPublishedPost: (postId) =>
-          getPublishedPostTrackingContext(createD1Database(context.env.DB), postId),
+        findPublishedPost: (postId) => getPublishedPostTrackingContext(database, postId),
+        incrementViewCount: (postId) => incrementPostViewCount(database, postId),
         limiter: context.env.POST_VIEW_RATE_LIMITER,
       },
       {
@@ -61,7 +63,7 @@ export const trackPostView = createServerFn({ method: "POST" })
       },
     )
 
-    return { tracked }
+    return { tracked: viewCount !== null, viewCount }
   })
 
 export const getPublicProfile = createServerFn({ method: "GET" })

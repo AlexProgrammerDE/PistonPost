@@ -45,7 +45,8 @@ function PrivacyPage() {
         </p>
         <h2>Analytics</h2>
         <p>
-          Cloudflare Analytics Engine records aggregate operational events and post views. Optional
+          Each post keeps a public aggregate view total without storing who viewed it. Cloudflare
+          Analytics Engine also records aggregate operational events and post views. Optional
           PostHog analytics stay disabled until you allow them and receive only anonymous route
           categories. PistonPost disables PostHog autocapture, session replay, and person profiles,
           and removes dynamic URLs and content before sending an event. Read the{" "}

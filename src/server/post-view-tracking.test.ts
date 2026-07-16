@@ -11,10 +11,12 @@ const post: TrackablePost = {
 function setup(options: { limited?: boolean; publishedPost?: TrackablePost | null } = {}) {
   const rateLimitKeys: Array<string> = []
   const dataPoints: Array<AnalyticsEngineDataPoint | undefined> = []
+  const incrementedPostIds: Array<string> = []
   const lookedUpPostIds: Array<string> = []
 
   return {
     dataPoints,
+    incrementedPostIds,
     lookedUpPostIds,
     rateLimitKeys,
     dependencies: {
@@ -26,6 +28,10 @@ function setup(options: { limited?: boolean; publishedPost?: TrackablePost | nul
       async findPublishedPost(postId: string) {
         lookedUpPostIds.push(postId)
         return options.publishedPost === undefined ? post : options.publishedPost
+      },
+      async incrementViewCount(postId: string) {
+        incrementedPostIds.push(postId)
+        return incrementedPostIds.length
       },
       limiter: {
         async limit({ key }: RateLimitOptions) {
@@ -46,7 +52,7 @@ describe("post view tracking", () => {
       postId: post.id,
     })
 
-    expect(tracked).toBe(true)
+    expect(tracked).toBe(1)
     expect(state.rateLimitKeys).toHaveLength(1)
     expect(state.rateLimitKeys[0]).toMatch(/^post-view:[a-f0-9]{64}$/)
     expect(state.rateLimitKeys[0]).not.toContain("203.0.113.42")
@@ -57,6 +63,7 @@ describe("post view tracking", () => {
         doubles: [1],
       },
     ])
+    expect(state.incrementedPostIds).toEqual([post.id])
   })
 
   it("drops limited views before querying the post", async () => {
@@ -67,9 +74,10 @@ describe("post view tracking", () => {
       postId: post.id,
     })
 
-    expect(tracked).toBe(false)
+    expect(tracked).toBeNull()
     expect(state.lookedUpPostIds).toEqual([])
     expect(state.dataPoints).toEqual([])
+    expect(state.incrementedPostIds).toEqual([])
   })
 
   it("does not record views for missing or unpublished posts", async () => {
@@ -80,8 +88,24 @@ describe("post view tracking", () => {
       postId: "draft-post",
     })
 
-    expect(tracked).toBe(false)
+    expect(tracked).toBeNull()
     expect(state.lookedUpPostIds).toEqual(["draft-post"])
     expect(state.dataPoints).toEqual([])
+    expect(state.incrementedPostIds).toEqual([])
+  })
+
+  it("keeps a counted view when Analytics Engine is unavailable", async () => {
+    const state = setup()
+    state.dependencies.analytics.writeDataPoint = () => {
+      throw new Error("Analytics unavailable")
+    }
+
+    const tracked = await recordPostView(state.dependencies, {
+      address: "203.0.113.42",
+      postId: post.id,
+    })
+
+    expect(tracked).toBe(1)
+    expect(state.incrementedPostIds).toEqual([post.id])
   })
 })

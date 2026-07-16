@@ -59,9 +59,9 @@ function CookiePolicyPage() {
 
         <h2>Cloudflare Analytics Engine</h2>
         <p>
-          PistonPost also uses Cloudflare Analytics Engine for aggregate operational events and post
-          view tracking. It does not set an analytics cookie in your browser and does not replace
-          application records.
+          Post view counting does not set a cookie. PistonPost keeps only the aggregate total for
+          each post and uses Cloudflare Analytics Engine for aggregate operational events. It does
+          not store a list of who viewed a post.
         </p>
 
         <h2>Change your choice</h2>

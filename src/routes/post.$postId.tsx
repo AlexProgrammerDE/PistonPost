@@ -1,4 +1,4 @@
-import { useSuspenseQuery } from "@tanstack/react-query"
+import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
 import { Link2 } from "lucide-react"
 import { Suspense, useEffect, useRef } from "react"
@@ -53,13 +53,22 @@ function PostDetail() {
   const { postId } = Route.useParams()
   const { image, layout } = Route.useSearch()
   const post = useSuspenseQuery(postQueryOptions(postId)).data
+  const queryClient = useQueryClient()
   const trackedPostId = useRef<string | null>(null)
+  const visiblePostId = post?.id
 
   useEffect(() => {
-    if (!post || trackedPostId.current === post.id) return
-    trackedPostId.current = post.id
-    void trackPostView({ data: { id: post.id } }).catch(() => undefined)
-  }, [post])
+    if (!visiblePostId || trackedPostId.current === visiblePostId) return
+    trackedPostId.current = visiblePostId
+    void trackPostView({ data: { id: visiblePostId } })
+      .then(({ viewCount }) => {
+        if (viewCount === null) return
+        queryClient.setQueryData(postQueryOptions(visiblePostId).queryKey, (current) =>
+          current && current.viewCount < viewCount ? { ...current, viewCount } : current,
+        )
+      })
+      .catch(() => undefined)
+  }, [queryClient, visiblePostId])
 
   if (!post) return null
 

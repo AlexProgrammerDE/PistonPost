@@ -65,6 +65,17 @@ export const posts = sqliteTable(
   ],
 )
 
+export const postViewCounts = sqliteTable(
+  "post_view_counts",
+  {
+    postId: text("post_id")
+      .primaryKey()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    viewCount: integer("view_count").notNull().default(0),
+  },
+  (table) => [check("post_view_counts_count_check", sql`${table.viewCount} >= 0`)],
+)
+
 export const tags = sqliteTable(
   "tags",
   {

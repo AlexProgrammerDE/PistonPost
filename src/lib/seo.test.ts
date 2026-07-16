@@ -22,6 +22,7 @@ const basePost: PublicPostRead = {
   },
   media: [],
   tags: [{ slug: "friends", name: "friends" }],
+  viewCount: 1_234,
   commentCount: 0,
   reactions: { like: 0, dislike: 0, heart: 0 },
 }
@@ -155,6 +156,9 @@ describe("SEO metadata", () => {
     )
     expect(head.scripts[0]?.children).toContain('"duration":"PT12S"')
     expect(head.scripts[0]?.children).toContain('"commentCount":0')
+    expect(head.scripts[0]?.children).toContain(
+      '"interactionType":"https://schema.org/ViewAction","userInteractionCount":1234',
+    )
     expect(head.scripts[0]?.children).toContain(
       '"interactionType":"https://schema.org/DislikeAction"',
     )
