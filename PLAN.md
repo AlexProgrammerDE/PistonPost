@@ -815,7 +815,7 @@ Exit criteria:
 
 Exit criteria:
 
-- Users can create, preview, publish, edit, and delete each post type.
+- Users can create, publish, edit, and delete each post type.
 - Interrupted and failed uploads recover or clean up.
 - Unauthorized media cannot be attached or read.
 - Video webhooks are signature verified and idempotent.
@@ -1006,3 +1006,6 @@ Record future changes here with date, decision, reason, and affected phases.
   contain many thousands of images and R2 does not impose an object-count limit. Cloudflare's
   user-keyed upload rate-limit binding, per-post limits, file-size validation, and provider errors
   remain the media capacity and abuse boundaries. This affects Phases 6 and 9.
+- 2026-07-16: Remove the full-post preview from the composer. The preview repeated the form content
+  and made longer image posts cumbersome to author. Keep upload thumbnails and Markdown formatting
+  preview where they directly help edit the selected media or text. This affects Phase 6.

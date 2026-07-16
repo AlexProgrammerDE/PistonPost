@@ -90,14 +90,10 @@ async function selectFormat(page: Page, format: "Text" | "Images" | "Video") {
 
 async function fillPost(page: Page, title: string, tag: string) {
   await page.locator('[data-hydrated="true"]').waitFor()
-  const titleInput = page.getByLabel("Title")
-  const previewTitle = page.getByRole("region", { name: "Preview" }).locator("article h2")
-  await titleInput.fill(title)
-  await expect(previewTitle).toHaveText(title)
+  await page.getByLabel("Title").fill(title)
   const tags = page.getByLabel("Tags")
   await tags.fill(tag)
   await tags.press("Enter")
-  await expect(page.getByRole("region", { name: "Preview" })).toContainText(`#${tag}`)
 }
 
 test.describe.serial("authenticated authoring", () => {
@@ -237,6 +233,28 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     const altTextInputs = page.getByLabel("Alt text")
     await altTextInputs.nth(0).fill("A small orange cat sitting on a blanket")
     await altTextInputs.nth(1).fill("A gray cat looking directly at the camera")
+    const firstComposerImage = page.getByRole("button", {
+      name: "View cat-a.png full size",
+    })
+    await firstComposerImage.click()
+    const composerImageViewer = page.getByRole("dialog", {
+      name: "Selected image viewer",
+    })
+    await expect(
+      composerImageViewer
+        .getByRole("group", { name: "1 of 2" })
+        .getByRole("img", { name: "A small orange cat sitting on a blanket" }),
+    ).toBeVisible()
+    await expect(composerImageViewer.getByRole("button", { name: "Zoom in" })).toBeVisible()
+    await composerImageViewer.getByRole("button", { name: "Next" }).click()
+    await expect(
+      composerImageViewer
+        .getByRole("group", { name: "2 of 2" })
+        .getByRole("img", { name: "A gray cat looking directly at the camera" }),
+    ).toBeVisible()
+    await composerImageViewer.getByRole("button", { name: "Close" }).click()
+    await expect(composerImageViewer).toBeHidden()
+    await expect(firstComposerImage).toBeFocused()
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "two extremely important cats" })).toBeVisible()

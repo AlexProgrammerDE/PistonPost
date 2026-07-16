@@ -9,6 +9,15 @@ import { DETAIL_IMAGE_WIDTHS, createMediaImageSources, mediaImageUrl } from "@/l
 
 const lightboxPlugins = [Counter, Zoom]
 
+type ImageLightboxViewerProps = {
+  readonly slides: ReadonlyArray<SlideImage>
+  readonly label: string
+  readonly galleryLabel: string
+  readonly index: number
+  readonly onClose: () => void
+  readonly onIndexChange: (index: number) => void
+}
+
 function PreviousIcon() {
   return <ChevronLeft aria-hidden="true" className="yarl__icon" />
 }
@@ -27,6 +36,42 @@ function ZoomInIcon() {
 
 function ZoomOutIcon() {
   return <ZoomOut aria-hidden="true" className="yarl__icon" />
+}
+
+export function ImageLightboxViewer({
+  slides,
+  label,
+  galleryLabel,
+  index,
+  onClose,
+  onIndexChange,
+}: ImageLightboxViewerProps) {
+  return (
+    <Lightbox
+      open
+      close={onClose}
+      index={index}
+      slides={slides}
+      plugins={lightboxPlugins}
+      carousel={{ finite: slides.length < 2, preload: 2 }}
+      controller={{ closeOnBackdropClick: true }}
+      zoom={{ scrollToZoom: true }}
+      labels={{
+        Lightbox: label,
+        "Photo gallery": galleryLabel,
+      }}
+      render={{
+        iconPrev: PreviousIcon,
+        iconNext: NextIcon,
+        iconClose: CloseIcon,
+        iconZoomIn: ZoomInIcon,
+        iconZoomOut: ZoomOutIcon,
+      }}
+      on={{
+        view: ({ index: nextIndex }) => onIndexChange(nextIndex),
+      }}
+    />
+  )
 }
 
 export function ImageLightbox({
@@ -59,29 +104,13 @@ export function ImageLightbox({
   )
 
   return (
-    <Lightbox
-      open
-      close={onClose}
-      index={index}
+    <ImageLightboxViewer
       slides={slides}
-      plugins={lightboxPlugins}
-      carousel={{ finite: images.length < 2, preload: 2 }}
-      controller={{ closeOnBackdropClick: true }}
-      zoom={{ scrollToZoom: true }}
-      labels={{
-        Lightbox: `${title} image viewer`,
-        "Photo gallery": `${title} images`,
-      }}
-      render={{
-        iconPrev: PreviousIcon,
-        iconNext: NextIcon,
-        iconClose: CloseIcon,
-        iconZoomIn: ZoomInIcon,
-        iconZoomOut: ZoomOutIcon,
-      }}
-      on={{
-        view: ({ index: nextIndex }) => onIndexChange(nextIndex),
-      }}
+      label={`${title} image viewer`}
+      galleryLabel={`${title} images`}
+      index={index}
+      onClose={onClose}
+      onIndexChange={onIndexChange}
     />
   )
 }

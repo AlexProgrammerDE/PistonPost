@@ -32,14 +32,14 @@ import {
   TriangleAlert,
   Upload,
   Video,
+  ZoomIn,
 } from "lucide-react"
-import { useEffect, useReducer, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
-import { MarkdownContent } from "@/components/MarkdownContent"
+import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
@@ -79,6 +79,17 @@ const tagsSchema = z
   .min(1, "Add at least one tag.")
   .max(5, "Use at most five tags.")
 const imageMimeSchema = z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"])
+
+const loadImageLightbox = () =>
+  import("@/components/ImageLightbox").then((module) => ({
+    default: module.ImageLightboxViewer,
+  }))
+
+const ComposerImageLightbox = lazy(loadImageLightbox)
+
+function preloadImageLightbox() {
+  void loadImageLightbox()
+}
 
 type ComposerValues = {
   type: "text" | "images" | "video"
@@ -450,17 +461,6 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
           </FieldGroup>
         </FieldSet>
 
-        <form.Subscribe selector={(state) => state.values}>
-          {(values) =>
-            values.title.trim() || values.textContent.trim() || uploads.length > 0 ? (
-              <>
-                <Separator />
-                <ComposerPreview values={values} uploads={uploads} />
-              </>
-            ) : null
-          }
-        </form.Subscribe>
-
         {submitError ? (
           <Alert variant="destructive">
             <TriangleAlert aria-hidden="true" />
@@ -477,66 +477,6 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         </div>
       </form.AppForm>
     </form>
-  )
-}
-
-function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads: UploadItem[] }) {
-  return (
-    <section className="grid gap-5" aria-labelledby="composer-preview-title">
-      <div>
-        <h2 id="composer-preview-title" className="font-heading text-xl font-bold">
-          Preview
-        </h2>
-      </div>
-      <article className="border-y bg-muted/15 py-6">
-        <div className="flex flex-col gap-3">
-          <h2 className="font-heading text-2xl font-bold tracking-tight text-balance">
-            {values.title.trim() || "Untitled post"}
-          </h2>
-          {values.type === "text" ? (
-            values.textContent.trim() ? (
-              <MarkdownContent className="typeset-feed">{values.textContent}</MarkdownContent>
-            ) : (
-              <p className="text-sm text-muted-foreground">Your text will appear here.</p>
-            )
-          ) : null}
-        </div>
-        {values.type === "images" && uploads.length > 0 ? (
-          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {uploads.map((item) =>
-              item.previewUrl ? (
-                <img
-                  key={item.clientId}
-                  src={item.previewUrl}
-                  alt={item.altText}
-                  className="aspect-square w-full object-cover"
-                />
-              ) : null,
-            )}
-          </div>
-        ) : null}
-        {values.type === "video" && uploads[0] ? (
-          <div className="mt-5 grid aspect-video place-items-center bg-foreground text-background">
-            <p className="text-sm font-medium">Video selected · {uploads[0].file.name}</p>
-          </div>
-        ) : null}
-        <div className="mt-5 flex flex-wrap gap-2 text-xs text-muted-foreground">
-          {values.tags.map((tag) => (
-            <Badge key={tag} variant="secondary">
-              #{tag}
-            </Badge>
-          ))}
-          <Badge className="ml-auto" variant="outline">
-            {values.visibility === "public" ? (
-              <Globe2 aria-hidden="true" data-icon="inline-start" />
-            ) : (
-              <Link2 aria-hidden="true" data-icon="inline-start" />
-            )}
-            {values.visibility === "public" ? "Public" : "Unlisted"}
-          </Badge>
-        </div>
-      </article>
-    </section>
   )
 }
 
@@ -573,12 +513,30 @@ function MediaPicker({
   onAltText: (clientId: string, altText: string) => void
   onDragEnd: (event: DragEndEvent) => void
 }) {
+  const [selectedImageId, setSelectedImageId] = useState<string | null>(null)
   const accept = type === "images" ? "image/jpeg,image/png,image/webp,image/avif" : "video/*"
   const limit =
     type === "images"
       ? "JPG, PNG, WebP, or AVIF. Up to 20 files, 15 MB and 80 megapixels each."
       : "One Stream-supported video, up to 2 GB and 10 minutes. Large files upload in resumable chunks."
   const inputId = `post-media-${type}`
+  const imageUploads = uploads.filter(
+    (item): item is UploadItem & { previewUrl: string } =>
+      item.kind === "image" && item.previewUrl !== null,
+  )
+  const selectedImageIndex =
+    selectedImageId === null
+      ? -1
+      : imageUploads.findIndex((item) => item.clientId === selectedImageId)
+  const imageSlides = imageUploads.map((item) => ({
+    src: item.previewUrl,
+    alt: item.altText.trim() || item.file.name,
+  }))
+
+  function changeLightboxImage(index: number) {
+    const image = imageUploads[index]
+    if (image) setSelectedImageId(image.clientId)
+  }
 
   return (
     <div className="grid gap-4">
@@ -618,11 +576,24 @@ function MediaPicker({
                 item={item}
                 onRemove={onRemove}
                 onAltText={onAltText}
+                onView={setSelectedImageId}
               />
             ))}
           </div>
         </SortableContext>
       </DndContext>
+      {selectedImageIndex >= 0 ? (
+        <Suspense fallback={<LightboxLoadingFallback />}>
+          <ComposerImageLightbox
+            slides={imageSlides}
+            label="Selected image viewer"
+            galleryLabel="Selected post images"
+            index={selectedImageIndex}
+            onClose={() => setSelectedImageId(null)}
+            onIndexChange={changeLightboxImage}
+          />
+        </Suspense>
+      ) : null}
     </div>
   )
 }
@@ -631,10 +602,12 @@ function SortableUpload({
   item,
   onRemove,
   onAltText,
+  onView,
 }: {
   item: UploadItem
   onRemove: (item: UploadItem) => void
   onAltText: (clientId: string, altText: string) => void
+  onView: (clientId: string) => void
 }) {
   const dragDisabled = item.kind === "video" || item.status !== "queued"
   const sortable = useSortable({
@@ -653,7 +626,19 @@ function SortableUpload({
       className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border bg-background p-3"
     >
       {item.previewUrl ? (
-        <img src={item.previewUrl} alt="" className="size-14 object-cover" />
+        <button
+          type="button"
+          className="relative size-14 shrink-0 cursor-zoom-in overflow-hidden bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label={`View ${item.file.name} full size`}
+          onPointerEnter={preloadImageLightbox}
+          onFocus={preloadImageLightbox}
+          onClick={() => onView(item.clientId)}
+        >
+          <img src={item.previewUrl} alt="" className="size-full object-cover" />
+          <span className="absolute right-1 bottom-1 grid size-5 place-items-center bg-background/90 text-foreground">
+            <ZoomIn aria-hidden="true" className="size-3.5" />
+          </span>
+        </button>
       ) : (
         <div className="grid size-14 place-items-center bg-muted text-xs font-medium">VIDEO</div>
       )}
