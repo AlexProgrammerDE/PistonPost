@@ -3,12 +3,13 @@ import {
   useActiveOrganization,
   useAuth,
   useAuthPlugin,
-  useHasPermission
+  useHasPermission,
 } from "@better-auth-ui/react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
+
 import { DeleteOrganizationDialog } from "./delete-organization-dialog"
 import { DeleteOrganizationSkeleton } from "./delete-organization-skeleton"
 
@@ -18,18 +19,15 @@ import { DeleteOrganizationSkeleton } from "./delete-organization-skeleton"
  */
 export function DeleteOrganization() {
   const { authClient } = useAuth()
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
-  const { data: activeOrganization } = useActiveOrganization(
-    authClient as OrganizationAuthClient
-  )
+  const { data: activeOrganization } = useActiveOrganization(authClient as OrganizationAuthClient)
 
   const { data: permission, isPending: permissionPending } = useHasPermission(
     authClient as OrganizationAuthClient,
     {
-      permissions: { organization: ["delete"] }
-    }
+      permissions: { organization: ["delete"] },
+    },
   )
 
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -45,11 +43,11 @@ export function DeleteOrganization() {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-sm font-medium leading-tight">
+        <p className="text-sm leading-tight font-medium">
           {organizationLocalization.deleteOrganization}
         </p>
 
-        <p className="text-muted-foreground mt-0.5 text-xs">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {organizationLocalization.deleteOrganizationDescription}
         </p>
       </div>

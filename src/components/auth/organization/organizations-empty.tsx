@@ -11,8 +11,7 @@ export type OrganizationsEmptyProps = {
 }
 
 export function OrganizationsEmpty({ onCreatePress }: OrganizationsEmptyProps) {
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 text-center">

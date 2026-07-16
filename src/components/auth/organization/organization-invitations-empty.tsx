@@ -13,11 +13,8 @@ export type OrganizationInvitationsEmptyProps = {
 /**
  * Empty state for `OrganizationInvitations`.
  */
-export function OrganizationInvitationsEmpty({
-  onInvitePress
-}: OrganizationInvitationsEmptyProps) {
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+export function OrganizationInvitationsEmpty({ onInvitePress }: OrganizationInvitationsEmptyProps) {
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 text-center">

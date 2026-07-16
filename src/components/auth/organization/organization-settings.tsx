@@ -4,6 +4,7 @@ import { useAuth } from "@better-auth-ui/react"
 import type { ComponentProps } from "react"
 
 import { cn } from "@/lib/utils"
+
 import { OrganizationDangerZone } from "./organization-danger-zone"
 import { OrganizationProfile } from "./organization-profile"
 
@@ -28,7 +29,7 @@ export function OrganizationSettings({
       {plugins.flatMap((plugin) =>
         plugin.organizationCards?.map((Card, index) => (
           <Card key={`${plugin.id}-${index.toString()}`} />
-        ))
+        )),
       )}
 
       <OrganizationDangerZone />

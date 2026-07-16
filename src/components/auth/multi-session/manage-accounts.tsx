@@ -3,13 +3,14 @@ import {
   useAuth,
   useAuthPlugin,
   useListDeviceSessions,
-  useSession
+  useSession,
 } from "@better-auth-ui/react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
 import { cn } from "@/lib/utils"
+
 import { ManageAccount } from "./manage-account"
 
 export type ManageAccountsProps = {
@@ -26,36 +27,33 @@ export type ManageAccountsProps = {
  */
 export function ManageAccounts({ className }: ManageAccountsProps) {
   const { authClient } = useAuth()
-  const { localization: multiSessionLocalization } =
-    useAuthPlugin(multiSessionPlugin)
+  const { localization: multiSessionLocalization } = useAuthPlugin(multiSessionPlugin)
   const { data: session } = useSession(authClient)
 
   const { data: deviceSessions, isPending } = useListDeviceSessions(
-    authClient as MultiSessionAuthClient
+    authClient as MultiSessionAuthClient,
   )
 
   const otherSessions = deviceSessions?.filter(
-    (deviceSession) => deviceSession.session.id !== session?.session.id
+    (deviceSession) => deviceSession.session.id !== session?.session.id,
   )
 
   const allRows = [
     {
       key: session?.session.id ?? "current",
       deviceSession: !isPending ? session : null,
-      isPending
+      isPending,
     },
     ...(otherSessions?.map((deviceSession) => ({
       key: deviceSession.session.id,
       deviceSession,
-      isPending: false
-    })) ?? [])
+      isPending: false,
+    })) ?? []),
   ]
 
   return (
     <div>
-      <h2 className="text-sm font-semibold mb-3">
-        {multiSessionLocalization.manageAccounts}
-      </h2>
+      <h2 className="mb-3 text-sm font-semibold">{multiSessionLocalization.manageAccounts}</h2>
 
       <Card className={cn("p-0", className)}>
         <CardContent className="p-0">
@@ -63,10 +61,7 @@ export function ManageAccounts({ className }: ManageAccountsProps) {
             <div key={row.key}>
               {index > 0 && <Separator />}
 
-              <ManageAccount
-                deviceSession={row.deviceSession}
-                isPending={row.isPending}
-              />
+              <ManageAccount deviceSession={row.deviceSession} isPending={row.isPending} />
             </div>
           ))}
         </CardContent>

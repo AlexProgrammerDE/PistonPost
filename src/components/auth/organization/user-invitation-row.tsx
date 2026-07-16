@@ -5,7 +5,7 @@ import {
   useAcceptInvitation,
   useAuth,
   useAuthPlugin,
-  useRejectInvitation
+  useRejectInvitation,
 } from "@better-auth-ui/react"
 import type { Invitation } from "better-auth/client"
 import { Check, Clock, X } from "lucide-react"
@@ -24,14 +24,15 @@ export type UserInvitationRowProps = {
  */
 export function UserInvitationRow({ invitation }: UserInvitationRowProps) {
   const { authClient } = useAuth()
-  const { localization: organizationLocalization, roles } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
 
-  const { mutate: acceptInvitation, isPending: isAccepting } =
-    useAcceptInvitation(authClient as OrganizationAuthClient)
+  const { mutate: acceptInvitation, isPending: isAccepting } = useAcceptInvitation(
+    authClient as OrganizationAuthClient,
+  )
 
-  const { mutate: rejectInvitation, isPending: isRejecting } =
-    useRejectInvitation(authClient as OrganizationAuthClient)
+  const { mutate: rejectInvitation, isPending: isRejecting } = useRejectInvitation(
+    authClient as OrganizationAuthClient,
+  )
 
   return (
     <div className="flex items-center gap-3">
@@ -41,19 +42,17 @@ export function UserInvitationRow({ invitation }: UserInvitationRowProps) {
 
       <div className="flex flex-col">
         <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm font-medium leading-tight">
+          <span className="truncate text-sm leading-tight font-medium">
             {invitation.organizationName}
           </span>
 
-          <Badge variant="secondary">
-            {roles?.[invitation.role] ?? invitation.role}
-          </Badge>
+          <Badge variant="secondary">{roles?.[invitation.role] ?? invitation.role}</Badge>
         </div>
 
-        <span className="truncate text-muted-foreground text-xs">
+        <span className="truncate text-xs text-muted-foreground">
           {new Date(invitation.createdAt).toLocaleString(undefined, {
             dateStyle: "medium",
-            timeStyle: "short"
+            timeStyle: "short",
           })}
         </span>
       </div>

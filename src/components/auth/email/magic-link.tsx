@@ -12,31 +12,25 @@ import {
   pixelBasedPreset,
   Section,
   Tailwind,
-  Text
+  Text,
 } from "@react-email/components"
 import type { ReactNode } from "react"
 
 import { cn } from "../../../lib/utils"
-import {
-  type EmailClassNames,
-  type EmailColors,
-  EmailStyles
-} from "./email-styles"
+import { type EmailClassNames, type EmailColors, EmailStyles } from "./email-styles"
 
 const magicLinkEmailLocalization = {
   SIGN_IN_TO_APP_NAME: "Sign in to {appName}",
   SIGN_IN_TO_YOUR_ACCOUNT: "Sign in to your account",
   YOUR_ACCOUNT: "your account",
   LOGO: "Logo",
-  CLICK_BUTTON_TO_SIGN_IN:
-    "Click the button below to sign in to your account {emailAddress}.",
+  CLICK_BUTTON_TO_SIGN_IN: "Click the button below to sign in to your account {emailAddress}.",
   OR_COPY_AND_PASTE_URL: "Or copy and paste this URL into your browser:",
-  THIS_LINK_EXPIRES_IN_MINUTES:
-    "This link expires in {expirationMinutes} minutes.",
+  THIS_LINK_EXPIRES_IN_MINUTES: "This link expires in {expirationMinutes} minutes.",
   EMAIL_SENT_BY: "Email sent by {appName}.",
   IF_YOU_DIDNT_REQUEST_THIS_EMAIL:
     "If you didn't request this email, you can safely ignore it. Someone else might have typed your email address by mistake.",
-  POWERED_BY_BETTER_AUTH: "Powered by {betterAuth}"
+  POWERED_BY_BETTER_AUTH: "Powered by {betterAuth}",
 }
 
 /**
@@ -115,7 +109,7 @@ export const MagicLinkEmail = ({
 }: MagicLinkEmailProps) => {
   const localization = {
     ...MagicLinkEmail.localization,
-    ...props.localization
+    ...props.localization,
   }
 
   const previewText = appName
@@ -137,16 +131,11 @@ export const MagicLinkEmail = ({
 
       <Tailwind config={{ presets: [pixelBasedPreset] }}>
         <Body className={cn("bg-background font-sans", classNames?.body)}>
-          <Container
-            className={cn(
-              "mx-auto my-auto max-w-xl px-2 py-10",
-              classNames?.container
-            )}
-          >
+          <Container className={cn("mx-auto my-auto max-w-xl px-2 py-10", classNames?.container)}>
             <Section
               className={cn(
-                "bg-card text-card-foreground rounded-none border border-border p-8",
-                classNames?.card
+                "rounded-none border border-border bg-card p-8 text-card-foreground",
+                classNames?.card,
               )}
             >
               {logoURL &&
@@ -165,41 +154,25 @@ export const MagicLinkEmail = ({
                       width={48}
                       height={48}
                       alt={appName || localization.LOGO}
-                      className={cn(
-                        "mx-auto mb-8 logo-light",
-                        classNames?.logo
-                      )}
+                      className={cn("logo-light mx-auto mb-8", classNames?.logo)}
                     />
                     <Img
                       src={logoURL.dark}
                       width={48}
                       height={48}
                       alt={appName || localization.LOGO}
-                      className={cn(
-                        "hidden mx-auto mb-8 logo-dark",
-                        classNames?.logo
-                      )}
+                      className={cn("logo-dark mx-auto mb-8 hidden", classNames?.logo)}
                     />
                   </>
                 ))}
 
-              <Heading
-                className={cn(
-                  "m-0 mb-5 text-2xl font-semibold",
-                  classNames?.title
-                )}
-              >
+              <Heading className={cn("m-0 mb-5 text-2xl font-semibold", classNames?.title)}>
                 {appName
-                  ? localization.SIGN_IN_TO_APP_NAME.replace(
-                      "{appName}",
-                      appName
-                    )
+                  ? localization.SIGN_IN_TO_APP_NAME.replace("{appName}", appName)
                   : localization.SIGN_IN_TO_YOUR_ACCOUNT}
               </Heading>
 
-              <Text
-                className={cn("m-0 text-sm font-normal", classNames?.content)}
-              >
+              <Text className={cn("m-0 text-sm font-normal", classNames?.content)}>
                 {(() => {
                   const [beforeEmailAddress, afterEmailAddress] =
                     localization.CLICK_BUTTON_TO_SIGN_IN.split("{emailAddress}")
@@ -207,19 +180,13 @@ export const MagicLinkEmail = ({
                   return email ? (
                     <>
                       {beforeEmailAddress}
-                      <Link
-                        href={`mailto:${email}`}
-                        className="text-primary font-medium"
-                      >
+                      <Link href={`mailto:${email}`} className="font-medium text-primary">
                         {email}
                       </Link>
                       {afterEmailAddress}
                     </>
                   ) : (
-                    localization.CLICK_BUTTON_TO_SIGN_IN.replace(
-                      "{emailAddress}",
-                      ""
-                    )
+                    localization.CLICK_BUTTON_TO_SIGN_IN.replace("{emailAddress}", "")
                       .replace(/\s{2,}/g, " ")
                       .replace(" .", ".")
                   )
@@ -230,56 +197,41 @@ export const MagicLinkEmail = ({
                 <Button
                   href={url}
                   className={cn(
-                    "inline-block whitespace-nowrap rounded-none text-sm font-medium py-2.5 px-6 bg-primary text-primary-foreground no-underline",
-                    classNames?.button
+                    "inline-block rounded-none bg-primary px-6 py-2.5 text-sm font-medium whitespace-nowrap text-primary-foreground no-underline",
+                    classNames?.button,
                   )}
                 >
                   {appName
-                    ? localization.SIGN_IN_TO_APP_NAME.replace(
-                        "{appName}",
-                        appName
-                      )
+                    ? localization.SIGN_IN_TO_APP_NAME.replace("{appName}", appName)
                     : localization.SIGN_IN_TO_YOUR_ACCOUNT}
                 </Button>
               </Section>
 
               <Text
-                className={cn(
-                  "m-0 mb-3 text-xs text-muted-foreground",
-                  classNames?.description
-                )}
+                className={cn("m-0 mb-3 text-xs text-muted-foreground", classNames?.description)}
               >
                 {localization.OR_COPY_AND_PASTE_URL}
               </Text>
 
-              <Link
-                className={cn(
-                  "break-all text-xs text-primary",
-                  classNames?.link
-                )}
-                href={url}
-              >
+              <Link className={cn("text-xs break-all text-primary", classNames?.link)} href={url}>
                 {url}
               </Link>
 
               <Hr
                 className={cn(
                   "my-6 w-full border border-solid border-border",
-                  classNames?.separator
+                  classNames?.separator,
                 )}
               />
 
               {expirationMinutes || appName ? (
                 <Text
-                  className={cn(
-                    "m-0 mb-3 text-xs text-muted-foreground",
-                    classNames?.description
-                  )}
+                  className={cn("m-0 mb-3 text-xs text-muted-foreground", classNames?.description)}
                 >
                   {expirationMinutes
                     ? localization.THIS_LINK_EXPIRES_IN_MINUTES.replace(
                         "{expirationMinutes}",
-                        expirationMinutes.toString()
+                        expirationMinutes.toString(),
                       )
                     : null}
                   {appName && (
@@ -291,12 +243,7 @@ export const MagicLinkEmail = ({
                 </Text>
               ) : null}
 
-              <Text
-                className={cn(
-                  "m-0 text-xs text-muted-foreground",
-                  classNames?.description
-                )}
-              >
+              <Text className={cn("m-0 text-xs text-muted-foreground", classNames?.description)}>
                 {localization.IF_YOU_DIDNT_REQUEST_THIS_EMAIL}
               </Text>
 
@@ -304,7 +251,7 @@ export const MagicLinkEmail = ({
                 <Text
                   className={cn(
                     "m-0 mt-4 text-center text-[11px] text-muted-foreground",
-                    classNames?.poweredBy
+                    classNames?.poweredBy,
                   )}
                 >
                   {(() => {
@@ -316,10 +263,7 @@ export const MagicLinkEmail = ({
                         {beforeBetterAuth}
                         <Link
                           href="https://better-auth.com"
-                          className={cn(
-                            "text-primary underline",
-                            classNames?.link
-                          )}
+                          className={cn("text-primary underline", classNames?.link)}
                         >
                           better-auth
                         </Link>
@@ -343,7 +287,7 @@ MagicLinkEmail.PreviewProps = {
   url: "https://better-auth-ui.com/auth/verify?token=example-token",
   email: "m@example.com",
   appName: "Better Auth",
-  darkMode: true
+  darkMode: true,
 } as MagicLinkEmailProps
 
 export default MagicLinkEmail

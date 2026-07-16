@@ -2,7 +2,7 @@ import {
   type OrganizationAuthClient,
   useAuth,
   useAuthPlugin,
-  useCreateOrganization
+  useCreateOrganization,
 } from "@better-auth-ui/react"
 import { Briefcase } from "lucide-react"
 import { type SyntheticEvent, useEffect, useState } from "react"
@@ -15,7 +15,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogMedia,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError } from "@/components/ui/field"
@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
+
 import { SlugField, sanitizeSlug } from "./slug-field"
 
 /** Props for the `CreateOrganizationDialog` component. */
@@ -31,23 +32,21 @@ export type CreateOrganizationDialogProps = {
   onOpenChange: (open: boolean) => void
 }
 
-export function CreateOrganizationDialog({
-  open,
-  onOpenChange
-}: CreateOrganizationDialogProps) {
+export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizationDialogProps) {
   const { authClient, localization } = useAuth()
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
   const [slugEdited, setSlugEdited] = useState(false)
   const [nameError, setNameError] = useState<string>()
 
-  const { mutate: createOrganization, isPending: isCreating } =
-    useCreateOrganization(authClient as OrganizationAuthClient, {
-      onSuccess: () => onOpenChange(false)
-    })
+  const { mutate: createOrganization, isPending: isCreating } = useCreateOrganization(
+    authClient as OrganizationAuthClient,
+    {
+      onSuccess: () => onOpenChange(false),
+    },
+  )
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -77,9 +76,7 @@ export function CreateOrganizationDialog({
               <Briefcase />
             </AlertDialogMedia>
 
-            <AlertDialogTitle>
-              {organizationLocalization.createOrganization}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{organizationLocalization.createOrganization}</AlertDialogTitle>
 
             <AlertDialogDescription>
               {organizationLocalization.organizationsDescription}
@@ -88,9 +85,7 @@ export function CreateOrganizationDialog({
 
           <div className="flex flex-col gap-4">
             <Field data-invalid={!!nameError}>
-              <Label htmlFor="create-organization-name">
-                {organizationLocalization.name}
-              </Label>
+              <Label htmlFor="create-organization-name">{organizationLocalization.name}</Label>
 
               <Input
                 id="create-organization-name"

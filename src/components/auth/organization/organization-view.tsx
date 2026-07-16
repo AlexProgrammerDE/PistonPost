@@ -4,7 +4,7 @@ import {
   useAuth,
   useAuthPlugin,
   useListOrganizationMembers,
-  useSession
+  useSession,
 } from "@better-auth-ui/react"
 import type { Organization } from "better-auth/client"
 import type { ComponentProps } from "react"
@@ -12,10 +12,8 @@ import type { ComponentProps } from "react"
 import { Badge } from "@/components/ui/badge"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
-import {
-  OrganizationLogo,
-  type OrganizationLogoSize
-} from "./organization-logo"
+
+import { OrganizationLogo, type OrganizationLogoSize } from "./organization-logo"
 import { OrganizationViewSkeleton } from "./organization-view-skeleton"
 
 export type OrganizationViewProps = {
@@ -44,24 +42,26 @@ export function OrganizationView({
 
   const { data: session } = useSession(authClient)
 
-  const { data: activeOrganization, isPending: activeOrganizationPending } =
-    useActiveOrganization(authClient as OrganizationAuthClient, {
-      enabled: !organization && !isPending
-    })
+  const { data: activeOrganization, isPending: activeOrganizationPending } = useActiveOrganization(
+    authClient as OrganizationAuthClient,
+    {
+      enabled: !organization && !isPending,
+    },
+  )
 
   const resolvedOrganization = organization ?? activeOrganization
 
-  const { data: membersList, isPending: membersPending } =
-    useListOrganizationMembers(authClient as OrganizationAuthClient, {
+  const { data: membersList, isPending: membersPending } = useListOrganizationMembers(
+    authClient as OrganizationAuthClient,
+    {
       query: {
-        organizationId: resolvedOrganization?.id
+        organizationId: resolvedOrganization?.id,
       },
-      enabled: !!resolvedOrganization?.id && !hideRole
-    })
-
-  const membership = membersList?.members?.find(
-    (member) => member.userId === session?.user.id
+      enabled: !!resolvedOrganization?.id && !hideRole,
+    },
   )
+
+  const membership = membersList?.members?.find((member) => member.userId === session?.user.id)
 
   if (
     isPending ||
@@ -69,20 +69,12 @@ export function OrganizationView({
     (!hideRole && !!resolvedOrganization?.id && membersPending)
   ) {
     return (
-      <OrganizationViewSkeleton
-        className={className}
-        hideSlug={hideSlug}
-        size={size}
-        {...props}
-      />
+      <OrganizationViewSkeleton className={className} hideSlug={hideSlug} size={size} {...props} />
     )
   }
 
   return (
-    <div
-      className={cn("flex min-w-0 items-center gap-2", className)}
-      {...props}
-    >
+    <div className={cn("flex min-w-0 items-center gap-2", className)} {...props}>
       <OrganizationLogo
         organization={resolvedOrganization}
         className={size === "sm" ? "size-5" : undefined}
@@ -91,7 +83,7 @@ export function OrganizationView({
 
       <div className="flex min-w-0 flex-col">
         <div className="flex min-w-0 items-center gap-2">
-          <p className="truncate text-sm font-medium leading-tight text-foreground">
+          <p className="truncate text-sm leading-tight font-medium text-foreground">
             {resolvedOrganization?.name}
           </p>
 
@@ -103,7 +95,7 @@ export function OrganizationView({
         </div>
 
         {!hideSlug && !!resolvedOrganization?.slug && (
-          <p className="truncate overflow-x-hidden text-muted-foreground text-xs font-mono leading-tight">
+          <p className="truncate overflow-x-hidden font-mono text-xs leading-tight text-muted-foreground">
             {slugPrefix}
             {resolvedOrganization.slug}
           </p>

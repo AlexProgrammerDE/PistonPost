@@ -4,7 +4,7 @@ import {
   useActiveOrganization,
   useAuth,
   useAuthPlugin,
-  useUpdateOrganization
+  useUpdateOrganization,
 } from "@better-auth-ui/react"
 import { Trash2, Upload } from "lucide-react"
 import { type ChangeEvent, useRef, useState } from "react"
@@ -15,30 +15,30 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
+
 import { OrganizationLogo } from "./organization-logo"
 
 export type ChangeOrganizationLogoProps = {
   className?: string
 }
 
-export function ChangeOrganizationLogo({
-  className
-}: ChangeOrganizationLogoProps) {
+export function ChangeOrganizationLogo({ className }: ChangeOrganizationLogoProps) {
   const { authClient } = useAuth()
-  const { logo, localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { logo, localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
-  const { data: activeOrganization, isPending: activeOrganizationPending } =
-    useActiveOrganization(authClient as OrganizationAuthClient)
+  const { data: activeOrganization, isPending: activeOrganizationPending } = useActiveOrganization(
+    authClient as OrganizationAuthClient,
+  )
 
-  const { mutate: updateOrganization, isPending: updatePending } =
-    useUpdateOrganization(authClient as OrganizationAuthClient)
+  const { mutate: updateOrganization, isPending: updatePending } = useUpdateOrganization(
+    authClient as OrganizationAuthClient,
+  )
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
@@ -55,19 +55,16 @@ export function ChangeOrganizationLogo({
     setIsUploading(true)
 
     try {
-      const resized =
-        (await logo.resize?.(file, logo.size, logo.extension)) || file
+      const resized = (await logo.resize?.(file, logo.size, logo.extension)) || file
 
-      const image =
-        (await logo.upload?.(resized)) || (await fileToBase64(resized))
+      const image = (await logo.upload?.(resized)) || (await fileToBase64(resized))
 
       updateOrganization(
         { data: { logo: image } },
         {
-          onSuccess: () =>
-            toast.success(organizationLocalization.logoChangedSuccess),
-          onSettled: () => setIsUploading(false)
-        }
+          onSuccess: () => toast.success(organizationLocalization.logoChangedSuccess),
+          onSettled: () => setIsUploading(false),
+        },
       )
     } catch (error) {
       setIsUploading(false)
@@ -100,8 +97,8 @@ export function ChangeOrganizationLogo({
           } finally {
             setIsDeleting(false)
           }
-        }
-      }
+        },
+      },
     )
   }
 
@@ -111,9 +108,7 @@ export function ChangeOrganizationLogo({
 
   return (
     <div className={cn("flex flex-col gap-1", className)}>
-      <Label aria-disabled={!activeOrganization}>
-        {organizationLocalization.logo}
-      </Label>
+      <Label aria-disabled={!activeOrganization}>{organizationLocalization.logo}</Label>
 
       <input
         ref={fileInputRef}

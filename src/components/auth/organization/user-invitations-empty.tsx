@@ -9,8 +9,7 @@ import { organizationPlugin } from "@/lib/auth/organization-plugin"
  * Empty state for `UserInvitations`.
  */
 export function UserInvitationsEmpty() {
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
   return (
     <div className="flex flex-col items-center gap-4 p-4 text-center">

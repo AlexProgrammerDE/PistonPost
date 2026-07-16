@@ -2,7 +2,7 @@ import {
   type OrganizationAuthClient,
   useAuth,
   useAuthPlugin,
-  useListOrganizations
+  useListOrganizations,
 } from "@better-auth-ui/react"
 import { useState } from "react"
 
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
+
 import { CreateOrganizationDialog } from "./create-organization-dialog"
 import { OrganizationRow } from "./organization-row"
 import { OrganizationViewSkeleton } from "./organization-view-skeleton"
@@ -26,13 +27,13 @@ export type OrganizationsProps = {
  */
 export function Organizations({ className }: OrganizationsProps) {
   const { authClient } = useAuth()
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
   const [createOpen, setCreateOpen] = useState(false)
 
-  const { data: organizations, isPending: organizationsPending } =
-    useListOrganizations(authClient as OrganizationAuthClient)
+  const { data: organizations, isPending: organizationsPending } = useListOrganizations(
+    authClient as OrganizationAuthClient,
+  )
 
   return (
     <>
@@ -77,10 +78,7 @@ export function Organizations({ className }: OrganizationsProps) {
         </div>
       </div>
 
-      <CreateOrganizationDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-      />
+      <CreateOrganizationDialog open={createOpen} onOpenChange={setCreateOpen} />
     </>
   )
 }

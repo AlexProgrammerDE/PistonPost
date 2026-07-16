@@ -7,10 +7,11 @@ import {
   useAuthPlugin,
   useRevokeMultiSession,
   useSession,
-  useSetActiveSession
+  useSetActiveSession,
 } from "@better-auth-ui/react"
 import { ArrowLeftRight, LogOut, MoreHorizontal } from "lucide-react"
 import { toast } from "sonner"
+
 import { UserView } from "@/components/auth/user/user-view"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -18,7 +19,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Spinner } from "@/components/ui/spinner"
 import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
@@ -39,30 +40,30 @@ export type ManageAccountProps = {
  * @param isPending - Whether the device session is pending
  * @returns A JSX element containing the account row
  */
-export function ManageAccount({
-  deviceSession,
-  isPending
-}: ManageAccountProps) {
+export function ManageAccount({ deviceSession, isPending }: ManageAccountProps) {
   const { authClient, localization } = useAuth()
-  const { localization: multiSessionLocalization } =
-    useAuthPlugin(multiSessionPlugin)
+  const { localization: multiSessionLocalization } = useAuthPlugin(multiSessionPlugin)
   const { data: session } = useSession(authClient)
 
-  const { mutate: setActiveSession, isPending: isSwitching } =
-    useSetActiveSession(authClient as MultiSessionAuthClient, {
-      onSuccess: () => window.scrollTo({ top: 0 })
-    })
+  const { mutate: setActiveSession, isPending: isSwitching } = useSetActiveSession(
+    authClient as MultiSessionAuthClient,
+    {
+      onSuccess: () => window.scrollTo({ top: 0 }),
+    },
+  )
 
-  const { mutate: revokeSession, isPending: isRevoking } =
-    useRevokeMultiSession(authClient as MultiSessionAuthClient, {
-      onSuccess: () => toast.success(localization.settings.revokeSessionSuccess)
-    })
+  const { mutate: revokeSession, isPending: isRevoking } = useRevokeMultiSession(
+    authClient as MultiSessionAuthClient,
+    {
+      onSuccess: () => toast.success(localization.settings.revokeSessionSuccess),
+    },
+  )
 
   const isActive = deviceSession?.session.userId === session?.session.userId
   const isBusy = isSwitching || isRevoking
 
   return (
-    <Card className="bg-transparent border-0 ring-0 shadow-none">
+    <Card className="border-0 bg-transparent shadow-none ring-0">
       <CardContent className="flex items-center justify-between gap-3">
         <UserView user={deviceSession?.user} isPending={isPending} />
 
@@ -71,9 +72,7 @@ export function ManageAccount({
             className="shrink-0"
             variant="outline"
             size="sm"
-            onClick={() =>
-              revokeSession({ sessionToken: deviceSession.session.token })
-            }
+            onClick={() => revokeSession({ sessionToken: deviceSession.session.token })}
             disabled={isBusy}
           >
             {isRevoking ? <Spinner /> : <LogOut />}
@@ -84,10 +83,7 @@ export function ManageAccount({
         {deviceSession && !isActive && (
           <DropdownMenu>
             <DropdownMenuTrigger
-              className={cn(
-                buttonVariants({ variant: "ghost", size: "icon-sm" }),
-                "shrink-0"
-              )}
+              className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "shrink-0")}
               disabled={isBusy}
             >
               <MoreHorizontal />
@@ -97,7 +93,7 @@ export function ManageAccount({
               <DropdownMenuItem
                 onClick={() =>
                   setActiveSession({
-                    sessionToken: deviceSession.session.token
+                    sessionToken: deviceSession.session.token,
                   })
                 }
               >
@@ -108,7 +104,7 @@ export function ManageAccount({
               <DropdownMenuItem
                 onClick={() =>
                   revokeSession({
-                    sessionToken: deviceSession.session.token
+                    sessionToken: deviceSession.session.token,
                   })
                 }
               >

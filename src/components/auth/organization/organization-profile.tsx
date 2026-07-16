@@ -5,7 +5,7 @@ import {
   useActiveOrganization,
   useAuth,
   useAuthPlugin,
-  useUpdateOrganization
+  useUpdateOrganization,
 } from "@better-auth-ui/react"
 import { type SyntheticEvent, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
+
 import { ChangeOrganizationLogo } from "./change-organization-logo"
 import { SlugField } from "./slug-field"
 
@@ -31,12 +32,9 @@ export type OrganizationProfileProps = {
  */
 export function OrganizationProfile({ className }: OrganizationProfileProps) {
   const { authClient, localization } = useAuth()
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
-  const { data: activeOrganization } = useActiveOrganization(
-    authClient as OrganizationAuthClient
-  )
+  const { data: activeOrganization } = useActiveOrganization(authClient as OrganizationAuthClient)
 
   const [slug, setSlug] = useState(activeOrganization?.slug ?? "")
 
@@ -47,9 +45,8 @@ export function OrganizationProfile({ className }: OrganizationProfileProps) {
   const { mutate: commitOrganizationUpdate, isPending } = useUpdateOrganization(
     authClient as OrganizationAuthClient,
     {
-      onSuccess: () =>
-        toast.success(organizationLocalization.organizationUpdatedSuccess)
-    }
+      onSuccess: () => toast.success(organizationLocalization.organizationUpdatedSuccess),
+    },
   )
 
   function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
@@ -60,7 +57,7 @@ export function OrganizationProfile({ className }: OrganizationProfileProps) {
     const name = formData.get("name") as string
 
     commitOrganizationUpdate({
-      data: { name, slug }
+      data: { name, slug },
     })
   }
 
@@ -79,9 +76,7 @@ export function OrganizationProfile({ className }: OrganizationProfileProps) {
             <ChangeOrganizationLogo />
 
             <Field>
-              <Label htmlFor={nameInputId}>
-                {organizationLocalization.name}
-              </Label>
+              <Label htmlFor={nameInputId}>{organizationLocalization.name}</Label>
 
               {activeOrganization ? (
                 <Input

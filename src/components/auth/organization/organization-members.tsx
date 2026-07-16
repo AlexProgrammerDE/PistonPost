@@ -7,7 +7,7 @@ import {
   useAuthPlugin,
   useHasPermission,
   useListOrganizationMembers,
-  useSession
+  useSession,
 } from "@better-auth-ui/react"
 import type { Member } from "better-auth/client"
 import { ChevronUp, Filter, Search, X } from "lucide-react"
@@ -21,22 +21,13 @@ import {
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from "@/components/ui/input-group"
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow
-} from "@/components/ui/table"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
+
 import { InviteMemberDialog } from "./invite-member-dialog"
 import { OrganizationMemberRow } from "./organization-member-row"
 import { OrganizationMemberRowSkeleton } from "./organization-member-row-skeleton"
@@ -61,26 +52,27 @@ export function OrganizationMembers({
   ...props
 }: OrganizationMembersProps & ComponentProps<"div">) {
   const { authClient } = useAuth()
-  const { localization: organizationLocalization, roles } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
 
   const { data: session } = useSession(authClient)
-  const { data: activeOrganization, isPending: activeOrganizationPending } =
-    useActiveOrganization(authClient as OrganizationAuthClient)
-  const { data: membersData, isPending: membersPending } =
-    useListOrganizationMembers(authClient as OrganizationAuthClient)
+  const { data: activeOrganization, isPending: activeOrganizationPending } = useActiveOrganization(
+    authClient as OrganizationAuthClient,
+  )
+  const { data: membersData, isPending: membersPending } = useListOrganizationMembers(
+    authClient as OrganizationAuthClient,
+  )
 
   const { isPending: updatePermissionPending } = useHasPermission(
     authClient as OrganizationAuthClient,
     {
-      permissions: { member: ["update"] }
-    }
+      permissions: { member: ["update"] },
+    },
   )
   const { isPending: deletePermissionPending } = useHasPermission(
     authClient as OrganizationAuthClient,
     {
-      permissions: { member: ["delete"] }
-    }
+      permissions: { member: ["delete"] },
+    },
   )
 
   const isPending =
@@ -98,7 +90,7 @@ export function OrganizationMembers({
       (member) =>
         (roleFilter === "all" || member.role === roleFilter) &&
         (member.user.name.toLowerCase().includes(search.toLowerCase()) ||
-          member.user.email.toLowerCase().includes(search.toLowerCase()))
+          member.user.email.toLowerCase().includes(search.toLowerCase())),
     )
   }, [search, membersData?.members, roleFilter])
 
@@ -108,10 +100,8 @@ export function OrganizationMembers({
 
     return [...filteredMembers].sort((a, b) => {
       const col = sortDescriptor.column as keyof Member | "user"
-      const first =
-        col === "user" ? a.user.name || a.user.email : String(a[col])
-      const second =
-        col === "user" ? b.user.name || b.user.email : String(b[col])
+      const first = col === "user" ? a.user.name || a.user.email : String(a[col])
+      const second = col === "user" ? b.user.name || b.user.email : String(b[col])
 
       let cmp = first.localeCompare(second)
       if (sortDescriptor.direction === "descending") {
@@ -125,7 +115,7 @@ export function OrganizationMembers({
   const [inviteOpen, setInviteOpen] = useState(false)
 
   const isOwner = membersData?.members.some(
-    (member) => member.role === "owner" && member.userId === session?.user.id
+    (member) => member.role === "owner" && member.userId === session?.user.id,
   )
 
   function toggleSort(column: string) {
@@ -143,9 +133,7 @@ export function OrganizationMembers({
   return (
     <div className={cn("flex flex-col gap-3", className)} {...props}>
       <div className="flex items-end justify-between gap-3">
-        <h3 className="truncate text-sm font-semibold">
-          {organizationLocalization.members}
-        </h3>
+        <h3 className="truncate text-sm font-semibold">{organizationLocalization.members}</h3>
 
         <Button
           className="shrink-0"
@@ -185,10 +173,7 @@ export function OrganizationMembers({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="start">
-              <DropdownMenuRadioGroup
-                value={roleFilter}
-                onValueChange={setRoleFilter}
-              >
+              <DropdownMenuRadioGroup value={roleFilter} onValueChange={setRoleFilter}>
                 <DropdownMenuRadioItem value="all">
                   {organizationLocalization.all}
                 </DropdownMenuRadioItem>
@@ -206,9 +191,7 @@ export function OrganizationMembers({
         {roleFilter !== "all" && (
           <Badge variant="secondary" className="w-fit gap-1">
             {organizationLocalization.role}:{" "}
-            <span className="capitalize">
-              {roles?.[roleFilter] ?? roleFilter}
-            </span>
+            <span className="capitalize">{roles?.[roleFilter] ?? roleFilter}</span>
             <button
               type="button"
               aria-label={organizationLocalization.clear}
@@ -226,9 +209,7 @@ export function OrganizationMembers({
               <TableRow>
                 <SortableTableHead
                   sortDirection={
-                    sortDescriptor?.column === "user"
-                      ? sortDescriptor.direction
-                      : undefined
+                    sortDescriptor?.column === "user" ? sortDescriptor.direction : undefined
                   }
                   onClick={() => toggleSort("user")}
                 >
@@ -237,18 +218,14 @@ export function OrganizationMembers({
 
                 <SortableTableHead
                   sortDirection={
-                    sortDescriptor?.column === "role"
-                      ? sortDescriptor.direction
-                      : undefined
+                    sortDescriptor?.column === "role" ? sortDescriptor.direction : undefined
                   }
                   onClick={() => toggleSort("role")}
                 >
                   {organizationLocalization.role}
                 </SortableTableHead>
 
-                <TableHead className="text-end">
-                  {organizationLocalization.actions}
-                </TableHead>
+                <TableHead className="text-end">{organizationLocalization.actions}</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -279,7 +256,7 @@ export function OrganizationMembers({
 function SortableTableHead({
   children,
   sortDirection,
-  onClick
+  onClick,
 }: {
   children: ReactNode
   sortDirection?: SortDirection
@@ -298,7 +275,7 @@ function SortableTableHead({
           <ChevronUp
             className={cn(
               "size-3 transition-transform duration-100 ease-out",
-              sortDirection === "descending" ? "rotate-180" : ""
+              sortDirection === "descending" ? "rotate-180" : "",
             )}
           />
         )}

@@ -6,7 +6,7 @@ import {
   useActiveOrganization,
   useAuth,
   useAuthenticate,
-  useAuthPlugin
+  useAuthPlugin,
 } from "@better-auth-ui/react"
 import { Settings as SettingsIcon, User2 as UserIcon } from "lucide-react"
 import { useEffect, useMemo } from "react"
@@ -14,6 +14,7 @@ import { useEffect, useMemo } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
+
 import { OrganizationPeople } from "./organization-people"
 import { OrganizationSettings } from "./organization-settings"
 
@@ -30,12 +31,7 @@ export type OrganizationProps = {
  * people (members / invitations). Path segments come from
  * `useAuthPlugin(organizationPlugin).viewPaths.organization`.
  */
-export function Organization({
-  className,
-  hideNav,
-  path,
-  view
-}: OrganizationProps) {
+export function Organization({ className, hideNav, path, view }: OrganizationProps) {
   if (!view && !path) {
     throw new Error("[Better Auth UI] Either `view` or `path` must be provided")
   }
@@ -47,18 +43,18 @@ export function Organization({
     localization: organizationLocalization,
     viewPaths: organizationViewPaths,
     slug,
-    slugPrefix
+    slugPrefix,
   } = useAuthPlugin(organizationPlugin)
 
   const { data: activeOrganization, isPending } = useActiveOrganization(
-    authClient as OrganizationAuthClient
+    authClient as OrganizationAuthClient,
   )
 
   useEffect(() => {
     if (!isPending && !activeOrganization) {
       navigate({
         to: `${basePaths.settings}/${organizationViewPaths.settings?.organizations}`,
-        replace: true
+        replace: true,
       })
     }
   }, [
@@ -66,25 +62,23 @@ export function Organization({
     isPending,
     navigate,
     organizationViewPaths.settings?.organizations,
-    activeOrganization
+    activeOrganization,
   ])
 
   const currentView = useMemo(() => {
     if (view) return view
 
     const match = Object.entries(organizationViewPaths.organization).find(
-      ([, segment]) => segment === path
+      ([, segment]) => segment === path,
     )
 
     return match?.[0] as OrganizationView | undefined
   }, [view, path, organizationViewPaths.organization])
 
   if (!currentView) {
-    const validPaths = Object.values(organizationViewPaths.organization).join(
-      ", "
-    )
+    const validPaths = Object.values(organizationViewPaths.organization).join(", ")
     throw new Error(
-      `[Better Auth UI] Unknown organization path "${path}". Valid paths are: ${validPaths}`
+      `[Better Auth UI] Unknown organization path "${path}". Valid paths are: ${validPaths}`,
     )
   }
 
@@ -93,10 +87,7 @@ export function Organization({
   }
 
   return (
-    <Tabs
-      value={currentView}
-      className={cn("w-full gap-4 md:gap-6", className)}
-    >
+    <Tabs value={currentView} className={cn("w-full gap-4 md:gap-6", className)}>
       <div className={cn(hideNav && "hidden")}>
         <TabsList aria-label={localization.settings.settings}>
           <TabsTrigger
@@ -106,7 +97,7 @@ export function Organization({
               navigate({
                 to: slug
                   ? `${basePaths.organization}/${slugPrefix}${slug}/${organizationViewPaths.organization.settings}`
-                  : `${basePaths.organization}/${organizationViewPaths.organization.settings}`
+                  : `${basePaths.organization}/${organizationViewPaths.organization.settings}`,
               })
             }
           >
@@ -122,7 +113,7 @@ export function Organization({
               navigate({
                 to: slug
                   ? `${basePaths.organization}/${slugPrefix}${slug}/${organizationViewPaths.organization.people}`
-                  : `${basePaths.organization}/${organizationViewPaths.organization.people}`
+                  : `${basePaths.organization}/${organizationViewPaths.organization.people}`,
               })
             }
           >

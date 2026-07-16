@@ -5,7 +5,7 @@ import {
   type ListedApiKey,
   useAuth,
   useAuthPlugin,
-  useDeleteApiKey
+  useDeleteApiKey,
 } from "@better-auth-ui/react"
 import { Key } from "lucide-react"
 
@@ -17,7 +17,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogMedia,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Field } from "@/components/ui/field"
@@ -38,7 +38,7 @@ export function DeleteApiKeyDialog({
   open,
   onOpenChange,
   apiKey,
-  organizationId
+  organizationId,
 }: DeleteApiKeyDialogProps) {
   const { authClient, localization } = useAuth()
   const { localization: apiKeyLocalization } = useAuthPlugin(apiKeyPlugin)
@@ -47,8 +47,8 @@ export function DeleteApiKeyDialog({
   const { mutate: deleteApiKey, isPending: isDeleting } = useDeleteApiKey(
     authClient as ApiKeyAuthClient,
     {
-      onSuccess: () => onOpenChange(false)
-    }
+      onSuccess: () => onOpenChange(false),
+    },
   )
 
   return (
@@ -61,23 +61,13 @@ export function DeleteApiKeyDialog({
 
           <AlertDialogTitle>{apiKeyLocalization.deleteApiKey}</AlertDialogTitle>
 
-          <AlertDialogDescription>
-            {apiKeyLocalization.deleteApiKeyWarning}
-          </AlertDialogDescription>
+          <AlertDialogDescription>{apiKeyLocalization.deleteApiKeyWarning}</AlertDialogDescription>
         </AlertDialogHeader>
 
         <Field>
-          <Label htmlFor={previewId}>
-            {apiKey.name || apiKeyLocalization.apiKey}
-          </Label>
+          <Label htmlFor={previewId}>{apiKey.name || apiKeyLocalization.apiKey}</Label>
 
-          <Input
-            id={previewId}
-            value={preview}
-            readOnly
-            className="font-mono text-xs"
-            disabled
-          />
+          <Input id={previewId} value={preview} readOnly className="font-mono text-xs" disabled />
         </Field>
 
         <AlertDialogFooter>
@@ -92,7 +82,7 @@ export function DeleteApiKeyDialog({
             onClick={() =>
               deleteApiKey({
                 keyId: apiKey.id,
-                ...(organizationId ? { configId: "organization" } : {})
+                ...(organizationId ? { configId: "organization" } : {}),
               })
             }
           >

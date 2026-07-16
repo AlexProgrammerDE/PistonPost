@@ -2,18 +2,14 @@ import {
   type OrganizationAuthClient,
   useAuth,
   useAuthPlugin,
-  useCheckSlug
+  useCheckSlug,
 } from "@better-auth-ui/react"
 import { useDebouncer } from "@tanstack/react-pacer"
 import { Check, X } from "lucide-react"
 import { useEffect, useState } from "react"
 
 import { Field, FieldError } from "@/components/ui/field"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from "@/components/ui/input-group"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
@@ -39,18 +35,12 @@ export function sanitizeSlug(value: string) {
 /**
  * Organization slug field with debounced availability checking.
  */
-export function SlugField({
-  value,
-  onChange,
-  currentSlug,
-  disabled,
-  id = "slug"
-}: SlugFieldProps) {
+export function SlugField({ value, onChange, currentSlug, disabled, id = "slug" }: SlugFieldProps) {
   const { authClient, localization: authLocalization } = useAuth()
   const {
     localization,
     checkSlug: checkSlugEnabled,
-    slugPrefix
+    slugPrefix,
   } = useAuthPlugin(organizationPlugin)
 
   const [slugError, setSlugError] = useState<string>()
@@ -59,17 +49,16 @@ export function SlugField({
     mutate: checkSlug,
     data: checkSlugData,
     error: checkSlugError,
-    reset: resetCheckSlug
+    reset: resetCheckSlug,
   } = useCheckSlug(authClient as OrganizationAuthClient)
 
   const debouncer = useDebouncer(
     (next: string) => {
-      if (!checkSlugEnabled || !next.trim() || next.trim() === currentSlug)
-        return
+      if (!checkSlugEnabled || !next.trim() || next.trim() === currentSlug) return
 
       checkSlug({ slug: next.trim() })
     },
-    { wait: 500 }
+    { wait: 500 },
   )
 
   useEffect(() => {
@@ -89,9 +78,7 @@ export function SlugField({
       <Label htmlFor={id}>{localization.slug}</Label>
 
       <InputGroup>
-        {slugPrefix && (
-          <InputGroupAddon align="inline-start">{slugPrefix}</InputGroupAddon>
-        )}
+        {slugPrefix && <InputGroupAddon align="inline-start">{slugPrefix}</InputGroupAddon>}
 
         <InputGroupInput
           id={id}

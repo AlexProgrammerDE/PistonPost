@@ -1,13 +1,10 @@
-import {
-  type OrganizationAuthClient,
-  useAuth,
-  useHasPermission
-} from "@better-auth-ui/react"
+import { type OrganizationAuthClient, useAuth, useHasPermission } from "@better-auth-ui/react"
 import type { ComponentProps } from "react"
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+
 import { DeleteOrganization } from "./delete-organization"
 import { DeleteOrganizationSkeleton } from "./delete-organization-skeleton"
 import { LeaveOrganization } from "./leave-organization"
@@ -30,10 +27,12 @@ export function OrganizationDangerZone({
 }: OrganizationDangerZoneProps & ComponentProps<"div">) {
   const { authClient, localization } = useAuth()
 
-  const { data: deletePermission, isPending: deletePermissionPending } =
-    useHasPermission(authClient as OrganizationAuthClient, {
-      permissions: { organization: ["delete"] }
-    })
+  const { data: deletePermission, isPending: deletePermissionPending } = useHasPermission(
+    authClient as OrganizationAuthClient,
+    {
+      permissions: { organization: ["delete"] },
+    },
+  )
 
   const canDelete = !!deletePermission?.success
 

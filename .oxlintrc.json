@@ -36,39 +36,10 @@
   },
   "overrides": [
     {
-      "files": ["src/components/auth/**/*.tsx"],
-      "rules": {
-        "eslint/no-await-in-loop": "off",
-        "typescript/no-unsafe-type-assertion": "off"
-      }
-    },
-    {
-      "files": [
-        "src/components/ui/input-group.tsx",
-        "src/components/ui/label.tsx",
-        "src/components/ui/sonner.tsx",
-        "src/components/ui/aspect-ratio.tsx",
-        "src/components/ui/toggle-group.tsx"
-      ],
-      "rules": {
-        "jsx-a11y/click-events-have-key-events": "off",
-        "jsx-a11y/label-has-associated-control": "off",
-        "jsx-a11y/no-noninteractive-element-interactions": "off",
-        "jsx-a11y/prefer-tag-over-role": "off",
-        "typescript/no-unsafe-type-assertion": "off"
-      }
-    },
-    {
       "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
         "eslint/no-underscore-dangle": "off",
         "typescript/no-unsafe-type-assertion": "off"
-      }
-    },
-    {
-      "files": ["src/components/ui/calendar.tsx"],
-      "rules": {
-        "eslint/no-shadow": "off"
       }
     }
   ],
@@ -78,14 +49,8 @@
     "**/coverage/**",
     "**/node_modules/**",
     "**/drizzle/**",
-    "src/components/auth/api-key/**",
-    "src/components/auth/email/**",
-    "src/components/auth/multi-session/**",
-    "src/components/auth/organization/**",
-    "src/components/auth/settings/account/user-profile.tsx",
-    "src/components/auth/settings/settings.tsx",
-    "src/components/auth/user/user-button.tsx",
-    "src/components/auth/user/user-view.tsx",
+    "src/components/auth/**",
+    "src/components/ui/**",
     "src/lib/auth/api-key-plugin.ts",
     "src/lib/auth/multi-session-plugin.ts",
     "src/lib/auth/organization-plugin.tsx",

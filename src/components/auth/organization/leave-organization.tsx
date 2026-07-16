@@ -2,12 +2,13 @@ import {
   type OrganizationAuthClient,
   useActiveOrganization,
   useAuth,
-  useAuthPlugin
+  useAuthPlugin,
 } from "@better-auth-ui/react"
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
+
 import { LeaveOrganizationDialog } from "./leave-organization-dialog"
 
 /**
@@ -15,23 +16,20 @@ import { LeaveOrganizationDialog } from "./leave-organization-dialog"
  */
 export function LeaveOrganization() {
   const { authClient } = useAuth()
-  const { localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
-  const { data: activeOrganization } = useActiveOrganization(
-    authClient as OrganizationAuthClient
-  )
+  const { data: activeOrganization } = useActiveOrganization(authClient as OrganizationAuthClient)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-sm font-medium leading-tight">
+        <p className="text-sm leading-tight font-medium">
           {organizationLocalization.leaveOrganization}
         </p>
 
-        <p className="text-muted-foreground mt-0.5 text-xs">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {organizationLocalization.leaveOrganizationDescription}
         </p>
       </div>

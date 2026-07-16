@@ -2,7 +2,7 @@ import {
   type OrganizationAuthClient,
   useAuth,
   useAuthPlugin,
-  useDeleteOrganization
+  useDeleteOrganization,
 } from "@better-auth-ui/react"
 import type { Organization } from "better-auth/client"
 import { TriangleAlert } from "lucide-react"
@@ -17,12 +17,13 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogMedia,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
+
 import { OrganizationView } from "./organization-view"
 
 export type DeleteOrganizationDialogProps = {
@@ -34,13 +35,11 @@ export type DeleteOrganizationDialogProps = {
 export function DeleteOrganizationDialog({
   open,
   onOpenChange,
-  organization
+  organization,
 }: DeleteOrganizationDialogProps) {
   const { authClient, basePaths, localization, navigate } = useAuth()
-  const {
-    localization: organizationLocalization,
-    viewPaths: organizationPluginViewPaths
-  } = useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization, viewPaths: organizationPluginViewPaths } =
+    useAuthPlugin(organizationPlugin)
 
   const { mutate: deleteOrganization, isPending } = useDeleteOrganization(
     authClient as OrganizationAuthClient,
@@ -51,10 +50,10 @@ export function DeleteOrganizationDialog({
 
         navigate({
           to: `${basePaths.settings}/${organizationPluginViewPaths.settings.organizations}`,
-          replace: true
+          replace: true,
         })
-      }
-    }
+      },
+    },
   )
 
   function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
@@ -71,9 +70,7 @@ export function DeleteOrganizationDialog({
               <TriangleAlert />
             </AlertDialogMedia>
 
-            <AlertDialogTitle>
-              {organizationLocalization.deleteOrganization}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{organizationLocalization.deleteOrganization}</AlertDialogTitle>
 
             <AlertDialogDescription>
               {organizationLocalization.deleteOrganizationDescription}

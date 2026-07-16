@@ -4,15 +4,9 @@ import {
   type MultiSessionAuthClient,
   useAuth,
   useSession,
-  useSetActiveSession
+  useSetActiveSession,
 } from "@better-auth-ui/react"
-import {
-  ChevronsUpDown,
-  LogIn,
-  LogOut,
-  Settings,
-  UserPlus2
-} from "lucide-react"
+import { ChevronsUpDown, LogIn, LogOut, Settings, UserPlus2 } from "lucide-react"
 import { isValidElement, type ReactElement, type ReactNode } from "react"
 
 import { buttonVariants } from "@/components/ui/button"
@@ -23,17 +17,15 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
+
 import { UserAvatar } from "./user-avatar"
 import { UserView } from "./user-view"
 
 /** Auth states a `UserButton` link can be visible in. */
-export type UserButtonLinkVisibility =
-  | "authenticated"
-  | "unauthenticated"
-  | "always"
+export type UserButtonLinkVisibility = "authenticated" | "unauthenticated" | "always"
 
 /** A simple link entry rendered as a `DropdownMenuItem` in the `UserButton` menu. */
 export type UserButtonLink = {
@@ -57,13 +49,7 @@ export type UserButtonProps = {
   align?: "center" | "end" | "start" | undefined
   sideOffset?: number
   size?: "default" | "icon"
-  variant?:
-    | "default"
-    | "destructive"
-    | "ghost"
-    | "link"
-    | "outline"
-    | "secondary"
+  variant?: "default" | "destructive" | "ghost" | "link" | "outline" | "secondary"
   /** Additional menu entries rendered above the built-in items. */
   links?: (UserButtonLink | ReactElement)[]
   /** Hide the built-in "Settings" link. Useful when replacing it via `links`. */
@@ -73,17 +59,13 @@ export type UserButtonProps = {
 function renderUserLink(
   link: UserButtonLink | ReactElement,
   navigate: (options: { to: string; replace?: boolean }) => void,
-  fallbackKey: string
+  fallbackKey: string,
 ): ReactNode {
   if (isValidElement(link)) return link
 
   const { label, href, icon, variant } = link
   return (
-    <DropdownMenuItem
-      key={fallbackKey}
-      variant={variant}
-      onClick={() => navigate({ to: href })}
-    >
+    <DropdownMenuItem key={fallbackKey} variant={variant} onClick={() => navigate({ to: href })}>
       {icon}
       {label}
     </DropdownMenuItem>
@@ -112,13 +94,12 @@ export function UserButton({
   size = "default",
   variant = "ghost",
   links,
-  hideSettings = false
+  hideSettings = false,
 }: UserButtonProps) {
-  const { authClient, basePaths, viewPaths, localization, plugins, navigate } =
-    useAuth()
+  const { authClient, basePaths, viewPaths, localization, plugins, navigate } = useAuth()
 
   const { isPending: settingActiveSession } = useSetActiveSession(
-    authClient as MultiSessionAuthClient
+    authClient as MultiSessionAuthClient,
   )
   const { data: session, isPending: sessionPending } = useSession(authClient)
 
@@ -128,9 +109,7 @@ export function UserButton({
       if (visibility === "authenticated" && !session) return []
       if (visibility === "unauthenticated" && session) return []
     }
-    return [
-      renderUserLink(link, navigate, `user-button-link-${index.toString()}`)
-    ]
+    return [renderUserLink(link, navigate, `user-button-link-${index.toString()}`)]
   })
 
   return (
@@ -140,11 +119,7 @@ export function UserButton({
         className={
           size === "icon"
             ? cn("rounded-full", className)
-            : cn(
-                buttonVariants({ variant, size: "lg" }),
-                "py-2.5 h-auto font-normal",
-                className
-              )
+            : cn(buttonVariants({ variant, size: "lg" }), "h-auto py-2.5 font-normal", className)
         }
       >
         {size === "icon" ? (
@@ -169,7 +144,7 @@ export function UserButton({
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="min-w-40 md:min-w-56 max-w-[48svw]"
+        className="max-w-[48svw] min-w-40 md:min-w-56"
         sideOffset={sideOffset}
         align={align}
       >
@@ -193,7 +168,7 @@ export function UserButton({
               <DropdownMenuItem
                 onClick={() =>
                   navigate({
-                    to: `${basePaths.settings}/${viewPaths.settings.account}`
+                    to: `${basePaths.settings}/${viewPaths.settings.account}`,
                   })
                 }
               >
@@ -206,7 +181,7 @@ export function UserButton({
             {plugins.flatMap((plugin) =>
               plugin.userMenuItems?.map((Item, index) => (
                 <Item key={`${plugin.id}-${index.toString()}`} />
-              ))
+              )),
             )}
 
             <DropdownMenuSeparator />
@@ -214,7 +189,7 @@ export function UserButton({
             <DropdownMenuItem
               onClick={() =>
                 navigate({
-                  to: `${basePaths.auth}/${viewPaths.auth.signOut}`
+                  to: `${basePaths.auth}/${viewPaths.auth.signOut}`,
                 })
               }
             >
@@ -230,7 +205,7 @@ export function UserButton({
             <DropdownMenuItem
               onClick={() =>
                 navigate({
-                  to: `${basePaths.auth}/${viewPaths.auth.signIn}`
+                  to: `${basePaths.auth}/${viewPaths.auth.signIn}`,
                 })
               }
             >
@@ -242,7 +217,7 @@ export function UserButton({
             <DropdownMenuItem
               onClick={() =>
                 navigate({
-                  to: `${basePaths.auth}/${viewPaths.auth.signUp}`
+                  to: `${basePaths.auth}/${viewPaths.auth.signUp}`,
                 })
               }
             >
@@ -254,7 +229,7 @@ export function UserButton({
             {plugins.flatMap((plugin) =>
               plugin.userMenuItems?.map((Item, index) => (
                 <Item key={`${plugin.id}-${index.toString()}`} />
-              ))
+              )),
             )}
           </>
         )}

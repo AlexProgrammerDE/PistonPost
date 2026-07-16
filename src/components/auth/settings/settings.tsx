@@ -7,6 +7,7 @@ import { useMemo } from "react"
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { cn } from "@/lib/utils"
+
 import { AccountSettings } from "./account/account-settings"
 import { SecuritySettings } from "./security/security-settings"
 
@@ -28,8 +29,7 @@ export type SettingsProps = {
  * @returns A JSX element rendering the settings layout and the selected settings panel
  */
 export function Settings({ className, view, path, hideNav }: SettingsProps) {
-  const { authClient, basePaths, localization, viewPaths, plugins, navigate } =
-    useAuth()
+  const { authClient, basePaths, localization, viewPaths, plugins, navigate } = useAuth()
   useAuthenticate(authClient)
 
   if (!view && !path) {
@@ -40,10 +40,7 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
     if (view) return view
     if (!path) return undefined
 
-    const match = [
-      viewPaths.settings,
-      ...plugins.map((plugin) => plugin.viewPaths?.settings)
-    ]
+    const match = [viewPaths.settings, ...plugins.map((plugin) => plugin.viewPaths?.settings)]
       .flatMap((source) => Object.entries(source ?? {}))
       .find(([, segment]) => segment === path)
 
@@ -51,22 +48,16 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
   }, [view, path, viewPaths.settings, plugins])
 
   if (!currentView) {
-    const validPaths = [
-      viewPaths.settings,
-      ...plugins.map((plugin) => plugin.viewPaths?.settings)
-    ]
+    const validPaths = [viewPaths.settings, ...plugins.map((plugin) => plugin.viewPaths?.settings)]
       .flatMap((source) => Object.values(source ?? {}))
       .join(", ")
     throw new Error(
-      `[Better Auth UI] Unknown settings path "${path}". Valid paths are: ${validPaths}`
+      `[Better Auth UI] Unknown settings path "${path}". Valid paths are: ${validPaths}`,
     )
   }
 
   return (
-    <Tabs
-      value={currentView}
-      className={cn("w-full gap-4 md:gap-6", className)}
-    >
+    <Tabs value={currentView} className={cn("w-full gap-4 md:gap-6", className)}>
       <div className={cn(hideNav && "hidden")}>
         <TabsList aria-label={localization.settings.settings}>
           <TabsTrigger
@@ -74,7 +65,7 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
             className="gap-1"
             onClick={() =>
               navigate({
-                to: `${basePaths.settings}/${viewPaths.settings.account}`
+                to: `${basePaths.settings}/${viewPaths.settings.account}`,
               })
             }
           >
@@ -88,7 +79,7 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
             className="gap-1"
             onClick={() =>
               navigate({
-                to: `${basePaths.settings}/${viewPaths.settings.security}`
+                to: `${basePaths.settings}/${viewPaths.settings.security}`,
               })
             }
           >
@@ -106,13 +97,13 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
                   className="gap-1"
                   onClick={() =>
                     navigate({
-                      to: `${basePaths.settings}/${plugin.viewPaths?.settings?.[settingsTab.view]}`
+                      to: `${basePaths.settings}/${plugin.viewPaths?.settings?.[settingsTab.view]}`,
                     })
                   }
                 >
                   {settingsTab.label}
                 </TabsTrigger>
-              )) ?? []
+              )) ?? [],
           )}
         </TabsList>
       </div>
@@ -134,7 +125,7 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
           >
             <settingsTab.component />
           </TabsContent>
-        ))
+        )),
       )}
     </Tabs>
   )

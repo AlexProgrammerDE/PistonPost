@@ -8,7 +8,7 @@ export const defaultColors = {
     muted: "#F5F5F5",
     mutedForeground: "#737373",
     primary: "#171717",
-    primaryForeground: "#FAFAFA"
+    primaryForeground: "#FAFAFA",
   },
   dark: {
     background: "#0A0A0A",
@@ -19,8 +19,8 @@ export const defaultColors = {
     muted: "#212121",
     mutedForeground: "#A1A1A1",
     primary: "#E5E5E5",
-    primaryForeground: "#171717"
-  }
+    primaryForeground: "#171717",
+  },
 }
 
 /**

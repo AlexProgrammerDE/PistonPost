@@ -21,13 +21,13 @@ export type OrganizationLogoProps = {
 const sizeClasses: Record<OrganizationLogoSize, string> = {
   sm: "size-8",
   md: "size-10",
-  lg: "size-12"
+  lg: "size-12",
 }
 
 const fallbackTextClasses: Record<OrganizationLogoSize, string> = {
   sm: "text-sm",
   md: "text-base",
-  lg: "text-xl"
+  lg: "text-xl",
 }
 
 export function OrganizationLogo({
@@ -43,31 +43,17 @@ export function OrganizationLogo({
     style?: CSSProperties
   }) {
   if (isPending && !organization) {
-    return (
-      <Skeleton
-        className={cn("rounded-full", sizeClasses[size], className)}
-        style={style}
-      />
-    )
+    return <Skeleton className={cn("rounded-full", sizeClasses[size], className)} style={style} />
   }
 
   const initials = organization?.name?.slice(0, 2).toUpperCase()
   const normalizedLogo = organization?.logo?.trim() || undefined
 
   return (
-    <Avatar
-      className={cn("rounded-full", sizeClasses[size], className)}
-      style={style}
-      {...props}
-    >
-      <AvatarImage
-        alt={organization?.name ?? "Organization"}
-        src={normalizedLogo}
-      />
+    <Avatar className={cn("rounded-full", sizeClasses[size], className)} style={style} {...props}>
+      <AvatarImage alt={organization?.name ?? "Organization"} src={normalizedLogo} />
 
-      <AvatarFallback
-        className={cn("text-muted-foreground!", fallbackTextClasses[size])}
-      >
+      <AvatarFallback className={cn("text-muted-foreground!", fallbackTextClasses[size])}>
         {fallback || initials || <Briefcase className="size-4" />}
       </AvatarFallback>
     </Avatar>

@@ -4,7 +4,7 @@ import {
   type OrganizationAuthClient,
   useAuth,
   useAuthPlugin,
-  useInviteMember
+  useInviteMember,
 } from "@better-auth-ui/react"
 import { UserPlus } from "lucide-react"
 import { type SyntheticEvent, useEffect, useState } from "react"
@@ -18,7 +18,7 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogMedia,
-  AlertDialogTitle
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError } from "@/components/ui/field"
@@ -29,7 +29,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
@@ -46,13 +46,9 @@ const pickDefaultRole = (keys: string[]) =>
 /**
  * Render a dialog for inviting a member to the organization.
  */
-export function InviteMemberDialog({
-  open,
-  onOpenChange
-}: InviteMemberDialogProps) {
+export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogProps) {
   const { authClient, localization } = useAuth()
-  const { localization: organizationLocalization, roles } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
 
   const [role, setRole] = useState(() => pickDefaultRole(Object.keys(roles)))
   const [emailError, setEmailError] = useState<string>()
@@ -74,8 +70,8 @@ export function InviteMemberDialog({
       onSuccess: () => {
         onOpenChange(false)
         toast.success(organizationLocalization.inviteMemberSuccess)
-      }
-    }
+      },
+    },
   )
 
   const isRoleValid = Object.keys(roles).includes(role)
@@ -90,7 +86,7 @@ export function InviteMemberDialog({
 
     inviteMember({
       email: email.trim(),
-      role: role as Parameters<typeof inviteMember>[0]["role"]
+      role: role as Parameters<typeof inviteMember>[0]["role"],
     })
   }
 
@@ -103,9 +99,7 @@ export function InviteMemberDialog({
               <UserPlus />
             </AlertDialogMedia>
 
-            <AlertDialogTitle>
-              {organizationLocalization.inviteMember}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{organizationLocalization.inviteMember}</AlertDialogTitle>
 
             <AlertDialogDescription>
               {organizationLocalization.inviteMemberDescription}
@@ -114,9 +108,7 @@ export function InviteMemberDialog({
 
           <div className="flex flex-col gap-4">
             <Field data-invalid={!!emailError}>
-              <Label htmlFor="invite-member-email">
-                {localization.auth.email}
-              </Label>
+              <Label htmlFor="invite-member-email">{localization.auth.email}</Label>
 
               <Input
                 id="invite-member-email"
@@ -142,9 +134,7 @@ export function InviteMemberDialog({
             </Field>
 
             <Field>
-              <Label htmlFor="invite-member-role">
-                {organizationLocalization.role}
-              </Label>
+              <Label htmlFor="invite-member-role">{organizationLocalization.role}</Label>
 
               <Select
                 value={role}

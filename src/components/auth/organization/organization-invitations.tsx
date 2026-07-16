@@ -4,7 +4,7 @@ import {
   useAuth,
   useAuthPlugin,
   useHasPermission,
-  useListOrganizationInvitations
+  useListOrganizationInvitations,
 } from "@better-auth-ui/react"
 import { ChevronUp, Filter, Search, X } from "lucide-react"
 import { type ComponentProps, type ReactNode, useMemo, useState } from "react"
@@ -17,23 +17,20 @@ import {
   DropdownMenuContent,
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput
-} from "@/components/ui/input-group"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/ui/table"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
+
 import { InviteMemberDialog } from "./invite-member-dialog"
 import { OrganizationInvitationRow } from "./organization-invitation-row"
 import { OrganizationInvitationRowSkeleton } from "./organization-invitation-row-skeleton"
@@ -59,17 +56,17 @@ export function OrganizationInvitations({
   ...props
 }: OrganizationInvitationsProps & ComponentProps<"div">) {
   const { authClient, localization } = useAuth()
-  const { localization: organizationLocalization, roles } =
-    useAuthPlugin(organizationPlugin)
+  const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
 
-  const { data: invitations, isPending: invitationsPending } =
-    useListOrganizationInvitations(authClient as OrganizationAuthClient)
+  const { data: invitations, isPending: invitationsPending } = useListOrganizationInvitations(
+    authClient as OrganizationAuthClient,
+  )
 
   const { isPending: invitationPermissionPending } = useHasPermission(
     authClient as OrganizationAuthClient,
     {
-      permissions: { invitation: ["cancel"] }
-    }
+      permissions: { invitation: ["cancel"] },
+    },
   )
 
   const isPending = invitationsPending || invitationPermissionPending
@@ -84,7 +81,7 @@ export function OrganizationInvitations({
       (invitation) =>
         (roleFilter === "all" || invitation.role === roleFilter) &&
         (statusFilter === "all" || invitation.status === statusFilter) &&
-        invitation.email.toLowerCase().includes(search.toLowerCase())
+        invitation.email.toLowerCase().includes(search.toLowerCase()),
     )
   }, [search, invitations, roleFilter, statusFilter])
 
@@ -126,9 +123,7 @@ export function OrganizationInvitations({
 
   return (
     <div className={cn("flex flex-col gap-3", className)} {...props}>
-      <h3 className="truncate text-sm font-semibold">
-        {organizationLocalization.invitations}
-      </h3>
+      <h3 className="truncate text-sm font-semibold">{organizationLocalization.invitations}</h3>
 
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
@@ -158,10 +153,7 @@ export function OrganizationInvitations({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="start">
-              <DropdownMenuRadioGroup
-                value={roleFilter}
-                onValueChange={setRoleFilter}
-              >
+              <DropdownMenuRadioGroup value={roleFilter} onValueChange={setRoleFilter}>
                 <DropdownMenuRadioItem value="all">
                   {organizationLocalization.all}
                 </DropdownMenuRadioItem>
@@ -186,23 +178,16 @@ export function OrganizationInvitations({
             </DropdownMenuTrigger>
 
             <DropdownMenuContent align="start">
-              <DropdownMenuRadioGroup
-                value={statusFilter}
-                onValueChange={setStatusFilter}
-              >
+              <DropdownMenuRadioGroup value={statusFilter} onValueChange={setStatusFilter}>
                 <DropdownMenuRadioItem value="all">
                   {organizationLocalization.all}
                 </DropdownMenuRadioItem>
 
-                {(["pending", "accepted", "rejected", "canceled"] as const).map(
-                  (status) => (
-                    <DropdownMenuRadioItem key={status} value={status}>
-                      {organizationLocalization[
-                        status as keyof OrganizationLocalization
-                      ] ?? status}
-                    </DropdownMenuRadioItem>
-                  )
-                )}
+                {(["pending", "accepted", "rejected", "canceled"] as const).map((status) => (
+                  <DropdownMenuRadioItem key={status} value={status}>
+                    {organizationLocalization[status as keyof OrganizationLocalization] ?? status}
+                  </DropdownMenuRadioItem>
+                ))}
               </DropdownMenuRadioGroup>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -213,9 +198,7 @@ export function OrganizationInvitations({
             {roleFilter !== "all" && (
               <Badge variant="secondary" className="gap-1">
                 {organizationLocalization.role}:{" "}
-                <span className="capitalize">
-                  {roles?.[roleFilter] ?? roleFilter}
-                </span>
+                <span className="capitalize">{roles?.[roleFilter] ?? roleFilter}</span>
                 <button
                   type="button"
                   aria-label={organizationLocalization.clear}
@@ -230,9 +213,8 @@ export function OrganizationInvitations({
             {statusFilter !== "all" && (
               <Badge variant="secondary" className="gap-1">
                 {organizationLocalization.status}:{" "}
-                {organizationLocalization[
-                  statusFilter as keyof OrganizationLocalization
-                ] ?? statusFilter}
+                {organizationLocalization[statusFilter as keyof OrganizationLocalization] ??
+                  statusFilter}
                 <button
                   type="button"
                   aria-label={organizationLocalization.clear}
@@ -252,9 +234,7 @@ export function OrganizationInvitations({
               <TableRow>
                 <SortableTableHead
                   sortDirection={
-                    sortDescriptor?.column === "email"
-                      ? sortDescriptor.direction
-                      : undefined
+                    sortDescriptor?.column === "email" ? sortDescriptor.direction : undefined
                   }
                   onClick={() => toggleSort("email")}
                 >
@@ -263,9 +243,7 @@ export function OrganizationInvitations({
 
                 <SortableTableHead
                   sortDirection={
-                    sortDescriptor?.column === "createdAt"
-                      ? sortDescriptor.direction
-                      : undefined
+                    sortDescriptor?.column === "createdAt" ? sortDescriptor.direction : undefined
                   }
                   onClick={() => toggleSort("createdAt")}
                 >
@@ -274,9 +252,7 @@ export function OrganizationInvitations({
 
                 <SortableTableHead
                   sortDirection={
-                    sortDescriptor?.column === "role"
-                      ? sortDescriptor.direction
-                      : undefined
+                    sortDescriptor?.column === "role" ? sortDescriptor.direction : undefined
                   }
                   onClick={() => toggleSort("role")}
                 >
@@ -285,18 +261,14 @@ export function OrganizationInvitations({
 
                 <SortableTableHead
                   sortDirection={
-                    sortDescriptor?.column === "status"
-                      ? sortDescriptor.direction
-                      : undefined
+                    sortDescriptor?.column === "status" ? sortDescriptor.direction : undefined
                   }
                   onClick={() => toggleSort("status")}
                 >
                   {organizationLocalization.status}
                 </SortableTableHead>
 
-                <TableHead className="text-end">
-                  {organizationLocalization.actions}
-                </TableHead>
+                <TableHead className="text-end">{organizationLocalization.actions}</TableHead>
               </TableRow>
             </TableHeader>
 
@@ -306,17 +278,12 @@ export function OrganizationInvitations({
               ) : !sortedInvitations?.length ? (
                 <TableRow>
                   <TableCell colSpan={5}>
-                    <OrganizationInvitationsEmpty
-                      onInvitePress={() => setInviteOpen(true)}
-                    />
+                    <OrganizationInvitationsEmpty onInvitePress={() => setInviteOpen(true)} />
                   </TableCell>
                 </TableRow>
               ) : (
                 sortedInvitations.map((invitation) => (
-                  <OrganizationInvitationRow
-                    key={invitation.id}
-                    invitation={invitation}
-                  />
+                  <OrganizationInvitationRow key={invitation.id} invitation={invitation} />
                 ))
               )}
             </TableBody>
@@ -332,7 +299,7 @@ export function OrganizationInvitations({
 function SortableTableHead({
   children,
   sortDirection,
-  onClick
+  onClick,
 }: {
   children: ReactNode
   sortDirection?: SortDirection
@@ -351,7 +318,7 @@ function SortableTableHead({
           <ChevronUp
             className={cn(
               "size-3 transition-transform duration-100 ease-out",
-              sortDirection === "descending" ? "rotate-180" : ""
+              sortDirection === "descending" ? "rotate-180" : "",
             )}
           />
         )}
