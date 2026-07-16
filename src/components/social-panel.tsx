@@ -1,11 +1,18 @@
 "use client"
 
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseInfiniteQuery,
+} from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { startTransition, useOptimistic, useState } from "react"
 import { toast } from "sonner"
 
+import { authClient } from "@/auth/client"
 import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "@/components/icons"
+import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import {
@@ -24,7 +31,11 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { useAppForm } from "@/lib/forms/app-form"
-import { discussionQueryOptions } from "@/lib/queries/social"
+import {
+  discussionKeys,
+  discussionQueryOptions,
+  discussionViewerQueryOptions,
+} from "@/lib/queries/social"
 import {
   applyOptimisticReaction,
   optimisticReactionCounts,
@@ -49,16 +60,25 @@ export function SocialPanel({
 }) {
   const queryClient = useQueryClient()
   const [confirmedCounts, setConfirmedCounts] = useState(counts)
-  const discussion = useInfiniteQuery(discussionQueryOptions(postId))
-  const firstPage = discussion.data?.pages[0]
-  const active = firstPage?.viewerReactions ?? []
+  const discussion = useSuspenseInfiniteQuery(discussionQueryOptions(postId))
+  const session = authClient.useSession()
+  const sessionUserId = session.data?.user.id ?? null
+  const viewer = useQuery({
+    ...discussionViewerQueryOptions(postId, sessionUserId ?? "anonymous"),
+    enabled: sessionUserId !== null && !session.isPending,
+  })
+  const viewerPending = session.isPending || (sessionUserId !== null && viewer.isPending)
+  const viewerId = viewer.data?.viewerId ?? null
+  const viewerRole = viewer.data?.viewerRole ?? null
+  const active = viewer.data?.viewerReactions ?? []
   const [optimisticActive, setOptimisticActive] = useOptimistic(
     active,
     (current: ReactionType[], update: { type: ReactionType; active: boolean }) =>
       applyOptimisticReaction(current, update),
   )
-  const comments: CommentPage[] =
-    discussion.data?.pages.flatMap((page) => page.comments.map((comment) => ({ ...comment }))) ?? []
+  const comments: CommentPage[] = discussion.data.pages.flatMap((page) =>
+    page.comments.map((comment) => ({ ...comment })),
+  )
   const [optimisticComments, addOptimisticComment] = useOptimistic(
     comments,
     (current, pending: CommentPage) => [pending, ...current],
@@ -74,7 +94,7 @@ export function SocialPanel({
         heart: nextCounts.heart ?? 0,
       })
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["discussion", postId] }),
+        queryClient.invalidateQueries({ queryKey: discussionKeys.viewerPost(postId) }),
         queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
       ])
     },
@@ -83,12 +103,12 @@ export function SocialPanel({
 
   const commentMutation = useMutation({
     mutationFn: (content: string) => createComment({ data: { postId, content } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discussion", postId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteComment({ data: { id } }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discussion", postId] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
     onError: () => toast.error("The comment could not be deleted."),
   })
 
@@ -96,7 +116,7 @@ export function SocialPanel({
     defaultValues: { content: "" },
     onSubmit: async ({ value }) => {
       const content = value.content.trim()
-      if (!content || !firstPage?.viewerId) return
+      if (!content || !viewerId) return
       const pendingId = `pending-${crypto.randomUUID()}`
       startTransition(async () => {
         addOptimisticComment({
@@ -104,7 +124,7 @@ export function SocialPanel({
           content,
           createdAt: new Date(),
           updatedAt: new Date(),
-          authorId: firstPage.viewerId ?? "",
+          authorId: viewerId,
           authorName: "You",
           authorUsername: "you",
           authorImage: null,
@@ -123,7 +143,7 @@ export function SocialPanel({
   const displayedCounts = optimisticReactionCounts(confirmedCounts, active, optimisticActive)
 
   function updateReactions(next: unknown[]) {
-    if (!firstPage?.viewerId) {
+    if (!viewerId) {
       toast.error("Sign in to react.")
       return
     }
@@ -151,29 +171,35 @@ export function SocialPanel({
     <section id="discussion" className="mx-auto mt-5 max-w-5xl" aria-labelledby="discussion-title">
       <div className="flex flex-wrap items-center justify-between gap-3 border-y py-3">
         <PostShareActions postId={postId} imageCount={imageCount} />
-        <ToggleGroup
-          value={optimisticActive}
-          onValueChange={updateReactions}
-          variant="outline"
-          aria-label={firstPage?.viewerId ? "Your reaction" : "Reaction totals"}
-        >
-          <ToggleGroupItem value="like" aria-label="Like" disabled={!firstPage?.viewerId}>
-            <ThumbsUp /> {displayedCounts.like}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={!firstPage?.viewerId}>
-            <ThumbsDown /> {displayedCounts.dislike}
-          </ToggleGroupItem>
-          <ToggleGroupItem value="heart" aria-label="Heart" disabled={!firstPage?.viewerId}>
-            <Heart /> {displayedCounts.heart}
-          </ToggleGroupItem>
-        </ToggleGroup>
+        {viewerPending ? (
+          <DiscussionViewerSkeleton />
+        ) : (
+          <ToggleGroup
+            value={optimisticActive}
+            onValueChange={updateReactions}
+            variant="outline"
+            aria-label={viewerId ? "Your reaction" : "Reaction totals"}
+          >
+            <ToggleGroupItem value="like" aria-label="Like" disabled={!viewerId}>
+              <ThumbsUp /> {displayedCounts.like}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={!viewerId}>
+              <ThumbsDown /> {displayedCounts.dislike}
+            </ToggleGroupItem>
+            <ToggleGroupItem value="heart" aria-label="Heart" disabled={!viewerId}>
+              <Heart /> {displayedCounts.heart}
+            </ToggleGroupItem>
+          </ToggleGroup>
+        )}
       </div>
 
       <div className="mt-10 grid gap-8">
         <h2 id="discussion-title" className="font-heading text-2xl font-bold">
           Comments
         </h2>
-        {firstPage?.viewerId ? (
+        {viewerPending ? (
+          <CommentComposerSkeleton />
+        ) : viewerId ? (
           <form
             className="grid gap-3"
             onSubmit={(event) => {
@@ -197,6 +223,10 @@ export function SocialPanel({
               </div>
             </form.AppForm>
           </form>
+        ) : sessionUserId ? (
+          <p className="text-sm text-muted-foreground" role="status">
+            Your comment and reaction controls could not be loaded. Try refreshing the page.
+          </p>
         ) : (
           <p className="text-sm text-muted-foreground">
             <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
@@ -206,14 +236,13 @@ export function SocialPanel({
           </p>
         )}
 
-        {optimisticComments.length === 0 && !discussion.isLoading ? (
+        {optimisticComments.length === 0 ? (
           <p className="border-y py-6 text-sm text-muted-foreground">No comments yet.</p>
         ) : (
           <div className="grid gap-0">
             {optimisticComments.map((comment) => {
               const canDelete =
-                !comment.optimistic &&
-                (comment.authorId === firstPage?.viewerId || firstPage?.viewerRole === "admin")
+                !comment.optimistic && (comment.authorId === viewerId || viewerRole === "admin")
               return (
                 <article
                   key={comment.id}

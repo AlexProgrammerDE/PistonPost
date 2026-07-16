@@ -1,6 +1,7 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router"
 import { Link, useLocation } from "@tanstack/react-router"
 
+import { SettingsLayoutSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
 import { settingsViews } from "@/lib/settings-views"
 import { getPublicRuntimeConfig } from "@/server/public-config"
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/account/settings")({
   loader: () => getPublicRuntimeConfig(),
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: SettingsLayout,
+  pendingComponent: SettingsLayoutSkeleton,
 })
 
 function SettingsLayout() {

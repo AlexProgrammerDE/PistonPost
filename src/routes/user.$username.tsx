@@ -1,8 +1,10 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { Suspense } from "react"
 import { z } from "zod"
 
 import { FilteredFeed } from "@/components/filtered-feed"
+import { FeedItemsSkeleton, ProfilePageSkeleton } from "@/components/LoadingStates"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
@@ -17,9 +19,10 @@ export const Route = createFileRoute("/user/$username")({
       .max(32)
       .parse(params.username)
       .toLocaleLowerCase("en-US")
-    const profile = await context.queryClient.ensureQueryData(profileQueryOptions(username))
+    const profilePromise = context.queryClient.ensureQueryData(profileQueryOptions(username))
+    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ username }))
+    const profile = await profilePromise
     if (!profile) throw notFound()
-    await context.queryClient.ensureInfiniteQueryData(feedQueryOptions({ username }))
     return profile
   },
   head: ({ loaderData, params }) => {
@@ -59,6 +62,7 @@ export const Route = createFileRoute("/user/$username")({
     })
   },
   component: ProfileFeed,
+  pendingComponent: ProfilePageSkeleton,
 })
 
 function ProfileFeed() {
@@ -103,10 +107,12 @@ function ProfileFeed() {
           </div>
         </div>
       </header>
-      <FilteredFeed
-        filters={{ username: normalizedUsername }}
-        emptyMessage={`${profile.name} has not posted anything here yet.`}
-      />
+      <Suspense fallback={<FeedItemsSkeleton />}>
+        <FilteredFeed
+          filters={{ username: normalizedUsername }}
+          emptyMessage={`${profile.name} has not posted anything here yet.`}
+        />
+      </Suspense>
     </main>
   )
 }

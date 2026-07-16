@@ -134,3 +134,10 @@
     cursor: pointer;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="skeleton"],
+  [data-slot="spinner"] {
+    animation: none;
+  }
+}

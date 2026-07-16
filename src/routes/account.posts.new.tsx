@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 
+import { FormPageSkeleton } from "@/components/LoadingStates"
 import { PostComposer } from "@/components/post-composer"
 import { getComposerViewer } from "@/server/composer-viewer"
 
@@ -9,6 +10,7 @@ export const Route = createFileRoute("/account/posts/new")({
     meta: [{ title: "New post · PistonPost" }, { name: "robots", content: "noindex" }],
   }),
   component: NewPost,
+  pendingComponent: FormPageSkeleton,
 })
 
 function NewPost() {

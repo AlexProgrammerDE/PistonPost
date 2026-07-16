@@ -1,5 +1,6 @@
 import { Outlet, createFileRoute } from "@tanstack/react-router"
 
+import { AuthPageSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
 import { getPublicRuntimeConfig } from "@/server/public-config"
 
@@ -7,6 +8,7 @@ export const Route = createFileRoute("/auth")({
   loader: () => getPublicRuntimeConfig(),
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: AuthLayout,
+  pendingComponent: AuthPageSkeleton,
 })
 
 function AuthLayout() {

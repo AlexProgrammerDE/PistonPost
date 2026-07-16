@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 ## How to execute this plan
 
@@ -1057,3 +1057,7 @@ Record future changes here with date, decision, reason, and affected phases.
   explicit `?image=N` parameter open the focused image browser and select the matching social
   preview. A gallery options menu writes an explicit `layout=masonry` or `layout=browser` override
   to the URL. This affects Phase 5.
+- 2026-07-16: Integrate TanStack Query with router SSR dehydration and hydration. Public comments
+  use cache keys that never contain viewer state, while reactions and permissions use a separate
+  viewer-scoped key. Route loaders prefetch critical public data and localized Suspense boundaries
+  preserve the surrounding page while slower content arrives. This affects Phases 5, 7, and 9.

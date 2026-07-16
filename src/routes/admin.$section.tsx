@@ -1,9 +1,10 @@
-import { useMutation } from "@tanstack/react-query"
+import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query"
 import { Link, createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router"
 import { useDeferredValue, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { AdminTablePageSkeleton } from "@/components/LoadingStates"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,8 +20,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { adminSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
+import { adminRowsQueryOptions } from "@/lib/queries/admin"
 import {
   DataTable,
   createAppColumnHelper,
@@ -288,31 +291,40 @@ function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
 export const Route = createFileRoute("/admin/$section")({
   validateSearch: searchSchema,
   loaderDeps: ({ search }) => search,
-  loader: ({ params, deps }) =>
-    getAdminRows({
-      data: {
-        section: sectionSchema.parse(params.section),
-        query: deps.q,
-        cursor: deps.cursor || undefined,
-        direction: deps.direction,
-      },
-    }),
+  loader: ({ context, params, deps }) => {
+    const input = {
+      section: sectionSchema.parse(params.section),
+      query: deps.q,
+      cursor: deps.cursor || undefined,
+      direction: deps.direction,
+    }
+    void context.queryClient.prefetchQuery(adminRowsQueryOptions(input))
+    return input
+  },
   head: ({ params }) => ({
     meta: [{ title: `${getAdminSection(params.section)?.label ?? "Administration"} · PistonPost` }],
   }),
   component: AdminTable,
+  pendingComponent: AdminTablePageSkeleton,
 })
 
 function AdminTable() {
-  const result = Route.useLoaderData()
+  const input = Route.useLoaderData()
+  const result = useQuery({
+    ...adminRowsQueryOptions(input),
+    placeholderData: keepPreviousData,
+  })
   const { section } = Route.useParams()
   const search = Route.useSearch()
   const parsedSection = sectionSchema.safeParse(section)
   if (!parsedSection.success) throw notFound()
+  if (result.error) throw result.error
+  if (!result.data) return <AdminTablePageSkeleton />
   return (
     <AdminTableView
       key={parsedSection.data}
-      result={result}
+      result={result.data}
+      refreshing={result.isFetching}
       section={parsedSection.data}
       search={search}
     />
@@ -321,10 +333,12 @@ function AdminTable() {
 
 function AdminTableView({
   result,
+  refreshing,
   section,
   search,
 }: {
   result: Awaited<ReturnType<typeof getAdminRows>>
+  refreshing: boolean
   section: AdminSection
   search: z.infer<typeof searchSchema>
 }) {
@@ -410,8 +424,9 @@ function AdminTableView({
           </Link>
         ))}
       </nav>
-      <div className="mb-5 max-w-sm">
+      <div className="mb-5 flex max-w-xl flex-wrap items-center gap-3">
         <Input
+          className="max-w-sm"
           aria-label={details.searchPlaceholder.replace("…", "")}
           name="admin-search"
           type="search"
@@ -420,59 +435,71 @@ function AdminTableView({
           value={query}
           onChange={(event) => setQuery(event.currentTarget.value)}
         />
+        {refreshing ? (
+          <span
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+            role="status"
+            aria-live="polite"
+          >
+            <Spinner aria-hidden="true" />
+            Updating results…
+          </span>
+        ) : null}
       </div>
-      <DataTable
-        data={result.rows}
-        columns={columns}
-        getRowId={(row) => row.id}
-        emptyMessage={`No ${details.label.toLocaleLowerCase("en-US")} match this view.`}
-        urlState={{
-          sort: search.sort,
-          direction: search.direction,
-          page: 0,
-          hidden: search.hidden ? search.hidden.split(",") : [],
-        }}
-        onUrlStateChange={(next: DataTableUrlState) =>
-          void navigate({
-            to: "/admin/$section",
-            params: { section },
-            search: {
-              ...search,
-              sort: next.sort || "createdAt",
-              direction: next.sort ? next.direction : "desc",
-              cursor: next.direction === search.direction ? search.cursor : "",
-              trail: next.direction === search.direction ? search.trail : "",
-              hidden: next.hidden.join(","),
-            },
-            replace: true,
-          })
-        }
-        cursorPagination={{
-          page: trail.length + 1,
-          hasPrevious: trail.length > 0,
-          hasNext: result.nextCursor !== null,
-          onPrevious: () => {
-            const previous = popCursorTrail(trail)
-            void navigate({
-              to: "/admin/$section",
-              params: { section },
-              search: { ...search, cursor: previous.cursor, trail: previous.trail.join(",") },
-            })
-          },
-          onNext: () => {
-            if (!result.nextCursor) return
+      <div aria-busy={refreshing}>
+        <DataTable
+          data={result.rows}
+          columns={columns}
+          getRowId={(row) => row.id}
+          emptyMessage={`No ${details.label.toLocaleLowerCase("en-US")} match this view.`}
+          urlState={{
+            sort: search.sort,
+            direction: search.direction,
+            page: 0,
+            hidden: search.hidden ? search.hidden.split(",") : [],
+          }}
+          onUrlStateChange={(next: DataTableUrlState) =>
             void navigate({
               to: "/admin/$section",
               params: { section },
               search: {
                 ...search,
-                cursor: result.nextCursor,
-                trail: pushCursorTrail(trail, search.cursor).join(","),
+                sort: next.sort || "createdAt",
+                direction: next.sort ? next.direction : "desc",
+                cursor: next.direction === search.direction ? search.cursor : "",
+                trail: next.direction === search.direction ? search.trail : "",
+                hidden: next.hidden.join(","),
               },
+              replace: true,
             })
-          },
-        }}
-      />
+          }
+          cursorPagination={{
+            page: trail.length + 1,
+            hasPrevious: trail.length > 0,
+            hasNext: result.nextCursor !== null,
+            onPrevious: () => {
+              const previous = popCursorTrail(trail)
+              void navigate({
+                to: "/admin/$section",
+                params: { section },
+                search: { ...search, cursor: previous.cursor, trail: previous.trail.join(",") },
+              })
+            },
+            onNext: () => {
+              if (!result.nextCursor) return
+              void navigate({
+                to: "/admin/$section",
+                params: { section },
+                search: {
+                  ...search,
+                  cursor: result.nextCursor,
+                  trail: pushCursorTrail(trail, search.cursor).join(","),
+                },
+              })
+            },
+          }}
+        />
+      </div>
     </main>
   )
 }

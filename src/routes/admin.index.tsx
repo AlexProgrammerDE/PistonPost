@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 
+import { AdminOverviewSkeleton } from "@/components/LoadingStates"
 import { adminSections } from "@/lib/admin-sections"
 import { getAdminOverview } from "@/server/tables"
 
@@ -7,6 +8,7 @@ export const Route = createFileRoute("/admin/")({
   loader: () => getAdminOverview(),
   head: () => ({ meta: [{ title: "Administration · PistonPost" }] }),
   component: AdminOverview,
+  pendingComponent: AdminOverviewSkeleton,
 })
 
 function AdminOverview() {

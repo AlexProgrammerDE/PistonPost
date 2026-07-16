@@ -1,7 +1,9 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { Suspense } from "react"
 
 import { TriangleAlert } from "@/components/icons"
+import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { PostView } from "@/components/post-view"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -12,13 +14,13 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from "@/components/ui/empty"
-import { Skeleton } from "@/components/ui/skeleton"
-import { generateN } from "@/lib/generate-n"
 import { feedQueryOptions } from "@/lib/queries/posts"
 import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, createSeoHead } from "@/lib/seo"
 
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => context.queryClient.ensureInfiniteQueryData(feedQueryOptions()),
+  loader: ({ context }) => {
+    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions())
+  },
   head: () =>
     createSeoHead({
       title: SITE_NAME,
@@ -35,21 +37,30 @@ export const Route = createFileRoute("/")({
       },
     }),
   component: PublicFeed,
-  pendingComponent: FeedSkeleton,
+  pendingComponent: FeedPageSkeleton,
   errorComponent: FeedError,
 })
 
 function PublicFeed() {
-  const feed = useSuspenseInfiniteQuery(feedQueryOptions())
-  const posts = feed.data.pages.flatMap((page) => page.posts)
-  const firstPostId = posts[0]?.id
-
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <header className="mb-8 border-b pb-4">
         <h1 className="font-heading text-2xl font-bold tracking-tight">Latest</h1>
       </header>
+      <Suspense fallback={<FeedItemsSkeleton />}>
+        <PublicFeedResults />
+      </Suspense>
+    </main>
+  )
+}
 
+function PublicFeedResults() {
+  const feed = useSuspenseInfiniteQuery(feedQueryOptions())
+  const posts = feed.data.pages.flatMap((page) => page.posts)
+  const firstPostId = posts[0]?.id
+
+  return (
+    <>
       {feed.fetchStatus === "paused" && (
         <Alert className="mb-8">
           <TriangleAlert />
@@ -89,27 +100,7 @@ function PublicFeed() {
           </Button>
         </div>
       )}
-    </main>
-  )
-}
-
-function FeedSkeleton() {
-  return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-      <Skeleton className="mb-8 h-8 w-24" />
-      <div className="grid gap-10">
-        {generateN(4).map((identity) => (
-          <div key={identity} className="flex flex-col gap-4 border-b pb-10">
-            <div className="flex items-center gap-3">
-              <Skeleton className="size-10 rounded-full" />
-              <Skeleton className="h-8 w-40" />
-            </div>
-            <Skeleton className="h-9 w-3/4" />
-            <Skeleton className="aspect-[4/3] w-full" />
-          </div>
-        ))}
-      </div>
-    </main>
+    </>
   )
 }
 

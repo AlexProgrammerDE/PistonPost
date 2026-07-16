@@ -2,6 +2,7 @@ import { Link, useNavigate } from "@tanstack/react-router"
 import { lazy, Suspense, useState } from "react"
 
 import { TriangleAlert } from "@/components/icons"
+import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
@@ -22,9 +23,14 @@ import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
 
-const ImageLightbox = lazy(() =>
-  import("@/components/ImageLightbox").then((module) => ({ default: module.ImageLightbox })),
-)
+const loadImageLightbox = () =>
+  import("@/components/ImageLightbox").then((module) => ({ default: module.ImageLightbox }))
+
+const ImageLightbox = lazy(loadImageLightbox)
+
+function preloadImageLightbox() {
+  void loadImageLightbox()
+}
 
 const feedImageSizes = "(max-width: 639px) calc(100vw - 2rem), 45rem"
 const feedPreviewImageSizes = "(max-width: 639px) calc((100vw - 2.25rem) / 2), 22.375rem"
@@ -254,7 +260,7 @@ function DetailPostImageMedia({
 
   const lightboxViewer =
     lightboxIndex === null ? null : (
-      <Suspense fallback={null}>
+      <Suspense fallback={<LightboxLoadingFallback />}>
         <ImageLightbox
           images={post.media}
           title={post.title}
@@ -275,6 +281,8 @@ function DetailPostImageMedia({
           type="button"
           className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label={`Expand ${image.altText ?? post.title}`}
+          onPointerEnter={preloadImageLightbox}
+          onFocus={preloadImageLightbox}
           onClick={() => openLightbox(0)}
         >
           <ResponsiveMediaImage
@@ -313,6 +321,8 @@ function DetailPostImageMedia({
                 type="button"
                 className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 aria-label={`Expand image ${String(index + 1)} of ${String(post.media.length)}`}
+                onPointerEnter={preloadImageLightbox}
+                onFocus={preloadImageLightbox}
                 onClick={() => openLightbox(index)}
               >
                 <ResponsiveMediaImage
@@ -359,6 +369,8 @@ function ImageBrowser({
         type="button"
         className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         aria-label={`Expand image ${String(selectedIndex + 1)} of ${String(post.media.length)}`}
+        onPointerEnter={preloadImageLightbox}
+        onFocus={preloadImageLightbox}
         onClick={() => onOpen(selectedIndex)}
       >
         <ResponsiveMediaImage

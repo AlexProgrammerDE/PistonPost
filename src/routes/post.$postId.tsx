@@ -1,13 +1,16 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { Suspense } from "react"
 import { z } from "zod"
 
+import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStates"
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
 import { Badge } from "@/components/ui/badge"
 import { galleryLayouts } from "@/lib/gallery-layout"
 import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
+import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
 
 const postSearchSchema = z.object({
@@ -21,6 +24,7 @@ export const Route = createFileRoute("/post/$postId")({
     const postId = z.string().trim().min(1).max(64).parse(params.postId)
     const post = await context.queryClient.ensureQueryData(postQueryOptions(postId))
     if (!post) throw notFound()
+    void context.queryClient.prefetchInfiniteQuery(discussionQueryOptions(postId))
     return post
   },
   headers: ({ loaderData }) => ({
@@ -39,6 +43,7 @@ export const Route = createFileRoute("/post/$postId")({
           noIndex: true,
         }),
   component: PostDetail,
+  pendingComponent: PostDetailSkeleton,
 })
 
 function PostDetail() {
@@ -59,11 +64,13 @@ function PostDetail() {
         </div>
       )}
       <PostView post={post} detail selectedImageIndex={image} galleryLayout={layout} />
-      <SocialPanel
-        postId={post.id}
-        counts={post.reactions}
-        imageCount={post.media.filter((media) => media.kind === "image").length}
-      />
+      <Suspense fallback={<DiscussionSkeleton />}>
+        <SocialPanel
+          postId={post.id}
+          counts={post.reactions}
+          imageCount={post.media.filter((media) => media.kind === "image").length}
+        />
+      </Suspense>
     </main>
   )
 }

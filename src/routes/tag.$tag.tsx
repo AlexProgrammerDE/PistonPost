@@ -1,14 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { Suspense } from "react"
 import { z } from "zod"
 
 import { FilteredFeed } from "@/components/filtered-feed"
+import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { feedQueryOptions } from "@/lib/queries/posts"
 import { absoluteUrl, createSeoHead } from "@/lib/seo"
 
 export const Route = createFileRoute("/tag/$tag")({
   loader: ({ context, params }) => {
     const tag = z.string().trim().min(1).max(64).parse(params.tag).toLocaleLowerCase("en-US")
-    return context.queryClient.ensureInfiniteQueryData(feedQueryOptions({ tag }))
+    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ tag }))
   },
   head: ({ params }) => {
     const path = `/tag/${encodeURIComponent(params.tag.toLocaleLowerCase("en-US"))}`
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/tag/$tag")({
     })
   },
   component: TagFeed,
+  pendingComponent: FeedPageSkeleton,
 })
 
 function TagFeed() {
@@ -38,10 +41,12 @@ function TagFeed() {
       <header className="mb-8 border-b pb-4">
         <h1 className="font-heading text-3xl font-bold tracking-tight">#{tag}</h1>
       </header>
-      <FilteredFeed
-        filters={{ tag: normalizedTag }}
-        emptyMessage={`No public posts use #${tag}.`}
-      />
+      <Suspense fallback={<FeedItemsSkeleton />}>
+        <FilteredFeed
+          filters={{ tag: normalizedTag }}
+          emptyMessage={`No public posts use #${tag}.`}
+        />
+      </Suspense>
     </main>
   )
 }

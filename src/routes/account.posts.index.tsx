@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 
+import { ManagementPageSkeleton } from "@/components/LoadingStates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
@@ -11,6 +12,7 @@ export const Route = createFileRoute("/account/posts/")({
     meta: [{ title: "My posts · PistonPost" }, { name: "robots", content: "noindex" }],
   }),
   component: MyPosts,
+  pendingComponent: ManagementPageSkeleton,
 })
 
 const statusLabels = {

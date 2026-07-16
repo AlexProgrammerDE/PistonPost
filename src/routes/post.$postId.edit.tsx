@@ -4,6 +4,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { Trash2, TriangleAlert } from "@/components/icons"
+import { FormPageSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
@@ -38,6 +39,7 @@ export const Route = createFileRoute("/post/$postId/edit")({
     meta: [{ title: "Edit post · PistonPost" }, { name: "robots", content: "noindex" }],
   }),
   component: EditPostRoute,
+  pendingComponent: FormPageSkeleton,
 })
 
 function EditPostRoute() {

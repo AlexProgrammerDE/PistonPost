@@ -1,5 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
 
+import { MigrationReportSkeleton } from "@/components/LoadingStates"
 import { Badge } from "@/components/ui/badge"
 import {
   Table,
@@ -15,6 +16,7 @@ export const Route = createFileRoute("/admin/migrations/$runId")({
   loader: ({ params }) => getMigrationRunDetails({ data: { id: params.runId } }),
   head: () => ({ meta: [{ title: "Migration report · PistonPost" }] }),
   component: MigrationReport,
+  pendingComponent: MigrationReportSkeleton,
 })
 
 function MigrationReport() {

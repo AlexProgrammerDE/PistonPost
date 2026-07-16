@@ -85,22 +85,35 @@ export const getDiscussion = createServerFn({ method: "GET" })
       .limit(data.limit + 1)
     const page = rows.slice(0, data.limit)
     const last = page.at(-1)
-    const viewer = await optionalViewer(context)
-    const viewerReactions = viewer
-      ? await database
-          .select({ type: schema.reactions.type })
-          .from(schema.reactions)
-          .where(
-            and(eq(schema.reactions.postId, post.id), eq(schema.reactions.userId, viewer.user.id)),
-          )
-      : []
     return {
       comments: page,
       nextCursor:
         rows.length > data.limit && last ? encodeCommentCursor(last.createdAt, last.id) : null,
-      viewerId: viewer?.user.id ?? null,
-      viewerRole: viewer?.user.role ?? null,
-      viewerReactions: viewerReactions.map(({ type }) => type),
+    }
+  })
+
+export const getDiscussionViewer = createServerFn({ method: "GET" })
+  .validator(z.object({ postId: z.string().min(1).max(64) }))
+  .handler(async ({ context, data }) => {
+    const viewer = await optionalViewer(context)
+    if (!viewer) {
+      return { viewerId: null, viewerRole: null, viewerReactions: [] }
+    }
+    const database = createD1Database(context.env.DB)
+    const post = await database
+      .select({ id: schema.posts.id })
+      .from(schema.posts)
+      .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+      .get()
+    if (!post) throw new Error("The post was not found.")
+    const reactions = await database
+      .select({ type: schema.reactions.type })
+      .from(schema.reactions)
+      .where(and(eq(schema.reactions.postId, post.id), eq(schema.reactions.userId, viewer.user.id)))
+    return {
+      viewerId: viewer.user.id,
+      viewerRole: viewer.user.role ?? null,
+      viewerReactions: reactions.map(({ type }) => type),
     }
   })
 
