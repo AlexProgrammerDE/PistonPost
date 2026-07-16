@@ -68,6 +68,12 @@ export type PublicSitemapRecord = {
   readonly tag: string | null
 }
 
+export type PublishedPostTrackingContext = {
+  readonly id: string
+  readonly type: "text" | "images" | "video"
+  readonly visibility: "public" | "unlisted"
+}
+
 type BasePostRow = {
   readonly id: string
   readonly type: "text" | "images" | "video"
@@ -168,6 +174,19 @@ export async function getPublishedPostRead(database: D1DatabaseClient, id: strin
   if (!row?.publishedAt) return null
   const hydrated = await hydratePublicPosts(database, [{ ...row, publishedAt: row.publishedAt }])
   return hydrated[0] ?? null
+}
+
+export async function getPublishedPostTrackingContext(
+  database: D1DatabaseClient,
+  id: string,
+): Promise<PublishedPostTrackingContext | null> {
+  const post = await database
+    .select({ id: posts.id, type: posts.type, visibility: posts.visibility })
+    .from(posts)
+    .where(and(eq(posts.id, id), eq(posts.status, "published")))
+    .get()
+
+  return post ?? null
 }
 
 export async function getPublicProfileRead(database: D1DatabaseClient, username: string) {

@@ -1,6 +1,6 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
-import { Suspense } from "react"
+import { Suspense, useEffect, useRef } from "react"
 import { z } from "zod"
 
 import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStates"
@@ -12,6 +12,7 @@ import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
 import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
+import { trackPostView } from "@/server/posts"
 
 const postSearchSchema = z.object({
   image: z.coerce.number().int().min(0).max(149).optional().catch(undefined),
@@ -51,6 +52,14 @@ function PostDetail() {
   const { postId } = Route.useParams()
   const { image, layout } = Route.useSearch()
   const post = useSuspenseQuery(postQueryOptions(postId)).data
+  const trackedPostId = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (!post || trackedPostId.current === post.id) return
+    trackedPostId.current = post.id
+    void trackPostView({ data: { id: post.id } }).catch(() => undefined)
+  }, [post])
+
   if (!post) return null
 
   return (

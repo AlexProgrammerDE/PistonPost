@@ -119,6 +119,11 @@
       "namespace_id": "11006",
       "simple": { "limit": 30, "period": 60 },
     },
+    {
+      "name": "POST_VIEW_RATE_LIMITER",
+      "namespace_id": "11007",
+      "simple": { "limit": 10, "period": 60 },
+    },
   ],
   "env": {
     "preview": {
@@ -200,6 +205,11 @@
           "name": "UPLOAD_RATE_LIMITER",
           "namespace_id": "21006",
           "simple": { "limit": 30, "period": 60 },
+        },
+        {
+          "name": "POST_VIEW_RATE_LIMITER",
+          "namespace_id": "21007",
+          "simple": { "limit": 10, "period": 60 },
         },
       ],
     },
@@ -309,6 +319,11 @@
           "name": "UPLOAD_RATE_LIMITER",
           "namespace_id": "31006",
           "simple": { "limit": 30, "period": 60 },
+        },
+        {
+          "name": "POST_VIEW_RATE_LIMITER",
+          "namespace_id": "31007",
+          "simple": { "limit": 10, "period": 60 },
         },
       ],
     },
