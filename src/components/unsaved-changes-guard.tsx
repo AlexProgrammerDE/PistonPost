@@ -1,12 +1,20 @@
 "use client"
 
 import { useBlocker } from "@tanstack/react-router"
+import type { RefObject } from "react"
 
-export function UnsavedChangesGuard({ enabled }: { readonly enabled: boolean }) {
+type UnsavedChangesGuardProps = {
+  readonly allowNavigationRef?: RefObject<boolean>
+  readonly enabled: boolean
+}
+
+export function UnsavedChangesGuard({ allowNavigationRef, enabled }: UnsavedChangesGuardProps) {
+  const shouldBlock = () => enabled && !allowNavigationRef?.current
+
   useBlocker({
     disabled: !enabled,
-    enableBeforeUnload: enabled,
-    shouldBlockFn: () => !window.confirm("Discard your unsaved changes?"),
+    enableBeforeUnload: shouldBlock,
+    shouldBlockFn: () => shouldBlock() && !window.confirm("Discard your unsaved changes?"),
   })
 
   return null

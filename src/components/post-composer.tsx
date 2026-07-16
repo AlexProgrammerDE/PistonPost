@@ -128,6 +128,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
   const [uploads, dispatch] = useReducer(mediaUploadReducer, [])
   const uploadsRef = useRef(uploads)
   const uploadControllers = useRef(new Map<string, AbortController>())
+  const allowNavigationRef = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -248,6 +249,8 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         }
 
         const published = await publishPost({ data: { id: draft.id, version: draft.version } })
+        allowNavigationRef.current = true
+        form.reset()
         releaseUploadPreviews(uploads)
         dispatch({ type: "reset" })
         toast.success("Posted")
@@ -342,7 +345,9 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
     >
       <form.AppForm>
         <form.Subscribe selector={(state) => state.isDirty}>
-          {(isDirty) => <UnsavedChangesGuard enabled={isDirty} />}
+          {(isDirty) => (
+            <UnsavedChangesGuard allowNavigationRef={allowNavigationRef} enabled={isDirty} />
+          )}
         </form.Subscribe>
         <FieldSet>
           <FieldLegend>Post</FieldLegend>

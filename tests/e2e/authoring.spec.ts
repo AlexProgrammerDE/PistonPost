@@ -2,7 +2,7 @@ import { readdir, readFile, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
-import { expect, test, type BrowserContext, type Page } from "@playwright/test"
+import { expect, test, type BrowserContext, type Dialog, type Page } from "@playwright/test"
 
 import { generateN } from "../../src/lib/generate-n"
 
@@ -127,6 +127,25 @@ test.describe.serial("authenticated authoring", () => {
     await page.getByRole("menuitem", { name: "Delete avatar" }).click()
     await expect(page.getByText("Avatar deleted successfully")).toBeVisible()
     await expect.poll(async () => (await context.request.get(avatarSource)).status()).toBe(404)
+  })
+
+  test("publishes without prompting to discard submitted changes", async ({ context, page }) => {
+    await createVerifiedSession(context)
+    await page.goto("/account/posts/new")
+    await fillPost(page, "a finished post", "testing")
+    await page.getByLabel("Text").fill("ready to share")
+
+    let publishDialogCount = 0
+    const acceptPublishDialog = async (dialog: Dialog) => {
+      publishDialogCount += 1
+      await dialog.accept()
+    }
+    page.on("dialog", acceptPublishDialog)
+
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    expect(publishDialogCount).toBe(0)
+    page.off("dialog", acceptPublishDialog)
   })
 
   test("posts text and images and recovers failed image and video uploads", async ({
