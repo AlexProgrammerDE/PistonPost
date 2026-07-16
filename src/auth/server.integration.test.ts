@@ -13,7 +13,9 @@ afterEach(() => {
   databases.length = 0
 })
 
-function setup() {
+function setup(
+  isManagedUserAvatar: (userId: string, image: string) => Promise<boolean> = async () => false,
+) {
   const database = createMigratedTestDatabase()
   const emails: Array<AuthenticationEmail> = []
   databases.push(database)
@@ -25,6 +27,7 @@ function setup() {
     turnstileSecret: "not-used-in-this-test",
     production: false,
     captchaEnabled: false,
+    isManagedUserAvatar,
     sendEmail: async (email) => {
       emails.push(email)
     },
@@ -104,6 +107,7 @@ describe("request-scoped Better Auth", () => {
       trustedOrigins: ["http://localhost:3000"],
       turnstileSecret: "1x0000000000000000000000000000000AA",
       production: false,
+      isManagedUserAvatar: async () => false,
       sendEmail: async () => {},
     })
 
@@ -166,5 +170,44 @@ describe("request-scoped Better Auth", () => {
 
     const sessionResponse = await auth.handler(sessionRequest(cookie))
     expect(await sessionResponse.json()).toBeNull()
+  })
+
+  it("rejects external profile images and accepts the user's managed avatar", async () => {
+    const managedImage = `/media/image/${crypto.randomUUID()}/avatar`
+    const { auth, database } = setup(async (_userId, image) => image === managedImage)
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Avatar Tester",
+        username: "avatar-tester",
+        email: "avatar@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    database.update(schema.user).set({ emailVerified: true }).run()
+
+    const signInResponse = await auth.handler(
+      authRequest("/sign-in/email", {
+        email: "avatar@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    expect(signInResponse.status).toBe(200)
+    const cookie = signInResponse.headers
+      .getSetCookie()
+      .map((value) => value.split(";", 1)[0])
+      .join("; ")
+    expect(cookie).toContain("pistonpost.session_token=")
+
+    const rejected = await auth.handler(
+      authRequest("/update-user", { image: "https://tracker.example/pixel.png" }, cookie),
+    )
+    expect(rejected.status).toBe(400)
+    expect(database.select().from(schema.user).get()?.image).toBeNull()
+
+    const accepted = await auth.handler(
+      authRequest("/update-user", { image: managedImage }, cookie),
+    )
+    expect(accepted.status).toBe(200)
+    expect(database.select().from(schema.user).get()?.image).toBe(managedImage)
   })
 })

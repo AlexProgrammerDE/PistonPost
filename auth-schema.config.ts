@@ -11,5 +11,6 @@ export const auth = createAuth({
   trustedOrigins: ["http://localhost:3000"],
   turnstileSecret: "1x0000000000000000000000000000000AA",
   production: false,
+  isManagedUserAvatar: async () => false,
   sendEmail: async () => {},
 })

@@ -25,6 +25,8 @@ export const DETAIL_IMAGE_WIDTHS: ReadonlyArray<number> = [...FEED_IMAGE_WIDTHS,
 export const GALLERY_THUMBNAIL_WIDTHS: ReadonlyArray<number> = [80, 96, 160, 192, 240, 256, 320]
 
 const responsiveMediaWidthSet: ReadonlySet<number> = new Set(RESPONSIVE_MEDIA_WIDTHS)
+const managedAvatarPathPattern =
+  /^\/media\/image\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/avatar$/u
 const responsiveVariantLimits: Record<
   ResponsiveMediaImageVariant,
   { readonly width: number; readonly height: number }
@@ -37,6 +39,10 @@ const responsiveVariantLimits: Record<
 export function mediaImageUrl(mediaId: string, variant: MediaImageVariant, width?: number) {
   const path = `/media/image/${encodeURIComponent(mediaId)}/${variant}`
   return width === undefined ? path : `${path}?width=${width.toString()}`
+}
+
+export function parseManagedAvatarMediaId(source: string) {
+  return managedAvatarPathPattern.exec(source)?.[1]
 }
 
 export function parseResponsiveMediaWidth(value: string | null) {

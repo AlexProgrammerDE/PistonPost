@@ -1,6 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter"
 import { passkey } from "@better-auth/passkey"
 import { emailHarmony } from "better-auth-harmony"
+import { APIError } from "better-auth/api"
 import { betterAuth } from "better-auth/minimal"
 import {
   admin,
@@ -39,6 +40,7 @@ export type AuthRuntime = {
   readonly production: boolean
   readonly captchaEnabled?: boolean
   readonly sendEmail: (message: AuthenticationEmail) => Promise<void>
+  readonly isManagedUserAvatar: (userId: string, image: string) => Promise<boolean>
   readonly audit?: (action: string, userId: string) => Promise<void>
   readonly beforeDeleteUser?: (userId: string) => Promise<void>
   readonly afterDeleteUser?: (userId: string) => Promise<void>
@@ -60,6 +62,12 @@ export function turnstileAllowedHostnames(baseURL: string) {
   return hostname === "localhost" || hostname === "127.0.0.1"
     ? [hostname, "example.com"]
     : [hostname]
+}
+
+function rejectUnmanagedAvatar(): never {
+  throw APIError.fromStatus("BAD_REQUEST", {
+    message: "Profile images must be uploaded through PistonPost.",
+  })
 }
 
 export function createAuth(runtime: AuthRuntime) {
@@ -163,7 +171,24 @@ export function createAuth(runtime: AuthRuntime) {
     databaseHooks: {
       user: {
         create: {
+          before: async (user) => {
+            if (user.image !== undefined && user.image !== null) rejectUnmanagedAvatar()
+          },
           after: async (user) => runtime.initializeProfile?.(user),
+        },
+        update: {
+          before: async (user, context) => {
+            if (user.image === undefined || user.image === null) return
+
+            const userId = context?.context.session?.user.id
+            if (
+              !userId ||
+              typeof user.image !== "string" ||
+              !(await runtime.isManagedUserAvatar(userId, user.image))
+            ) {
+              rejectUnmanagedAvatar()
+            }
+          },
         },
       },
       session: {

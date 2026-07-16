@@ -7,6 +7,7 @@ import * as schema from "@/db/schema"
 import { createCloudflareEmailTransport, renderEmail, securityNotificationMessage } from "@/email"
 
 import type { AppRequestContext } from "../server"
+import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
 import { notificationEnabled } from "./notification-policy"
 
@@ -32,6 +33,7 @@ export async function createRequestAuth(context: AppRequestContext) {
     trustedOrigins: [baseURL],
     turnstileSecret,
     production: runtime.config.APP_ENV === "production",
+    isManagedUserAvatar: (userId, image) => isManagedUserAvatar(database, userId, image),
     sendEmail: async (message) => {
       const { rendered } = await renderAuthenticationEmail(message)
       await Effect.runPromise(
