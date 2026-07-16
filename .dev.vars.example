@@ -6,3 +6,7 @@ BETTER_AUTH_SECRET=
 TURNSTILE_SECRET=1x0000000000000000000000000000000AA
 # Returned when the local tunnel webhook URL is registered with Stream.
 STREAM_WEBHOOK_SECRET=
+# Cloudflare account that owns the Stream binding. Required for resumable TUS uploads.
+STREAM_ACCOUNT_ID=
+# Dedicated API token with Stream Write permission. Do not reuse a deployment token.
+STREAM_API_TOKEN=

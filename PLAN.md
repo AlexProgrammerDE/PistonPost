@@ -224,22 +224,25 @@ Queue consumers
 
 Use descriptive binding names and keep actual IDs out of committed documentation.
 
-| Binding             | Type                   | Responsibility                                 |
-| ------------------- | ---------------------- | ---------------------------------------------- |
-| DB                  | D1Database             | Better Auth and product data                   |
-| MEDIA               | R2Bucket               | Original images and migration objects          |
-| IMAGES              | ImagesBinding          | Image validation, transformation, and variants |
-| STREAM_*            | secret/config          | Stream API access and webhook verification     |
-| ASSETS              | Fetcher                | Built TanStack Start assets                    |
-| EMAIL               | SendEmail              | Auth and product email delivery                |
-| JOBS                | Queue                  | General durable background jobs                |
-| ANALYTICS           | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
-| AUTH_RATE_LIMITER   | RateLimit              | Better Auth requests                           |
-| ANON_RATE_LIMITER   | RateLimit              | Anonymous reads and probes                     |
-| USER_RATE_LIMITER   | RateLimit              | Authenticated mutations                        |
-| UPLOAD_RATE_LIMITER | RateLimit              | Upload initialization and finalization         |
-| TURNSTILE_SECRET    | Secret                 | Server-side captcha verification               |
-| BETTER_AUTH_SECRET  | Secret                 | Better Auth signing and encryption             |
+| Binding               | Type                   | Responsibility                                 |
+| --------------------- | ---------------------- | ---------------------------------------------- |
+| DB                    | D1Database             | Better Auth and product data                   |
+| MEDIA                 | R2Bucket               | Original images and migration objects          |
+| IMAGES                | ImagesBinding          | Image validation, transformation, and variants |
+| STREAM                | StreamBinding          | Video status, playback, and provider cleanup   |
+| STREAM_ACCOUNT_ID     | secret/config          | Account used to create direct TUS uploads      |
+| STREAM_API_TOKEN      | secret                 | Dedicated Stream Write credential              |
+| STREAM_WEBHOOK_SECRET | secret                 | Stream webhook signature verification          |
+| ASSETS                | Fetcher                | Built TanStack Start assets                    |
+| EMAIL                 | SendEmail              | Auth and product email delivery                |
+| JOBS                  | Queue                  | General durable background jobs                |
+| ANALYTICS             | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
+| AUTH_RATE_LIMITER     | RateLimit              | Better Auth requests                           |
+| ANON_RATE_LIMITER     | RateLimit              | Anonymous reads and probes                     |
+| USER_RATE_LIMITER     | RateLimit              | Authenticated mutations                        |
+| UPLOAD_RATE_LIMITER   | RateLimit              | Upload initialization and finalization         |
+| TURNSTILE_SECRET      | Secret                 | Server-side captcha verification               |
+| BETTER_AUTH_SECRET    | Secret                 | Better Auth signing and encryption             |
 
 wrangler.jsonc should follow the useful EnderDash patterns:
 
@@ -520,7 +523,7 @@ Visibility rules:
 
 ### Images
 
-1. Authenticated user requests an upload slot.
+1. Authenticated user requests a batch of upload slots for the selected gallery.
 2. Server validates quota, rate limit, intended count, and declared metadata.
 3. Browser uploads original bytes through a narrowly scoped Worker endpoint or signed mechanism.
 4. Worker validates actual content type, size, dimensions, and checksum.
@@ -533,8 +536,8 @@ Named variants should cover thumbnail, feed, detail, avatar, and Open Graph use.
 
 ### Video
 
-1. Server creates a direct Stream upload for an authenticated user.
-2. Browser uploads directly to Stream.
+1. Server creates a direct TUS upload for an authenticated user with a short expiry and duration constraint.
+2. Browser uploads directly to Stream in resumable chunks without receiving the API token.
 3. Stream webhook reaches a Worker-first route.
 4. Webhook signature is verified.
 5. mediaAssets moves through pending, processing, ready, or failed.

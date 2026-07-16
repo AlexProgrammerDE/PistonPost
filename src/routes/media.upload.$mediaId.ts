@@ -47,8 +47,12 @@ async function uploadImage({
   const auth = await createRequestAuth(context)
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session) return jsonError("Authentication is required.", 401)
-  const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({ key: session.user.id })
-  if (!rateLimit.success) return jsonError("The upload rate limit was reached.", 429)
+  const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
+    key: `image-bytes:${session.user.id}`,
+  })
+  if (!rateLimit.success) {
+    return jsonError("Too many uploads were started at once. Wait a minute and try again.", 429)
+  }
 
   const database = createD1Database(context.env.DB)
   const asset = await database

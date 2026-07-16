@@ -1,17 +1,20 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq, inArray, ne, sql } from "drizzle-orm"
+import { Effect } from "effect"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { postDraftInputSchema } from "@/domain"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import { createStreamDirectUpload } from "@/server/stream-direct-upload"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024
 const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024
 const MAX_IMAGES_PER_POST = 20
+const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
 
 function nextPublicId() {
   return crypto.randomUUID().replaceAll("-", "").slice(0, 16)
@@ -83,13 +86,25 @@ const imageIntentInput = z.object({
   altText: z.string().trim().max(300),
 })
 
-export const createImageUploadIntent = createServerFn({ method: "POST" })
-  .validator(imageIntentInput)
+export const createImageUploadIntents = createServerFn({ method: "POST" })
+  .validator(
+    z.object({
+      postId: z.string().min(1).max(64),
+      files: z
+        .array(imageIntentInput.omit({ postId: true }))
+        .min(1)
+        .max(MAX_IMAGES_PER_POST),
+    }),
+  )
   .handler(async ({ context, data }) => {
     assertMutationOrigin(context)
     const session = await requireRequestSession(context)
-    const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({ key: session.user.id })
-    if (!rateLimit.success) throw new Error("The upload rate limit was reached.")
+    const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
+      key: `intent:${session.user.id}`,
+    })
+    if (!rateLimit.success) {
+      throw new Error("Too many uploads were started at once. Wait a minute and try again.")
+    }
 
     const database = createD1Database(context.env.DB)
     const draft = await database
@@ -115,7 +130,9 @@ export const createImageUploadIntent = createServerFn({ method: "POST" })
         ),
       )
       .get()
-    if ((assets?.count ?? 0) >= 500) throw new Error("The account media quota was reached.")
+    if ((assets?.count ?? 0) + data.files.length > 500) {
+      throw new Error("The account media quota was reached.")
+    }
 
     const postAssetCount = await context.env.DB.prepare(
       `select count(*) as count from media_assets
@@ -124,28 +141,49 @@ export const createImageUploadIntent = createServerFn({ method: "POST" })
     )
       .bind(data.postId)
       .first<{ count: number }>()
-    if ((postAssetCount?.count ?? 0) >= MAX_IMAGES_PER_POST) {
+    const firstOrdinal = postAssetCount?.count ?? 0
+    if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST) {
       throw new Error(`A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`)
     }
 
-    const id = crypto.randomUUID()
-    await database.insert(schema.mediaAssets).values({
-      id,
-      ownerId: session.user.id,
-      kind: "image",
-      provider: "r2",
-      status: "pending",
-      originalFilename: data.filename,
-      mimeType: data.mimeType,
-      byteSize: data.byteSize,
-      altText: data.altText || null,
-      providerMetadata: {
-        postId: data.postId,
-        expiresAt: Date.now() + 15 * 60 * 1000,
-        ordinal: postAssetCount?.count ?? 0,
-      },
+    const expiresAt = Date.now() + 15 * 60 * 1000
+    const intents = data.files.map((file, index) => {
+      const assetId = crypto.randomUUID()
+      return {
+        assetId,
+        uploadUrl: `/media/upload/${assetId}`,
+        expiresInSeconds: 900,
+        values: {
+          id: assetId,
+          ownerId: session.user.id,
+          kind: "image",
+          provider: "r2",
+          status: "pending",
+          originalFilename: file.filename,
+          mimeType: file.mimeType,
+          byteSize: file.byteSize,
+          altText: file.altText || null,
+          providerMetadata: {
+            postId: data.postId,
+            expiresAt,
+            ordinal: firstOrdinal + index,
+          },
+        } satisfies typeof schema.mediaAssets.$inferInsert,
+      }
     })
-    return { assetId: id, uploadUrl: `/media/upload/${id}`, expiresInSeconds: 900 }
+    const [firstIntent, ...remainingIntents] = intents
+    if (!firstIntent) throw new Error("Choose at least one image.")
+    await database.batch([
+      database.insert(schema.mediaAssets).values(firstIntent.values),
+      ...remainingIntents.map((intent) =>
+        database.insert(schema.mediaAssets).values(intent.values),
+      ),
+    ])
+    return intents.map(({ assetId, uploadUrl, expiresInSeconds }) => ({
+      assetId,
+      uploadUrl,
+      expiresInSeconds,
+    }))
   })
 
 const videoIntentInput = z.object({
@@ -158,13 +196,22 @@ const videoIntentInput = z.object({
   byteSize: z.number().int().min(1).max(MAX_VIDEO_BYTES),
 })
 
+async function readOptionalSecret(secret: string | SecretsStoreSecret | undefined) {
+  const value = typeof secret === "string" ? secret : await secret?.get()
+  return value?.trim() || null
+}
+
 export const createVideoUploadIntent = createServerFn({ method: "POST" })
   .validator(videoIntentInput)
   .handler(async ({ context, data }) => {
     assertMutationOrigin(context)
     const session = await requireRequestSession(context)
-    const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({ key: session.user.id })
-    if (!rateLimit.success) throw new Error("The upload rate limit was reached.")
+    const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
+      key: `intent:${session.user.id}`,
+    })
+    if (!rateLimit.success) {
+      throw new Error("Too many uploads were started at once. Wait a minute and try again.")
+    }
 
     const database = createD1Database(context.env.DB)
     const draft = await database
@@ -189,15 +236,55 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
     if (existing) throw new Error("A video draft can contain one video.")
 
     const assetId = crypto.randomUUID()
-    const upload = await context.env.STREAM.createDirectUpload({
-      maxDurationSeconds: 600,
-      expiry: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
-      creator: session.user.id,
-      allowedOrigins: [new URL(context.runtime.config.PUBLIC_APP_URL).hostname],
-      requireSignedURLs: false,
-      meta: { assetId, postId: data.postId },
-      scheduledDeletion: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
-    })
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+    const scheduledDeletion = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
+    const [accountId, apiToken] = await Promise.all([
+      readOptionalSecret(context.env.STREAM_ACCOUNT_ID),
+      readOptionalSecret(context.env.STREAM_API_TOKEN),
+    ])
+    let upload: { id: string; uploadURL: string; protocol: "multipart" | "tus" }
+
+    if (accountId && apiToken) {
+      try {
+        const directUpload = await Effect.runPromise(
+          createStreamDirectUpload({
+            accountId,
+            apiToken,
+            byteSize: data.byteSize,
+            creator: session.user.id,
+            filename: data.filename,
+            allowedOrigin: context.runtime.config.PUBLIC_APP_URL.toString(),
+            expiresAt,
+            scheduledDeletion,
+          }),
+        )
+        upload = {
+          id: directUpload.streamUid,
+          uploadURL: directUpload.uploadUrl,
+          protocol: "tus",
+        }
+      } catch {
+        throw new Error("The video upload could not be started. Try again.")
+      }
+    } else {
+      if (data.byteSize >= BASIC_STREAM_UPLOAD_MAX_BYTES) {
+        throw new Error("Large video uploads are not configured yet. Try a video under 200 MB.")
+      }
+      const directUpload = await context.env.STREAM.createDirectUpload({
+        maxDurationSeconds: 600,
+        expiry: expiresAt.toISOString(),
+        creator: session.user.id,
+        allowedOrigins: [new URL(context.runtime.config.PUBLIC_APP_URL).hostname],
+        requireSignedURLs: false,
+        meta: { assetId, postId: data.postId },
+        scheduledDeletion: scheduledDeletion.toISOString(),
+      })
+      upload = {
+        id: directUpload.id,
+        uploadURL: directUpload.uploadURL,
+        protocol: "multipart",
+      }
+    }
 
     try {
       await database.batch([
@@ -223,7 +310,12 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
       throw cause
     }
 
-    return { assetId, uploadUrl: upload.uploadURL, streamUid: upload.id }
+    return {
+      assetId,
+      uploadUrl: upload.uploadURL,
+      uploadProtocol: upload.protocol,
+      streamUid: upload.id,
+    }
   })
 
 export const getOwnedMediaStatus = createServerFn({ method: "GET" })

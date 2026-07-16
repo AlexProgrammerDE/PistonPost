@@ -73,6 +73,16 @@ describe("prepareProductionDeployConfig", () => {
         store_id: input.secretsStoreId,
         secret_name: "STREAM_WEBHOOK_SECRET",
       },
+      {
+        binding: "STREAM_ACCOUNT_ID",
+        store_id: input.secretsStoreId,
+        secret_name: "STREAM_ACCOUNT_ID",
+      },
+      {
+        binding: "STREAM_API_TOKEN",
+        store_id: input.secretsStoreId,
+        secret_name: "STREAM_API_TOKEN",
+      },
     ])
   })
 

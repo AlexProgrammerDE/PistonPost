@@ -90,6 +90,12 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 - `BETTER_AUTH_SECRET`
 - `TURNSTILE_SECRET`
 - `STREAM_WEBHOOK_SECRET`
+- `STREAM_ACCOUNT_ID`
+- `STREAM_API_TOKEN`
+
+`STREAM_API_TOKEN` must be a dedicated token with Stream Write permission for the account in
+`STREAM_ACCOUNT_ID`. Do not reuse the broader token that deploys the Worker. The Worker reads these
+credentials only while creating a one-time TUS URL. They are never returned to the browser.
 
 Create or select a store, then create each secret with the `workers` scope:
 
@@ -99,11 +105,29 @@ STORE_ID=replace-with-your-store-id
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --scopes workers --remote
 ```
 
-Store the selected store ID in the GitHub production environment as `PRODUCTION_SECRETS_STORE_ID`. The deployment workflow binds all three secrets by name. Its Cloudflare API token needs permission to deploy Secrets Store bindings in addition to the permissions required by the other configured services.
+Store the selected store ID in the GitHub production environment as `PRODUCTION_SECRETS_STORE_ID`. The deployment workflow binds all five secrets by name. Its Cloudflare API token needs permission to deploy Secrets Store bindings in addition to the permissions required by the other configured services.
 
 Do not store secrets in Wrangler `vars`, GitHub logs, migration reports, or shell history.
+
+## Verify media uploads
+
+Image posts create all upload intents in one request, then upload each original through the Worker.
+The supported formats are JPEG, PNG, WebP, and AVIF. A new post can contain 20 images, with a limit
+of 15 MB and 80 megapixels per image.
+
+Video bytes go directly from the browser to Cloudflare Stream. When the Stream credentials above
+are configured, the Worker creates a resumable TUS upload URL with a 2 GB file-size limit and a
+10-minute duration constraint. Local development can use the Stream binding's basic upload fallback
+for videos under 200 MB when the credentials are blank. Cloudflare documents the distinction in its
+[direct creator upload guide](https://developers.cloudflare.com/stream/uploading-videos/direct-creator-uploads/).
+
+Before a remote release, test one small video and one video larger than 200 MB. Confirm that both
+reach `ready`, that interrupting the larger upload causes the client to retry its current TUS URL,
+and that the post becomes publishable after the signed Stream webhook arrives.
 
 ## Configure production deployment
 
@@ -116,7 +140,7 @@ Add these environment variables:
 
 - `PRODUCTION_BASE_URL`: `https://post.pistonmaster.net`.
 - `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
-- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the three Worker secrets.
+- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the five Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
 

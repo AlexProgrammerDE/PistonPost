@@ -40,10 +40,10 @@ import {
   releaseUploadPreviews,
   type UploadItem,
 } from "@/lib/uploads/media-upload-state"
-import { uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
+import { UploadClientError, uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
 import {
   abortMediaUpload,
-  createImageUploadIntent,
+  createImageUploadIntents,
   createPostDraft,
   createVideoUploadIntent,
   publishPost,
@@ -88,12 +88,20 @@ const defaultValues: ComposerValues = {
 const composerMessages = new Set([
   "Choose at least one image.",
   "Choose a video.",
+  "Too many uploads were started at once. Wait a minute and try again.",
+  "The account media quota was reached.",
+  "A new post can contain at most 20 images.",
+  "The image upload could not be started.",
+  "Large video uploads are not configured yet. Try a video under 200 MB.",
+  "The video upload could not be started. Try again.",
+  "Media is still processing.",
   "Video processing is taking longer than expected. The draft is still saved.",
   "The video could not be processed.",
 ])
 
 function readableError(error: unknown) {
   if (error instanceof z.ZodError) return error.issues[0]?.message ?? "Check the post details."
+  if (error instanceof UploadClientError) return error.message
   if (error instanceof Error && composerMessages.has(error.message)) return error.message
   return "The post could not be posted. Try again."
 }
@@ -165,19 +173,21 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         const draft = await createPostDraft({ data: draftInput })
 
         if (value.type === "images") {
-          const assetIds: string[] = []
-          for (const item of uploads) {
-            // Intents are sequential because their stable ordinal is allocated in D1.
-            // eslint-disable-next-line no-await-in-loop
-            const intent = await createImageUploadIntent({
-              data: {
-                postId: draft.id,
+          const intents = await createImageUploadIntents({
+            data: {
+              postId: draft.id,
+              files: uploads.map((item) => ({
                 filename: item.file.name,
                 mimeType: imageMimeSchema.parse(item.file.type),
                 byteSize: item.file.size,
                 altText: item.altText,
-              },
-            })
+              })),
+            },
+          })
+          const assetIds: string[] = []
+          for (const [index, item] of uploads.entries()) {
+            const intent = intents[index]
+            if (!intent) throw new Error("The image upload could not be started.")
             assetIds.push(intent.assetId)
             form.setFieldValue("mediaIds", [...assetIds])
             dispatch({ type: "uploading", clientId: item.clientId, assetId: intent.assetId })
@@ -220,6 +230,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
           try {
             await uploadVideo(
               intent.uploadUrl,
+              intent.uploadProtocol,
               item.file,
               (progress) => dispatch({ type: "progress", clientId: item.clientId, progress }),
               controller.signal,
@@ -279,7 +290,8 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
 
   function selectFiles(files: FileList | null, type: ComposerValues["type"]) {
     if (!files) return
-    const accepted = [...files].filter((file) =>
+    const selected = [...files]
+    const accepted = selected.filter((file) =>
       type === "images"
         ? ["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type) &&
           file.size <= 15 * 1024 * 1024
@@ -292,8 +304,16 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         .slice(0, remaining)
         .map((file) => createUploadItem(file, type === "images" ? "image" : "video")),
     })
-    if (accepted.length !== files.length || accepted.length > remaining) {
-      toast.error("Some files exceeded the type, size, or count limit.")
+    if (accepted.length !== selected.length) {
+      toast.error(
+        type === "images"
+          ? "Images must be JPG, PNG, WebP, or AVIF files no larger than 15 MB."
+          : "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload.",
+      )
+    } else if (accepted.length > remaining) {
+      toast.error(
+        type === "images" ? "A post can contain up to 20 images." : "A post can contain one video.",
+      )
     }
   }
 
@@ -516,7 +536,9 @@ function MediaPicker({
 }) {
   const accept = type === "images" ? "image/jpeg,image/png,image/webp,image/avif" : "video/*"
   const limit =
-    type === "images" ? "Up to 20 images, 15 MB each" : "One video, up to 2 GB and 10 minutes"
+    type === "images"
+      ? "JPG, PNG, WebP, or AVIF. Up to 20 files, 15 MB and 80 megapixels each."
+      : "One Stream-supported video, up to 2 GB and 10 minutes. Large files upload in resumable chunks."
   const inputId = `post-media-${type}`
 
   return (

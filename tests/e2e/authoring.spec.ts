@@ -4,6 +4,8 @@ import { join } from "node:path"
 
 import { expect, test, type BrowserContext, type Page } from "@playwright/test"
 
+import { generateN } from "../../src/lib/generate-n"
+
 const CAPTCHA_TEST_TOKEN = "XXXX.DUMMY.TOKEN.XXXX"
 const TEST_PASSWORD = "PistonPost-Test-2026!"
 
@@ -213,6 +215,23 @@ test.describe.serial("authenticated authoring", () => {
       page.getByRole("img", { name: "A gray cat looking directly at the camera" }),
     ).toBeVisible()
     await expect(page.getByRole("list", { name: /image collection/u })).toHaveCount(0)
+
+    await page.goto("/account/posts/new")
+    await selectFormat(page, "Images")
+    await fillPost(page, "the whole camera roll", "gallery")
+    await page.getByLabel("Choose images to upload").setInputFiles(
+      generateN(20).map((number) => ({
+        name: `gallery-${number.toString().padStart(2, "0")}.png`,
+        mimeType: "image/png",
+        buffer: validPng,
+      })),
+    )
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    await expect(page.getByRole("heading", { name: "the whole camera roll" })).toBeVisible()
+    await expect(
+      page.getByRole("list", { name: /image collection/u }).getByRole("img"),
+    ).toHaveCount(20)
 
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")

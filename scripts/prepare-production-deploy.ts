@@ -1,6 +1,12 @@
 const generatedConfigPath = new URL("../dist/server/wrangler.json", import.meta.url)
 
-const secretBindings = ["BETTER_AUTH_SECRET", "TURNSTILE_SECRET", "STREAM_WEBHOOK_SECRET"]
+const secretBindings = [
+  "BETTER_AUTH_SECRET",
+  "TURNSTILE_SECRET",
+  "STREAM_WEBHOOK_SECRET",
+  "STREAM_ACCOUNT_ID",
+  "STREAM_API_TOKEN",
+]
 const productionOrigin = "https://post.pistonmaster.net"
 const productionVariables = {
   AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
