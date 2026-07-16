@@ -4,7 +4,7 @@ import { TriangleAlert } from "lucide-react"
 import { Suspense } from "react"
 
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
-import { PostView } from "@/components/post-view"
+import { PostTimeline } from "@/components/PostTimeline"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,8 +46,8 @@ export const Route = createFileRoute("/")({
 function PublicFeed() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-8 border-b pb-4">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Latest</h1>
+      <header className="mb-7">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">Timeline</h1>
       </header>
       <Suspense fallback={<FeedItemsSkeleton />}>
         <PublicFeedResults />
@@ -59,7 +59,6 @@ function PublicFeed() {
 function PublicFeedResults() {
   const feed = useSuspenseInfiniteQuery(feedQueryOptions())
   const posts = feed.data.pages.flatMap((page) => page.posts)
-  const firstPostId = posts[0]?.id
 
   return (
     <>
@@ -72,7 +71,7 @@ function PublicFeedResults() {
       )}
 
       {posts.length === 0 ? (
-        <Empty className="min-h-80 border-y">
+        <Empty className="min-h-80">
           <EmptyHeader>
             <EmptyTitle>No public posts yet</EmptyTitle>
             <EmptyDescription>Create the first post for this feed.</EmptyDescription>
@@ -84,15 +83,11 @@ function PublicFeedResults() {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="grid gap-10">
-          {posts.map((post) => (
-            <PostView key={post.id} post={post} priority={post.id === firstPostId} />
-          ))}
-        </div>
+        <PostTimeline posts={posts} />
       )}
 
       {feed.hasNextPage && (
-        <div className="mt-12 flex justify-center border-t pt-8">
+        <div className="mt-10 flex justify-center">
           <Button
             variant="outline"
             disabled={feed.isFetchingNextPage}

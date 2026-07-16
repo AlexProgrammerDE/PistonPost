@@ -416,19 +416,21 @@ export function PostView({
   priority = false,
   selectedImageIndex,
   galleryLayout,
+  className,
 }: {
   readonly post: PublicPostRead
   readonly detail?: boolean
   readonly priority?: boolean
   readonly selectedImageIndex?: number | undefined
   readonly galleryLayout?: GalleryLayout | undefined
+  readonly className?: string
 }) {
   const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
   const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
   const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
 
   return (
-    <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10")}>
+    <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10", className)}>
       <header className="mb-4 flex items-center gap-3">
         <Link to="/user/$username" params={{ username: post.author.username }}>
           <Avatar size="lg">

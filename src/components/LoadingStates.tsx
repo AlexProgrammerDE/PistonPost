@@ -1,5 +1,12 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import {
+  Timeline,
+  TimelineConnector,
+  TimelineContent,
+  TimelineDot,
+  TimelineItem,
+} from "@/components/ui/timeline"
 import { generateN } from "@/lib/generate-n"
 
 function LoadingRegion({
@@ -23,22 +30,28 @@ function LoadingRegion({
 
 function FeedItemsPlaceholder() {
   return (
-    <div className="grid gap-10">
+    <Timeline className="gap-0">
       {generateN(3).map((identity) => (
-        <article key={identity} className="grid gap-4 border-b pb-10">
-          <div className="flex items-center gap-3">
-            <Skeleton className="size-10 rounded-full" />
-            <div className="grid flex-1 gap-2">
-              <Skeleton className="h-4 w-36" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-          <Skeleton className="h-8 w-3/4" />
-          <Skeleton className="aspect-[4/3] w-full" />
-          <Skeleton className="h-5 w-40" />
-        </article>
+        <TimelineItem key={identity} id={`timeline-placeholder-${identity}`} className="gap-4">
+          <TimelineDot className="mt-3" />
+          <TimelineConnector className="top-6" />
+          <TimelineContent className="min-w-0">
+            <article className="grid gap-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="size-10 rounded-full" />
+                <div className="grid flex-1 gap-2">
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-3 w-24" />
+                </div>
+              </div>
+              <Skeleton className="h-8 w-3/4" />
+              <Skeleton className="aspect-[4/3] w-full" />
+              <Skeleton className="h-5 w-40" />
+            </article>
+          </TimelineContent>
+        </TimelineItem>
       ))}
-    </div>
+    </Timeline>
   )
 }
 
@@ -54,7 +67,7 @@ export function FeedPageSkeleton() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <LoadingRegion label="Loading feed…">
-        <header className="mb-8 border-b pb-4">
+        <header className="mb-7">
           <Skeleton className="h-8 w-28" />
         </header>
         <FeedItemsPlaceholder />

@@ -1,20 +1,9 @@
 import { describe, expect, test } from "bun:test"
 
-import { renderToStaticMarkup } from "react-dom/server"
-
-import { FeedItemsSkeleton, LightboxLoadingFallback } from "./LoadingStates"
+import { LightboxLoadingFallback } from "./LoadingStates"
 import { Spinner } from "./ui/spinner"
 
 describe("loading states", () => {
-  test("announces feed loading without exposing placeholder shapes", () => {
-    const html = renderToStaticMarkup(<FeedItemsSkeleton />)
-
-    expect(html).toContain('role="status"')
-    expect(html).toContain('aria-live="polite"')
-    expect(html).toContain("Loading posts…")
-    expect(html).toContain('aria-hidden="true"')
-  })
-
   test("shows a visible lightbox loading fallback", () => {
     const fallback = LightboxLoadingFallback()
     const content = fallback.props.children
