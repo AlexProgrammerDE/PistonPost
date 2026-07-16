@@ -9,7 +9,7 @@ import { getMyPosts } from "@/server/tables"
 export const Route = createFileRoute("/account/posts/")({
   loader: () => getMyPosts(),
   head: () => ({
-    meta: [{ title: "My posts · PistonPost" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "My posts · PistonPost" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: MyPosts,
   pendingComponent: ManagementPageSkeleton,

@@ -36,7 +36,7 @@ export const Route = createFileRoute("/post/$postId/edit")({
     return { post, config }
   },
   head: () => ({
-    meta: [{ title: "Edit post · PistonPost" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Edit post · PistonPost" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: EditPostRoute,
   pendingComponent: FormPageSkeleton,

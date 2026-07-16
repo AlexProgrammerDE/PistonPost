@@ -19,6 +19,7 @@ export const Route = createFileRoute("/tag/$tag")({
       title: `#${params.tag} · PistonPost`,
       description,
       path,
+      twitterCard: "summary",
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "CollectionPage",

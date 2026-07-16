@@ -9,6 +9,7 @@ export const Route = createFileRoute("/terms")({
       title: "Terms · PistonPost",
       description,
       path: "/terms",
+      twitterCard: "summary",
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "WebPage",

@@ -33,10 +33,13 @@ type SeoOptions = {
   readonly image?: SeoImage
   readonly video?: SeoVideo
   readonly player?: SeoVideo
-  readonly twitterCard?: "summary" | "summary_large_image" | "player"
-  readonly noIndex?: boolean
+  readonly twitterCard: "summary" | "summary_large_image" | "player"
+  readonly indexing?: "index" | "noindex" | "inherit"
   readonly publishedAt?: string
+  readonly modifiedAt?: string
   readonly authorUrl?: string
+  readonly tags?: ReadonlyArray<string>
+  readonly profileUsername?: string
   readonly jsonLd?: JsonLdObject
 }
 
@@ -73,10 +76,7 @@ export function createSeoHead(options: SeoOptions) {
     { property: "og:image", content: absoluteUrl(image.url) },
     { property: "og:image:secure_url", content: absoluteUrl(image.url) },
     { property: "og:image:alt", content: image.alt },
-    {
-      name: "twitter:card",
-      content: options.twitterCard ?? (options.image ? "summary_large_image" : "summary"),
-    },
+    { name: "twitter:card", content: options.twitterCard },
     { name: "twitter:site", content: SITE_TWITTER_HANDLE },
     { name: "twitter:creator", content: SITE_TWITTER_HANDLE },
     { name: "twitter:title", content: options.title },
@@ -92,7 +92,16 @@ export function createSeoHead(options: SeoOptions) {
   if (options.publishedAt) {
     meta.push({ property: "article:published_time", content: options.publishedAt })
   }
+  if (options.modifiedAt) {
+    meta.push({ property: "article:modified_time", content: options.modifiedAt })
+  }
   if (options.authorUrl) meta.push({ property: "article:author", content: options.authorUrl })
+  for (const tag of options.tags ?? []) {
+    meta.push({ property: "article:tag", content: tag })
+  }
+  if (options.profileUsername) {
+    meta.push({ property: "profile:username", content: options.profileUsername })
+  }
   if (options.video) {
     const videoUrl = absoluteUrl(options.video.url)
     meta.push(
@@ -111,7 +120,15 @@ export function createSeoHead(options: SeoOptions) {
       { name: "twitter:player:height", content: options.player.height.toString() },
     )
   }
-  if (options.noIndex) meta.push({ name: "robots", content: "noindex, nofollow" })
+  const indexing = options.indexing ?? "index"
+  if (indexing === "index") {
+    meta.push({
+      name: "robots",
+      content: "index, follow, max-image-preview:large, max-video-preview:-1, max-snippet:-1",
+    })
+  } else if (indexing === "noindex") {
+    meta.push({ name: "robots", content: "noindex, nofollow" })
+  }
 
   return {
     meta,

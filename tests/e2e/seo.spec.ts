@@ -16,6 +16,14 @@ test("serves complete public metadata and discovery documents", async ({ page, r
     "content",
     "@AlexProgrammer3",
   )
+  await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
+    "content",
+    "summary_large_image",
+  )
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute(
+    "content",
+    "index, follow, max-image-preview:large, max-video-preview:-1, max-snippet:-1",
+  )
   const structuredData = await page.locator('script[type="application/ld+json"]').textContent()
   expect(structuredData).toContain('"@type":"WebSite"')
 

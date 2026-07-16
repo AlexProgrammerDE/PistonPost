@@ -31,8 +31,10 @@ export type PublicPostRead = {
   readonly textContent: string | null
   readonly visibility: "public" | "unlisted"
   readonly publishedAt: Date
+  readonly updatedAt: Date
   readonly author: {
     readonly username: string
+    readonly normalizedUsername: string
     readonly name: string
     readonly image: string | null
   }
@@ -73,7 +75,9 @@ type BasePostRow = {
   readonly textContent: string | null
   readonly visibility: "public" | "unlisted"
   readonly publishedAt: Date
+  readonly updatedAt: Date
   readonly authorUsername: string
+  readonly authorNormalizedUsername: string
   readonly authorName: string
   readonly authorImage: string | null
 }
@@ -106,7 +110,9 @@ export async function listPublicPostReads(
       textContent: posts.textContent,
       visibility: posts.visibility,
       publishedAt: posts.publishedAt,
+      updatedAt: posts.updatedAt,
       authorUsername: profiles.username,
+      authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
       authorImage: user.image,
     })
@@ -147,7 +153,9 @@ export async function getPublishedPostRead(database: D1DatabaseClient, id: strin
       textContent: posts.textContent,
       visibility: posts.visibility,
       publishedAt: posts.publishedAt,
+      updatedAt: posts.updatedAt,
       authorUsername: profiles.username,
+      authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
       authorImage: user.image,
     })
@@ -166,11 +174,14 @@ export async function getPublicProfileRead(database: D1DatabaseClient, username:
   return database
     .select({
       username: profiles.username,
+      normalizedUsername: profiles.normalizedUsername,
       name: user.name,
       bio: profiles.bio,
       website: profiles.website,
       location: profiles.location,
       image: user.image,
+      createdAt: profiles.createdAt,
+      updatedAt: profiles.updatedAt,
     })
     .from(profiles)
     .innerJoin(user, eq(user.id, profiles.userId))
@@ -256,8 +267,10 @@ async function hydratePublicPosts(
       textContent: post.textContent,
       visibility: post.visibility,
       publishedAt: post.publishedAt,
+      updatedAt: post.updatedAt,
       author: {
         username: post.authorUsername,
+        normalizedUsername: post.authorNormalizedUsername,
         name: post.authorName,
         image: post.authorImage,
       },

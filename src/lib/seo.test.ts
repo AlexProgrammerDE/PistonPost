@@ -13,7 +13,13 @@ const basePost: PublicPostRead = {
   textContent: "A tiny post with enough personality for a useful description.",
   visibility: "public",
   publishedAt: new Date("2026-07-15T12:00:00.000Z"),
-  author: { username: "alex", name: "Alex", image: null },
+  updatedAt: new Date("2026-07-16T12:00:00.000Z"),
+  author: {
+    username: "Alex",
+    normalizedUsername: "alex",
+    name: "Alex",
+    image: null,
+  },
   media: [],
   tags: [{ slug: "friends", name: "friends" }],
   commentCount: 0,
@@ -40,12 +46,17 @@ describe("SEO metadata", () => {
       title: "PistonPost",
       description: "Posts with friends.",
       path: "/tag/cute things",
+      twitterCard: "summary",
     })
 
     expect(head.links).toEqual([{ rel: "canonical", href: `${SITE_URL}/tag/cute%20things` }])
     expect(metaContent(head.meta, "property", "og:url")).toBe(`${SITE_URL}/tag/cute%20things`)
     expect(metaContent(head.meta, "name", "twitter:title")).toBe("PistonPost")
+    expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary")
     expect(metaContent(head.meta, "name", "twitter:creator")).toBe("@AlexProgrammer3")
+    expect(metaContent(head.meta, "name", "robots")).toBe(
+      "index, follow, max-image-preview:large, max-video-preview:-1, max-snippet:-1",
+    )
   })
 
   it("keeps descriptions compact and readable", () => {
@@ -76,7 +87,7 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "og:image:alt")).toBe("A sleepy fox")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary_large_image")
     expect(head.scripts[0]?.children).toContain(
-      `"image":["${SITE_URL}/media/image/first/og","${SITE_URL}/media/image/second/og"]`,
+      `"contentUrl":"${SITE_URL}/media/image/first/detail"`,
     )
   })
 
@@ -92,6 +103,15 @@ describe("SEO metadata", () => {
     })
 
     expect(metaContent(textHead.meta, "name", "description")).toContain("Post by Alex · #friends")
+    expect(metaContent(textHead.meta, "name", "twitter:card")).toBe("summary")
+    expect(metaContent(textHead.meta, "property", "article:modified_time")).toBe(
+      "2026-07-16T12:00:00.000Z",
+    )
+    expect(metaContent(textHead.meta, "property", "article:tag")).toBe("friends")
+    expect(textHead.scripts[0]?.children).toContain(
+      '"text":"A tiny post with enough personality for a useful description."',
+    )
+    expect(textHead.scripts[0]?.children).toContain(`"@id":"${SITE_URL}/user/alex#person"`)
     expect(metaContent(videoHead.meta, "property", "og:title")).toBe(
       "look at this · Alex · PistonPost",
     )
@@ -133,6 +153,11 @@ describe("SEO metadata", () => {
     expect(head.scripts[0]?.children).toContain(
       `"contentUrl":"${SITE_URL}/media/video/video-id/download"`,
     )
+    expect(head.scripts[0]?.children).toContain('"duration":"PT12S"')
+    expect(head.scripts[0]?.children).toContain('"commentCount":0')
+    expect(head.scripts[0]?.children).toContain(
+      '"interactionType":"https://schema.org/DislikeAction"',
+    )
   })
 
   it("keeps unlisted posts out of indexes", () => {
@@ -146,6 +171,7 @@ describe("SEO metadata", () => {
       title: "PistonPost",
       description: "Posts with friends.",
       path: "/",
+      twitterCard: "summary_large_image",
       jsonLd: { "@context": "https://schema.org", name: "</script><script>alert(1)</script>" },
     })
     const script = head.scripts[0]

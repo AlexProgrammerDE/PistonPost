@@ -27,11 +27,13 @@ export const Route = createFileRoute("/user/$username")({
   },
   head: ({ loaderData, params }) => {
     const username = loaderData?.username ?? params.username
+    const normalizedUsername =
+      loaderData?.normalizedUsername ?? params.username.toLocaleLowerCase("en-US")
     const name = loaderData?.name ?? username
     const description = truncateDescription(
       loaderData?.bio ?? `Public posts from @${username} on PistonPost.`,
     )
-    const path = `/user/${encodeURIComponent(username)}`
+    const path = `/user/${encodeURIComponent(normalizedUsername)}`
     const profileUrl = absoluteUrl(path)
     const website = safeWebsite(loaderData?.website ?? null)
     return createSeoHead({
@@ -43,6 +45,7 @@ export const Route = createFileRoute("/user/$username")({
         ? { url: loaderData.image, alt: `${name}'s profile picture` }
         : undefined,
       twitterCard: "summary",
+      profileUsername: username,
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "ProfilePage",
@@ -50,8 +53,11 @@ export const Route = createFileRoute("/user/$username")({
         url: profileUrl,
         name: `${name} (@${username})`,
         description,
+        dateCreated: loaderData?.createdAt.toISOString(),
+        dateModified: loaderData?.updatedAt.toISOString(),
         mainEntity: {
           "@type": "Person",
+          "@id": `${profileUrl}#person`,
           name,
           alternateName: `@${username}`,
           url: profileUrl,

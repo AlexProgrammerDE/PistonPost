@@ -15,6 +15,7 @@ export const Route = createFileRoute("/migration")({
       title: "Your PistonPost account · PistonPost",
       description,
       path: "/migration",
+      twitterCard: "summary",
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "WebPage",

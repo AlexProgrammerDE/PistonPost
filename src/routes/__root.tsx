@@ -12,6 +12,8 @@ const defaultSeo = createSeoHead({
   title: "PistonPost",
   description: SITE_DESCRIPTION,
   path: "/",
+  twitterCard: "summary",
+  indexing: "inherit",
 })
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({

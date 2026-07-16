@@ -7,7 +7,7 @@ import { getComposerViewer } from "@/server/composer-viewer"
 export const Route = createFileRoute("/account/posts/new")({
   loader: () => getComposerViewer(),
   head: () => ({
-    meta: [{ title: "New post · PistonPost" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "New post · PistonPost" }, { name: "robots", content: "noindex, nofollow" }],
   }),
   component: NewPost,
   pendingComponent: FormPageSkeleton,

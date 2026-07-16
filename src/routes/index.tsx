@@ -26,11 +26,13 @@ export const Route = createFileRoute("/")({
       title: SITE_NAME,
       description: SITE_DESCRIPTION,
       path: "/",
+      twitterCard: "summary_large_image",
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "WebSite",
         "@id": absoluteUrl("/#website"),
         name: SITE_NAME,
+        alternateName: "post.pistonmaster.net",
         url: absoluteUrl("/"),
         description: SITE_DESCRIPTION,
         inLanguage: "en",
