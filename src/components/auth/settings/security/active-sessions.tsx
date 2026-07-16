@@ -27,7 +27,7 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
 
   const { data: sessions, isPending } = useListSessions(authClient)
 
-  const activeSessions = (sessions ?? []).toSorted((activeSession) =>
+  const activeSessions = [...(sessions ?? [])].sort((activeSession) =>
     activeSession.id === session?.session.id ? -1 : 1,
   )
 

@@ -15,7 +15,12 @@ export const usernamePlugin = createAuthPlugin(
     return {
       ...core,
       additionalFields: core.additionalFields?.map((field) =>
-        field.name === "username" ? Object.assign({}, field, { render: UsernameField }) : field,
+        field.name === "username"
+          ? {
+              ...field,
+              render: UsernameField,
+            }
+          : field,
       ),
       views: {
         auth: { signIn: SignInUsername },

@@ -18,7 +18,6 @@ export type VerifyEmailProps = {
 
 /** Seconds the resend button stays disabled to prevent spamming the endpoint. */
 const RESEND_COOLDOWN_SECONDS = 60
-const subscribeToHydration = () => () => {}
 
 /**
  * Returns `true` once the component is mounted on the client (hydrated) and
@@ -28,8 +27,9 @@ const subscribeToHydration = () => () => {}
  * @returns Whether the component has hydrated on the client.
  */
 function useIsHydrated() {
+  const subscribe = () => () => {}
   return useSyncExternalStore(
-    subscribeToHydration,
+    subscribe,
     () => true,
     () => false,
   )
@@ -82,9 +82,7 @@ export function VerifyEmail({ className }: VerifyEmailProps) {
   return (
     <Card className={cn("w-full max-w-sm", className)}>
       <CardHeader>
-        <CardTitle role="heading" aria-level={2} className="text-xl font-semibold">
-          {localization.auth.verifyEmail}
-        </CardTitle>
+        <CardTitle className="text-xl font-semibold">{localization.auth.verifyEmail}</CardTitle>
       </CardHeader>
 
       <CardContent>

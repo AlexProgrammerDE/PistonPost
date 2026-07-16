@@ -22,7 +22,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
-import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 import { ProviderButtons, type SocialLayout } from "./provider-buttons"
@@ -90,9 +89,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
   return (
     <Card className={cn("w-full max-w-sm", className)}>
       <CardHeader>
-        <CardTitle role="heading" aria-level={2} className="text-xl">
-          {magicLinkLocalization.magicLink}
-        </CardTitle>
+        <CardTitle className="text-xl">{localization.auth.signIn}</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -149,17 +146,14 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
 
               <div className="flex flex-col gap-3">
                 <Button type="submit" disabled={isPending}>
-                  {signInMagicLinkPending && <Spinner data-icon="inline-start" />}
+                  {signInMagicLinkPending && <Spinner />}
 
                   {magicLinkLocalization.sendMagicLink}
                 </Button>
 
                 {plugins.flatMap((plugin) =>
-                  (plugin.authButtons ?? []).map((AuthButton) => (
-                    <AuthButton
-                      key={componentIdentity(plugin.id, "magic-link", AuthButton)}
-                      view="magicLink"
-                    />
+                  (plugin.authButtons ?? []).map((AuthButton, index) => (
+                    <AuthButton key={`${plugin.id}-${index.toString()}`} view="magicLink" />
                   )),
                 )}
               </div>

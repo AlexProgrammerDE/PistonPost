@@ -115,9 +115,9 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
             }
           >
             {availability?.available ? (
-              <Check className="text-foreground" />
+              <Check className="size-4 text-foreground" />
             ) : availabilityError || availability?.available === false ? (
-              <X className="text-destructive" />
+              <X className="size-4 text-destructive" />
             ) : (
               <Spinner />
             )}

@@ -4,6 +4,7 @@ import {
   type ThemeLocalization,
 } from "@better-auth-ui/core/plugins"
 
+import { Appearance } from "@/components/auth/theme/appearance"
 import { ThemeToggleItem } from "@/components/auth/theme/theme-toggle-item"
 
 /**
@@ -84,6 +85,7 @@ export const themePlugin = createAuthPlugin(
           themes: base.themes,
         })),
       userMenuItems: [ThemeToggleItem],
+      accountCards: [Appearance],
     }
   },
 )

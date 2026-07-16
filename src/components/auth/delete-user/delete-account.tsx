@@ -58,7 +58,9 @@ export function DeleteAccount({ className }: DeleteAccountProps) {
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    const params = needsPassword ? { password } : {}
+    const params = {
+      ...(needsPassword ? { password } : {}),
+    }
 
     deleteUser(params, {
       onSuccess: () => {

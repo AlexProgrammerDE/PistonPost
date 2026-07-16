@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 import { AdditionalField } from "./additional-field"
@@ -156,9 +155,7 @@ export function SignUp({ className, socialLayout, socialPosition = "bottom" }: S
   return (
     <Card className={cn("w-full max-w-sm", className)}>
       <CardHeader>
-        <CardTitle role="heading" aria-level={2} className="text-xl font-semibold">
-          {localization.auth.signUp}
-        </CardTitle>
+        <CardTitle className="text-xl font-semibold">{localization.auth.signUp}</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -414,11 +411,8 @@ export function SignUp({ className, socialLayout, socialPosition = "bottom" }: S
                   </Button>
 
                   {plugins.flatMap((plugin) =>
-                    (plugin.authButtons ?? []).map((AuthButton) => (
-                      <AuthButton
-                        key={componentIdentity(plugin.id, "sign-up", AuthButton)}
-                        view="signUp"
-                      />
+                    (plugin.authButtons ?? []).map((AuthButton, index) => (
+                      <AuthButton key={`${plugin.id}-${index.toString()}`} view="signUp" />
                     )),
                   )}
                 </div>

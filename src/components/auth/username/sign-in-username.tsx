@@ -27,7 +27,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
-import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 export type SignInUsernameProps = {
@@ -156,9 +155,7 @@ export function SignInUsername({
   return (
     <Card className={cn("w-full max-w-sm", className)}>
       <CardHeader>
-        <CardTitle role="heading" aria-level={2} className="text-xl font-semibold">
-          {localization.auth.signIn}
-        </CardTitle>
+        <CardTitle className="text-xl font-semibold">{localization.auth.signIn}</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -271,17 +268,14 @@ export function SignInUsername({
 
                 <div className="flex flex-col gap-3">
                   <Button type="submit" disabled={isPending}>
-                    {isSignInPending && <Spinner data-icon="inline-start" />}
+                    {isSignInPending && <Spinner />}
 
                     {localization.auth.signIn}
                   </Button>
 
                   {plugins.flatMap((plugin) =>
-                    (plugin.authButtons ?? []).map((AuthButton) => (
-                      <AuthButton
-                        key={componentIdentity(plugin.id, "sign-in", AuthButton)}
-                        view="signIn"
-                      />
+                    (plugin.authButtons ?? []).map((AuthButton, index) => (
+                      <AuthButton key={`${plugin.id}-${index.toString()}`} view="signIn" />
                     )),
                   )}
                 </div>

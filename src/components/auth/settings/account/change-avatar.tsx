@@ -1,7 +1,7 @@
 import { fileToBase64 } from "@better-auth-ui/core"
 import { useAuth, useSession, useUpdateUser } from "@better-auth-ui/react"
 import { Trash2, Upload } from "lucide-react"
-import { type ChangeEvent, useId, useRef, useState } from "react"
+import { type ChangeEvent, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { UserAvatar } from "@/components/auth/user/user-avatar"
@@ -15,7 +15,6 @@ import {
 import { Field } from "@/components/ui/field"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { IMAGE_UPLOAD_ACCEPT } from "@/lib/uploads/image-upload-policy"
 import { cn } from "@/lib/utils"
 
 export type ChangeAvatarProps = {
@@ -26,9 +25,8 @@ export function ChangeAvatar({ className }: ChangeAvatarProps) {
   const { authClient, localization, avatar } = useAuth()
   const { data: session } = useSession(authClient)
 
-  const { mutateAsync: updateUser, isPending: updatePending } = useUpdateUser(authClient)
+  const { mutate: updateUser, isPending: updatePending } = useUpdateUser(authClient)
 
-  const inputId = useId()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -48,8 +46,12 @@ export function ChangeAvatar({ className }: ChangeAvatarProps) {
 
       const image = (await avatar.upload?.(resized)) || (await fileToBase64(resized))
 
-      await updateUser({ image })
-      toast.success(localization.settings.avatarChangedSuccess)
+      updateUser(
+        { image },
+        {
+          onSuccess: () => toast.success(localization.settings.avatarChangedSuccess),
+        },
+      )
     } catch (error) {
       if (error instanceof Error) {
         toast.error(error.message)
@@ -62,27 +64,33 @@ export function ChangeAvatar({ className }: ChangeAvatarProps) {
   async function handleDelete() {
     const currentImage = session?.user.image
 
-    setIsDeleting(true)
-    try {
-      if (currentImage) await avatar.delete?.(currentImage)
-      await updateUser({ image: null })
-      toast.success(localization.settings.avatarDeletedSuccess)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "The avatar could not be deleted.")
-    } finally {
-      setIsDeleting(false)
-    }
+    updateUser(
+      { image: null },
+      {
+        onSuccess: async () => {
+          if (currentImage) {
+            setIsDeleting(true)
+            try {
+              await avatar.delete?.(currentImage)
+            } finally {
+              setIsDeleting(false)
+            }
+          }
+
+          toast.success(localization.settings.avatarDeletedSuccess)
+        },
+      },
+    )
   }
 
   return (
     <Field className={className}>
-      <Label htmlFor={inputId}>{localization.settings.avatar}</Label>
+      <Label>{localization.settings.avatar}</Label>
 
       <input
-        id={inputId}
         ref={fileInputRef}
         type="file"
-        accept={IMAGE_UPLOAD_ACCEPT}
+        accept="image/*"
         className="hidden"
         onChange={handleFileChange}
       />

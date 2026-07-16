@@ -18,7 +18,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
-import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 import { ProviderButtons, type SocialLayout } from "./provider-buttons"
@@ -106,9 +105,7 @@ export function SignIn({ className, socialLayout, socialPosition = "bottom" }: S
   return (
     <Card className={cn("w-full max-w-sm", className)}>
       <CardHeader>
-        <CardTitle role="heading" aria-level={2} className="text-xl font-semibold">
-          {localization.auth.signIn}
-        </CardTitle>
+        <CardTitle className="text-xl font-semibold">{localization.auth.signIn}</CardTitle>
       </CardHeader>
 
       <CardContent>
@@ -225,17 +222,14 @@ export function SignIn({ className, socialLayout, socialPosition = "bottom" }: S
 
                 <div className="flex flex-col gap-3">
                   <Button type="submit" disabled={isPending}>
-                    {signInEmailPending && <Spinner data-icon="inline-start" />}
+                    {signInEmailPending && <Spinner />}
 
                     {localization.auth.signIn}
                   </Button>
 
                   {plugins.flatMap((plugin) =>
-                    (plugin.authButtons ?? []).map((AuthButton) => (
-                      <AuthButton
-                        key={componentIdentity(plugin.id, "sign-in", AuthButton)}
-                        view="signIn"
-                      />
+                    (plugin.authButtons ?? []).map((AuthButton, index) => (
+                      <AuthButton key={`${plugin.id}-${index.toString()}`} view="signIn" />
                     )),
                   )}
                 </div>

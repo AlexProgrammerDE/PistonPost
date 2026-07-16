@@ -2,7 +2,6 @@
 
 import { useAuth } from "@better-auth-ui/react"
 
-import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 import { ActiveSessions } from "./active-sessions"
@@ -32,8 +31,8 @@ export function SecuritySettings({ className }: SecuritySettingsProps) {
       <ActiveSessions />
       {plugins.flatMap(
         (plugin) =>
-          plugin.securityCards?.map((Card) => (
-            <Card key={componentIdentity(plugin.id, "security-card", Card)} />
+          plugin.securityCards?.map((Card, index) => (
+            <Card key={`${plugin.id}-${index.toString()}`} />
           )) ?? [],
       )}
     </div>

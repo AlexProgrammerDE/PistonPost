@@ -90,9 +90,9 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
 
           {plugins.flatMap(
             (plugin) =>
-              plugin.settingsTabs?.map((settingsTab) => (
+              plugin.settingsTabs?.map((settingsTab, index) => (
                 <TabsTrigger
-                  key={`${plugin.id}:${settingsTab.view}`}
+                  key={`${plugin.id}-${index.toString()}`}
                   value={settingsTab.view}
                   className="gap-1"
                   onClick={() =>
@@ -117,9 +117,9 @@ export function Settings({ className, view, path, hideNav }: SettingsProps) {
       </TabsContent>
 
       {plugins.flatMap((plugin) =>
-        plugin.settingsTabs?.map((settingsTab) => (
+        plugin.settingsTabs?.map((settingsTab, index) => (
           <TabsContent
-            key={`${plugin.id}:${settingsTab.view}`}
+            key={`${plugin.id}-${index.toString()}`}
             value={settingsTab.view}
             tabIndex={-1}
           >
