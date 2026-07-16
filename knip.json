@@ -11,7 +11,6 @@
     "src/lib/auth/auth-plugin.ts",
     "src/router.tsx",
     "src/routes/**/*.{ts,tsx}",
-    "src/components/ui/**/*.tsx",
     "src/styles/**/*.css",
     "tools/migrate/src/index.ts",
     "tools/migrate/src/**/*.test.ts"
@@ -26,6 +25,7 @@
   "ignore": [
     "src/routeTree.gen.ts",
     "src/components/auth/**",
+    "src/components/ui/**",
     "src/lib/auth/api-key-plugin.ts",
     "src/lib/auth/multi-session-plugin.ts",
     "src/lib/auth/organization-plugin.tsx"
@@ -38,6 +38,7 @@
     "@tanstack/react-pacer",
     "cloudflare",
     "drizzle-kit",
+    "embla-carousel-react",
     "oxfmt",
     "oxlint",
     "oxlint-tsgolint",
