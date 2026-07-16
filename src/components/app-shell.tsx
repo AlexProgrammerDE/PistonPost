@@ -43,7 +43,15 @@ export function AppShell({ children }: PropsWithChildren) {
             piston<span className="text-primary">post</span>
           </Link>
 
-          <nav className="ml-5" aria-label="Main navigation">
+          <nav className="ml-4 flex items-center gap-4 sm:ml-5" aria-label="Main navigation">
+            <Link
+              to="/"
+              className="text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
+              activeOptions={{ exact: true }}
+              activeProps={{ "aria-current": "page" }}
+            >
+              Timeline
+            </Link>
             <Link
               to="/following"
               className="text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
