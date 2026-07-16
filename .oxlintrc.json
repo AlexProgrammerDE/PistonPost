@@ -51,9 +51,7 @@
     "**/drizzle/**",
     "src/components/auth/**",
     "src/components/ui/**",
-    "src/lib/auth/api-key-plugin.ts",
-    "src/lib/auth/multi-session-plugin.ts",
-    "src/lib/auth/organization-plugin.tsx",
+    "src/lib/auth/**",
     "**/auth.generated.ts",
     "**/routeTree.gen.ts",
     "**/worker-configuration.d.ts"
