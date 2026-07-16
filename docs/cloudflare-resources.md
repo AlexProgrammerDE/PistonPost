@@ -111,7 +111,7 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --
 
 Store the selected store ID in the GitHub production environment as `PRODUCTION_SECRETS_STORE_ID`. The deployment workflow binds all five secrets by name. Its Cloudflare API token needs permission to deploy Secrets Store bindings in addition to the permissions required by the other configured services.
 
-Do not store secrets in Wrangler `vars`, GitHub logs, migration reports, or shell history.
+Do not store secrets in Wrangler `vars`, GitHub logs, command output, or shell history.
 
 ## Verify media uploads
 

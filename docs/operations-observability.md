@@ -1,6 +1,6 @@
 # Operational observability
 
-PistonPost uses Workers Observability for logs and traces, Analytics Engine for aggregate events, D1 outbox rows for durable job state, and the administration tables for migration and job inspection.
+PistonPost uses Workers Observability for logs and traces, Analytics Engine for aggregate events, D1 outbox rows for durable job state, and the administration tables for job inspection.
 
 ## Signals
 
@@ -13,7 +13,6 @@ PistonPost uses Workers Observability for logs and traces, Analytics Engine for 
 | Dead letters          | `dead-letter.received` events, `queue.dead-letter` error logs, and `outbox.kind = 'dead-letter'` |
 | Media failures        | `media_assets.status = 'failed'` by provider and age                                             |
 | Stream reconciliation | Pending or processing video rows older than the scheduled reconciliation window                  |
-| Migration             | `migration_runs` state and `migration_mappings` grouped by state and source collection           |
 | Workflows             | Account-deletion instance failures and step retry count                                          |
 
 Logs contain request classes, status, duration, opaque IDs where needed, and error names. They must not contain request bodies, raw headers, cookies, authorization values, OTPs, email addresses, comment text, or upload bytes.
@@ -30,14 +29,9 @@ select provider, status, count(*) as assets
 from media_assets
 group by provider, status;
 
-select state, count(*) as runs
-from migration_runs
-group by state;
-
-select source_collection, state, count(*) as records
-from migration_mappings
-group by source_collection, state;
 ```
+
+`migration_runs` and `migration_mappings` remain in D1 as retained historical state. The application no longer exposes migration tooling or an administration view for those tables.
 
 ## Alerts
 

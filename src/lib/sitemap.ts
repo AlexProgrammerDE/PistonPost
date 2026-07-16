@@ -71,7 +71,6 @@ function renderEntry(origin: string, entry: SitemapEntry) {
 export function buildSitemapXml(origin: string, records: ReadonlyArray<PublicSitemapRecord>) {
   const entries: ReadonlyArray<SitemapEntry> = [
     { path: "/", changeFrequency: "daily", priority: 1 },
-    { path: "/migration", changeFrequency: "monthly", priority: 0.3 },
     { path: "/privacy", changeFrequency: "monthly", priority: 0.2 },
     { path: "/terms", changeFrequency: "monthly", priority: 0.2 },
     ...publicEntries(records),

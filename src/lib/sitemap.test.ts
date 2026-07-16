@@ -17,7 +17,6 @@ describe("SEO discovery documents", () => {
     const xml = buildSitemapXml("https://post.pistonmaster.net", [record, record])
 
     expect(xml).toContain("<loc>https://post.pistonmaster.net/</loc>")
-    expect(xml).toContain("<loc>https://post.pistonmaster.net/migration</loc>")
     expect(xml).toContain("<loc>https://post.pistonmaster.net/post/post%26one</loc>")
     expect(xml).toContain("<loc>https://post.pistonmaster.net/user/cute%20fox</loc>")
     expect(xml).toContain("<loc>https://post.pistonmaster.net/tag/art%2Fmemes</loc>")

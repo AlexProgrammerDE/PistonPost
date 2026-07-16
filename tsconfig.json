@@ -8,7 +8,6 @@
     "worker-configuration.d.ts"
   ],
   "exclude": [
-    "tools/**",
     "src/components/auth/api-key/**",
     "src/components/auth/email/**",
     "src/components/auth/multi-session/**",

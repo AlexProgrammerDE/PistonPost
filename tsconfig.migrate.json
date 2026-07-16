@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "include": ["tools/migrate/src/**/*.ts"],
-  "exclude": [],
-  "compilerOptions": {
-    "lib": ["ES2023", "DOM"],
-    "types": ["bun"]
-  }
-}

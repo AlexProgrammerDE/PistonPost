@@ -273,18 +273,6 @@ function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
   if (section === "users") return <UserActions row={row} />
   if (section === "media") return <MediaAction row={row} />
   if (section === "jobs") return <JobAction row={row} />
-  if (section === "migrations") {
-    return (
-      <Button
-        nativeButton={false}
-        variant="outline"
-        size="sm"
-        render={<Link to="/admin/migrations/$runId" params={{ runId: row.id }} />}
-      >
-        View report
-      </Button>
-    )
-  }
   return null
 }
 

@@ -24,7 +24,6 @@ The repository is one Bun package with one deployable Cloudflare Worker:
 - src/domain/: product schemas, policies, service contracts, and shared domain types.
 - src/email/: React Email templates and Cloudflare email transport.
 - drizzle/: generated migrations and Drizzle metadata.
-- tools/migrate/: one-time, resumable legacy MongoDB and media migration CLI.
 - PLAN.md: the executable rewrite and migration plan.
 - AGENTS.md: repository-wide contributor and agent rules.
 - CLAUDE.md: Claude entrypoint that imports this file.
@@ -43,14 +42,14 @@ Main commands:
 
 - bun run dev: start the TanStack Start development server.
 - bun run build: build the production Worker.
-- bun run check: run Oxfmt verification, Oxlint, both TypeScript configurations, and tests.
+- bun run check: run Oxfmt verification, Oxlint, TypeScript, and tests.
 - bun run fix: apply Oxc formatting and lint fixes.
 - bun run test: run all tests.
-- bun run test:web and bun run test:migrate: run focused test groups.
-- bun run typecheck:web and bun run typecheck:migrate: check the Cloudflare and Bun runtime boundaries separately.
+- bun run test:web: run the unit and integration test group without Playwright.
+- bun run typecheck:web: check the application TypeScript configuration.
 - bun run ci: run the complete local CI gate.
 
-Run commands from the repository root. The root package owns Vite, Wrangler, Drizzle, shadcn, tests, and migration tooling.
+Run commands from the repository root. The root package owns Vite, Wrangler, Drizzle, shadcn, and tests.
 
 ## Package management and generated files
 
@@ -171,7 +170,7 @@ bunx drizzle-kit generate --name <migration-name>
 - Use transactions for domain changes that must be atomic.
 - Use cursor pagination for feeds and large tables.
 - Avoid unbounded joins and N+1 queries.
-- Keep migration scripts idempotent and record source IDs in explicit legacy mapping columns or tables.
+- Keep the retained legacy migration tables intact until their state is deliberately removed through the schema and generated Drizzle migration flow.
 
 ## Testing
 
@@ -181,7 +180,6 @@ bunx drizzle-kit generate --name <migration-name>
 - Test Better Auth request scoping, session behavior, email dispatch, captcha failures, and authorization boundaries.
 - Test upload initiation, completion, validation, orphan cleanup, and unauthorized access.
 - Test public, unlisted, draft, deleted, and moderated visibility separately.
-- Test migration reruns, partial failures, count reconciliation, ID preservation, and media checksums.
 - Use Playwright for critical journeys: sign in, create each post type, edit, react, comment, manage settings, moderate, and sign out.
 - A phase is not complete until its listed exit criteria pass.
 

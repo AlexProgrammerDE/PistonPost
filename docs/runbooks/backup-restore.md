@@ -1,6 +1,6 @@
 # Backup, restore, and D1 Time Travel runbook
 
-Use this runbook before schema changes, production migration, or an incident that may require data restoration.
+Use this runbook before production schema changes or an incident that may require data restoration.
 
 ## Capture recovery points
 

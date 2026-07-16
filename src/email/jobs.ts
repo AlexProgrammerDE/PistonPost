@@ -14,8 +14,6 @@ const ModerationData = Schema.Struct({
   targetUrl: Schema.String,
 })
 
-const MigrationData = Schema.Struct({ claimUrl: Schema.String })
-
 export const EmailJob = Schema.Union(
   Schema.Struct({
     version: Schema.Literal(1),
@@ -30,13 +28,6 @@ export const EmailJob = Schema.Union(
     idempotencyKey: Schema.String,
     to: Schema.String,
     data: ModerationData,
-  }),
-  Schema.Struct({
-    version: Schema.Literal(1),
-    type: Schema.Literal("email.migration-welcome"),
-    idempotencyKey: Schema.String,
-    to: Schema.String,
-    data: MigrationData,
   }),
 )
 
@@ -66,16 +57,6 @@ export function emailJobContent(job: EmailJob): EmailContent {
         heading: job.data.action,
         message: job.data.reason,
         action: { label: "Review the action", url: job.data.targetUrl },
-      }
-    case "email.migration-welcome":
-      return {
-        template: "migration-welcome",
-        subject: "Your PistonPost archive is ready",
-        preview: "Claim your migrated PistonPost account.",
-        heading: "Your old posts made the trip",
-        message:
-          "Your recoverable PistonPost posts and profile are attached to your existing email address. Sign in with this address to claim them.",
-        action: { label: "Claim your account", url: job.data.claimUrl },
       }
   }
 

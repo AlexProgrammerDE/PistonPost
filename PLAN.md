@@ -64,8 +64,7 @@ The rewrite must support:
 - A recent-post feed, tag feeds, profile feeds, and account-owned post management.
 - Post creation, editing, deletion, upload progress, and media processing status.
 - User settings, email preferences, theme preference, and account deletion.
-- Administrator moderation and migration observability.
-- A one-time, resumable migration from the old MongoDB and static-media backup.
+- Administrator moderation and operational observability.
 
 ## Historical behavior contract
 
@@ -86,7 +85,7 @@ The old product exposed these user-facing routes:
 | /privacy          | Privacy policy                        | /privacy           |
 | /tos              | Terms                                 | /terms             |
 
-Old data semantics that must survive migration:
+Historical data semantics that remain supported:
 
 - Post types: TEXT, IMAGES, VIDEO.
 - Reaction types: LIKE, DISLIKE, HEART.
@@ -121,9 +120,8 @@ These can be proposed later. They must not complicate the initial data model or 
 - Bun is the package manager and script runtime.
 - One root package owns dependencies, scripts, generated files, and build tooling.
 - Oxc provides linting and formatting through Oxlint and Oxfmt.
-- TypeScript remains strict. The Worker application and migration CLI use separate root TypeScript configurations because they target Cloudflare and Bun respectively.
+- TypeScript remains strict under one root configuration.
 - The root TanStack Start application is the only deployable production Worker.
-- `tools/migrate` is an operator-run Bun CLI, never deployed publicly.
 - Internal boundaries remain explicit under `src`, without workspace package manifests or package-level dependency indirection.
 
 ### Web application
@@ -143,11 +141,11 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 
 - D1 is the relational source of truth.
 - Drizzle ORM and generated Drizzle migrations manage D1.
-- R2 stores original images, migration source artifacts, and non-video binary objects.
+- R2 stores original images and non-video binary objects.
 - Cloudflare Images transforms and delivers image variants from trusted originals.
 - Cloudflare Stream ingests, transcodes, thumbnails, and plays video.
 - Queues handle durable asynchronous email, cleanup, media finalization, and analytics projection jobs.
-- Workflows handle long-running, resumable account deletion and migration reconciliation.
+- Workflows handle long-running, resumable account deletion.
 - Email Service sends Better Auth and product emails.
 - Turnstile protects authentication and abuse-sensitive mutations.
 - Rate Limiting bindings protect broad anonymous, authenticated, auth, comment, reaction, and upload classes.
@@ -176,10 +174,6 @@ PistonPost/
 │   ├── routes/
 │   ├── server/
 │   └── styles/
-├── tools/
-│   └── migrate/
-│       ├── fixtures/
-│       └── src/
 ├── drizzle/
 ├── public/
 ├── tests/
@@ -193,7 +187,6 @@ PistonPost/
 ├── lefthook.yml
 ├── package.json
 ├── tsconfig.json
-├── tsconfig.migrate.json
 ├── vite.config.ts
 └── wrangler.jsonc
 ```
@@ -227,7 +220,7 @@ Use descriptive binding names and keep actual IDs out of committed documentation
 | Binding               | Type                   | Responsibility                                 |
 | --------------------- | ---------------------- | ---------------------------------------------- |
 | DB                    | D1Database             | Better Auth and product data                   |
-| MEDIA                 | R2Bucket               | Original images and migration objects          |
+| MEDIA                 | R2Bucket               | Original images and non-video binary objects   |
 | IMAGES                | ImagesBinding          | Image validation, transformation, and variants |
 | STREAM                | StreamBinding          | Video status, playback, and provider cleanup   |
 | STREAM_ACCOUNT_ID     | secret/config          | Account used to create direct TUS uploads      |
@@ -368,7 +361,8 @@ Changing reaction type updates the row. Removing a reaction deletes it. Aggregat
 - Source fingerprint, startedAt, finishedAt, state, and counters.
 - Source collection, legacy ID, target table, target ID, checksum, and state.
 - Unique source collection and legacy ID.
-- Enough information to resume, reconcile, and explain every skipped record.
+- Retained as historical database state until a separate schema change deliberately removes them.
+- The application does not expose migration tooling, routes, or administration views.
 
 ### Required indexes
 
@@ -481,7 +475,6 @@ All email jobs must be idempotent. Queue payloads carry a template key and safe 
 - /admin/comments: moderation queue and history.
 - /admin/users: role and account status management.
 - /admin/media: failed, orphaned, and reported media.
-- /admin/migrations: migration run and reconciliation reports.
 - /admin/audit: audit event table.
 
 Validate route params and search params with Zod. Keep filters, pagination, sorting, and table view state in the URL when users benefit from sharing or restoring the view.
@@ -617,7 +610,7 @@ Do not put every section inside a Card. Use borders, separators, typography, and
 - Build sorting, filtering, column visibility, row selection, pagination, expansion, and URL-state features as reusable v9 features.
 - Use stable row IDs.
 - Keep v9 state in its store or atom model.
-- Use tables for account posts, users, moderation, media, audit, and migration reports.
+- Use tables for account posts, users, moderation, media, and audit.
 - Do not force the public media feed into a table.
 
 ## Caching policy
@@ -647,95 +640,9 @@ Use Analytics Engine for aggregate, operationally useful events:
 
 Do not send email, username, post text, comment text, exact IP, auth tokens, or raw user-agent strings. Use opaque IDs only where retention and deletion policy are clear.
 
-## One-time migration
+## Retained migration state
 
-The migration CLI is a first-class deliverable, not a temporary script pasted into a shell.
-
-### Inputs
-
-- MongoDB backup or export for users, posts, comments, images, videos, NextAuth collections, and verification metadata.
-- Static image, video, and thumbnail files.
-- Optional source manifest from OneDrive backup.
-- Production Cloudflare resource identifiers and credentials supplied through environment variables.
-
-The OneDrive URI is not a filesystem path. Before execution, the operator must make the backup available as a local mounted path or export and pass that path explicitly.
-
-### Migration principles
-
-- Dry-run by default.
-- Idempotent and resumable.
-- Preserve old user, post, comment, image, and video IDs where valid.
-- Record every mapping and skip reason.
-- Never migrate active sessions, JWTs, verification tokens, or old email magic links.
-- Never overwrite a non-migration production record.
-- Compute checksums before upload.
-- Reconcile counts and relationships after every stage.
-- Produce machine-readable JSON and human-readable Markdown reports.
-- Support local D1 and remote production targets with explicit flags.
-
-### Stages
-
-1. Analyze source.
-2. Validate expected collections, fields, files, and referential integrity.
-3. Fingerprint source and create migration run.
-4. Import Better Auth users with verified email state matching reliable source data.
-5. Import profiles, roles, settings, and usernames.
-6. Import tags.
-7. Import image metadata and upload original files to R2.
-8. Import videos to Stream and wait or poll for ready state.
-9. Import posts and post-media ordering.
-10. Import comments.
-11. Import reactions, resolving duplicate or conflicting legacy states deterministically.
-12. Reconcile counts, missing authors, missing media, duplicate usernames, and visibility.
-13. Generate redirect and compatibility report.
-14. Mark run complete only when required thresholds pass.
-
-### User migration
-
-- Prefer legacy Mongo user ObjectId string as Better Auth user.id.
-- Preserve email, email verification only when source evidence is trustworthy, creation time where available, name, roles, and profile settings.
-- Normalize username separately and resolve case-insensitive collisions with an explicit report.
-- Do not invent passwords.
-- Users authenticate after cutover by magic link, OTP, or password setup.
-- Administrators receive roles only from an allowlisted source mapping reviewed before production.
-
-### Content migration
-
-- Preserve postId for old URLs.
-- Preserve original timestamp, title, type, text, tag order, unlisted state, and author.
-- Preserve gallery order.
-- Preserve comment ObjectId and derive timestamp only when the old data lacks an explicit timestamp.
-- Convert legacy reaction sets into one reaction row per user and post.
-- If one legacy user appears in more than one reaction set for one post, apply a documented precedence and report it. Proposed precedence: HEART, LIKE, DISLIKE.
-- Missing authors become a controlled legacy-user tombstone only after the operator approves the policy.
-- Public image galleries with at least one surviving image import as partial galleries and appear in the report. Incomplete unlisted posts are omitted with their exclusive media. Public media posts with no surviving media, and incomplete non-gallery media posts, remain failed and block cutover.
-
-### Required CLI shape
-
-```bash
-bun run migrate analyze --source /path/to/backup
-bun run migrate dry-run --source /path/to/backup --report ./reports
-bun run migrate apply --source /path/to/backup --target local
-bun run migrate apply --source /path/to/backup --target production --resume <run-id>
-bun run migrate verify --run <run-id>
-```
-
-Production apply must require an explicit confirmation flag and print the account and database names without printing secrets.
-
-### Verification report
-
-Report:
-
-- Source and target counts per entity.
-- Imported, skipped, failed, and already-present counts.
-- Duplicate emails and usernames.
-- Missing authors and media.
-- Media checksum and provider readiness failures.
-- Reaction conflicts.
-- Public, unlisted, and failed post counts.
-- Sampled old-to-new URL checks.
-- D1 foreign-key check output.
-- Final go or no-go verdict.
+The retired legacy importer is no longer part of the repository or release process. Keep `migration_runs` and `migration_mappings` unchanged for now so historical state remains available for direct database inspection. Removing those tables requires a separate schema change and generated Drizzle migration.
 
 ## Delivery phases
 
@@ -901,7 +808,7 @@ Exit criteria:
 - [x] Install and pin TanStack Table v9.
 - [x] Build shared table features and tests.
 - [x] Build the responsive account post management view.
-- [x] Build admin posts, comments, users, media, audit, and migration tables.
+- [x] Build admin posts, comments, users, media, and audit tables.
 - [x] Add moderation actions with confirmations and audit events.
 - [x] Add URL-synchronized filters, sorting, pagination, and column visibility.
 - [x] Add permission and stale-state regression tests.
@@ -913,31 +820,19 @@ Exit criteria:
 - Tables update immediately and correctly after mutations.
 - Account deletion completes or resumes without leaving live credentials or orphaned private media.
 
-### Phase 8: Migration tooling
+### Phase 8: Retained migration state
 
-- [x] Create `tools/migrate` with analyze, dry-run, apply, resume, and verify commands.
-- [x] Support Mongo exports and the actual mounted backup format.
-- [x] Build deterministic transforms for every legacy entity.
-- [x] Add Cloudflare D1, R2, and Stream writers behind interfaces.
-- [x] Add migration run and mapping persistence.
-- [x] Add checksums, batching, retry with backoff, and structured logs.
-- [x] Add collision and missing-reference reports.
-- [x] Add fixture backup covering edge cases.
-- [x] Prove rerun idempotency and partial-failure resume.
-- [x] Run a full local migration rehearsal.
-- [ ] Run a disposable Cloudflare preview migration rehearsal.
-- [x] Produce final production runbook and rollback checkpoints.
+- [x] Preserve `migrationRuns` and `migrationMappings` in the D1 schema and generated migrations.
+- [x] Remove the retired legacy migration CLI, fixtures, configuration, UI, and runbooks.
 
 Exit criteria:
 
-- Rehearsal counts reconcile.
-- Every skip and failure is explained.
-- Old public URLs resolve against migrated preview data.
-- Rerunning a completed or interrupted stage does not duplicate data or media.
+- The application has no migration route, administration view, or operator CLI.
+- Historical migration tables and generated D1 artifacts remain unchanged.
 
 ### Phase 9: Security, performance, and operational hardening
 
-- [x] Threat-model auth, uploads, Stream webhooks, comments, reactions, admin actions, and migration credentials.
+- [x] Threat-model auth, uploads, Stream webhooks, comments, reactions, and admin actions.
 - [x] Add security headers and a tested Content Security Policy.
 - [x] Add CSRF, origin, and content-type checks where the framework or Better Auth does not already cover them.
 - [x] Add body and field size limits before parsing.
@@ -947,7 +842,7 @@ Exit criteria:
 - [x] Tune cache TTL, query stale times, image variants, and trace sampling from measurements.
 - [x] Add Queue dead-letter handling and operator alerts.
 - [x] Add backup, restore, and D1 time-travel runbook.
-- [x] Add dashboards or queries for Worker errors, queue lag, media failures, auth failures, and migration state.
+- [x] Add dashboards or queries for Worker errors, queue lag, media failures, and auth failures.
 - [x] Run warm local load tests for feed, populated post detail, and auth initiation.
 - [ ] Run authenticated preview load tests for reactions and comments.
 
@@ -958,26 +853,22 @@ Exit criteria:
 - Error, latency, and queue signals are visible.
 - Restore procedure is rehearsed.
 
-### Phase 10: Cutover
+### Phase 10: Launch
 
-- [ ] Freeze legacy writes at an announced time.
-- [ ] Take a final backup and fingerprint it.
-- [ ] Run final migration analyze and dry-run.
-- [ ] Run production migration with operator confirmation.
-- [ ] Verify counts, checksums, permissions, sampled accounts, and sampled URLs.
+- [ ] Take a final backup and record a D1 Time Travel bookmark.
+- [ ] Verify permissions, sampled accounts, and sampled public URLs.
 - [ ] Configure production routes, domain, email, Turnstile, R2, Images, Stream, Queues, Workflows, D1, cache, and secrets.
 - [ ] Deploy the Worker with generated migrations applied by the defined CI flow.
 - [ ] Run production smoke tests.
-- [ ] Keep the legacy system read-only for the rollback window.
 - [ ] Monitor auth, 404, media, queue, D1, and Worker metrics.
 - [ ] Publish user guidance explaining the required fresh sign-in.
-- [ ] Close cutover only after the rollback window and reconciliation pass.
+- [ ] Close launch only after the rollback window and verification pass.
 
 Go-live checks:
 
 - Public feed and sampled old post URLs.
 - Text, image, and video rendering.
-- New sign-in and migrated-user magic link.
+- New sign-in and existing-user magic link.
 - Profile, tag, and unlisted behavior.
 - Reaction and comment mutation.
 - New upload and media processing.
@@ -992,14 +883,13 @@ Go-live checks:
 Pull request CI:
 
 1. bun ci install.
-2. Verify generated route, Worker, Better Auth, and migration files.
+2. Verify generated route, Worker, Better Auth, and Drizzle files.
 3. Oxc check.
 4. Typecheck.
 5. Unit and integration tests.
 6. Production build.
 7. Wrangler deploy dry run.
-8. Migration fixture rehearsal for migration changes.
-9. Playwright smoke suite for affected critical routes.
+8. Playwright smoke suite for affected critical routes.
 
 Production deployment:
 
@@ -1018,22 +908,22 @@ The rewrite is complete when:
 
 - Every required legacy feature has a tested new equivalent or an approved documented replacement.
 - The production application runs on the intended Cloudflare services.
-- All data and media reconcile within approved thresholds.
-- Migrated users can regain access without migrating unsafe sessions or tokens.
+- Existing data and media remain accessible within approved thresholds.
+- Existing users can regain access without restoring unsafe sessions or tokens.
 - Public, unlisted, draft, deleted, and moderated states behave correctly.
 - Authentication, authorization, captcha, rate limits, caching, and uploads pass security tests.
 - The application is usable with keyboard and assistive technology.
 - Mobile and desktop layouts are deliberate and stable.
 - CI is green and generated artifacts are reproducible.
-- Deployment, migration, restore, rollback, and incident runbooks exist.
-- There are no unexplained migration skips or orphaned production objects.
+- Deployment, restore, rollback, and incident runbooks exist.
+- There are no unexplained orphaned production objects.
 
 ## Decisions and deviations
 
 Record future changes here with date, decision, reason, and affected phases.
 
 - 2026-07-14: Use a single TanStack Start Worker for the initial product. This keeps SSR, auth, API, and Cloudflare bindings in one request boundary while explicit source folders preserve modularity.
-- 2026-07-15: Flatten the repository into one Bun package. PistonPost is one application with one deployable Worker, so workspace manifests and Turborepo added indirection without an independent release or ownership boundary. Keep auth, database, domain, email, and UI boundaries under `src`; keep the operator-run migration CLI under `tools/migrate` with its own TypeScript configuration.
+- 2026-07-15: Flatten the repository into one Bun package. PistonPost is one application with one deployable Worker, so workspace manifests and Turborepo added indirection without an independent release or ownership boundary. Keep auth, database, domain, email, and UI boundaries under `src`.
 - 2026-07-14: Use Base UI because the requested shadcn preset generated Base UI and the user explicitly requested it.
 - 2026-07-14: Treat TanStack Table v9 as an exact-pinned beta and TanStack Form as the current compatible 1.x line.
 - 2026-07-14: Do not migrate legacy sessions or verification tokens. Require fresh authentication at cutover.
@@ -1042,12 +932,13 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-15: Replace the industrial independent-publishing identity with a plain, content-first social identity grounded in the legacy archive. User-facing copy says post rather than transmission or publish, the feed starts with content, image collections receive first-class presentation, and the visual system uses Outfit with a warm neutral, coral, and yellow palette.
 - 2026-07-15: Import incomplete public image posts as partial galleries when at least one image survives. Omit incomplete unlisted posts and media used only by those posts. Keep empty public media posts and incomplete non-gallery media posts as cutover-blocking failures.
 - 2026-07-15: Preserve the legacy SEO contract independently from visual identity changes. Public routes use absolute canonical URLs, complete Open Graph and Twitter metadata, safe JSON-LD, and a crawler-visible PNG card. Image and video posts expose media-specific cards, while a cached dynamic sitemap lists public posts, profiles, and tags and non-production robots rules block indexing.
-- 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, migration stages, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
+- 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
 - 2026-07-14: Use shadcn Typeset for long-form post rendering and use Base UI-backed shadcn components whenever they own a real product interaction. Do not add components without a concrete use.
 - 2026-07-14: Generate Better Auth-owned tables before adding product-to-user foreign keys. Phase 3 enforces every product-only relationship immediately; Phase 4 adds the user relationships from the generated auth schema so the auth tables are never hand-authored from memory.
 - 2026-07-14: New posts may contain up to 20 images at 15 MB each, or one video up to 2 GB and 10 minutes. Existing migrated galleries remain viewable even when they exceed the new-authoring limits.
 - 2026-07-14: Account deletion starts a durable Workflow before Better Auth removes the user. Media ownership becomes nullable only during that handoff, provider objects are deleted idempotently, and the final media records are removed after R2 and Stream succeed.
 - 2026-07-14: Administration tables use server-side `(created_at, id)` cursors. Cursor history, sort direction, filters, and column visibility live in URL search parameters so large datasets never rely on offset pagination.
+- 2026-07-16: Retire the legacy migration CLI, fixtures, configuration, public and administrator routes, transactional email variant, and operator runbooks. Preserve `migrationRuns`, `migrationMappings`, and generated D1 artifacts until a separate schema change deliberately removes the historical state. This affects Phases 7 through 10.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
 - 2026-07-15: Use a responsive management list for `/account/posts` instead of TanStack Table. The
   screen has one primary object and action per row, so a list keeps status and actions readable on

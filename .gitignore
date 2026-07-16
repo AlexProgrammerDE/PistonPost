@@ -15,8 +15,6 @@ todos.json
 coverage
 playwright-report
 test-results
-.migration
-reports/migration
 .repos/effect
 
 # turbo

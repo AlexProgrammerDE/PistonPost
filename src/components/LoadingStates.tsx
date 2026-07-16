@@ -260,7 +260,7 @@ export function AdminOverviewSkeleton() {
           <Skeleton className="h-4 w-96 max-w-full" />
         </header>
         <div className="border-y">
-          {generateN(7).map((identity) => (
+          {generateN(6).map((identity) => (
             <div
               key={identity}
               className="grid gap-3 border-b px-1 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-3"
@@ -302,26 +302,6 @@ export function AdminTablePageSkeleton() {
             </div>
           ))}
         </div>
-      </LoadingRegion>
-    </main>
-  )
-}
-
-export function MigrationReportSkeleton() {
-  return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-      <LoadingRegion label="Loading migration report…" className="grid gap-8">
-        <Skeleton className="h-4 w-32" />
-        <header className="grid gap-3 border-b pb-6">
-          <Skeleton className="h-9 w-64" />
-          <Skeleton className="h-4 w-full max-w-lg" />
-        </header>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {generateN(4).map((identity) => (
-            <Skeleton key={identity} className="h-20" />
-          ))}
-        </div>
-        <Skeleton className="h-64 w-full" />
       </LoadingRegion>
     </main>
   )

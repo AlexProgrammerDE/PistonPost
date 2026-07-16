@@ -13,7 +13,6 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as MigrationRouteImport } from './routes/migration'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
@@ -32,7 +31,6 @@ import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
 import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
 import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhook'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as AdminMigrationsRunIdRouteImport } from './routes/admin.migrations.$runId'
 import { Route as AccountSettingsSettingsViewRouteImport } from './routes/account.settings.$settingsView'
 import { Route as AccountPostsNewRouteImport } from './routes/account.posts.new'
 import { Route as MediaVideoMediaIdThumbnailRouteImport } from './routes/media.video.$mediaId.thumbnail'
@@ -58,11 +56,6 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const MigrationRoute = MigrationRouteImport.update({
-  id: '/migration',
-  path: '/migration',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -155,11 +148,6 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminMigrationsRunIdRoute = AdminMigrationsRunIdRouteImport.update({
-  id: '/migrations/$runId',
-  path: '/migrations/$runId',
-  getParentRoute: () => AdminRoute,
-} as any)
 const AccountSettingsSettingsViewRoute =
   AccountSettingsSettingsViewRouteImport.update({
     id: '/$settingsView',
@@ -199,7 +187,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
-  '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -215,7 +202,6 @@ export interface FileRoutesByFullPath {
   '/auth/': typeof AuthIndexRoute
   '/account/posts/new': typeof AccountPostsNewRoute
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
-  '/admin/migrations/$runId': typeof AdminMigrationsRunIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
@@ -229,7 +215,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -243,7 +228,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/account/posts/new': typeof AccountPostsNewRoute
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
-  '/admin/migrations/$runId': typeof AdminMigrationsRunIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
@@ -260,7 +244,6 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
-  '/migration': typeof MigrationRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
@@ -276,7 +259,6 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/account/posts/new': typeof AccountPostsNewRoute
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
-  '/admin/migrations/$runId': typeof AdminMigrationsRunIdRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
@@ -294,7 +276,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
-    | '/migration'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -310,7 +291,6 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/account/posts/new'
     | '/account/settings/$settingsView'
-    | '/admin/migrations/$runId'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/upload/$mediaId'
@@ -324,7 +304,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/migration'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -338,7 +317,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/account/posts/new'
     | '/account/settings/$settingsView'
-    | '/admin/migrations/$runId'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/upload/$mediaId'
@@ -354,7 +332,6 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/auth'
-    | '/migration'
     | '/privacy'
     | '/robots.txt'
     | '/sitemap.xml'
@@ -370,7 +347,6 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/account/posts/new'
     | '/account/settings/$settingsView'
-    | '/admin/migrations/$runId'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/upload/$mediaId'
@@ -387,7 +363,6 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
-  MigrationRoute: typeof MigrationRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
@@ -434,13 +409,6 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/migration': {
-      id: '/migration'
-      path: '/migration'
-      fullPath: '/migration'
-      preLoaderRoute: typeof MigrationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -569,13 +537,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/migrations/$runId': {
-      id: '/admin/migrations/$runId'
-      path: '/migrations/$runId'
-      fullPath: '/admin/migrations/$runId'
-      preLoaderRoute: typeof AdminMigrationsRunIdRouteImport
-      parentRoute: typeof AdminRoute
-    }
     '/account/settings/$settingsView': {
       id: '/account/settings/$settingsView'
       path: '/$settingsView'
@@ -624,13 +585,11 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminSectionRoute: typeof AdminSectionRoute
   AdminIndexRoute: typeof AdminIndexRoute
-  AdminMigrationsRunIdRoute: typeof AdminMigrationsRunIdRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSectionRoute: AdminSectionRoute,
   AdminIndexRoute: AdminIndexRoute,
-  AdminMigrationsRunIdRoute: AdminMigrationsRunIdRoute,
 }
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
@@ -691,7 +650,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
-  MigrationRoute: MigrationRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,

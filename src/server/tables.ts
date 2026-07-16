@@ -1,20 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
-import {
-  and,
-  asc,
-  count,
-  desc,
-  eq,
-  gt,
-  inArray,
-  isNull,
-  like,
-  lt,
-  ne,
-  or,
-  sql,
-  type SQL,
-} from "drizzle-orm"
+import { and, asc, count, desc, eq, gt, isNull, like, lt, or, sql, type SQL } from "drizzle-orm"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
@@ -48,7 +33,7 @@ export const getMyPosts = createServerFn({ method: "GET" }).handler(async ({ con
     .limit(500)
 })
 
-const adminSection = z.enum(["posts", "comments", "users", "media", "jobs", "audit", "migrations"])
+const adminSection = z.enum(["posts", "comments", "users", "media", "jobs", "audit"])
 const adminPageSize = 20
 const adminCursor = z.object({
   createdAt: z.coerce.date(),
@@ -259,31 +244,6 @@ export const getAdminRows = createServerFn({ method: "GET" })
             .orderBy(order(schema.outbox.createdAt), order(schema.outbox.id))
             .limit(adminPageSize + 1),
         )
-      case "migrations":
-        return adminPage(
-          await database
-            .select({
-              id: schema.migrationRuns.id,
-              primary: schema.migrationRuns.sourceFingerprint,
-              secondary: sql<string>`coalesce(${schema.migrationRuns.lastError}, 'No reported error')`,
-              status: schema.migrationRuns.state,
-              createdAt: schema.migrationRuns.startedAt,
-            })
-            .from(schema.migrationRuns)
-            .where(
-              and(
-                data.query ? like(schema.migrationRuns.sourceFingerprint, search) : undefined,
-                adminCursorCondition(
-                  schema.migrationRuns.startedAt,
-                  schema.migrationRuns.id,
-                  cursor,
-                  data.direction,
-                ),
-              ),
-            )
-            .orderBy(order(schema.migrationRuns.startedAt), order(schema.migrationRuns.id))
-            .limit(adminPageSize + 1),
-        )
     }
     throw new Error("Unsupported administration section.")
   })
@@ -291,28 +251,22 @@ export const getAdminRows = createServerFn({ method: "GET" })
 export const getAdminOverview = createServerFn({ method: "GET" }).handler(async ({ context }) => {
   await requireAdministrator(context)
   const database = createD1Database(context.env.DB)
-  const [posts, comments, users, failedMedia, pendingJobs, auditEvents, activeMigrations] =
-    await Promise.all([
-      database.select({ value: count() }).from(schema.posts).get(),
-      database.select({ value: count() }).from(schema.comments).get(),
-      database.select({ value: count() }).from(schema.user).get(),
-      database
-        .select({ value: count() })
-        .from(schema.mediaAssets)
-        .where(eq(schema.mediaAssets.status, "failed"))
-        .get(),
-      database
-        .select({ value: count() })
-        .from(schema.outbox)
-        .where(isNull(schema.outbox.processedAt))
-        .get(),
-      database.select({ value: count() }).from(schema.auditEvents).get(),
-      database
-        .select({ value: count() })
-        .from(schema.migrationRuns)
-        .where(ne(schema.migrationRuns.state, "complete"))
-        .get(),
-    ])
+  const [posts, comments, users, failedMedia, pendingJobs, auditEvents] = await Promise.all([
+    database.select({ value: count() }).from(schema.posts).get(),
+    database.select({ value: count() }).from(schema.comments).get(),
+    database.select({ value: count() }).from(schema.user).get(),
+    database
+      .select({ value: count() })
+      .from(schema.mediaAssets)
+      .where(eq(schema.mediaAssets.status, "failed"))
+      .get(),
+    database
+      .select({ value: count() })
+      .from(schema.outbox)
+      .where(isNull(schema.outbox.processedAt))
+      .get(),
+    database.select({ value: count() }).from(schema.auditEvents).get(),
+  ])
 
   return {
     posts: posts?.value ?? 0,
@@ -321,7 +275,6 @@ export const getAdminOverview = createServerFn({ method: "GET" }).handler(async 
     media: failedMedia?.value ?? 0,
     jobs: pendingJobs?.value ?? 0,
     audit: auditEvents?.value ?? 0,
-    migrations: activeMigrations?.value ?? 0,
   }
 })
 
@@ -440,43 +393,6 @@ export const cleanupAdminMedia = createServerFn({ method: "POST" })
     ])
     context.executionContext.waitUntil(context.env.JOBS.send(job))
     return { id: data.id }
-  })
-
-export const getMigrationRunDetails = createServerFn({ method: "GET" })
-  .validator(z.object({ id: z.string().min(1).max(128) }))
-  .handler(async ({ context, data }) => {
-    await requireAdministrator(context)
-    const database = createD1Database(context.env.DB)
-    const run = await database
-      .select()
-      .from(schema.migrationRuns)
-      .where(eq(schema.migrationRuns.id, data.id))
-      .get()
-    if (!run) throw new Error("The migration run was not found.")
-    const [states, problems] = await Promise.all([
-      database
-        .select({ state: schema.migrationMappings.state, value: count() })
-        .from(schema.migrationMappings)
-        .where(eq(schema.migrationMappings.runId, data.id))
-        .groupBy(schema.migrationMappings.state),
-      database
-        .select({
-          id: schema.migrationMappings.id,
-          collection: schema.migrationMappings.sourceCollection,
-          legacyId: schema.migrationMappings.legacyId,
-          state: schema.migrationMappings.state,
-          reason: schema.migrationMappings.reason,
-        })
-        .from(schema.migrationMappings)
-        .where(
-          and(
-            eq(schema.migrationMappings.runId, data.id),
-            inArray(schema.migrationMappings.state, ["failed", "skipped"]),
-          ),
-        )
-        .limit(100),
-    ])
-    return { run, states, problems }
   })
 
 export const moderateEntity = createServerFn({ method: "POST" })

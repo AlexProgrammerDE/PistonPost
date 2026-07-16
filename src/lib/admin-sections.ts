@@ -53,15 +53,6 @@ export const adminSections = [
     statusLabel: "Target ID",
     searchPlaceholder: "Search actions…",
   },
-  {
-    value: "migrations",
-    label: "Migrations",
-    description: "Inspect import runs and reconciliation problems.",
-    primaryLabel: "Source",
-    secondaryLabel: "Latest error",
-    statusLabel: "State",
-    searchPlaceholder: "Search source fingerprints…",
-  },
 ] as const
 
 export type AdminSection = (typeof adminSections)[number]["value"]

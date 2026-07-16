@@ -11,17 +11,9 @@
     "src/lib/auth/auth-plugin.ts",
     "src/router.tsx",
     "src/routes/**/*.{ts,tsx}",
-    "src/styles/**/*.css",
-    "tools/migrate/src/index.ts",
-    "tools/migrate/src/**/*.test.ts"
+    "src/styles/**/*.css"
   ],
-  "project": [
-    "*.ts",
-    "scripts/**/*.ts",
-    "tests/**/*.ts",
-    "src/**/*.{ts,tsx}",
-    "tools/migrate/src/**/*.ts"
-  ],
+  "project": ["*.ts", "scripts/**/*.ts", "tests/**/*.ts", "src/**/*.{ts,tsx}"],
   "ignore": [
     "src/routeTree.gen.ts",
     "src/components/auth/**",

@@ -24,7 +24,6 @@ export const emailTemplateKeys = [
   "new-device",
   "comment-notification",
   "moderation-action",
-  "migration-welcome",
 ] as const
 
 export type EmailTemplateKey = (typeof emailTemplateKeys)[number]

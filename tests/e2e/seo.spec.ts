@@ -36,5 +36,5 @@ test("serves complete public metadata and discovery documents", async ({ page, r
 
   const sitemap = await request.get("/sitemap.xml")
   expect(sitemap.headers()["content-type"]).toContain("application/xml")
-  expect(await sitemap.text()).toContain("<loc>http://localhost:3000/migration</loc>")
+  expect(await sitemap.text()).toContain("<loc>http://localhost:3000/</loc>")
 })
