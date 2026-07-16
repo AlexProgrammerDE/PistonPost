@@ -66,8 +66,8 @@ export function AppShell({ children }: PropsWithChildren) {
             <Link
               to="/account/posts/new"
               className={cn(
-                buttonVariants({ variant: "default" }),
-                "size-9 px-0 sm:size-auto sm:px-3",
+                buttonVariants({ variant: "default", size: "lg" }),
+                "w-10 px-0 sm:w-auto sm:px-4",
               )}
             >
               <Plus data-icon="inline-start" />
