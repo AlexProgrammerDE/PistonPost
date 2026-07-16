@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button"
 import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
+import { MAX_POST_MARKDOWN_LENGTH, postMarkdownSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { deletePost, getOwnedPostForEditing, updatePost } from "@/server/composer"
 import { getPublicRuntimeConfig } from "@/server/public-config"
@@ -128,8 +129,14 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                 {(field) => <field.TextField label="Title" maxLength={100} />}
               </form.AppField>
               {post.type === "text" ? (
-                <form.AppField name="textContent">
-                  {(field) => <field.TextareaField label="Text" rows={9} maxLength={1_000} />}
+                <form.AppField name="textContent" validators={{ onBlur: postMarkdownSchema }}>
+                  {(field) => (
+                    <field.MarkdownField
+                      label="Text"
+                      description="GitHub-flavored Markdown is supported. Raw HTML is ignored."
+                      maxLength={MAX_POST_MARKDOWN_LENGTH}
+                    />
+                  )}
                 </form.AppField>
               ) : null}
               <form.AppField name="tags">

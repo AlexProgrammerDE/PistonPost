@@ -70,7 +70,7 @@ const contentSecurityPolicy = [
   "font-src 'self' data: https://*.posthog.com",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com",
+  "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.youtube.com https://open.spotify.com",
   "img-src 'self' data: blob: https://*.posthog.com",
   "media-src 'self' blob: https://*.videodelivery.net https://*.posthog.com",
   "object-src 'none'",

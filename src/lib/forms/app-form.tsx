@@ -2,7 +2,7 @@
 
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
 import { Plus, Tag, type LucideIcon } from "lucide-react"
-import { useState, type ComponentProps } from "react"
+import { lazy, Suspense, useState, type ComponentProps } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput } from "@/components/ui/combobox"
@@ -22,12 +22,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 
 import { addTagInputValues } from "./tag-input-state"
+
+const MarkdownEditor = lazy(() =>
+  import("@/components/MarkdownEditor").then(({ MarkdownEditor: Editor }) => ({ default: Editor })),
+)
 
 const { fieldContext, formContext, useFieldContext, useFormContext } = createFormHookContexts()
 
@@ -93,6 +98,34 @@ function TextareaField({
         aria-invalid={invalid}
         {...props}
       />
+      {description ? <FieldDescription>{description}</FieldDescription> : null}
+      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+    </Field>
+  )
+}
+
+function MarkdownField({
+  label,
+  description,
+  maxLength,
+}: FieldChromeProps & { maxLength: number }) {
+  const field = useFieldContext<string>()
+  const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <Suspense fallback={<Skeleton className="min-h-80 w-full" />}>
+        <MarkdownEditor
+          id={field.name}
+          name={field.name}
+          value={field.state.value}
+          maxLength={maxLength}
+          aria-invalid={invalid}
+          onBlur={field.handleBlur}
+          onValueChange={field.handleChange}
+        />
+      </Suspense>
       {description ? <FieldDescription>{description}</FieldDescription> : null}
       {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
     </Field>
@@ -301,6 +334,7 @@ export const { useAppForm, withFieldGroup, withForm } = createFormHook({
   fieldComponents: {
     TextField,
     TextareaField,
+    MarkdownField,
     SelectField,
     ChoiceField,
     TagsField,

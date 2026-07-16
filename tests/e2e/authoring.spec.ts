@@ -131,9 +131,22 @@ test.describe.serial("authenticated authoring", () => {
 
   test("publishes without prompting to discard submitted changes", async ({ context, page }) => {
     await createVerifiedSession(context)
-    await page.goto("/account/posts/new")
+    const composerResponse = await page.goto("/account/posts/new")
+    const policy = await composerResponse?.headerValue("content-security-policy")
+    expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
+      "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.youtube.com https://open.spotify.com",
+    )
     await fillPost(page, "a finished post", "testing")
-    await page.getByLabel("Text").fill("ready to share")
+    await page.getByLabel("Text").fill(`## Markdown heading
+
+- [x] Ready to share
+
+https://www.youtube.com/watch?v=M7lc1UVf-VE
+
+[Example](https://example.com)`)
+    await page.getByRole("tab", { name: "Preview" }).click()
+    await expect(page.getByRole("heading", { name: "Markdown heading" }).first()).toBeVisible()
+    await expect(page.getByRole("button", { name: "Load" }).first()).toBeVisible()
 
     let publishDialogCount = 0
     const acceptPublishDialog = async (dialog: Dialog) => {
@@ -147,6 +160,15 @@ test.describe.serial("authenticated authoring", () => {
     await expect(page.getByRole("alertdialog")).toHaveCount(0)
     expect(publishDialogCount).toBe(0)
     page.off("dialog", acceptPublishDialog)
+
+    await expect(page.getByRole("heading", { name: "Markdown heading" })).toBeVisible()
+    await page.getByRole("link", { name: /Example/u }).click()
+    const externalLinkConfirmation = page.getByRole("alertdialog", {
+      name: "Open an external link?",
+    })
+    await expect(externalLinkConfirmation).toBeVisible()
+    await externalLinkConfirmation.getByRole("button", { name: "Stay here" }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
   })
 
   test("confirms before discarding unfinished composer changes", async ({ context, page }) => {

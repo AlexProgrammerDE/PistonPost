@@ -37,6 +37,7 @@ import { useEffect, useReducer, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { MarkdownContent } from "@/components/MarkdownContent"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -45,7 +46,7 @@ import { Input } from "@/components/ui/input"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
-import { postDraftInputSchema } from "@/domain"
+import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
 import {
@@ -72,7 +73,7 @@ const textSchema = z
   .string()
   .trim()
   .min(1, "Write something before posting.")
-  .max(1_000, "Use 1,000 characters or fewer.")
+  .max(MAX_POST_MARKDOWN_LENGTH, "Use 10,000 characters or fewer.")
 const tagsSchema = z
   .array(z.string())
   .min(1, "Add at least one tag.")
@@ -394,11 +395,10 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
                 type === "text" ? (
                   <form.AppField name="textContent" validators={{ onBlur: textSchema }}>
                     {(field) => (
-                      <field.TextareaField
+                      <field.MarkdownField
                         label="Text"
-                        description="Plain text only. Links become clickable when the post is shown."
-                        maxLength={1_000}
-                        rows={9}
+                        description="Use Markdown for headings, lists, links, tables, task lists, quotes, and code. Raw HTML is ignored."
+                        maxLength={MAX_POST_MARKDOWN_LENGTH}
                       />
                     )}
                   </form.AppField>
@@ -495,9 +495,11 @@ function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads:
             {values.title.trim() || "Untitled post"}
           </h2>
           {values.type === "text" ? (
-            <div className="typeset typeset-feed whitespace-pre-wrap">
-              <p>{values.textContent.trim() || "Your text will appear here."}</p>
-            </div>
+            values.textContent.trim() ? (
+              <MarkdownContent className="typeset-feed">{values.textContent}</MarkdownContent>
+            ) : (
+              <p className="text-sm text-muted-foreground">Your text will appear here.</p>
+            )
           ) : null}
         </div>
         {values.type === "images" && uploads.length > 0 ? (

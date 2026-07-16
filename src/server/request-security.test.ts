@@ -60,17 +60,19 @@ describe("request security", () => {
     const response = applySecurityHeaders(new Request(origin), new Response("ok"), true)
     const policy = response.headers.get("Content-Security-Policy")
 
-    expect(policy).toContain(
+    expect(policy?.split("; ").find((directive) => directive.startsWith("connect-src "))).toBe(
       "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
     )
-    expect(policy).toContain(
-      "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com",
+    expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
+      "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.youtube.com https://open.spotify.com",
     )
     expect(policy).toContain(
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://t.pistonmaster.net https://*.posthog.com",
     )
     expect(policy).toContain("font-src 'self' data: https://*.posthog.com")
-    expect(policy).toContain("img-src 'self' data: blob: https://*.posthog.com")
+    expect(policy?.split("; ").find((directive) => directive.startsWith("img-src "))).toBe(
+      "img-src 'self' data: blob: https://*.posthog.com",
+    )
     expect(policy).toContain("style-src 'self' 'unsafe-inline' https://*.posthog.com")
   })
 })

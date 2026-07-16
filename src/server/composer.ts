@@ -5,7 +5,7 @@ import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import { postDraftInputSchema } from "@/domain"
+import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 import { createStreamDirectUpload } from "@/server/stream-direct-upload"
@@ -453,7 +453,7 @@ const updatePostInput = z.object({
   id: z.string().min(1).max(64),
   version: z.number().int().positive(),
   title: z.string().trim().min(1).max(100),
-  textContent: z.string().trim().min(1).max(1_000).nullable(),
+  textContent: z.string().trim().min(1).max(MAX_POST_MARKDOWN_LENGTH).nullable(),
   tags: z.array(z.string().trim().min(1).max(64)).min(1).max(5),
   visibility: z.enum(["public", "unlisted"]),
 })

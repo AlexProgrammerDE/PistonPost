@@ -8,6 +8,21 @@ import { defineConfig } from "vite"
 
 const config = defineConfig(({ mode }) => ({
   resolve: { tsconfigPaths: true },
+  build: {
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            {
+              name: "react-vendor",
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+              priority: 20,
+            },
+          ],
+        },
+      },
+    },
+  },
   plugins: [
     ...(mode === "development" ? [devtools()] : []),
     cloudflare({ viteEnvironment: { name: "ssr" } }),

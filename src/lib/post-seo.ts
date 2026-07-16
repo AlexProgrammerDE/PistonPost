@@ -1,5 +1,6 @@
 import type { PublicPostRead } from "@/db/public-read-model"
 
+import { markdownToPlainText } from "./markdown"
 import {
   SITE_NAME,
   absoluteUrl,
@@ -22,7 +23,8 @@ function postDescription(post: PublicPostRead) {
   if (post.type === "video") {
     return truncateDescription(`Video by ${post.author.name}${suffix}`)
   }
-  const content = post.textContent ? ` · ${post.textContent}` : ""
+  const text = post.textContent ? markdownToPlainText(post.textContent) : null
+  const content = text ? ` · ${text}` : ""
   return truncateDescription(`Post by ${post.author.name}${suffix}${content}`)
 }
 
@@ -137,7 +139,8 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     url: canonical,
     headline: post.title,
     description,
-    text: post.type === "text" ? (post.textContent ?? undefined) : undefined,
+    text:
+      post.type === "text" && post.textContent ? markdownToPlainText(post.textContent) : undefined,
     datePublished: publishedAt,
     dateModified: modifiedAt,
     author: {

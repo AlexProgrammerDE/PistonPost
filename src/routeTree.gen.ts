@@ -31,6 +31,7 @@ import { Route as AccountSettingsIndexRouteImport } from './routes/account.setti
 import { Route as AccountPostsIndexRouteImport } from './routes/account.posts.index'
 import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
 import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
+import { Route as MediaExternalImagePostIdRouteImport } from './routes/media.external-image.$postId'
 import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhook'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AccountSettingsSettingsViewRouteImport } from './routes/account.settings.$settingsView'
@@ -150,6 +151,12 @@ const MediaUploadMediaIdRoute = MediaUploadMediaIdRouteImport.update({
   path: '/media/upload/$mediaId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MediaExternalImagePostIdRoute =
+  MediaExternalImagePostIdRouteImport.update({
+    id: '/media/external-image/$postId',
+    path: '/media/external-image/$postId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiStreamWebhookRoute = ApiStreamWebhookRouteImport.update({
   id: '/api/stream/webhook',
   path: '/api/stream/webhook',
@@ -218,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
+  '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
   '/account/posts/': typeof AccountPostsIndexRoute
@@ -246,6 +254,7 @@ export interface FileRoutesByTo {
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
+  '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
   '/account/posts': typeof AccountPostsIndexRoute
@@ -279,6 +288,7 @@ export interface FileRoutesById {
   '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
+  '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
   '/account/posts/': typeof AccountPostsIndexRoute
@@ -313,6 +323,7 @@ export interface FileRouteTypes {
     | '/account/settings/$settingsView'
     | '/api/auth/$'
     | '/api/stream/webhook'
+    | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
     | '/account/posts/'
@@ -341,6 +352,7 @@ export interface FileRouteTypes {
     | '/account/settings/$settingsView'
     | '/api/auth/$'
     | '/api/stream/webhook'
+    | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
     | '/account/posts'
@@ -373,6 +385,7 @@ export interface FileRouteTypes {
     | '/account/settings/$settingsView'
     | '/api/auth/$'
     | '/api/stream/webhook'
+    | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
     | '/account/posts/'
@@ -400,6 +413,7 @@ export interface RootRouteChildren {
   UserUsernameRoute: typeof UserUsernameRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStreamWebhookRoute: typeof ApiStreamWebhookRoute
+  MediaExternalImagePostIdRoute: typeof MediaExternalImagePostIdRoute
   MediaUploadMediaIdRoute: typeof MediaUploadMediaIdRoute
   MediaImageMediaIdVariantRoute: typeof MediaImageMediaIdVariantRoute
   MediaVideoMediaIdDownloadRoute: typeof MediaVideoMediaIdDownloadRoute
@@ -563,6 +577,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MediaUploadMediaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/media/external-image/$postId': {
+      id: '/media/external-image/$postId'
+      path: '/media/external-image/$postId'
+      fullPath: '/media/external-image/$postId'
+      preLoaderRoute: typeof MediaExternalImagePostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/stream/webhook': {
       id: '/api/stream/webhook'
       path: '/api/stream/webhook'
@@ -703,6 +724,7 @@ const rootRouteChildren: RootRouteChildren = {
   UserUsernameRoute: UserUsernameRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStreamWebhookRoute: ApiStreamWebhookRoute,
+  MediaExternalImagePostIdRoute: MediaExternalImagePostIdRoute,
   MediaUploadMediaIdRoute: MediaUploadMediaIdRoute,
   MediaImageMediaIdVariantRoute: MediaImageMediaIdVariantRoute,
   MediaVideoMediaIdDownloadRoute: MediaVideoMediaIdDownloadRoute,

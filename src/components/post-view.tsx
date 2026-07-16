@@ -10,6 +10,7 @@ import {
 import { lazy, Suspense, useState } from "react"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
+import { MarkdownContent } from "@/components/MarkdownContent"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
@@ -508,14 +509,12 @@ export function PostView({
           </h2>
         )}
         {post.textContent && (
-          <div
-            className={cn(
-              "typeset whitespace-pre-wrap",
-              detail ? "typeset-post max-w-3xl" : "typeset-feed",
-            )}
+          <MarkdownContent
+            postId={post.id}
+            className={cn(detail ? "typeset-post max-w-3xl" : "typeset-feed")}
           >
-            <p>{post.textContent}</p>
-          </div>
+            {post.textContent}
+          </MarkdownContent>
         )}
       </div>
 

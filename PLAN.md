@@ -993,3 +993,8 @@ Record future changes here with date, decision, reason, and affected phases.
   post's total count, while the existing hashed per-address rate-limit key reduces rapid repeat
   counting without retaining viewer identities. Analytics Engine remains the operational event
   stream. This affects Phases 5 and 9.
+- 2026-07-16: Treat every text post body as GitHub-flavored Markdown without storing a format flag.
+  Rendering uses the remark and rehype pipeline with an explicit sanitizer, provider embeds require
+  a click before loading, and external links require confirmation. External Markdown images pass
+  through a bounded Cloudflare Images proxy, while uploaded video remains on Cloudflare Stream. The
+  text limit increases to 10,000 characters. This affects Phases 3, 5, and 9.
