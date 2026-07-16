@@ -1,5 +1,6 @@
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query"
 import { Link, createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router"
+import { Search } from "lucide-react"
 import { useDeferredValue, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
@@ -19,7 +20,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import { adminSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
@@ -412,27 +413,29 @@ function AdminTableView({
           </Link>
         ))}
       </nav>
-      <div className="mb-5 flex max-w-xl flex-wrap items-center gap-3">
-        <Input
-          className="max-w-sm"
-          aria-label={details.searchPlaceholder.replace("…", "")}
-          name="admin-search"
-          type="search"
-          autoComplete="off"
-          placeholder={details.searchPlaceholder}
-          value={query}
-          onChange={(event) => setQuery(event.currentTarget.value)}
-        />
-        {refreshing ? (
-          <span
-            className="flex items-center gap-2 text-xs text-muted-foreground"
-            role="status"
-            aria-live="polite"
-          >
-            <Spinner aria-hidden="true" />
-            Updating results…
-          </span>
-        ) : null}
+      <div className="mb-5 max-w-sm">
+        <InputGroup>
+          <InputGroupAddon>
+            <Search aria-hidden="true" />
+          </InputGroupAddon>
+          <InputGroupInput
+            aria-label={details.searchPlaceholder.replace("…", "")}
+            name="admin-search"
+            type="search"
+            autoComplete="off"
+            placeholder={details.searchPlaceholder}
+            value={query}
+            onChange={(event) => setQuery(event.currentTarget.value)}
+          />
+          {refreshing ? (
+            <InputGroupAddon align="inline-end">
+              <Spinner aria-hidden="true" />
+            </InputGroupAddon>
+          ) : null}
+        </InputGroup>
+        <span className="sr-only" role="status" aria-live="polite">
+          {refreshing ? "Updating results…" : ""}
+        </span>
       </div>
       <div aria-busy={refreshing}>
         <DataTable

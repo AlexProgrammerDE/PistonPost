@@ -144,8 +144,27 @@ test.describe.serial("authenticated authoring", () => {
 
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    await expect(page.getByRole("alertdialog")).toHaveCount(0)
     expect(publishDialogCount).toBe(0)
     page.off("dialog", acceptPublishDialog)
+  })
+
+  test("confirms before discarding unfinished composer changes", async ({ context, page }) => {
+    await createVerifiedSession(context)
+    await page.goto("/account/posts/new")
+    await fillPost(page, "an unfinished post", "draft")
+
+    await page.getByRole("link", { name: "Timeline" }).click()
+    const confirmation = page.getByRole("alertdialog")
+    await expect(confirmation).toBeVisible()
+
+    await confirmation.getByRole("button", { name: "Keep editing" }).click()
+    await expect(page).toHaveURL(/\/account\/posts\/new$/u)
+    await expect(page.getByLabel("Title")).toHaveValue("an unfinished post")
+
+    await page.getByRole("link", { name: "Timeline" }).click()
+    await confirmation.getByRole("button", { name: "Discard changes" }).click()
+    await expect(page).toHaveURL(/\/$/u)
   })
 
   test("posts text and images and recovers failed image and video uploads", async ({

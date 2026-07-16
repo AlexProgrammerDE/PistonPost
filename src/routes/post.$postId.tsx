@@ -7,7 +7,7 @@ import { z } from "zod"
 import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStates"
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
-import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { galleryLayouts } from "@/lib/gallery-layout"
 import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
@@ -66,16 +66,14 @@ function PostDetail() {
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
       {post.visibility === "unlisted" && (
-        <div className="mx-auto mb-8 flex max-w-5xl items-center gap-3 border-y bg-muted/30 px-3 py-3 text-sm">
-          <Badge variant="outline">
-            <Link2 aria-hidden="true" data-icon="inline-start" />
-            Unlisted
-          </Badge>
-          <p>
+        <Alert className="mb-8">
+          <Link2 aria-hidden="true" />
+          <AlertTitle>Unlisted post</AlertTitle>
+          <AlertDescription>
             Anyone with this link can view this post. It is not private and does not appear in
             public feeds.
-          </p>
-        </div>
+          </AlertDescription>
+        </Alert>
       )}
       <PostView post={post} detail selectedImageIndex={image} galleryLayout={layout} />
       <Suspense fallback={<DiscussionSkeleton />}>

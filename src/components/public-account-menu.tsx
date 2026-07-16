@@ -7,7 +7,7 @@ import { FileText, LogIn, LogOut, Settings, Shield, User2 } from "lucide-react"
 import { authClient } from "@/auth/client"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { buttonVariants } from "@/components/ui/button"
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,7 +58,7 @@ export function PublicAccountMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Open account menu"
-        className="rounded-full outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        render={<Button variant="ghost" size="icon" className="rounded-full" />}
       >
         <Avatar>
           {user.image ? <ResponsiveAvatarImage src={user.image} sizes="2rem" alt="" /> : null}
@@ -75,37 +75,43 @@ export function PublicAccountMenu() {
           </DropdownMenuLabel>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        {user.username ? (
+        <DropdownMenuGroup>
+          {user.username ? (
+            <DropdownMenuItem
+              render={<Link to="/user/$username" params={{ username: user.username }} />}
+            >
+              <User2 aria-hidden="true" />
+              Public profile
+            </DropdownMenuItem>
+          ) : null}
+          <DropdownMenuItem render={<Link to="/account/posts" />}>
+            <FileText aria-hidden="true" />
+            My posts
+          </DropdownMenuItem>
+          {user.role === "admin" ? (
+            <DropdownMenuItem render={<Link to="/admin" />}>
+              <Shield aria-hidden="true" />
+              Administration
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem
-            render={<Link to="/user/$username" params={{ username: user.username }} />}
+            render={
+              <Link to="/account/settings/$settingsView" params={{ settingsView: "profile" }} />
+            }
           >
-            <User2 aria-hidden="true" />
-            Public profile
+            <Settings aria-hidden="true" />
+            Settings
           </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuItem render={<Link to="/account/posts" />}>
-          <FileText aria-hidden="true" />
-          My posts
-        </DropdownMenuItem>
-        {user.role === "admin" ? (
-          <DropdownMenuItem render={<Link to="/admin" />}>
-            <Shield aria-hidden="true" />
-            Administration
-          </DropdownMenuItem>
-        ) : null}
-        <DropdownMenuItem
-          render={
-            <Link to="/account/settings/$settingsView" params={{ settingsView: "profile" }} />
-          }
-        >
-          <Settings aria-hidden="true" />
-          Settings
-        </DropdownMenuItem>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link to="/auth/$authView" params={{ authView: "sign-out" }} />}>
-          <LogOut aria-hidden="true" />
-          Sign out
-        </DropdownMenuItem>
+        <DropdownMenuGroup>
+          <DropdownMenuItem
+            render={<Link to="/auth/$authView" params={{ authView: "sign-out" }} />}
+          >
+            <LogOut aria-hidden="true" />
+            Sign out
+          </DropdownMenuItem>
+        </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
   )

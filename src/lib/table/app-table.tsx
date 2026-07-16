@@ -222,18 +222,20 @@ export function DataTable<TData extends RowData>({
                     }
                   >
                     {header.isPlaceholder ? null : header.column.getCanSort() ? (
-                      <button
+                      <Button
                         type="button"
-                        className="inline-flex items-center gap-1 hover:text-primary"
+                        variant="ghost"
+                        size="xs"
+                        className="-ml-2"
                         onClick={header.column.getToggleSortingHandler()}
                       >
                         <table.FlexRender header={header} />
                         {header.column.getIsSorted() === "asc" ? (
-                          <ArrowUp aria-hidden="true" className="size-3.5" />
+                          <ArrowUp aria-hidden="true" data-icon="inline-end" />
                         ) : header.column.getIsSorted() === "desc" ? (
-                          <ArrowDown aria-hidden="true" className="size-3.5" />
+                          <ArrowDown aria-hidden="true" data-icon="inline-end" />
                         ) : null}
-                      </button>
+                      </Button>
                     ) : (
                       <table.FlexRender header={header} />
                     )}

@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
@@ -246,7 +247,15 @@ export function SocialPanel({
         )}
 
         {optimisticComments.length === 0 ? (
-          <p className="border-y py-6 text-sm text-muted-foreground">No comments yet.</p>
+          <Empty className="min-h-40 rounded-none border-y p-6">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <MessageCircle aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>No comments yet</EmptyTitle>
+              <EmptyDescription>Start the conversation.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <div className="grid gap-0">
             {optimisticComments.map((comment) => {

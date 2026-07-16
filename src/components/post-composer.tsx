@@ -40,7 +40,7 @@ import { z } from "zod"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
+import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -635,9 +635,10 @@ function SortableUpload({
   onRemove: (item: UploadItem) => void
   onAltText: (clientId: string, altText: string) => void
 }) {
+  const dragDisabled = item.kind === "video" || item.status !== "queued"
   const sortable = useSortable({
     id: item.clientId,
-    disabled: item.kind === "video" || item.status !== "queued",
+    disabled: dragDisabled,
   })
   const style = {
     transform: CSS.Transform.toString(sortable.transform),
@@ -657,26 +658,26 @@ function SortableUpload({
       )}
       <div className="min-w-0">
         <div className="flex items-center gap-2">
-          <button
+          <Button
             type="button"
-            className="cursor-grab text-muted-foreground disabled:cursor-default disabled:opacity-35"
+            variant="ghost"
+            size="icon-sm"
+            className="-ml-2 cursor-grab text-muted-foreground active:cursor-grabbing disabled:cursor-default"
             aria-label={`Reorder ${item.file.name}`}
+            disabled={dragDisabled}
             {...sortable.attributes}
             {...sortable.listeners}
           >
             <GripVertical aria-hidden="true" />
-          </button>
+          </Button>
           <p className="truncate text-sm font-medium">{item.file.name}</p>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {(item.file.size / 1024 / 1024).toFixed(1)} MB · {item.status}
         </p>
         {item.kind === "image" ? (
-          <label
-            htmlFor={`alt-text-${item.clientId}`}
-            className="mt-3 grid gap-1 text-xs font-medium"
-          >
-            Alt text
+          <Field className="mt-3 gap-2" data-disabled={item.status !== "queued" || undefined}>
+            <FieldLabel htmlFor={`alt-text-${item.clientId}`}>Alt text</FieldLabel>
             <Input
               id={`alt-text-${item.clientId}`}
               value={item.altText}
@@ -686,7 +687,7 @@ function SortableUpload({
               disabled={item.status !== "queued"}
               onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
             />
-          </label>
+          </Field>
         ) : null}
         {item.status !== "queued" ? (
           <Progress value={item.progress} className="mt-2 gap-1">
