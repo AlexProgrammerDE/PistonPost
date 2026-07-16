@@ -104,7 +104,6 @@ const composerMessages = new Set([
   "Choose at least one image.",
   "Choose a video.",
   "Too many uploads were started at once. Wait a minute and try again.",
-  "The account media quota was reached.",
   "A new post can contain at most 20 images.",
   "The image upload could not be started.",
   "Large video uploads are not configured yet. Try a video under 200 MB.",

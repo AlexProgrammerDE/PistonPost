@@ -809,7 +809,7 @@ Exit criteria:
 - [x] Add publish validation and optimistic-concurrency edit flow.
 - [x] Add owner and admin edit/delete behavior.
 - [x] Add Queue cleanup and Cron reconciliation.
-- [x] Add media quotas and rate limits.
+- [x] Add Cloudflare-backed media upload rate limits and provider-enforced capacity boundaries.
 - [x] Add local end-to-end coverage for text publishing, multi-image publishing, invalid-image recovery, and interrupted resumable video upload.
 - [ ] Verify successful Stream direct upload, encoding readiness, and TUS resume end to end against disposable Cloudflare preview resources.
 
@@ -1002,3 +1002,7 @@ Record future changes here with date, decision, reason, and affected phases.
   Post metadata and gallery options appear before media, the focused browser has direct image
   navigation, and a temporary action dock keeps engagement controls reachable until the canonical
   footer controls enter view. This affects Phases 5 and 7.
+- 2026-07-16: Remove the 500-record account media quota because migrated accounts can legitimately
+  contain many thousands of images and R2 does not impose an object-count limit. Cloudflare's
+  user-keyed upload rate-limit binding, per-post limits, file-size validation, and provider errors
+  remain the media capacity and abuse boundaries. This affects Phases 6 and 9.

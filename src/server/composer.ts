@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, eq, inArray, ne, sql } from "drizzle-orm"
+import { and, eq, inArray, ne } from "drizzle-orm"
 import { Effect } from "effect"
 import { z } from "zod"
 
@@ -119,20 +119,6 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
       )
       .get()
     if (!draft || draft.type !== "images") throw new Error("The image draft was not found.")
-
-    const assets = await database
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.mediaAssets)
-      .where(
-        and(
-          eq(schema.mediaAssets.ownerId, session.user.id),
-          ne(schema.mediaAssets.status, "deleted"),
-        ),
-      )
-      .get()
-    if ((assets?.count ?? 0) + data.files.length > 500) {
-      throw new Error("The account media quota was reached.")
-    }
 
     const postAssetCount = await context.env.DB.prepare(
       `select count(*) as count from media_assets

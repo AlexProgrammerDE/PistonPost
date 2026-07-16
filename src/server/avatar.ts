@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, eq, ne, sql } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
@@ -34,18 +34,6 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
       .where(eq(schema.profiles.userId, session.user.id))
       .get()
     if (!profile) throw new Error("Your profile could not be found.")
-
-    const assets = await database
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.mediaAssets)
-      .where(
-        and(
-          eq(schema.mediaAssets.ownerId, session.user.id),
-          ne(schema.mediaAssets.status, "deleted"),
-        ),
-      )
-      .get()
-    if ((assets?.count ?? 0) >= 500) throw new Error("The account media quota was reached.")
 
     const assetId = crypto.randomUUID()
     await database.insert(schema.mediaAssets).values({
