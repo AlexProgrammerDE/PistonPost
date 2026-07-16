@@ -1,10 +1,10 @@
 import { fileToBase64 } from "@better-auth-ui/core"
 import { useAuth, useSession, useUpdateUser } from "@better-auth-ui/react"
+import { Trash2, Upload } from "lucide-react"
 import { type ChangeEvent, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { UserAvatar } from "@/components/auth/user/user-avatar"
-import { Trash2, Upload } from "@/components/icons"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   DropdownMenu,

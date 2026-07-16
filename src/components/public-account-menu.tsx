@@ -1,9 +1,9 @@
 "use client"
 
 import { Link } from "@tanstack/react-router"
+import { FileText, LogIn, LogOut, Settings, Shield, User2 } from "lucide-react"
 
 import { authClient } from "@/auth/client"
-import { FileText, LogIn, LogOut, Settings, Shield, User2 } from "@/components/icons"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { buttonVariants } from "@/components/ui/button"

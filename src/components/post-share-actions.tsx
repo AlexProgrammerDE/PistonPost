@@ -1,8 +1,8 @@
 "use client"
 
+import { Copy, Link2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Copy, Link2 } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,

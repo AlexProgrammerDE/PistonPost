@@ -1,8 +1,8 @@
 "use client"
 
 import { useAuthPlugin } from "@better-auth-ui/react"
+import { Fingerprint } from "lucide-react"
 
-import { Fingerprint } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"

@@ -149,7 +149,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
 
               <div className="flex flex-col gap-3">
                 <Button type="submit" disabled={isPending}>
-                  {signInMagicLinkPending && <Spinner />}
+                  {signInMagicLinkPending && <Spinner data-icon="inline-start" />}
 
                   {magicLinkLocalization.sendMagicLink}
                 </Button>

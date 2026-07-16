@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router"
+import { TriangleAlert } from "lucide-react"
 import { lazy, Suspense, useState } from "react"
 
-import { TriangleAlert } from "@/components/icons"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"

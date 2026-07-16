@@ -61,7 +61,7 @@ export function VerifyEmail({ className }: VerifyEmailProps) {
   }, [])
 
   useEffect(() => {
-    if (cooldown <= 0 || !email) return undefined
+    if (cooldown <= 0 || !email) return
 
     const interval = setInterval(() => {
       setCooldown((current) => (current > 0 ? current - 1 : 0))

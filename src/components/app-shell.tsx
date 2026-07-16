@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router"
+import { Plus } from "lucide-react"
 import { lazy, Suspense, useSyncExternalStore, type PropsWithChildren } from "react"
 
-import { Add } from "@/components/icons"
 import { buttonVariants } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
@@ -50,7 +50,7 @@ export function AppShell({ children }: PropsWithChildren) {
                 "size-9 px-0 sm:size-auto sm:px-3",
               )}
             >
-              <Add data-icon="inline-start" />
+              <Plus data-icon="inline-start" />
               <span className="sr-only sm:not-sr-only">New post</span>
             </Link>
             <Suspense

@@ -7,11 +7,11 @@ import {
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
+import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
 import { startTransition, useOptimistic, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
-import { Heart, ThumbsDown, ThumbsUp, Trash2 } from "@/components/icons"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"

@@ -1,8 +1,8 @@
 import { useAuth, useResetPassword } from "@better-auth-ui/react"
+import { Eye, EyeOff } from "lucide-react"
 import { type SyntheticEvent, useEffect, useState } from "react"
 import { toast } from "sonner"
 
-import { Eye, EyeOff } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field"

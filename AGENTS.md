@@ -94,7 +94,7 @@ Run commands from the repository root. The root package owns Vite, Wrangler, Dri
 
 ## UI and design
 
-The design direction is a content-first social feed: casual, warm, and slightly mischievous without trying to look cute. Use the generated Maia preset, a quiet warm canvas, coral as the main accent, yellow sparingly, Outfit typography, and Hugeicons. Let colorful posts provide most of the personality. Avoid corporate publishing language, industrial motifs, furry mascots, forced slang, generic dashboard card grids, decorative gradients, glass effects, oversized marketing headings, and excessive rounded containers.
+The design direction is a content-first social feed: casual, warm, and slightly mischievous without trying to look cute. Use the generated Maia preset, a quiet warm canvas, coral as the main accent, yellow sparingly, Outfit typography, and Lucide icons. Let colorful posts provide most of the personality. Avoid corporate publishing language, industrial motifs, furry mascots, forced slang, generic dashboard card grids, decorative gradients, glass effects, oversized marketing headings, and excessive rounded containers.
 
 - Use plain social language in the interface. Prefer post, posted, latest, comments, and visibility over publish, transmission, archive, story, or delivery when speaking to users.
 - Do not place a marketing hero above the public feed. Show the content first.
@@ -110,7 +110,7 @@ The design direction is a content-first social feed: casual, warm, and slightly 
 - Use gap-* utilities. Never use space-* utilities.
 - Use the shared cn utility for conditional class names.
 - Do not manually set icon width or height inside controls that already style icons.
-- Use Hugeicons from the configured packages. Do not introduce another general icon library.
+- Use Lucide icons through direct `lucide-react` imports. Do not add an icon barrel or another general icon library.
 - Use Field, FieldGroup, FieldLabel, FieldDescription, and FieldError for forms.
 - Use full Card composition when a card is semantically appropriate.
 - Use Sonner for transient notifications, Skeleton for loading placeholders, Empty for empty states, Alert for actionable errors, and Dialog or AlertDialog for confirmations.

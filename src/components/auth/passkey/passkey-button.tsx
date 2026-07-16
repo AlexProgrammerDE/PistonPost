@@ -6,8 +6,8 @@ import {
   useSignInPasskey,
 } from "@better-auth-ui/react"
 import { useIsMutating } from "@tanstack/react-query"
+import { Fingerprint } from "lucide-react"
 
-import { Fingerprint } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"

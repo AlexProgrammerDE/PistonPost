@@ -5,10 +5,10 @@ import {
   useIsUsernameAvailable,
 } from "@better-auth-ui/react"
 import { useDebouncer } from "@tanstack/react-pacer"
+import { Check, X } from "lucide-react"
 import { useState } from "react"
 
 import type { AdditionalFieldProps } from "@/components/auth/additional-field"
-import { Check, X } from "@/components/icons"
 import { Field, FieldError } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Label } from "@/components/ui/label"

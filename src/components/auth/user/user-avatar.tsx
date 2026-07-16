@@ -2,9 +2,9 @@
 
 import { type UsernameAuthClient, useAuth, useSession } from "@better-auth-ui/react"
 import type { User } from "better-auth"
+import { User2 } from "lucide-react"
 import type { ReactNode } from "react"
 
-import { User2 } from "@/components/icons"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"

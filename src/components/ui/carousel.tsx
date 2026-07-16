@@ -1,8 +1,7 @@
 "use client"
 
-import { ArrowLeft01Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
 import useEmblaCarousel, { type UseEmblaCarouselType } from "embla-carousel-react"
+import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
 
 import { Button } from "@/components/ui/button"
@@ -60,10 +59,10 @@ function Carousel({
   const [canScrollPrev, setCanScrollPrev] = React.useState(false)
   const [canScrollNext, setCanScrollNext] = React.useState(false)
 
-  const onSelect = React.useCallback((carouselApi: CarouselApi) => {
-    if (!carouselApi) return
-    setCanScrollPrev(carouselApi.canScrollPrev())
-    setCanScrollNext(carouselApi.canScrollNext())
+  const onSelect = React.useCallback((api: CarouselApi) => {
+    if (!api) return
+    setCanScrollPrev(api.canScrollPrev())
+    setCanScrollNext(api.canScrollNext())
   }, [])
 
   const scrollPrev = React.useCallback(() => {
@@ -88,51 +87,34 @@ function Carousel({
   )
 
   React.useEffect(() => {
-    if (!api || !setApi) return undefined
+    if (!api || !setApi) return
     setApi(api)
-    return undefined
   }, [api, setApi])
 
   React.useEffect(() => {
-    if (!api) return undefined
+    if (!api) return
     onSelect(api)
     api.on("reInit", onSelect)
     api.on("select", onSelect)
 
     return () => {
-      api.off("select", onSelect)
+      api?.off("select", onSelect)
     }
   }, [api, onSelect])
 
-  const contextValue = React.useMemo(
-    () => ({
-      carouselRef,
-      api,
-      opts,
-      orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
-      scrollPrev,
-      scrollNext,
-      canScrollPrev,
-      canScrollNext,
-      plugins,
-      setApi,
-    }),
-    [
-      api,
-      canScrollNext,
-      canScrollPrev,
-      carouselRef,
-      opts,
-      orientation,
-      plugins,
-      scrollNext,
-      scrollPrev,
-      setApi,
-    ],
-  )
-
   return (
-    <CarouselContext.Provider value={contextValue}>
+    <CarouselContext.Provider
+      value={{
+        carouselRef,
+        api: api,
+        opts,
+        orientation: orientation || (opts?.axis === "y" ? "vertical" : "horizontal"),
+        scrollPrev,
+        scrollNext,
+        canScrollPrev,
+        canScrollNext,
+      }}
+    >
       <div
         onKeyDownCapture={handleKeyDown}
         className={cn("relative", className)}
@@ -202,7 +184,7 @@ function CarouselPrevious({
       onClick={scrollPrev}
       {...props}
     >
-      <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
+      <ChevronLeftIcon />
       <span className="sr-only">Previous slide</span>
     </Button>
   )
@@ -232,7 +214,7 @@ function CarouselNext({
       onClick={scrollNext}
       {...props}
     >
-      <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
+      <ChevronRightIcon />
       <span className="sr-only">Next slide</span>
     </Button>
   )

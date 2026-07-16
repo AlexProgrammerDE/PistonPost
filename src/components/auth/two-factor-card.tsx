@@ -1,9 +1,9 @@
 "use client"
 
+import { TriangleAlert } from "lucide-react"
 import { type FormEvent, useState } from "react"
 
 import { authClient } from "@/auth/client"
-import { TriangleAlert } from "@/components/icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

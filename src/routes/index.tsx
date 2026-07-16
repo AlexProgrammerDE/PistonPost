@@ -1,8 +1,8 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { TriangleAlert } from "lucide-react"
 import { Suspense } from "react"
 
-import { TriangleAlert } from "@/components/icons"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { PostView } from "@/components/post-view"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"

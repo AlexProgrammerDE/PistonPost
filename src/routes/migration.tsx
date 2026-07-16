@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { LogIn, Shield } from "lucide-react"
 
-import { LogIn, Shield } from "@/components/icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

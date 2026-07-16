@@ -1,7 +1,7 @@
 import { getEmailProviderLink } from "@better-auth-ui/core"
 import { useAuth } from "@better-auth-ui/react"
+import { SquareArrowOutUpRight } from "lucide-react"
 
-import { SquareArrowOutUpRight } from "@/components/icons"
 import { buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 

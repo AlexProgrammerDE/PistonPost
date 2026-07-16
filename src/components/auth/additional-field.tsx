@@ -4,10 +4,10 @@ import {
 } from "@better-auth-ui/core"
 import { useAuth } from "@better-auth-ui/react"
 import { format } from "date-fns"
+import { CalendarIcon, Check, ChevronDownIcon, Copy } from "lucide-react"
 import { type ComponentType, useRef, useState } from "react"
 import { toast } from "sonner"
 
-import { CalendarIcon, Check, ChevronDownIcon, Copy } from "@/components/icons"
 import { buttonVariants } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -58,12 +58,9 @@ function toDate(value: unknown): Date | undefined {
 }
 
 /** Format a Date as `HH:mm:ss` for an `<input type="time">`. */
-function padTimePart(value: number) {
-  return value.toString().padStart(2, "0")
-}
-
 function formatTime(date: Date) {
-  return `${padTimePart(date.getHours())}:${padTimePart(date.getMinutes())}:${padTimePart(date.getSeconds())}`
+  const pad = (n: number) => n.toString().padStart(2, "0")
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 /**

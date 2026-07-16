@@ -7,9 +7,9 @@ import {
   useUnlinkAccount,
 } from "@better-auth-ui/react"
 import type { Account, SocialProvider } from "better-auth"
+import { Link2, Link2Off, Plug } from "lucide-react"
 import { toast } from "sonner"
 
-import { Link2, Link2Off, Plug } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"

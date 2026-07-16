@@ -29,7 +29,7 @@ The repository was initialized with the exact requested command:
 bunx --bun shadcn@latest init --preset b1x9M8ZeJW --template start --monorepo --pointer
 ```
 
-The generated project started as a Bun and Turborepo monorepo with `apps/web` and `packages/ui`. It was flattened into one Bun package on 2026-07-15 because the repository has one product, one dependency graph, and one deployable Worker. The shadcn preset supplied TanStack Start, Tailwind CSS v4, Base UI, Maia, Hugeicons, and Outfit. The initial Raleway, taupe, and amber brand layer was replaced by the PistonPost identity defined below.
+The generated project started as a Bun and Turborepo monorepo with `apps/web` and `packages/ui`. It was flattened into one Bun package on 2026-07-15 because the repository has one product, one dependency graph, and one deployable Worker. The current generated stack uses TanStack Start, Tailwind CSS v4, Base UI, Maia, Lucide, and Outfit. The initial Raleway, taupe, and amber brand layer was replaced by the PistonPost identity defined below.
 
 ## Product objective
 
@@ -742,7 +742,7 @@ Report:
 ### Phase 0: Baseline and repository hygiene
 
 - [x] Create the repository with the requested shadcn TanStack Start monorepo command.
-- [x] Verify Base UI, Maia, Hugeicons, fonts, colors, and aliases through shadcn info.
+- [x] Verify Base UI, Maia, Lucide, fonts, colors, and aliases through shadcn info.
 - [x] Add PLAN.md, AGENTS.md, CLAUDE.md, and a project README.
 - [x] Consolidate package metadata under the root PistonPost package.
 - [x] Record the exact current dependency versions and replace latest ranges with deliberate compatible ranges.
@@ -1061,3 +1061,7 @@ Record future changes here with date, decision, reason, and affected phases.
   use cache keys that never contain viewer state, while reactions and permissions use a separate
   viewer-scoped key. Route loaders prefetch critical public data and localized Suspense boundaries
   preserve the surrounding page while slower content arrives. This affects Phases 5, 7, and 9.
+- 2026-07-16: Standardize the icon system on Lucide and configure shadcn to generate Lucide
+  components. Import icons directly from `lucide-react` so application code follows generated
+  shadcn usage and does not depend on a local icon barrel. This affects the shared UI system across
+  Phases 4 to 7.

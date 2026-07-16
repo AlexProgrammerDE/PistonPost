@@ -1,11 +1,11 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
+import { TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { ChangeAvatar } from "@/components/auth/settings/account/change-avatar"
-import { TriangleAlert } from "@/components/icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
 import { useAppForm } from "@/lib/forms/app-form"

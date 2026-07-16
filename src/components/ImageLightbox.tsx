@@ -1,11 +1,4 @@
-import {
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
-  Cancel01Icon,
-  SearchAddIcon,
-  SearchMinusIcon,
-} from "@hugeicons/core-free-icons"
-import { HugeiconsIcon } from "@hugeicons/react"
+import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react"
 import { useMemo } from "react"
 import Lightbox, { type SlideImage } from "yet-another-react-lightbox"
 import Counter from "yet-another-react-lightbox/plugins/counter"
@@ -17,48 +10,23 @@ import { DETAIL_IMAGE_WIDTHS, createMediaImageSources, mediaImageUrl } from "@/l
 const lightboxPlugins = [Counter, Zoom]
 
 function PreviousIcon() {
-  return (
-    <HugeiconsIcon
-      aria-hidden="true"
-      icon={ArrowLeft01Icon}
-      strokeWidth={2}
-      className="yarl__icon"
-    />
-  )
+  return <ChevronLeft aria-hidden="true" className="yarl__icon" />
 }
 
 function NextIcon() {
-  return (
-    <HugeiconsIcon
-      aria-hidden="true"
-      icon={ArrowRight01Icon}
-      strokeWidth={2}
-      className="yarl__icon"
-    />
-  )
+  return <ChevronRight aria-hidden="true" className="yarl__icon" />
 }
 
 function CloseIcon() {
-  return (
-    <HugeiconsIcon aria-hidden="true" icon={Cancel01Icon} strokeWidth={2} className="yarl__icon" />
-  )
+  return <X aria-hidden="true" className="yarl__icon" />
 }
 
 function ZoomInIcon() {
-  return (
-    <HugeiconsIcon aria-hidden="true" icon={SearchAddIcon} strokeWidth={2} className="yarl__icon" />
-  )
+  return <ZoomIn aria-hidden="true" className="yarl__icon" />
 }
 
 function ZoomOutIcon() {
-  return (
-    <HugeiconsIcon
-      aria-hidden="true"
-      icon={SearchMinusIcon}
-      strokeWidth={2}
-      className="yarl__icon"
-    />
-  )
+  return <ZoomOut aria-hidden="true" className="yarl__icon" />
 }
 
 export function ImageLightbox({

@@ -6,9 +6,9 @@ import {
   useAuth,
   useAuthPlugin,
 } from "@better-auth-ui/react"
+import { Fingerprint } from "lucide-react"
 import type { SyntheticEvent } from "react"
 
-import { Fingerprint } from "@/components/icons"
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -70,6 +70,7 @@ export function AddPasskeyDialog({ open, onOpenChange }: AddPasskeyDialogProps) 
             <Input
               id="passkey-name"
               name="name"
+              autoFocus
               placeholder={localization.settings.optional}
               disabled={isAdding}
             />

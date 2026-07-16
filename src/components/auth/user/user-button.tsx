@@ -19,6 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { componentIdentity } from "@/lib/component-identity"
 import { cn } from "@/lib/utils"
 
 import { UserAvatar } from "./user-avatar"
@@ -29,6 +30,8 @@ export type UserButtonLinkVisibility = "authenticated" | "unauthenticated" | "al
 
 /** A simple link entry rendered as a `DropdownMenuItem` in the `UserButton` menu. */
 export type UserButtonLink = {
+  /** Stable identity when multiple links share a destination. */
+  id?: string
   /** Visible label. */
   label: ReactNode
   /** Destination URL. */
@@ -59,13 +62,12 @@ export type UserButtonProps = {
 function renderUserLink(
   link: UserButtonLink | ReactElement,
   navigate: (options: { to: string; replace?: boolean }) => void,
-  fallbackKey: string,
 ): ReactNode {
   if (isValidElement(link)) return link
 
-  const { label, href, icon, variant } = link
+  const { id, label, href, icon, variant } = link
   return (
-    <DropdownMenuItem key={fallbackKey} variant={variant} onClick={() => navigate({ to: href })}>
+    <DropdownMenuItem key={id ?? href} variant={variant} onClick={() => navigate({ to: href })}>
       {icon}
       {label}
     </DropdownMenuItem>
@@ -103,13 +105,13 @@ export function UserButton({
   )
   const { data: session, isPending: sessionPending } = useSession(authClient)
 
-  const userLinks = links?.flatMap((link, index) => {
+  const userLinks = links?.flatMap((link) => {
     if (!isValidElement(link)) {
       const visibility = link.visibility ?? "always"
       if (visibility === "authenticated" && !session) return []
       if (visibility === "unauthenticated" && session) return []
     }
-    return [renderUserLink(link, navigate, `user-button-link-${index.toString()}`)]
+    return [renderUserLink(link, navigate)]
   })
 
   return (
@@ -179,8 +181,8 @@ export function UserButton({
             )}
 
             {plugins.flatMap((plugin) =>
-              plugin.userMenuItems?.map((Item, index) => (
-                <Item key={`${plugin.id}-${index.toString()}`} />
+              plugin.userMenuItems?.map((Item) => (
+                <Item key={componentIdentity(plugin.id, "user-menu-item", Item)} />
               )),
             )}
 
@@ -227,8 +229,8 @@ export function UserButton({
             </DropdownMenuItem>
 
             {plugins.flatMap((plugin) =>
-              plugin.userMenuItems?.map((Item, index) => (
-                <Item key={`${plugin.id}-${index.toString()}`} />
+              plugin.userMenuItems?.map((Item) => (
+                <Item key={componentIdentity(plugin.id, "user-menu-item", Item)} />
               )),
             )}
           </>

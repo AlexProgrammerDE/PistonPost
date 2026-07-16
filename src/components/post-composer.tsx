@@ -18,11 +18,11 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import { GripVertical, Trash2, TriangleAlert, Upload } from "lucide-react"
 import { useEffect, useReducer, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
-import { GripVertical, Trash2, TriangleAlert, Upload } from "@/components/icons"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

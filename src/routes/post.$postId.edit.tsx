@@ -1,9 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Trash2, TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
-import { Trash2, TriangleAlert } from "@/components/icons"
 import { FormPageSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"

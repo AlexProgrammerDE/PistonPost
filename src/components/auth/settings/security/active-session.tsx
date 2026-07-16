@@ -1,9 +1,9 @@
 import { useAuth, useRevokeSession, useSession } from "@better-auth-ui/react"
 import type { Session } from "better-auth"
 import Bowser from "bowser"
+import { LogOut, Monitor, Smartphone, X } from "lucide-react"
 import { toast } from "sonner"
 
-import { LogOut, Monitor, Smartphone, X } from "@/components/icons"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Spinner } from "@/components/ui/spinner"

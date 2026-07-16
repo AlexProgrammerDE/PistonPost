@@ -31,8 +31,6 @@
     "src/lib/auth/organization-plugin.tsx"
   ],
   "ignoreDependencies": [
-    "@hugeicons/core-free-icons",
-    "@hugeicons/react",
     "@tailwindcss/vite",
     "@tanstack/react-devtools",
     "@tanstack/react-router-devtools",
@@ -40,7 +38,6 @@
     "@tanstack/react-pacer",
     "cloudflare",
     "drizzle-kit",
-    "lucide-react",
     "oxfmt",
     "oxlint",
     "oxlint-tsgolint",
