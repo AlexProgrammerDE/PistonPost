@@ -74,7 +74,7 @@ const contentSecurityPolicy = [
   "img-src 'self' data: blob:",
   "media-src 'self' blob: https://*.videodelivery.net",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com",
   "style-src 'self' 'unsafe-inline'",
   "worker-src 'self' blob:",
 ].join("; ")
