@@ -56,11 +56,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   notFoundComponent: () => (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
-      <div className="typeset text-center">
+      <div className="typeset typeset-post text-center">
         <p className="text-sm font-medium text-muted-foreground">404</p>
         <h1>Page not found</h1>
         <p>The address may be wrong, or the page may have moved.</p>
-        <Button className="mt-4" nativeButton={false} render={<Link to="/" />}>
+        <Button data-not-typeset className="mt-4" nativeButton={false} render={<Link to="/" />}>
           Back to latest posts
         </Button>
       </div>
@@ -68,11 +68,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   ),
   errorComponent: ({ reset }) => (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
-      <div className="typeset text-center">
+      <div className="typeset typeset-post text-center">
         <p className="text-sm font-medium text-destructive">Something went wrong</p>
         <h1>We couldn’t load this page.</h1>
         <p>Try again. If the problem continues, return to the latest posts.</p>
-        <div className="mt-4 flex justify-center gap-2">
+        <div className="not-typeset mt-4 flex justify-center gap-2">
           <Button onClick={reset}>Try again</Button>
           <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
             Go home

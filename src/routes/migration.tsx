@@ -31,15 +31,17 @@ export const Route = createFileRoute("/migration")({
 function MigrationGuidance() {
   return (
     <main className="mx-auto w-full max-w-3xl px-5 py-14 sm:px-8 sm:py-20">
-      <article className="typeset">
-        <Badge variant="outline">Account migration</Badge>
+      <article className="typeset typeset-post">
+        <Badge data-not-typeset variant="outline">
+          Account migration
+        </Badge>
         <h1>Your archive is here. Sign in fresh.</h1>
-        <p className="lead">
+        <p className="text-lg text-muted-foreground">
           Existing posts, comments, reactions, profile details, ownership, and original timestamps
           stay attached to the email address from your old PistonPost account.
         </p>
 
-        <Alert>
+        <Alert data-not-typeset className="mt-7">
           <Shield />
           <AlertTitle>Old sign-in links and sessions do not transfer</AlertTitle>
           <AlertDescription>
@@ -56,7 +58,7 @@ function MigrationGuidance() {
           <li>Review your profile and original posts after sign-in.</li>
         </ol>
 
-        <div className="not-prose my-9 flex flex-wrap gap-3">
+        <div className="not-typeset my-9 flex flex-wrap gap-3">
           <Button render={<Link to="/auth/$authView" params={{ authView: "magic-link" }} />}>
             <LogIn />
             Sign in by magic link
@@ -66,7 +68,7 @@ function MigrationGuidance() {
           </Button>
         </div>
 
-        <Separator />
+        <Separator data-not-typeset className="mt-10" />
 
         <h2>If something is missing</h2>
         <p>

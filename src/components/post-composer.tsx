@@ -461,10 +461,14 @@ function ComposerPreview({ values, uploads }: { values: ComposerValues; uploads:
         </h2>
       </div>
       <article className="border-y bg-muted/15 py-6">
-        <div className="typeset typeset-post">
-          <h2>{values.title.trim() || "Untitled post"}</h2>
+        <div className="flex flex-col gap-3">
+          <h2 className="font-heading text-2xl font-bold tracking-tight text-balance">
+            {values.title.trim() || "Untitled post"}
+          </h2>
           {values.type === "text" ? (
-            <p>{values.textContent.trim() || "Your text will appear here."}</p>
+            <div className="typeset typeset-feed whitespace-pre-wrap">
+              <p>{values.textContent.trim() || "Your text will appear here."}</p>
+            </div>
           ) : null}
         </div>
         {values.type === "images" && uploads.length > 0 ? (

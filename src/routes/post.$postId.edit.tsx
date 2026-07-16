@@ -99,7 +99,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
-      <header className="typeset mb-10 border-b pb-7">
+      <header className="typeset typeset-post mb-10 border-b pb-7">
         <h1>Edit post</h1>
         <p>
           If this post changes in another session while you are editing, we will stop before

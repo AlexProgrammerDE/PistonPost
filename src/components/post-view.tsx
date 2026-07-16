@@ -467,7 +467,12 @@ export function PostView({
           </h2>
         )}
         {post.textContent && (
-          <div className={cn("typeset whitespace-pre-wrap", detail && "typeset-post max-w-3xl")}>
+          <div
+            className={cn(
+              "typeset whitespace-pre-wrap",
+              detail ? "typeset-post max-w-3xl" : "typeset-feed",
+            )}
+          >
             <p>{post.textContent}</p>
           </div>
         )}
