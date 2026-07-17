@@ -31,8 +31,6 @@ jobs:
       PRODUCTION_SECRETS_STORE_ID: ${{ vars.PRODUCTION_SECRETS_STORE_ID }}
       PRODUCTION_SMOKE_POST_SLUG: ${{ vars.PRODUCTION_SMOKE_POST_SLUG }}
       PRODUCTION_TURNSTILE_SITE_KEY: ${{ vars.PRODUCTION_TURNSTILE_SITE_KEY }}
-      VITE_PUBLIC_POSTHOG_KEY: ${{ vars.PRODUCTION_POSTHOG_KEY }}
-      VITE_PUBLIC_POSTHOG_HOST: https://t.pistonmaster.net
     steps:
       - name: Check out repository
         uses: actions/checkout@v5

@@ -143,17 +143,17 @@ Add these environment variables:
 - `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the five Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
-- `PRODUCTION_POSTHOG_KEY`: the public project key used by the production browser build.
 
 The base URL determines the Worker Custom Domain. It must be an HTTPS origin without a path, query, port, or fragment. The hostname must belong to an active zone in the same Cloudflare account.
 
-PostHog variables are public build configuration, not Worker secrets. Leave the key blank to build
-without browser analytics. Before enabling it, configure the PostHog project to discard IP data and
-verify that the project key belongs to PistonPost.
+PostHog variables are public build configuration, not Worker secrets. Production builds load the
+project key and proxy host from the tracked `.env` file, which also enables local development
+analytics. Update that file and redeploy to rotate either value. Configure the PostHog project to
+discard IP data and verify that the project key belongs to PistonPost before enabling analytics.
 
 Production browser events use PostHog's
 [managed reverse proxy](https://posthog.com/docs/advanced/proxy) at
-`https://t.pistonmaster.net`. The deployment workflow pins that origin as the SDK `api_host` and the
+`https://t.pistonmaster.net`. The tracked `.env` file pins that origin as the SDK `api_host`, and the
 SDK uses `https://eu.posthog.com` as its `ui_host`, as required for an EU Cloud proxy. The proxy CNAME
 must remain DNS-only in Cloudflare. Do not attach it to the PistonPost Worker or enable Cloudflare's
 orange-cloud proxy because PostHog manages its routing and certificate.
