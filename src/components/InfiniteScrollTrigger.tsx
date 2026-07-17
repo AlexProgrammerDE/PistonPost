@@ -1,15 +1,17 @@
 "use client"
 
 import { History, RotateCcw, WifiOff } from "lucide-react"
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
+import { AUTOMATIC_PAGE_LIMIT, shouldAutomaticallyLoadNextPage } from "@/lib/infinite-scroll"
 
 const PRELOAD_MARGIN = "0px 0px 2000px 0px"
 
 export function InfiniteScrollTrigger({
   hasNextPage,
+  loadedPageCount,
   isFetching,
   isFetchingNextPage,
   isFetchNextPageError,
@@ -17,6 +19,7 @@ export function InfiniteScrollTrigger({
   onLoadMore,
 }: {
   readonly hasNextPage: boolean
+  readonly loadedPageCount: number
   readonly isFetching: boolean
   readonly isFetchingNextPage: boolean
   readonly isFetchNextPageError: boolean
@@ -24,7 +27,17 @@ export function InfiniteScrollTrigger({
   readonly onLoadMore: () => Promise<unknown>
 }) {
   const triggerRef = useRef<HTMLDivElement>(null)
-  const canAutomaticallyLoad = hasNextPage && !isFetching && !isFetchNextPageError && !isPaused
+  const [isContinuousLoadingEnabled, setIsContinuousLoadingEnabled] = useState(false)
+  const isAtAutomaticLoadingBarrier =
+    loadedPageCount >= AUTOMATIC_PAGE_LIMIT && !isContinuousLoadingEnabled
+  const canAutomaticallyLoad = shouldAutomaticallyLoadNextPage({
+    hasNextPage,
+    loadedPageCount,
+    isContinuousLoadingEnabled,
+    isFetching,
+    isFetchNextPageError,
+    isPaused,
+  })
 
   useEffect(() => {
     const trigger = triggerRef.current
@@ -47,18 +60,29 @@ export function InfiniteScrollTrigger({
 
   if (!hasNextPage) return null
 
+  const handleLoadMore = () => {
+    if (isAtAutomaticLoadingBarrier) {
+      setIsContinuousLoadingEnabled(true)
+      if (!isFetchNextPageError && typeof IntersectionObserver !== "undefined") return
+    }
+
+    void onLoadMore()
+  }
+
   const label = isPaused
     ? "Waiting for a connection…"
     : isFetchNextPageError
       ? "Try loading older posts again"
       : isFetchingNextPage
         ? "Loading posts…"
-        : "Load older posts"
+        : isAtAutomaticLoadingBarrier
+          ? "Keep loading as I scroll"
+          : "Load older posts"
   const ActionIcon = isPaused ? WifiOff : isFetchNextPageError ? RotateCcw : History
 
   return (
-    <div ref={triggerRef} className="mt-10 flex justify-center">
-      <Button variant="outline" disabled={isFetching || isPaused} onClick={() => void onLoadMore()}>
+    <div ref={triggerRef} className="mt-10 flex justify-center [overflow-anchor:none]">
+      <Button variant="outline" disabled={isFetching || isPaused} onClick={handleLoadMore}>
         {isFetchingNextPage ? (
           <Spinner aria-hidden="true" data-icon="inline-start" />
         ) : (

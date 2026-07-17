@@ -15,6 +15,7 @@ export function FilteredFeed({
 }) {
   const feed = useSuspenseInfiniteQuery(feedQueryOptions(filters))
   const posts = feed.data.pages.flatMap((page) => page.posts)
+  const feedIdentity = filters.tag ? `tag:${filters.tag}` : `user:${filters.username}`
 
   if (posts.length === 0) {
     return (
@@ -33,7 +34,9 @@ export function FilteredFeed({
     <>
       <PostTimeline posts={posts} />
       <InfiniteScrollTrigger
+        key={feedIdentity}
         hasNextPage={feed.hasNextPage}
+        loadedPageCount={feed.data.pages.length}
         isFetching={feed.isFetching}
         isFetchingNextPage={feed.isFetchingNextPage}
         isFetchNextPageError={feed.isFetchNextPageError}
