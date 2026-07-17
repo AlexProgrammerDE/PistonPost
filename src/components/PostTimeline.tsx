@@ -14,7 +14,7 @@ export function PostTimeline({ posts }: { readonly posts: readonly PublicPostRea
   return (
     <Timeline className="gap-0" aria-orientation={undefined}>
       {posts.map((post) => (
-        <TimelineItem key={post.id} id={`timeline-post-${post.id}`} className="gap-4">
+        <TimelineItem key={post.id} id={`timeline-post-${post.id}`} className="min-w-0 gap-4">
           <TimelineDot className="mt-3" />
           <TimelineConnector className="top-6" />
           <TimelineContent className="min-w-0">

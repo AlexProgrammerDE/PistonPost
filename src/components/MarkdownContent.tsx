@@ -190,7 +190,7 @@ export function MarkdownContent({
   return (
     <UserGeneratedLinkProvider>
       <MarkdownContext value={context}>
-        <div className={cn("typeset", className)}>
+        <div dir="auto" className={cn("typeset min-w-0 wrap-anywhere", className)}>
           <ReactMarkdown
             remarkPlugins={markdownPlugins}
             rehypePlugins={htmlPlugins}

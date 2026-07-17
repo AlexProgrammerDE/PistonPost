@@ -82,12 +82,15 @@ function MyPosts() {
               >
                 <div className="min-w-0">
                   {post.status === "deleted" ? (
-                    <p className="font-semibold break-words">{post.title}</p>
+                    <p dir="auto" className="font-semibold wrap-anywhere">
+                      {post.title}
+                    </p>
                   ) : (
                     <Link
                       to={destination}
                       params={{ postId: post.id }}
-                      className="font-semibold break-words hover:underline"
+                      dir="auto"
+                      className="font-semibold wrap-anywhere hover:underline"
                     >
                       {post.title}
                     </Link>

@@ -388,7 +388,7 @@ export function SocialPanel({
                 <article
                   key={comment.id}
                   id={`comment-${comment.id}`}
-                  className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-5"
+                  className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 py-5 wrap-anywhere"
                 >
                   <Avatar>
                     {comment.authorImage ? (
@@ -399,8 +399,8 @@ export function SocialPanel({
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-semibold">{comment.authorName}</span>
+                    <div className="flex min-w-0 items-center gap-2 text-sm">
+                      <bdi className="min-w-0 truncate font-semibold">{comment.authorName}</bdi>
                       <span className="text-xs text-muted-foreground">
                         @{comment.authorUsername}
                       </span>
@@ -453,7 +453,9 @@ export function SocialPanel({
                         </span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{comment.content}</p>
+                    <p dir="auto" className="mt-1 text-sm leading-6 whitespace-pre-wrap">
+                      {comment.content}
+                    </p>
                   </div>
                   <Separator className="col-span-2" />
                 </article>

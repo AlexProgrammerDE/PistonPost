@@ -580,7 +580,13 @@ export function PostView({
   const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
 
   return (
-    <article className={cn("min-w-0", detail ? "mx-auto max-w-5xl" : "border-b pb-10", className)}>
+    <article
+      className={cn(
+        "min-w-0 wrap-anywhere",
+        detail ? "mx-auto max-w-5xl" : "border-b pb-10",
+        className,
+      )}
+    >
       <header className="mb-4 flex items-center gap-3">
         <Link to="/user/$username" params={{ username: post.author.username }}>
           <Avatar size="lg">
@@ -594,6 +600,7 @@ export function PostView({
           <Link
             to="/user/$username"
             params={{ username: post.author.username }}
+            dir="auto"
             className="block truncate text-sm font-semibold hover:underline"
           >
             {post.author.name}
@@ -613,11 +620,14 @@ export function PostView({
 
       <div className="mb-4 flex flex-col gap-3">
         {detail ? (
-          <h1 className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-5xl">
+          <h1
+            dir="auto"
+            className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-5xl"
+          >
             {post.title}
           </h1>
         ) : (
-          <h2 className="font-heading text-2xl font-bold tracking-tight text-balance">
+          <h2 dir="auto" className="font-heading text-2xl font-bold tracking-tight text-balance">
             <Link to="/post/$postId" params={{ postId: post.id }} className="hover:underline">
               {post.title}
             </Link>

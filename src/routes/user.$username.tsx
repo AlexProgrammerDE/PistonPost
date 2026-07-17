@@ -125,7 +125,7 @@ function ProfileFeed() {
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-10 grid gap-5 border-b pb-7 sm:grid-cols-[auto_1fr] sm:items-center">
+      <header className="mb-10 grid min-w-0 gap-5 border-b pb-7 wrap-anywhere sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
         <Avatar className="size-20 sm:size-24">
           {profile.image && (
             <ResponsiveAvatarImage
@@ -138,20 +138,23 @@ function ProfileFeed() {
             {profile.name.slice(0, 2).toLocaleUpperCase("en-US")}
           </AvatarFallback>
         </Avatar>
-        <div className="max-w-2xl sm:flex sm:items-start sm:justify-between sm:gap-4">
-          <div>
-            <h1 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+        <div className="max-w-2xl min-w-0 sm:flex sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
+            <h1 dir="auto" className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
               {profile.name}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && (
-              <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
+              <p
+                dir="auto"
+                className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground"
+              >
                 {profile.bio}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
               {profile.location && (
-                <span className="inline-flex items-center gap-1.5">
+                <span dir="auto" className="inline-flex min-w-0 items-center gap-1.5">
                   <MapPin aria-hidden="true" className="size-4" />
                   {profile.location}
                 </span>
