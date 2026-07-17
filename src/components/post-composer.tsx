@@ -39,6 +39,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
+import { TurnstileChallenge, type TurnstileChallengeHandle } from "@/components/TurnstileChallenge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -56,6 +57,7 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
+import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { normalizeImageUploadMetadata } from "@/lib/uploads/image-file-normalization"
 import {
   IMAGE_UPLOAD_ACCEPT,
@@ -136,6 +138,7 @@ const composerMessages = new Set([
   "Media is still processing.",
   "Video processing is taking longer than expected. The draft is still saved.",
   "The video could not be processed.",
+  HUMAN_VERIFICATION_ERROR_MESSAGE,
 ])
 
 function readableError(error: unknown) {
@@ -161,12 +164,19 @@ async function waitForVideo(queryClient: QueryClient, assetId: string) {
   throw new Error("Video processing is taking longer than expected. The draft is still saved.")
 }
 
-export function PostComposer({ authenticated }: { authenticated: boolean }) {
+export function PostComposer({
+  authenticated,
+  turnstileSiteKey,
+}: {
+  authenticated: boolean
+  turnstileSiteKey: string
+}) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [uploads, dispatch] = useReducer(mediaUploadReducer, [])
   const uploadsRef = useRef(uploads)
   const uploadControllers = useRef(new Map<string, AbortController>())
+  const turnstile = useRef<TurnstileChallengeHandle>(null)
   const allowNavigationRef = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const sensors = useSensors(
@@ -210,7 +220,9 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
             value.type === "images" ? "Choose at least one image." : "Choose a video.",
           )
         }
-        const draft = await createPostDraft({ data: draftInput })
+        const turnstileToken = await turnstile.current?.execute()
+        if (!turnstileToken) throw new Error(HUMAN_VERIFICATION_ERROR_MESSAGE)
+        const draft = await createPostDraft({ data: { draft: draftInput, turnstileToken } })
 
         if (value.type === "images") {
           const intents = await createImageUploadIntents({
@@ -297,6 +309,8 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
         await navigate({ to: "/post/$postId", params: { postId: published.id } })
       } catch (error) {
         setSubmitError(readableError(error))
+      } finally {
+        turnstile.current?.reset()
       }
     },
   })
@@ -500,7 +514,12 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
           </Alert>
         ) : null}
 
-        <div className="flex justify-end border-t pt-6">
+        <div className="flex flex-col items-end gap-3 border-t pt-6">
+          <TurnstileChallenge
+            ref={turnstile}
+            action={TURNSTILE_ACTIONS.createPost}
+            siteKey={turnstileSiteKey}
+          />
           <form.SubmitButton className="sm:min-w-36">
             <Send aria-hidden="true" data-icon="inline-start" />
             Post it

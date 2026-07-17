@@ -1,12 +1,14 @@
 "use client"
 
 import { useSession } from "@better-auth-ui/react"
-import { useMutation } from "@tanstack/react-query"
-import { Flag } from "lucide-react"
-import { useState } from "react"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { Flag, TriangleAlert } from "lucide-react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
+import { TurnstileChallenge, type TurnstileChallengeHandle } from "@/components/TurnstileChallenge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Credenza,
@@ -28,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
 import {
   contentReportReasons,
@@ -35,6 +38,8 @@ import {
   type ContentReportReason,
   type ContentReportTarget,
 } from "@/lib/content-report"
+import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
+import { getPublicRuntimeConfig } from "@/server/public-config"
 import { createContentReport } from "@/server/reports"
 
 export function ContentReportDialog({
@@ -50,8 +55,19 @@ export function ContentReportDialog({
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState<ContentReportReason>("spam")
   const [details, setDetails] = useState("")
+  const turnstile = useRef<TurnstileChallengeHandle>(null)
+  const runtimeConfig = useQuery({
+    queryKey: ["public-runtime-config"],
+    queryFn: () => getPublicRuntimeConfig(),
+    enabled: open,
+    staleTime: Infinity,
+  })
   const mutation = useMutation({
-    mutationFn: () => createContentReport({ data: { target, reason, details } }),
+    mutationFn: async () => {
+      const turnstileToken = await turnstile.current?.execute()
+      if (!turnstileToken) throw new Error(HUMAN_VERIFICATION_ERROR_MESSAGE)
+      return createContentReport({ data: { target, reason, details, turnstileToken } })
+    },
     onSuccess: () => {
       setOpen(false)
       setReason("spam")
@@ -60,6 +76,9 @@ export function ContentReportDialog({
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "The report could not be sent.")
+    },
+    onSettled: () => {
+      turnstile.current?.reset()
     },
   })
 
@@ -87,7 +106,7 @@ export function ContentReportDialog({
             A moderator will review the report. Reporting does not remove content automatically.
           </CredenzaDescription>
         </CredenzaHeader>
-        <CredenzaBody>
+        <CredenzaBody className="flex flex-col gap-4">
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor={`report-reason-${target.type}-${target.id}`}>Reason</FieldLabel>
@@ -128,19 +147,40 @@ export function ContentReportDialog({
               </FieldDescription>
             </Field>
           </FieldGroup>
+          {runtimeConfig.isError ? (
+            <Alert variant="destructive">
+              <TriangleAlert aria-hidden="true" />
+              <AlertTitle>Verification unavailable</AlertTitle>
+              <AlertDescription>Close this window and try again.</AlertDescription>
+            </Alert>
+          ) : null}
+          {runtimeConfig.data ? (
+            <TurnstileChallenge
+              ref={turnstile}
+              action={TURNSTILE_ACTIONS.createReport}
+              siteKey={runtimeConfig.data.turnstileSiteKey}
+            />
+          ) : null}
         </CredenzaBody>
         <CredenzaFooter>
           <CredenzaClose disabled={mutation.isPending} render={<Button variant="outline" />}>
             Cancel
           </CredenzaClose>
           <Button
-            disabled={mutation.isPending}
+            disabled={mutation.isPending || !runtimeConfig.data}
             onClick={(event) => {
               event.preventDefault()
               mutation.mutate()
             }}
           >
-            {mutation.isPending ? "Sending…" : "Send report"}
+            {mutation.isPending || runtimeConfig.isPending ? (
+              <>
+                <Spinner data-icon="inline-start" />
+                {mutation.isPending ? "Sending…" : "Preparing…"}
+              </>
+            ) : (
+              "Send report"
+            )}
           </Button>
         </CredenzaFooter>
       </CredenzaContent>

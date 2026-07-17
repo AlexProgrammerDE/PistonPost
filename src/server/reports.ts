@@ -1,9 +1,12 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
+import { Effect } from "effect"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
+import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
+import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
 
 import { assertMutationOrigin, requireAdministrator, requireRequestSession } from "./session"
 
@@ -20,6 +23,7 @@ export const createContentReport = createServerFn({ method: "POST" })
       target: reportTargetSchema,
       reason: reportReasonSchema,
       details: z.string().trim().max(1000).default(""),
+      turnstileToken: turnstileTokenSchema,
     }),
   )
   .handler(async ({ context, data }) => {
@@ -27,6 +31,9 @@ export const createContentReport = createServerFn({ method: "POST" })
     const session = await requireRequestSession(context)
     const limited = await context.env.USER_RATE_LIMITER.limit({ key: session.user.id })
     if (!limited.success) throw new Error("The report rate limit was reached.")
+    await Effect.runPromise(
+      verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createReport),
+    )
     const database = createD1Database(context.env.DB)
 
     const targetExists =

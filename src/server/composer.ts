@@ -6,9 +6,11 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 import { createStreamDirectUpload } from "@/server/stream-direct-upload"
+import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 
@@ -28,18 +30,26 @@ async function tagId(normalized: string) {
 }
 
 export const createPostDraft = createServerFn({ method: "POST" })
-  .validator(postDraftInputSchema)
+  .validator(z.object({ draft: postDraftInputSchema, turnstileToken: turnstileTokenSchema }))
   .handler(async ({ context, data }) => {
     assertMutationOrigin(context)
     const session = await requireRequestSession(context)
+    const limited = await context.env.USER_RATE_LIMITER.limit({
+      key: `draft:${session.user.id}`,
+    })
+    if (!limited.success) throw new Error("Too many posts were started at once.")
+    await Effect.runPromise(
+      verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createPost),
+    )
+    const input = data.draft
     const id = nextPublicId()
-    const normalizedTags = [...new Set(data.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
+    const normalizedTags = [...new Set(input.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
     const tagsWithIds = await Promise.all(
       normalizedTags.map(async (normalized, ordinal) => ({
         id: await tagId(normalized),
         normalized,
         display:
-          data.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ?? normalized,
+          input.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ?? normalized,
         ordinal,
       })),
     )
@@ -51,10 +61,10 @@ export const createPostDraft = createServerFn({ method: "POST" })
       ).bind(
         id,
         session.user.id,
-        data.type,
-        data.visibility,
-        data.title,
-        data.type === "text" ? data.textContent : null,
+        input.type,
+        input.visibility,
+        input.title,
+        input.type === "text" ? input.textContent : null,
         Date.now(),
         Date.now(),
       ),
