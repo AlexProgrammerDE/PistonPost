@@ -1,4 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter"
+import { dash, sentinel } from "@better-auth/infra"
 import { passkey } from "@better-auth/passkey"
 import { emailHarmony } from "better-auth-harmony"
 import { APIError } from "better-auth/api"
@@ -34,11 +35,13 @@ export type AuthenticationEmail = {
 export type AuthRuntime = {
   readonly database: D1DatabaseClient | SqliteDatabaseClient
   readonly baseURL: string
+  readonly betterAuthApiKey: string
   readonly secret: string
   readonly trustedOrigins: ReadonlyArray<string>
   readonly turnstileSecret: string
   readonly production: boolean
   readonly captchaEnabled?: boolean
+  readonly infraEnabled?: boolean
   readonly sendEmail: (message: AuthenticationEmail) => Promise<void>
   readonly isManagedUserAvatar: (userId: string, image: string) => Promise<boolean>
   readonly audit?: (action: string, userId: string) => Promise<void>
@@ -264,6 +267,15 @@ export function createAuth(runtime: AuthRuntime) {
       lastLoginMethod(),
       haveIBeenPwned({ enabled: runtime.production }),
       emailHarmony(),
+      ...(runtime.infraEnabled === false
+        ? []
+        : [
+            dash({
+              apiKey: runtime.betterAuthApiKey,
+              activityTracking: { enabled: true },
+            }),
+            sentinel({ apiKey: runtime.betterAuthApiKey }),
+          ]),
       ...(runtime.captchaEnabled === false
         ? []
         : [

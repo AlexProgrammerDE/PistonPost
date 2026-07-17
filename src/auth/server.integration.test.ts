@@ -22,11 +22,13 @@ function setup(
   const auth = createAuth({
     database,
     baseURL: "http://localhost:3000",
+    betterAuthApiKey: "test-only-better-auth-api-key",
     secret: "test-only-auth-secret-at-least-32-characters",
     trustedOrigins: ["http://localhost:3000"],
     turnstileSecret: "not-used-in-this-test",
     production: false,
     captchaEnabled: false,
+    infraEnabled: false,
     isManagedUserAvatar,
     sendEmail: async (email) => {
       emails.push(email)
@@ -54,6 +56,27 @@ function sessionRequest(cookie: string) {
 }
 
 describe("request-scoped Better Auth", () => {
+  it("registers the Better Auth dashboard and Sentinel plugins", () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const auth = createAuth({
+      database,
+      baseURL: "http://localhost:3000",
+      betterAuthApiKey: "test-only-better-auth-api-key",
+      secret: "test-only-auth-secret-at-least-32-characters",
+      trustedOrigins: ["http://localhost:3000"],
+      turnstileSecret: "not-used-in-this-test",
+      production: false,
+      captchaEnabled: false,
+      isManagedUserAvatar: async () => false,
+      sendEmail: async () => {},
+    })
+
+    const pluginIds = auth.options.plugins.map((plugin) => plugin.id)
+    expect(pluginIds).toContain("dash")
+    expect(pluginIds).toContain("sentinel")
+  })
+
   it("accepts Cloudflare test-token hostnames only on loopback development origins", () => {
     expect(turnstileAllowedHostnames("http://localhost:3000")).toEqual(["localhost", "example.com"])
     expect(turnstileAllowedHostnames("http://127.0.0.1:3000")).toEqual(["127.0.0.1", "example.com"])
@@ -103,10 +126,12 @@ describe("request-scoped Better Auth", () => {
     const auth = createAuth({
       database,
       baseURL: "http://localhost:3000",
+      betterAuthApiKey: "test-only-better-auth-api-key",
       secret: "test-only-auth-secret-at-least-32-characters",
       trustedOrigins: ["http://localhost:3000"],
       turnstileSecret: "1x0000000000000000000000000000000AA",
       production: false,
+      infraEnabled: false,
       isManagedUserAvatar: async () => false,
       sendEmail: async () => {},
     })

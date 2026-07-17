@@ -61,7 +61,7 @@ describe("request security", () => {
     const policy = response.headers.get("Content-Security-Policy")
 
     expect(policy?.split("; ").find((directive) => directive.startsWith("connect-src "))).toBe(
-      "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
+      "connect-src 'self' https://challenges.cloudflare.com https://kv.better-auth.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
     )
     expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
       "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.youtube.com https://open.spotify.com",

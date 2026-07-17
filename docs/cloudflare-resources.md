@@ -90,6 +90,7 @@ cp .dev.vars.example .dev.vars
 
 Production secrets belong in Cloudflare Secrets Store. PistonPost documents secret names, never values. Expected names include:
 
+- `BETTER_AUTH_API_KEY`
 - `BETTER_AUTH_SECRET`
 - `TURNSTILE_SECRET`
 - `STREAM_WEBHOOK_SECRET`
@@ -105,6 +106,7 @@ Create or select a store, then create each secret with the `workers` scope:
 ```bash
 bunx wrangler secrets-store store list
 STORE_ID=replace-with-your-store-id
+bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_API_KEY --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
@@ -113,9 +115,14 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --
 ```
 
 Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
-The deployment workflow binds all five secrets by name. Its Cloudflare API token needs permission to
+The deployment workflow binds all six secrets by name. Its Cloudflare API token needs permission to
 deploy Secrets Store bindings in addition to the permissions required by the other configured
 services.
+
+The Sentinel browser plugin uses Better Auth's global identify endpoint by default. When the Better
+Auth project has a project-scoped ingestion URL, set `VITE_PUBLIC_BETTER_AUTH_IDENTIFY_URL` in the
+tracked `.env` file and rebuild. This URL is public configuration, but it must belong to the
+PistonPost project. Do not copy another project's ingestion URL.
 
 Do not store secrets in Wrangler `vars`, GitHub logs, command output, or shell history.
 
@@ -146,7 +153,7 @@ Keep non-secret production deployment values in the tracked `.env.production` fi
 - `CLOUDFLARE_ACCOUNT_ID`: the account that owns the Worker and its resources.
 - `PRODUCTION_BASE_URL`: `https://post.pistonmaster.net`.
 - `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
-- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the five Worker secrets.
+- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the six Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
 

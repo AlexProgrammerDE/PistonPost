@@ -78,6 +78,13 @@
       "when": 1784283155683,
       "tag": "0010_remove-legacy-migration-state",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1784295735585,
+      "tag": "0011_better-auth-infra",
+      "breakpoints": true
     }
   ]
 }

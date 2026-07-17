@@ -66,7 +66,7 @@ export function validateRequestSecurity(request: Request, expectedOrigin: string
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
-  "connect-src 'self' https://challenges.cloudflare.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
+  "connect-src 'self' https://challenges.cloudflare.com https://kv.better-auth.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
   "font-src 'self' data: https://*.posthog.com",
   "form-action 'self'",
   "frame-ancestors 'none'",

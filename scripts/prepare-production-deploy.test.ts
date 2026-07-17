@@ -59,6 +59,11 @@ describe("prepareProductionDeployConfig", () => {
     ])
     expect(result.secrets_store_secrets).toEqual([
       {
+        binding: "BETTER_AUTH_API_KEY",
+        store_id: input.secretsStoreId,
+        secret_name: "BETTER_AUTH_API_KEY",
+      },
+      {
         binding: "BETTER_AUTH_SECRET",
         store_id: input.secretsStoreId,
         secret_name: "BETTER_AUTH_SECRET",

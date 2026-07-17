@@ -10,16 +10,19 @@ import type { AppRequestContext } from "../server"
 import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
 
-async function readSecret(secret: string | SecretsStoreSecret) {
-  return typeof secret === "string" ? secret : secret.get()
+async function readSecret(secret: string | SecretsStoreSecret, name: string) {
+  const value = (typeof secret === "string" ? secret : await secret.get()).trim()
+  if (!value) throw new Error(`Secret binding ${name} is empty.`)
+  return value
 }
 
 export async function createRequestAuth(context: AppRequestContext) {
   const { env, runtime } = context
   const baseURL = runtime.config.PUBLIC_APP_URL.toString()
-  const [secret, turnstileSecret] = await Promise.all([
-    readSecret(env.BETTER_AUTH_SECRET),
-    readSecret(env.TURNSTILE_SECRET),
+  const [secret, turnstileSecret, betterAuthApiKey] = await Promise.all([
+    readSecret(env.BETTER_AUTH_SECRET, "BETTER_AUTH_SECRET"),
+    readSecret(env.TURNSTILE_SECRET, "TURNSTILE_SECRET"),
+    readSecret(env.BETTER_AUTH_API_KEY, "BETTER_AUTH_API_KEY"),
   ])
   const transport = createCloudflareEmailTransport(requireEmailBinding(env))
 
@@ -28,6 +31,7 @@ export async function createRequestAuth(context: AppRequestContext) {
   return createAuth({
     database,
     baseURL,
+    betterAuthApiKey,
     secret,
     trustedOrigins: [baseURL],
     turnstileSecret,

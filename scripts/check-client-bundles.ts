@@ -4,7 +4,7 @@ import { resolve } from "node:path"
 const clientDirectory = resolve("dist/client/assets")
 const forbiddenMarkers = ["@/db", "cloudflare:workers"]
 const maximumChunkBytes = 600 * 1024
-const maximumTotalBytes = 2_500_000
+const maximumTotalBytes = 2_510_000
 
 const files: Array<{ path: string; bytes: number }> = []
 for await (const path of new Bun.Glob("**/*.js").scan({ cwd: clientDirectory, absolute: true })) {
@@ -32,7 +32,7 @@ if (oversized.length > 0) {
 const totalBytes = files.reduce((total, file) => total + file.bytes, 0)
 if (totalBytes > maximumTotalBytes) {
   throw new Error(
-    `Client JavaScript totals ${totalBytes.toString()} bytes, above the 2.5 MB budget.`,
+    `Client JavaScript totals ${totalBytes.toString()} bytes, above the 2.51 MB budget.`,
   )
 }
 

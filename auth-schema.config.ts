@@ -7,6 +7,7 @@ const database = createSqliteDatabase()
 export const auth = createAuth({
   database,
   baseURL: "http://localhost:3000",
+  betterAuthApiKey: "schema-generation-only-api-key",
   secret: "schema-generation-only-secret-at-least-32-characters",
   trustedOrigins: ["http://localhost:3000"],
   turnstileSecret: "1x0000000000000000000000000000000AA",

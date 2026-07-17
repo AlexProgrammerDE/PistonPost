@@ -41,6 +41,11 @@ function CookiePolicyPage() {
           for the site to work as requested.
         </p>
         <p>
+          Better Auth Sentinel derives a browser identifier from device and browser signals and
+          attaches it to authentication requests for abuse prevention. This security check does not
+          depend on your optional analytics choice.
+        </p>
+        <p>
           The <code>pistonpost_cookie_consent</code> cookie records your analytics choice. It lasts
           for up to 365 days after accepting all categories or 180 days after rejecting optional
           analytics.

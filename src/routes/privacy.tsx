@@ -43,6 +43,13 @@ function PrivacyPage() {
           Data is used to display what you post, authenticate your account, deliver messages you
           requested, enforce moderation, and keep PistonPost reliable.
         </p>
+        <h2>Account security</h2>
+        <p>
+          Better Auth Sentinel processes browser and device signals, network address and approximate
+          location data, and authentication request patterns to detect bots, credential stuffing,
+          and suspicious sign-ins. This security processing is separate from optional analytics and
+          is not used for advertising.
+        </p>
         <h2>Analytics</h2>
         <p>
           Each post keeps a public aggregate view total without storing who viewed it. Cloudflare
