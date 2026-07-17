@@ -56,7 +56,7 @@ function sessionRequest(cookie: string) {
 }
 
 describe("request-scoped Better Auth", () => {
-  it("registers the Better Auth dashboard and Sentinel plugins", () => {
+  it("enables database joins and registers the Better Auth infrastructure plugins", () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
     const auth = createAuth({
@@ -71,6 +71,8 @@ describe("request-scoped Better Auth", () => {
       isManagedUserAvatar: async () => false,
       sendEmail: async () => {},
     })
+
+    expect(auth.options.experimental?.joins).toBe(true)
 
     const pluginIds = auth.options.plugins.map((plugin) => plugin.id)
     expect(pluginIds).toContain("dash")
