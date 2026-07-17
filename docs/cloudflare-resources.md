@@ -1,6 +1,7 @@
 # Provision Cloudflare resources
 
-This guide is for operators preparing a PistonPost preview or production environment. It records resource names and binding contracts without committing account IDs, resource IDs, hostnames, or secret values.
+This guide is for operators preparing a PistonPost preview or production environment. It records
+resource names, binding contracts, and where configuration belongs without committing secret values.
 
 ## Before you begin
 
@@ -23,7 +24,9 @@ bunx wrangler d1 create pistonpost-staging --location weur
 bunx wrangler d1 create pistonpost-production --location weur
 ```
 
-Wrangler prints each database ID after creation. Store the production ID in the GitHub production environment as `PRODUCTION_D1_DATABASE_ID`. The deployment preparation step adds it to the generated Wrangler configuration without committing the ID.
+Wrangler prints each database ID after creation. Store the production ID as
+`PRODUCTION_D1_DATABASE_ID` in the tracked `.env.production` file. The deployment preparation step
+adds it to the generated Wrangler configuration.
 
 The local development database is created automatically by the Cloudflare Vite plugin. Regenerate Worker types after any binding change:
 
@@ -109,7 +112,10 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID -
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --scopes workers --remote
 ```
 
-Store the selected store ID in the GitHub production environment as `PRODUCTION_SECRETS_STORE_ID`. The deployment workflow binds all five secrets by name. Its Cloudflare API token needs permission to deploy Secrets Store bindings in addition to the permissions required by the other configured services.
+Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
+The deployment workflow binds all five secrets by name. Its Cloudflare API token needs permission to
+deploy Secrets Store bindings in addition to the permissions required by the other configured
+services.
 
 Do not store secrets in Wrangler `vars`, GitHub logs, command output, or shell history.
 
@@ -131,18 +137,21 @@ and that the post becomes publishable after the signed Stream webhook arrives.
 
 ## Configure production deployment
 
-Create a protected GitHub environment named `production`. Add these environment secrets:
+Create a protected GitHub environment named `production`. Add this environment secret:
 
-- `CLOUDFLARE_ACCOUNT_ID`
 - `CLOUDFLARE_API_TOKEN`
 
-Add these environment variables:
+Keep non-secret production deployment values in the tracked `.env.production` file:
 
+- `CLOUDFLARE_ACCOUNT_ID`: the account that owns the Worker and its resources.
 - `PRODUCTION_BASE_URL`: `https://post.pistonmaster.net`.
 - `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
 - `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the five Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
+
+The workflow loads this file into its environment after checkout. Do not put API tokens, Turnstile
+secrets, authentication secrets, webhook secrets, or Stream credentials in either tracked env file.
 
 The base URL determines the Worker Custom Domain. It must be an HTTPS origin without a path, query, port, or fragment. The hostname must belong to an active zone in the same Cloudflare account.
 

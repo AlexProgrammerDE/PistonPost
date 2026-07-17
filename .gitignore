@@ -6,6 +6,7 @@ dist-ssr
 .env*
 .dev.vars*
 !.env
+!.env.production
 !**/.dev.vars.example
 .tanstack
 .wrangler

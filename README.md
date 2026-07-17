@@ -61,4 +61,8 @@ without dynamic post IDs, usernames, tag names, page titles, referrers, or query
 
 See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before creating staging or production resources.
 
-Production releases use the manually approved `Deploy production` GitHub Actions workflow. The workflow builds the Worker with the production environment selected, prepares the ignored deployment configuration from protected GitHub environment values, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning and backup guides before triggering it.
+Production releases use the manually approved `Deploy production` GitHub Actions workflow. The
+workflow loads non-secret deployment configuration from `.env.production`, reads only the Cloudflare
+API token from the protected GitHub environment, builds the Worker with the production environment
+selected, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning
+and backup guides before triggering it.
