@@ -1,4 +1,5 @@
 export * from "./auth.generated"
+export * from "./email"
 export * from "./media"
 export * from "./operations"
 export * from "./posts"

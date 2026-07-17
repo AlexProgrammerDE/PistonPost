@@ -754,7 +754,16 @@ Exit criteria:
 - [x] Add Better Auth UI routes and account settings views.
 - [x] Port the relevant EnderDash auth UI patterns without organization or billing code.
 - [x] Add React Email templates and Cloudflare Email transport.
-- [x] Add queue-backed email delivery with idempotency.
+- [x] Harden immediate and queue-backed email delivery with idempotency.
+  - [x] Defer token-bearing authentication email with the request execution context without
+        persisting links, codes, or tokens.
+  - [x] Store only opaque record IDs in durable email jobs and resolve recipients, content, and
+        preferences at delivery time.
+  - [x] Claim outbox work with expiring leases, complete it only after provider acceptance, and
+        stop automatic retries after dead-letter delivery.
+  - [x] Add reply notifications, administrator-controlled product campaigns, and signed product
+        email unsubscribe links.
+  - [x] Declare the Email Service binding in local, preview, and production environments.
 - [x] Add auth rate limits, no-store policy, trusted origins, and audit hooks.
 - [x] Test session revocation before enabling cookie cache.
 - [x] Add end-to-end sign-up, verification, sign-in, recovery, passkey, 2FA, and sign-out coverage.
@@ -1022,3 +1031,7 @@ Record future changes here with date, decision, reason, and affected phases.
   switch. Security and moderation notices are required service messages, so they are always sent,
   are not stored as user preferences, and appear as disabled, enabled controls in account settings.
   This affects Phases 3, 4, 5, and 7.
+- 2026-07-17: Split email delivery by sensitivity. Better Auth token and code messages run through
+  Cloudflare request background tasks with a small bounded transport retry and are never persisted.
+  Product and account notifications use ID-only outbox jobs, delivery-time preference checks,
+  expiring claims, and terminal dead-letter state. This affects Phases 3, 4, 5, 7, and 9.

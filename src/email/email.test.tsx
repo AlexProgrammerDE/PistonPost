@@ -1,11 +1,19 @@
 import { describe, expect, it } from "bun:test"
 
-import { Effect, Either } from "effect"
+import { Effect, Either, Exit, Layer } from "effect"
 
 import { renderEmail } from "./email"
-import { decodeEmailJob, emailJobContent } from "./jobs"
-import { authenticationMessage } from "./messages"
-import { createCaptureEmailTransport } from "./transport"
+import { decodeEmailDeliveryJob } from "./jobs"
+import { authenticationMessage, productUpdateMessage } from "./messages"
+import {
+  createCaptureEmailTransport,
+  deliverEmail,
+  deliverImmediateEmail,
+  EmailDeliveryError,
+  EmailRenderer,
+  EmailTransport,
+} from "./transport"
+import { signUnsubscribeToken, verifyUnsubscribeToken } from "./unsubscribe"
 
 describe("transactional email", () => {
   it("renders branded HTML and a plain-text fallback", async () => {
@@ -44,30 +52,49 @@ describe("transactional email", () => {
     expect(captured[0]?.text).toContain("123456")
   })
 
-  it("decodes safe queue data and renders it at delivery time", async () => {
-    const result = decodeEmailJob({
-      version: 1,
+  it("bounds immediate authentication delivery retries", async () => {
+    let attempts = 0
+    const transportLayer = Layer.succeed(EmailTransport, {
+      send: () =>
+        Effect.suspend(() => {
+          attempts += 1
+          return attempts < 3
+            ? Effect.fail(new EmailDeliveryError({ message: "Temporary failure" }))
+            : Effect.void
+        }),
+    })
+
+    await Effect.runPromise(
+      deliverImmediateEmail({
+        content: authenticationMessage({
+          template: "password-reset",
+          url: "https://post.pistonmaster.net/reset",
+          expiresIn: "in one hour",
+        }),
+        to: "recipient@example.com",
+        from: "auth@example.com",
+        idempotencyKey: "password-reset:test",
+      }).pipe(Effect.provide(Layer.mergeAll(EmailRenderer.live, transportLayer))),
+    )
+
+    expect(attempts).toBe(3)
+  })
+
+  it("decodes ID-only durable notification jobs", () => {
+    const result = decodeEmailDeliveryJob({
+      version: 2,
       type: "email.comment",
-      idempotencyKey: "comment:one",
-      to: "author@example.com",
-      data: {
-        actorName: "Avery",
-        postTitle: "two extremely important cats",
-        postUrl: "https://post.pistonmaster.net/post/cats",
-      },
+      idempotencyKey: "email.comment:user-one:comment-one",
+      recipientUserId: "user-one",
+      commentId: "comment-one",
     })
 
     expect(Either.isRight(result)).toBeTrue()
-    if (Either.isLeft(result)) return
-
-    const rendered = await renderEmail(emailJobContent(result.right))
-    expect(rendered.subject).toContain("Avery")
-    expect(rendered.html).toContain("two extremely important cats")
-    expect(rendered.text).toContain("Read the comment")
+    expect(JSON.stringify(result)).not.toContain("@example.com")
   })
 
-  it("rejects pre-rendered queue payloads", () => {
-    const result = decodeEmailJob({
+  it("rejects legacy, recipient-bearing, and pre-rendered queue payloads", () => {
+    const result = decodeEmailDeliveryJob({
       version: 1,
       type: "email.comment",
       idempotencyKey: "unsafe",
@@ -76,5 +103,71 @@ describe("transactional email", () => {
     })
 
     expect(Either.isLeft(result)).toBeTrue()
+  })
+
+  it("renders a working product unsubscribe link", async () => {
+    const secret = "test-only-unsubscribe-secret-at-least-32-characters"
+    const token = await Effect.runPromise(
+      signUnsubscribeToken("user-one", secret, Date.now() + 60_000),
+    )
+    const claims = await Effect.runPromise(verifyUnsubscribeToken(token, secret))
+    const rendered = await renderEmail(
+      productUpdateMessage({
+        subject: "A small PistonPost update",
+        preview: "New posting controls are ready.",
+        heading: "Posting got a little easier",
+        message: "You can now keep a draft while media finishes processing.",
+        unsubscribeUrl: `https://post.pistonmaster.net/email/unsubscribe?token=${token}`,
+      }),
+    )
+
+    expect(claims.userId).toBe("user-one")
+    expect(rendered.html).toContain("stop product update emails")
+    expect(rendered.text).toContain("email/unsubscribe?token=")
+  })
+
+  it("adds a List-Unsubscribe header to product delivery", async () => {
+    const captured: Array<Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0]> =
+      []
+    const unsubscribeUrl = "https://post.pistonmaster.net/email/unsubscribe?token=signed"
+    await Effect.runPromise(
+      deliverEmail({
+        content: productUpdateMessage({
+          subject: "A small update",
+          preview: "A useful preview",
+          heading: "Something changed",
+          message: "Here is what changed.",
+          unsubscribeUrl,
+        }),
+        to: "recipient@example.com",
+        from: "notifications@example.com",
+        idempotencyKey: "product:test",
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            EmailRenderer.live,
+            Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
+          ),
+        ),
+      ),
+    )
+
+    expect(captured[0]?.headers).toEqual({ "List-Unsubscribe": `<${unsubscribeUrl}>` })
+  })
+
+  it("rejects expired and modified unsubscribe links", async () => {
+    const secret = "test-only-unsubscribe-secret-at-least-32-characters"
+    const expired = await Effect.runPromise(
+      signUnsubscribeToken("user-one", secret, Date.now() - 1),
+    )
+    const current = await Effect.runPromise(signUnsubscribeToken("user-one", secret))
+
+    const expiredResult = await Effect.runPromiseExit(verifyUnsubscribeToken(expired, secret))
+    const modifiedResult = await Effect.runPromiseExit(
+      verifyUnsubscribeToken(`${current}changed`, secret),
+    )
+
+    expect(Exit.isFailure(expiredResult)).toBeTrue()
+    expect(Exit.isFailure(modifiedResult)).toBeTrue()
   })
 })

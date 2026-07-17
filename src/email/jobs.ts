@@ -1,68 +1,133 @@
 import { Schema } from "effect"
 
-import type { EmailContent } from "./email"
+export class CommentEmailJob extends Schema.Class<CommentEmailJob>("CommentEmailJob")({
+  version: Schema.Literal(2),
+  type: Schema.Literal("email.comment"),
+  idempotencyKey: Schema.String,
+  recipientUserId: Schema.String,
+  commentId: Schema.String,
+}) {}
 
-const CommentData = Schema.Struct({
-  actorName: Schema.String,
-  postTitle: Schema.String,
-  postUrl: Schema.String,
-})
+export class ReplyEmailJob extends Schema.Class<ReplyEmailJob>("ReplyEmailJob")({
+  version: Schema.Literal(2),
+  type: Schema.Literal("email.reply"),
+  idempotencyKey: Schema.String,
+  recipientUserId: Schema.String,
+  commentId: Schema.String,
+}) {}
 
-const ModerationData = Schema.Struct({
-  action: Schema.String,
-  reason: Schema.String,
-  targetUrl: Schema.String,
-})
+export class ModerationEmailJob extends Schema.Class<ModerationEmailJob>("ModerationEmailJob")({
+  version: Schema.Literal(2),
+  type: Schema.Literal("email.moderation"),
+  idempotencyKey: Schema.String,
+  recipientUserId: Schema.String,
+  auditEventId: Schema.String,
+}) {}
 
-export const EmailJob = Schema.Union(
-  Schema.Struct({
-    version: Schema.Literal(1),
-    type: Schema.Literal("email.comment"),
-    idempotencyKey: Schema.String,
-    to: Schema.String,
-    data: CommentData,
-  }),
-  Schema.Struct({
-    version: Schema.Literal(1),
-    type: Schema.Literal("email.moderation"),
-    idempotencyKey: Schema.String,
-    to: Schema.String,
-    data: ModerationData,
-  }),
+export class SecurityEmailJob extends Schema.Class<SecurityEmailJob>("SecurityEmailJob")({
+  version: Schema.Literal(2),
+  type: Schema.Literal("email.security"),
+  idempotencyKey: Schema.String,
+  recipientUserId: Schema.String,
+  auditEventId: Schema.String,
+}) {}
+
+export class ProductEmailJob extends Schema.Class<ProductEmailJob>("ProductEmailJob")({
+  version: Schema.Literal(2),
+  type: Schema.Literal("email.product"),
+  idempotencyKey: Schema.String,
+  recipientUserId: Schema.String,
+  campaignId: Schema.String,
+}) {}
+
+export class ProductEmailBatchJob extends Schema.Class<ProductEmailBatchJob>(
+  "ProductEmailBatchJob",
+)({
+  version: Schema.Literal(2),
+  type: Schema.Literal("email.product-batch"),
+  idempotencyKey: Schema.String,
+  campaignId: Schema.String,
+  cursorUserId: Schema.NullOr(Schema.String),
+}) {}
+
+export const EmailDeliveryJob = Schema.Union(
+  CommentEmailJob,
+  ReplyEmailJob,
+  ModerationEmailJob,
+  SecurityEmailJob,
+  ProductEmailJob,
 )
 
-export type EmailJob = typeof EmailJob.Type
+export type EmailDeliveryJob = typeof EmailDeliveryJob.Type
 
-export function decodeEmailJob(input: unknown) {
-  return Schema.decodeUnknownEither(EmailJob)(input)
+export const EmailQueueJob = Schema.Union(EmailDeliveryJob, ProductEmailBatchJob)
+
+export type EmailQueueJob = typeof EmailQueueJob.Type
+
+export function decodeEmailDeliveryJob(input: unknown) {
+  return Schema.decodeUnknownEither(EmailDeliveryJob)(input)
 }
 
-export function emailJobContent(job: EmailJob): EmailContent {
-  switch (job.type) {
-    case "email.comment":
-      return {
-        template: "comment-notification",
-        subject: `${job.data.actorName} commented on ${job.data.postTitle}`,
-        preview: `A new comment was posted on ${job.data.postTitle}.`,
-        heading: "New comment on your post",
-        message: `${job.data.actorName} left a comment on “${job.data.postTitle}”.`,
-        action: { label: "Read the comment", url: job.data.postUrl },
-        footnote: "You can change comment email preferences in your account settings.",
-      }
-    case "email.moderation":
-      return {
-        template: "moderation-action",
-        subject: "A moderation action affected your PistonPost content",
-        preview: job.data.action,
-        heading: job.data.action,
-        message: job.data.reason,
-        action: { label: "Review the action", url: job.data.targetUrl },
-      }
-  }
-
-  return assertNever(job)
+export function decodeEmailQueueJob(input: unknown) {
+  return Schema.decodeUnknownEither(EmailQueueJob)(input)
 }
 
-function assertNever(value: never): never {
-  throw new Error(`Unsupported email job: ${String(value)}`)
+export function commentEmailJob(recipientUserId: string, commentId: string) {
+  return CommentEmailJob.make({
+    version: 2,
+    type: "email.comment",
+    idempotencyKey: `email.comment:${recipientUserId}:${commentId}`,
+    recipientUserId,
+    commentId,
+  })
+}
+
+export function replyEmailJob(recipientUserId: string, commentId: string) {
+  return ReplyEmailJob.make({
+    version: 2,
+    type: "email.reply",
+    idempotencyKey: `email.reply:${recipientUserId}:${commentId}`,
+    recipientUserId,
+    commentId,
+  })
+}
+
+export function moderationEmailJob(recipientUserId: string, auditEventId: string) {
+  return ModerationEmailJob.make({
+    version: 2,
+    type: "email.moderation",
+    idempotencyKey: `email.moderation:${recipientUserId}:${auditEventId}`,
+    recipientUserId,
+    auditEventId,
+  })
+}
+
+export function securityEmailJob(recipientUserId: string, auditEventId: string) {
+  return SecurityEmailJob.make({
+    version: 2,
+    type: "email.security",
+    idempotencyKey: `email.security:${recipientUserId}:${auditEventId}`,
+    recipientUserId,
+    auditEventId,
+  })
+}
+
+export function productEmailJob(recipientUserId: string, campaignId: string) {
+  return ProductEmailJob.make({
+    version: 2,
+    type: "email.product",
+    idempotencyKey: `email.product:${campaignId}:${recipientUserId}`,
+    recipientUserId,
+    campaignId,
+  })
+}
+
+export function productEmailBatchJob(campaignId: string, cursorUserId: string | null) {
+  return ProductEmailBatchJob.make({
+    version: 2,
+    type: "email.product-batch",
+    idempotencyKey: `email.product-batch:${campaignId}:${cursorUserId ?? "start"}`,
+    campaignId,
+    cursorUserId,
+  })
 }

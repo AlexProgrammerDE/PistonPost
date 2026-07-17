@@ -19,12 +19,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start"
 
 import type { D1DatabaseClient, SqliteDatabaseClient } from "@/db"
 import * as schema from "@/db/schema"
-import {
-  authenticationMessage,
-  renderEmail,
-  securityNotificationMessage,
-  type EmailContent,
-} from "@/email"
+import { authenticationMessage, type EmailContent } from "@/email"
 
 export type AuthenticationEmail = {
   readonly to: string
@@ -43,11 +38,17 @@ export type AuthRuntime = {
   readonly captchaEnabled?: boolean
   readonly infraEnabled?: boolean
   readonly sendEmail: (message: AuthenticationEmail) => Promise<void>
+  readonly runInBackground?: (promise: Promise<unknown>) => void
   readonly isManagedUserAvatar: (userId: string, image: string) => Promise<boolean>
   readonly audit?: (action: string, userId: string) => Promise<void>
   readonly beforeDeleteUser?: (userId: string) => Promise<void>
   readonly afterDeleteUser?: (userId: string) => Promise<void>
   readonly notifyNewDevice?: (userId: string, sessionId: string) => Promise<void>
+  readonly queueSecurityNotification?: (
+    userId: string,
+    action: "auth.password-reset" | "auth.new-device",
+    entityId: string,
+  ) => Promise<void>
   readonly initializeProfile?: (user: {
     readonly id: string
     readonly email: string
@@ -100,12 +101,7 @@ export function createAuth(runtime: AuthRuntime) {
         })
       },
       onPasswordReset: async ({ user }) => {
-        await runtime.audit?.("auth.password-reset", user.id)
-        await send({
-          to: user.email,
-          content: securityNotificationMessage({ template: "password-changed" }),
-          idempotencyKey: `password-changed:${user.id}:${Date.now().toString()}`,
-        })
+        await runtime.queueSecurityNotification?.(user.id, "auth.password-reset", user.id)
       },
     },
     emailVerification: {
@@ -124,7 +120,20 @@ export function createAuth(runtime: AuthRuntime) {
       },
     },
     user: {
-      changeEmail: { enabled: true },
+      changeEmail: {
+        enabled: true,
+        sendChangeEmailConfirmation: async ({ user, url, token }) => {
+          await send({
+            to: user.email,
+            content: authenticationMessage({
+              template: "email-change-approval",
+              url,
+              expiresIn: "in one hour",
+            }),
+            idempotencyKey: `email-change-approval:${token}`,
+          })
+        },
+      },
       deleteUser: {
         enabled: true,
         deleteTokenExpiresIn: 60 * 60,
@@ -171,6 +180,7 @@ export function createAuth(runtime: AuthRuntime) {
       ipAddress: {
         ipAddressHeaders: ["cf-connecting-ip"],
       },
+      backgroundTasks: runtime.runInBackground ? { handler: runtime.runInBackground } : undefined,
     },
     databaseHooks: {
       user: {
@@ -198,7 +208,6 @@ export function createAuth(runtime: AuthRuntime) {
       session: {
         create: {
           after: async (session) => {
-            await runtime.audit?.("auth.session-created", session.userId)
             await runtime.notifyNewDevice?.(session.userId, session.id)
           },
         },
@@ -297,11 +306,4 @@ export function createAuth(runtime: AuthRuntime) {
       tanstackStartCookies(),
     ],
   })
-}
-
-export async function renderAuthenticationEmail(message: AuthenticationEmail) {
-  return {
-    ...message,
-    rendered: await renderEmail(message.content),
-  }
 }

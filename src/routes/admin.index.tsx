@@ -1,5 +1,5 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { ChevronRight } from "lucide-react"
+import { ChevronRight, Mail } from "lucide-react"
 
 import { AdminOverviewSkeleton } from "@/components/LoadingStates"
 import { adminSections } from "@/lib/admin-sections"
@@ -22,6 +22,21 @@ function AdminOverview() {
           Moderate content, manage access, and inspect operational problems.
         </p>
       </header>
+      <Link
+        to="/admin/email-campaigns"
+        className="mb-6 flex items-center justify-between gap-3 border-y px-1 py-5 hover:bg-muted/40 sm:px-3"
+      >
+        <span>
+          <span className="block font-semibold">Email campaigns</span>
+          <span className="mt-1 block text-sm text-muted-foreground">
+            Draft, preview, and queue optional product updates.
+          </span>
+        </span>
+        <span className="inline-flex items-center gap-2 text-muted-foreground">
+          <Mail aria-hidden="true" className="size-4" />
+          <ChevronRight aria-hidden="true" className="size-4" />
+        </span>
+      </Link>
       <nav className="border-y" aria-label="Administration sections">
         {adminSections.map((section) => (
           <Link

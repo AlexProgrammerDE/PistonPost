@@ -3,7 +3,20 @@ import { afterEach, describe, expect, it } from "bun:test"
 import { eq } from "drizzle-orm"
 
 import { createPost, createUser } from "./factories"
-import { postTags, posts, profiles, reactions, tagFollows, tags, user, userFollows } from "./schema"
+import {
+  comments,
+  emailCampaignDeliveries,
+  emailCampaigns,
+  outbox,
+  postTags,
+  posts,
+  profiles,
+  reactions,
+  tagFollows,
+  tags,
+  user,
+  userFollows,
+} from "./schema"
 import { createMigratedTestDatabase } from "./test-database"
 
 let close: (() => void) | undefined
@@ -166,5 +179,94 @@ describe("domain schema", () => {
 
     expect(db.select().from(postTags).all()).toHaveLength(0)
     expect(db.select().from(reactions).all()).toHaveLength(0)
+  })
+
+  it("keeps replies tied to a parent and removes the thread with its post", () => {
+    const db = database()
+    db.insert(user)
+      .values([
+        createUser({ id: "author", email: "author@example.com" }),
+        createUser({ id: "reply-author", email: "reply@example.com" }),
+      ])
+      .run()
+    db.insert(posts)
+      .values(createPost({ id: "post", authorId: "author" }))
+      .run()
+    db.insert(comments)
+      .values({ id: "parent", postId: "post", authorId: "author", content: "First" })
+      .run()
+    db.insert(comments)
+      .values({
+        id: "reply",
+        postId: "post",
+        authorId: "reply-author",
+        parentId: "parent",
+        content: "Second",
+      })
+      .run()
+
+    expect(db.select().from(comments).where(eq(comments.parentId, "parent")).all()).toHaveLength(1)
+    db.delete(posts).where(eq(posts.id, "post")).run()
+    expect(db.select().from(comments).all()).toHaveLength(0)
+  })
+
+  it("keeps product campaign delivery state tied to an ID-only outbox job", () => {
+    const db = database()
+    db.insert(user).values(createUser()).run()
+    db.insert(emailCampaigns)
+      .values({
+        id: "campaign",
+        createdBy: "test-user",
+        subject: "A small update",
+        preview: "A useful preview",
+        heading: "Something changed",
+        message: "Here is what changed.",
+      })
+      .run()
+    db.insert(outbox)
+      .values({
+        id: "email.product:campaign:test-user",
+        kind: "email.product",
+        payload: {
+          version: 2,
+          type: "email.product",
+          idempotencyKey: "email.product:campaign:test-user",
+          recipientUserId: "test-user",
+          campaignId: "campaign",
+        },
+      })
+      .run()
+    db.insert(emailCampaignDeliveries)
+      .values({
+        id: "email.product:campaign:test-user",
+        campaignId: "campaign",
+        recipientUserId: "test-user",
+      })
+      .run()
+
+    const payload = db.select({ payload: outbox.payload }).from(outbox).get()?.payload
+    expect(JSON.stringify(payload)).not.toContain("@example.com")
+    expect(db.select().from(emailCampaignDeliveries).all()).toHaveLength(1)
+    db.delete(outbox).run()
+    expect(db.select().from(emailCampaignDeliveries).all()).toHaveLength(0)
+  })
+
+  it("rejects incomplete campaign actions", () => {
+    const db = database()
+    db.insert(user).values(createUser()).run()
+    expect(() =>
+      db
+        .insert(emailCampaigns)
+        .values({
+          id: "invalid-campaign",
+          createdBy: "test-user",
+          subject: "A small update",
+          preview: "A useful preview",
+          heading: "Something changed",
+          message: "Here is what changed.",
+          actionLabel: "Read more",
+        })
+        .run(),
+    ).toThrow()
   })
 })

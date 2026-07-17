@@ -2,14 +2,12 @@ import { createFileRoute } from "@tanstack/react-router"
 
 import {
   createRequestAuth,
+  enqueueSecurityNotification,
   privateAuthResponse,
   recordAuthAudit,
-  sendSecurityNotification,
 } from "@/server/auth"
 
 const auditedMutations = new Map([
-  ["/change-email", "auth.email-changed"],
-  ["/change-password", "auth.password-changed"],
   ["/delete-user", "auth.deletion-requested"],
   ["/passkey/add-passkey", "auth.passkey-added"],
   ["/passkey/delete-passkey", "auth.passkey-deleted"],
@@ -28,27 +26,26 @@ async function handleAuth({
   const auth = await createRequestAuth(context)
   const path = new URL(request.url).pathname.replace("/api/auth", "")
   const action = request.method === "POST" ? auditedMutations.get(path) : undefined
-  const session = action ? await auth.api.getSession({ headers: request.headers }) : null
+  const sendsSecurityNotification = path === "/change-password" || path === "/change-email"
+  const session =
+    action || sendsSecurityNotification
+      ? await auth.api.getSession({ headers: request.headers })
+      : null
   const response = await auth.handler(request)
 
   if (action && session?.user.id && response.ok) {
     context.executionContext.waitUntil(recordAuthAudit(context, action, session.user.id))
   }
 
-  const notificationTemplate =
+  const notificationAction =
     path === "/change-password"
-      ? "password-changed"
+      ? "auth.password-changed"
       : path === "/change-email"
-        ? "email-changed"
+        ? "auth.email-change-requested"
         : undefined
-  if (notificationTemplate && session?.user.id && response.ok) {
+  if (notificationAction && session?.user.id && response.ok) {
     context.executionContext.waitUntil(
-      sendSecurityNotification(
-        context,
-        session.user.id,
-        notificationTemplate,
-        `${notificationTemplate}:${session.user.id}:${crypto.randomUUID()}`,
-      ),
+      enqueueSecurityNotification(context, session.user.id, notificationAction, session.user.id),
     )
   }
 

@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm"
-import { check, index, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import {
+  type AnySQLiteColumn,
+  check,
+  index,
+  primaryKey,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core"
 
 import { user } from "./auth.generated"
 import { now, timestamp } from "./common"
@@ -16,6 +23,7 @@ export const comments = sqliteTable(
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
+    parentId: text("parent_id").references((): AnySQLiteColumn => comments.id),
     content: text("content").notNull(),
     status: text("status", { enum: ["published", "moderated", "deleted"] })
       .notNull()
@@ -27,6 +35,7 @@ export const comments = sqliteTable(
   },
   (table) => [
     index("comments_post_status_created_idx").on(table.postId, table.status, table.createdAt),
+    index("comments_parent_status_created_idx").on(table.parentId, table.status, table.createdAt),
     check("comments_content_length_check", sql`length(${table.content}) between 1 and 250`),
     check("comments_status_check", sql`${table.status} in ('published', 'moderated', 'deleted')`),
   ],

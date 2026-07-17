@@ -4,7 +4,7 @@ import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import type { EmailJob } from "@/email"
+import { moderationEmailJob } from "@/email"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
@@ -265,7 +265,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
               id: schema.outbox.id,
               primary: schema.outbox.kind,
               secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
-              status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
+              status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
               createdAt: schema.outbox.createdAt,
             })
             .from(schema.outbox)
@@ -387,8 +387,18 @@ export const retryAdminJob = createServerFn({ method: "POST" })
     await database.batch([
       database
         .update(schema.outbox)
-        .set({ availableAt: new Date(), lastError: null })
+        .set({
+          availableAt: new Date(),
+          leaseExpiresAt: null,
+          deadLetteredAt: null,
+          completedReason: null,
+          lastError: null,
+        })
         .where(eq(schema.outbox.id, data.id)),
+      database
+        .update(schema.emailCampaignDeliveries)
+        .set({ status: "queued", skipReason: null, completedAt: null })
+        .where(eq(schema.emailCampaignDeliveries.id, data.id)),
       database.insert(schema.auditEvents).values({
         id: crypto.randomUUID(),
         actorId: session.user.id,
@@ -462,11 +472,9 @@ export const moderateEntity = createServerFn({ method: "POST" })
               postId: schema.posts.id,
               status: schema.posts.status,
               authorId: schema.posts.authorId,
-              authorEmail: schema.user.email,
               authorUsername: schema.profiles.username,
             })
             .from(schema.posts)
-            .innerJoin(schema.user, eq(schema.user.id, schema.posts.authorId))
             .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
             .where(eq(schema.posts.id, data.id))
             .get()
@@ -476,11 +484,9 @@ export const moderateEntity = createServerFn({ method: "POST" })
               postId: schema.comments.postId,
               status: schema.comments.status,
               authorId: schema.comments.authorId,
-              authorEmail: schema.user.email,
               authorUsername: schema.profiles.username,
             })
             .from(schema.comments)
-            .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
             .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
             .where(eq(schema.comments.id, data.id))
             .get()
@@ -491,58 +497,50 @@ export const moderateEntity = createServerFn({ method: "POST" })
     }
     const expectedStatus = data.action === "hide" ? "published" : "moderated"
 
-    if (data.target === "post") {
-      await database
-        .update(schema.posts)
-        .set({
-          status: nextStatus,
-          moderationReason: data.action === "hide" ? data.reason : null,
-          updatedAt: new Date(),
-        })
-        .where(and(eq(schema.posts.id, data.id), eq(schema.posts.status, expectedStatus)))
-    } else {
-      await database
-        .update(schema.comments)
-        .set({
-          status: nextStatus,
-          moderationReason: data.action === "hide" ? data.reason : null,
-          updatedAt: new Date(),
-        })
-        .where(and(eq(schema.comments.id, data.id), eq(schema.comments.status, expectedStatus)))
-    }
+    const updateTarget =
+      data.target === "post"
+        ? database
+            .update(schema.posts)
+            .set({
+              status: nextStatus,
+              moderationReason: data.action === "hide" ? data.reason : null,
+              updatedAt: new Date(),
+            })
+            .where(and(eq(schema.posts.id, data.id), eq(schema.posts.status, expectedStatus)))
+        : database
+            .update(schema.comments)
+            .set({
+              status: nextStatus,
+              moderationReason: data.action === "hide" ? data.reason : null,
+              updatedAt: new Date(),
+            })
+            .where(and(eq(schema.comments.id, data.id), eq(schema.comments.status, expectedStatus)))
     const moderationEventId = crypto.randomUUID()
-    await database.insert(schema.auditEvents).values({
-      id: moderationEventId,
-      actorId: session.user.id,
-      action: `${data.target}.${data.action}`,
-      entityType: data.target,
-      entityId: data.id,
-      metadata: { reason: data.reason },
-    })
-
-    const jobs: Array<EmailJob | ReturnType<typeof cacheInvalidationJob>> = [
-      cacheInvalidationJob(target.postId, target.authorUsername),
-    ]
+    const jobs: Array<
+      ReturnType<typeof moderationEmailJob> | ReturnType<typeof cacheInvalidationJob>
+    > = [cacheInvalidationJob(target.postId, target.authorUsername)]
     if (target.authorId !== session.user.id) {
-      jobs.push({
-        version: 1,
-        type: "email.moderation",
-        idempotencyKey: `email.moderation:${moderationEventId}`,
-        to: target.authorEmail,
-        data: {
-          action: data.action === "hide" ? "Your content was hidden" : "Your content was restored",
-          reason: data.reason,
-          targetUrl: new URL(
-            data.target === "post" ? `/post/${target.postId}` : `/post/${target.postId}#discussion`,
-            context.runtime.config.PUBLIC_APP_URL,
-          ).toString(),
-        },
-      })
+      jobs.push(moderationEmailJob(target.authorId, moderationEventId))
     }
-    await database
-      .insert(schema.outbox)
-      .values(jobs.map((job) => ({ id: job.idempotencyKey, kind: job.type, payload: job })))
-      .onConflictDoNothing()
-    context.executionContext.waitUntil(Promise.all(jobs.map((job) => context.env.JOBS.send(job))))
+    await database.batch([
+      updateTarget,
+      database.insert(schema.auditEvents).values({
+        id: moderationEventId,
+        actorId: session.user.id,
+        action: `${data.target}.${data.action}`,
+        entityType: data.target,
+        entityId: data.id,
+        metadata: { reason: data.reason },
+      }),
+      ...jobs.map((job) =>
+        database
+          .insert(schema.outbox)
+          .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+          .onConflictDoNothing(),
+      ),
+    ])
+    context.executionContext.waitUntil(
+      context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
+    )
     return { id: data.id }
   })

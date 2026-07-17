@@ -87,6 +87,30 @@ describe("request-scoped Better Auth", () => {
     ])
   })
 
+  it("hands Better Auth background work to the request runtime", () => {
+    const database = createMigratedTestDatabase()
+    databases.push(database)
+    const scheduled: Array<Promise<unknown>> = []
+    const runInBackground = (promise: Promise<unknown>) => scheduled.push(promise)
+    const auth = createAuth({
+      database,
+      baseURL: "http://localhost:3000",
+      betterAuthApiKey: "test-only-better-auth-api-key",
+      secret: "test-only-auth-secret-at-least-32-characters",
+      trustedOrigins: ["http://localhost:3000"],
+      turnstileSecret: "not-used-in-this-test",
+      production: false,
+      captchaEnabled: false,
+      infraEnabled: false,
+      isManagedUserAvatar: async () => false,
+      sendEmail: async () => {},
+      runInBackground,
+    })
+
+    auth.options.advanced?.backgroundTasks?.handler(Promise.resolve())
+    expect(scheduled).toHaveLength(1)
+  })
+
   it("registers an unverified user and dispatches verification email", async () => {
     const { auth, database, emails } = setup()
     const response = await auth.handler(
@@ -197,6 +221,40 @@ describe("request-scoped Better Auth", () => {
 
     const sessionResponse = await auth.handler(sessionRequest(cookie))
     expect(await sessionResponse.json()).toBeNull()
+  })
+
+  it("asks the current address to approve an email change", async () => {
+    const { auth, database, emails } = setup()
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Email Change Tester",
+        username: "email-change-tester",
+        email: "current@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    database.update(schema.user).set({ emailVerified: true }).run()
+    const signInResponse = await auth.handler(
+      authRequest("/sign-in/email", {
+        email: "current@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    const cookie = signInResponse.headers
+      .getSetCookie()
+      .map((value) => value.split(";", 1)[0])
+      .join("; ")
+    emails.length = 0
+
+    const response = await auth.handler(
+      authRequest("/change-email", { newEmail: "next@example.com" }, cookie),
+    )
+
+    expect(response.status).toBe(200)
+    expect(emails).toHaveLength(1)
+    expect(emails[0]?.to).toBe("current@example.com")
+    expect(emails[0]?.content.template).toBe("email-change-approval")
+    expect(emails[0]?.content.action?.url).toContain("/api/auth/verify-email")
   })
 
   it("rejects external profile images and accepts the user's managed avatar", async () => {

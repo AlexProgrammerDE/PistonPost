@@ -154,6 +154,15 @@
           "class_name": "AccountDeletionWorkflow",
         },
       ],
+      "send_email": [
+        {
+          "name": "EMAIL",
+          "allowed_sender_addresses": [
+            "auth@transactional.pistonmaster.net",
+            "notifications@transactional.pistonmaster.net",
+          ],
+        },
+      ],
       "queues": {
         "producers": [{ "binding": "JOBS", "queue": "pistonpost-staging-jobs" }],
         "consumers": [

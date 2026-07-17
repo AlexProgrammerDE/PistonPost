@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm"
+import { and, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm"
 import { Effect } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
@@ -12,9 +12,42 @@ async function drainOutbox(env: Cloudflare.Env) {
   const pending = await database
     .select({ payload: schema.outbox.payload })
     .from(schema.outbox)
-    .where(and(isNull(schema.outbox.processedAt), lt(schema.outbox.availableAt, new Date())))
+    .where(
+      and(
+        isNull(schema.outbox.processedAt),
+        isNull(schema.outbox.deadLetteredAt),
+        lte(schema.outbox.availableAt, new Date()),
+        or(isNull(schema.outbox.leaseExpiresAt), lte(schema.outbox.leaseExpiresAt, new Date())),
+      ),
+    )
     .limit(100)
-  await Promise.all(pending.map(({ payload }) => env.JOBS.send(payload)))
+  if (pending.length > 0) {
+    await env.JOBS.sendBatch(pending.map(({ payload }) => ({ body: payload })))
+  }
+}
+
+async function redactProcessedLegacyEmailJobs(env: Cloudflare.Env) {
+  const database = createD1Database(env.DB)
+  const legacy = await database
+    .select({ id: schema.outbox.id })
+    .from(schema.outbox)
+    .where(
+      and(
+        isNotNull(schema.outbox.processedAt),
+        sql`json_extract(${schema.outbox.payload}, '$.version') = 1`,
+        sql`${schema.outbox.kind} like 'email.%'`,
+      ),
+    )
+    .limit(100)
+  if (legacy.length === 0) return
+  await Promise.all(
+    legacy.map(({ id }) =>
+      database
+        .update(schema.outbox)
+        .set({ payload: { version: 1, type: "redacted", idempotencyKey: id } })
+        .where(eq(schema.outbox.id, id)),
+    ),
+  )
 }
 
 async function queueAbandonedMedia(env: Cloudflare.Env) {
@@ -141,6 +174,7 @@ async function cleanStagingObjects(env: Cloudflare.Env, cursor?: string): Promis
 export async function handleScheduled(_controller: ScheduledController, env: Cloudflare.Env) {
   await Promise.all([
     drainOutbox(env),
+    redactProcessedLegacyEmailJobs(env),
     queueAbandonedMedia(env),
     reconcileStream(env),
     reconcileVideoDownloads(env),

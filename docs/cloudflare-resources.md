@@ -58,6 +58,11 @@ bunx wrangler queues create pistonpost-production-dead-letter
 
 Queue names belong in Wrangler environment blocks. Queue payloads must use versioned schemas and must not contain secrets, rendered email bodies, message content, or direct personal data.
 
+Authentication links and one-time codes never enter a Queue or D1 outbox row. Better Auth hands those
+messages to the request execution context and the email transport uses a small bounded retry. Comment,
+reply, moderation, security, and product notifications use ID-only outbox jobs. The consumer reloads
+the current recipient, content, and optional preference before sending.
+
 ## Configure managed services
 
 Some bindings require account-level setup rather than a create command:
@@ -92,6 +97,7 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 
 - `BETTER_AUTH_API_KEY`
 - `BETTER_AUTH_SECRET`
+- `EMAIL_UNSUBSCRIBE_SECRET`
 - `TURNSTILE_SECRET`
 - `STREAM_WEBHOOK_SECRET`
 - `STREAM_ACCOUNT_ID`
@@ -108,6 +114,7 @@ bunx wrangler secrets-store store list
 STORE_ID=replace-with-your-store-id
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_API_KEY --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name EMAIL_UNSUBSCRIBE_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID --scopes workers --remote
@@ -115,7 +122,7 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --
 ```
 
 Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
-The deployment workflow binds all six secrets by name. Its Cloudflare API token needs permission to
+The deployment workflow binds all seven secrets by name. Its Cloudflare API token needs permission to
 deploy Secrets Store bindings in addition to the permissions required by the other configured
 services.
 

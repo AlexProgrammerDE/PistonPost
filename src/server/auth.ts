@@ -1,10 +1,15 @@
 import { eq } from "drizzle-orm"
-import { Effect } from "effect"
+import { Effect, Layer } from "effect"
 
-import { createAuth, renderAuthenticationEmail } from "@/auth/server"
+import { createAuth } from "@/auth/server"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import { createCloudflareEmailTransport, renderEmail, securityNotificationMessage } from "@/email"
+import {
+  cloudflareEmailTransportLayer,
+  deliverImmediateEmail,
+  EmailRenderer,
+  securityEmailJob,
+} from "@/email"
 
 import type { AppRequestContext } from "../server"
 import { isManagedUserAvatar } from "./avatar-policy"
@@ -24,7 +29,10 @@ export async function createRequestAuth(context: AppRequestContext) {
     readSecret(env.TURNSTILE_SECRET, "TURNSTILE_SECRET"),
     readSecret(env.BETTER_AUTH_API_KEY, "BETTER_AUTH_API_KEY"),
   ])
-  const transport = createCloudflareEmailTransport(requireEmailBinding(env))
+  const emailLayer = Layer.mergeAll(
+    EmailRenderer.live,
+    cloudflareEmailTransportLayer(requireEmailBinding(env)),
+  )
 
   const database = createD1Database(env.DB)
 
@@ -36,17 +44,17 @@ export async function createRequestAuth(context: AppRequestContext) {
     trustedOrigins: [baseURL],
     turnstileSecret,
     production: runtime.config.APP_ENV === "production",
+    runInBackground: (promise) => context.executionContext.waitUntil(promise),
     isManagedUserAvatar: (userId, image) => isManagedUserAvatar(database, userId, image),
     sendEmail: async (message) => {
-      const { rendered } = await renderAuthenticationEmail(message)
       await Effect.runPromise(
-        transport.send({
-          ...rendered,
+        deliverImmediateEmail({
+          content: message.content,
           to: message.to,
           from: env.AUTH_EMAIL_FROM,
           replyTo: env.SUPPORT_EMAIL,
           idempotencyKey: message.idempotencyKey,
-        }),
+        }).pipe(Effect.provide(emailLayer)),
       )
     },
     audit: async (action, userId) => {
@@ -60,28 +68,36 @@ export async function createRequestAuth(context: AppRequestContext) {
       })
     },
     notifyNewDevice: async (userId, sessionId) => {
-      const sessions = await database
-        .select({ id: schema.session.id })
-        .from(schema.session)
-        .where(eq(schema.session.userId, userId))
-        .limit(2)
-      if (sessions.length < 2) return
-
-      const signedInUser = await database
-        .select({ email: schema.user.email })
-        .from(schema.user)
-        .where(eq(schema.user.id, userId))
-        .get()
-      if (!signedInUser) return
-
-      const rendered = await renderEmail(securityNotificationMessage({ template: "new-device" }))
-      await Effect.runPromise(
-        transport.send({
-          ...rendered,
-          to: signedInUser.email,
-          from: env.AUTH_EMAIL_FROM,
-          replyTo: env.SUPPORT_EMAIL,
-          idempotencyKey: `new-device:${sessionId}`,
+      context.executionContext.waitUntil(
+        (async () => {
+          const sessions = await database
+            .select({ id: schema.session.id })
+            .from(schema.session)
+            .where(eq(schema.session.userId, userId))
+            .limit(2)
+          if (sessions.length < 2) return
+          await enqueueSecurityNotification(context, userId, "auth.new-device", sessionId)
+        })().catch((cause) => {
+          console.error(
+            JSON.stringify({
+              level: "error",
+              event: "auth.new-device-notification-failed",
+              error: cause instanceof Error ? cause.name : "UnknownError",
+            }),
+          )
+        }),
+      )
+    },
+    queueSecurityNotification: async (userId, action, entityId) => {
+      context.executionContext.waitUntil(
+        enqueueSecurityNotification(context, userId, action, entityId).catch((cause) => {
+          console.error(
+            JSON.stringify({
+              level: "error",
+              event: "auth.security-notification-failed",
+              error: cause instanceof Error ? cause.name : "UnknownError",
+            }),
+          )
         }),
       )
     },
@@ -128,29 +144,34 @@ export async function recordAuthAudit(context: AppRequestContext, action: string
   })
 }
 
-export async function sendSecurityNotification(
+export async function enqueueSecurityNotification(
   context: AppRequestContext,
   userId: string,
-  template: "password-changed" | "email-changed",
-  idempotencyKey: string,
+  action:
+    | "auth.password-changed"
+    | "auth.password-reset"
+    | "auth.email-change-requested"
+    | "auth.new-device",
+  entityId: string,
 ) {
-  const recipient = await createD1Database(context.env.DB)
-    .select({ email: schema.user.email })
-    .from(schema.user)
-    .where(eq(schema.user.id, userId))
-    .get()
-  if (!recipient) return
-  const rendered = await renderEmail(securityNotificationMessage({ template }))
-  const transport = createCloudflareEmailTransport(requireEmailBinding(context.env))
-  await Effect.runPromise(
-    transport.send({
-      ...rendered,
-      to: recipient.email,
-      from: context.env.AUTH_EMAIL_FROM,
-      replyTo: context.env.SUPPORT_EMAIL,
-      idempotencyKey,
+  const database = createD1Database(context.env.DB)
+  const auditEventId = crypto.randomUUID()
+  const job = securityEmailJob(userId, auditEventId)
+  await database.batch([
+    database.insert(schema.auditEvents).values({
+      id: auditEventId,
+      actorId: userId,
+      action,
+      entityType: "user",
+      entityId,
+      metadata: {},
     }),
-  )
+    database
+      .insert(schema.outbox)
+      .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+      .onConflictDoNothing(),
+  ])
+  await context.env.JOBS.send(job)
 }
 
 export function privateAuthResponse(response: Response) {

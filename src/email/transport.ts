@@ -1,6 +1,6 @@
-import { Effect, Schema } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
 
-import type { RenderedEmail } from "./email"
+import { renderEmail, type EmailContent, type RenderedEmail } from "./email"
 
 export type EmailAddress = Readonly<{ email: string; name: string }>
 
@@ -9,6 +9,7 @@ export type OutboundEmail = RenderedEmail & {
   readonly from: string | EmailAddress
   readonly replyTo?: string | EmailAddress
   readonly idempotencyKey: string
+  readonly headers?: Readonly<Record<string, string>>
 }
 
 export class EmailDeliveryError extends Schema.TaggedError<EmailDeliveryError>()(
@@ -18,8 +19,37 @@ export class EmailDeliveryError extends Schema.TaggedError<EmailDeliveryError>()
   },
 ) {}
 
+export class EmailRenderError extends Schema.TaggedError<EmailRenderError>()("EmailRenderError", {
+  message: Schema.String,
+}) {}
+
 export type EmailTransportService = {
   readonly send: (message: OutboundEmail) => Effect.Effect<void, EmailDeliveryError>
+}
+
+export type EmailRendererService = {
+  readonly render: (content: EmailContent) => Effect.Effect<RenderedEmail, EmailRenderError>
+}
+
+export class EmailTransport extends Context.Tag("@pistonpost/email/EmailTransport")<
+  EmailTransport,
+  EmailTransportService
+>() {}
+
+export class EmailRenderer extends Context.Tag("@pistonpost/email/EmailRenderer")<
+  EmailRenderer,
+  EmailRendererService
+>() {
+  static readonly live = Layer.succeed(EmailRenderer, {
+    render: (content) =>
+      Effect.tryPromise({
+        try: () => renderEmail(content),
+        catch: (cause) =>
+          new EmailRenderError({
+            message: cause instanceof Error ? cause.message : "Email rendering failed.",
+          }),
+      }),
+  })
 }
 
 export type CloudflareEmailBinding = {
@@ -30,6 +60,7 @@ export type CloudflareEmailBinding = {
     readonly subject: string
     readonly html: string
     readonly text: string
+    readonly headers?: Readonly<Record<string, string>>
   }) => Promise<unknown>
 }
 
@@ -47,6 +78,7 @@ export function createCloudflareEmailTransport(
             subject: message.subject,
             html: message.html,
             text: message.text,
+            headers: message.headers,
           })
         },
         catch: (cause) =>
@@ -56,6 +88,36 @@ export function createCloudflareEmailTransport(
       }),
   }
 }
+
+export function cloudflareEmailTransportLayer(binding: CloudflareEmailBinding) {
+  return Layer.succeed(EmailTransport, createCloudflareEmailTransport(binding))
+}
+
+export type EmailDelivery = Omit<OutboundEmail, keyof RenderedEmail> & {
+  readonly content: EmailContent
+}
+
+export const deliverEmail = Effect.fn("Email.deliver")(function* (message: EmailDelivery) {
+  const renderer = yield* EmailRenderer
+  const transport = yield* EmailTransport
+  const rendered = yield* renderer.render(message.content)
+  yield* transport.send({
+    ...rendered,
+    to: message.to,
+    from: message.from,
+    replyTo: message.replyTo,
+    idempotencyKey: message.idempotencyKey,
+    headers: message.content.unsubscribeUrl
+      ? { "List-Unsubscribe": `<${message.content.unsubscribeUrl}>` }
+      : undefined,
+  })
+})
+
+export const deliverImmediateEmail = Effect.fn("Email.deliverImmediate")(function* (
+  message: EmailDelivery,
+) {
+  yield* deliverEmail(message).pipe(Effect.retry({ times: 2 }))
+})
 
 export function createCaptureEmailTransport(captured: Array<OutboundEmail>): EmailTransportService {
   return {

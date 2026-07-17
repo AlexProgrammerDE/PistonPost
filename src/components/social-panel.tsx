@@ -8,7 +8,17 @@ import {
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Heart, History, MessageCircle, Send, ThumbsDown, ThumbsUp, Trash2 } from "lucide-react"
+import {
+  Heart,
+  History,
+  MessageCircle,
+  Reply,
+  Send,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
+  X,
+} from "lucide-react"
 import { startTransition, useEffect, useOptimistic, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -51,6 +61,7 @@ import {
   type ReactionCounts,
   type ReactionType,
 } from "@/lib/social-state"
+import { cn } from "@/lib/utils"
 import { createComment, deleteComment, getDiscussion, setReaction } from "@/server/social"
 
 type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][number]
@@ -120,6 +131,7 @@ export function SocialPanel({
   const [footerActionsPosition, setFooterActionsPosition] =
     useState<ObservedVerticalPosition>("below")
   const [confirmedCounts, setConfirmedCounts] = useState(counts)
+  const [replyingTo, setReplyingTo] = useState<DiscussionComment | null>(null)
   const discussion = useSuspenseInfiniteQuery(discussionQueryOptions(postId))
   const session = useSession(authClient)
   const sessionUserId = session.data?.user.id ?? null
@@ -189,7 +201,8 @@ export function SocialPanel({
   })
 
   const commentMutation = useMutation({
-    mutationFn: (content: string) => createComment({ data: { postId, content } }),
+    mutationFn: (input: { content: string; parentCommentId?: string }) =>
+      createComment({ data: { postId, ...input } }),
     onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
@@ -214,6 +227,7 @@ export function SocialPanel({
     onSubmit: async ({ value }) => {
       const content = value.content.trim()
       if (!content || !viewerId) return
+      const parentCommentId = replyingTo?.id
       const pendingId = `pending-${crypto.randomUUID()}`
       startTransition(async () => {
         addOptimisticComment({
@@ -222,14 +236,16 @@ export function SocialPanel({
           createdAt: new Date(),
           updatedAt: new Date(),
           authorId: viewerId,
+          parentId: parentCommentId ?? null,
           authorName: "You",
           authorUsername: "you",
           authorImage: null,
           optimistic: true,
         })
         try {
-          await commentMutation.mutateAsync(content)
+          await commentMutation.mutateAsync({ content, parentCommentId })
           form.reset()
+          setReplyingTo(null)
         } catch {
           toast.error("The comment could not be posted.")
         }
@@ -331,6 +347,7 @@ export function SocialPanel({
           <CommentComposerSkeleton />
         ) : viewerId ? (
           <form
+            id="comment-composer"
             className="grid gap-3"
             onSubmit={(event) => {
               event.preventDefault()
@@ -338,11 +355,28 @@ export function SocialPanel({
             }}
           >
             <form.AppForm>
+              {replyingTo ? (
+                <div className="flex items-center justify-between gap-3 border-l-2 border-primary px-3 py-2 text-sm">
+                  <span className="min-w-0 truncate text-muted-foreground">
+                    Replying to{" "}
+                    <bdi className="font-medium text-foreground">@{replyingTo.authorUsername}</bdi>
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon-xs"
+                    aria-label="Cancel reply"
+                    onClick={() => setReplyingTo(null)}
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                </div>
+              ) : null}
               <form.AppField name="content">
                 {(field) => (
                   <field.TextareaField
-                    label="Add a comment"
-                    placeholder="Write a comment…"
+                    label={replyingTo ? "Add a reply" : "Add a comment"}
+                    placeholder={replyingTo ? "Write a reply…" : "Write a comment…"}
                     maxLength={250}
                     rows={3}
                   />
@@ -351,7 +385,7 @@ export function SocialPanel({
               <div className="flex justify-end">
                 <form.SubmitButton>
                   <Send aria-hidden="true" data-icon="inline-start" />
-                  Post comment
+                  {replyingTo ? "Post reply" : "Post comment"}
                 </form.SubmitButton>
               </div>
             </form.AppForm>
@@ -388,7 +422,10 @@ export function SocialPanel({
                 <article
                   key={comment.id}
                   id={`comment-${comment.id}`}
-                  className="grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 py-5 wrap-anywhere"
+                  className={cn(
+                    "grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 py-5 wrap-anywhere",
+                    comment.parentId && "ml-8 border-l pl-4 sm:ml-12",
+                  )}
                 >
                   <Avatar>
                     {comment.authorImage ? (
@@ -459,6 +496,23 @@ export function SocialPanel({
                     >
                       {comment.content}
                     </p>
+                    {!comment.optimistic && !comment.parentId && viewerId ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="xs"
+                        className="mt-2"
+                        onClick={() => {
+                          setReplyingTo(comment)
+                          document
+                            .getElementById("comment-composer")
+                            ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                        }}
+                      >
+                        <Reply aria-hidden="true" data-icon="inline-start" />
+                        Reply
+                      </Button>
+                    ) : null}
                   </div>
                   <Separator className="col-span-2" />
                 </article>

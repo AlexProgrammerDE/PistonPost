@@ -6,9 +6,8 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { commentInputSchema } from "@/domain"
-import type { EmailJob } from "@/email"
+import { commentEmailJob, replyEmailJob } from "@/email"
 import { createRequestAuth } from "@/server/auth"
-import { notificationEnabled } from "@/server/notification-policy"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 
 const reactionType = z.enum(["like", "dislike", "heart"])
@@ -57,6 +56,7 @@ export const getDiscussion = createServerFn({ method: "GET" })
         createdAt: schema.comments.createdAt,
         updatedAt: schema.comments.updatedAt,
         authorId: schema.comments.authorId,
+        parentId: schema.comments.parentId,
         authorName: schema.user.name,
         authorImage: schema.user.image,
         authorUsername: schema.profiles.username,
@@ -158,7 +158,13 @@ export const setReaction = createServerFn({ method: "POST" })
   })
 
 export const createComment = createServerFn({ method: "POST" })
-  .validator(z.object({ postId: z.string().min(1).max(64), content: commentInputSchema }))
+  .validator(
+    z.object({
+      postId: z.string().min(1).max(64),
+      content: commentInputSchema,
+      parentCommentId: z.string().uuid().optional(),
+    }),
+  )
   .handler(async ({ context, data }) => {
     assertMutationOrigin(context)
     const session = await requireRequestSession(context)
@@ -166,50 +172,61 @@ export const createComment = createServerFn({ method: "POST" })
     if (!limited.success) throw new Error("The comment rate limit was reached.")
     const database = createD1Database(context.env.DB)
     const post = await database
-      .select({ id: schema.posts.id, authorId: schema.posts.authorId, title: schema.posts.title })
+      .select({ id: schema.posts.id, authorId: schema.posts.authorId })
       .from(schema.posts)
       .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
       .get()
     if (!post) throw new Error("The post was not found.")
-    const id = crypto.randomUUID()
-    await database.insert(schema.comments).values({
-      id,
-      postId: post.id,
-      authorId: session.user.id,
-      content: data.content,
-    })
-
-    if (post.authorId !== session.user.id) {
-      const recipient = await database
-        .select({
-          email: schema.user.email,
-          enabled: schema.userSettings.commentNotifications,
-        })
-        .from(schema.user)
-        .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.user.id))
-        .where(eq(schema.user.id, post.authorId))
-        .get()
-      if (recipient && notificationEnabled(recipient.enabled)) {
-        const job: EmailJob = {
-          version: 1,
-          type: "email.comment",
-          idempotencyKey: `email.comment:${id}`,
-          to: recipient.email,
-          data: {
-            actorName: session.user.name,
-            postTitle: post.title,
-            postUrl: new URL(`/post/${post.id}`, context.runtime.config.PUBLIC_APP_URL).toString(),
-          },
-        }
-        await database.insert(schema.outbox).values({
-          id: job.idempotencyKey,
-          kind: job.type,
-          payload: job,
-        })
-        context.executionContext.waitUntil(context.env.JOBS.send(job))
-      }
+    const parent = data.parentCommentId
+      ? await database
+          .select({
+            id: schema.comments.id,
+            postId: schema.comments.postId,
+            authorId: schema.comments.authorId,
+            parentId: schema.comments.parentId,
+          })
+          .from(schema.comments)
+          .where(
+            and(
+              eq(schema.comments.id, data.parentCommentId),
+              eq(schema.comments.status, "published"),
+            ),
+          )
+          .get()
+      : null
+    if (data.parentCommentId && (!parent || parent.postId !== post.id)) {
+      throw new Error("The comment you are replying to was not found.")
     }
-    return { id, content: data.content, createdAt: new Date() }
+    if (parent?.parentId) throw new Error("Replies can only be one level deep.")
+    const id = crypto.randomUUID()
+    const jobs: Array<ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob>> = []
+    if (parent && parent.authorId !== session.user.id) {
+      jobs.push(replyEmailJob(parent.authorId, id))
+    }
+    if (post.authorId !== session.user.id && (!parent || parent.authorId !== post.authorId)) {
+      jobs.push(commentEmailJob(post.authorId, id))
+    }
+    await database.batch([
+      database.insert(schema.comments).values({
+        id,
+        postId: post.id,
+        authorId: session.user.id,
+        parentId: parent?.id,
+        content: data.content,
+      }),
+      ...jobs.map((job) =>
+        database
+          .insert(schema.outbox)
+          .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+          .onConflictDoNothing(),
+      ),
+    ])
+    if (jobs.length > 0) {
+      context.executionContext.waitUntil(
+        context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
+      )
+    }
+    return { id, content: data.content, parentId: parent?.id ?? null, createdAt: new Date() }
   })
 
 export const deleteComment = createServerFn({ method: "POST" })

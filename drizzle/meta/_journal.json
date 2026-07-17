@@ -85,6 +85,13 @@
       "when": 1784295735585,
       "tag": "0011_better-auth-infra",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1784322338360,
+      "tag": "0012_harden-email-delivery",
+      "breakpoints": true
     }
   ]
 }

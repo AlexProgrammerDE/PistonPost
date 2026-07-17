@@ -9,6 +9,7 @@ type AuthenticationMessageInput = {
     | "account-deletion"
     | "email-otp"
     | "two-factor-otp"
+    | "email-change-approval"
   >
   readonly url?: string
   readonly code?: string
@@ -26,6 +27,11 @@ const copy = {
   ],
   "email-otp": ["Your PistonPost verification code", "Verify your request", "Verify"],
   "two-factor-otp": ["Your PistonPost security code", "Complete sign-in", "Complete sign-in"],
+  "email-change-approval": [
+    "Approve your PistonPost email change",
+    "Approve your email change",
+    "Approve email change",
+  ],
 } as const
 
 export function authenticationMessage(input: AuthenticationMessageInput): EmailContent {
@@ -74,5 +80,29 @@ export function securityNotificationMessage(input: SecurityNotificationInput): E
     heading,
     message,
     footnote: "PistonPost security messages are enabled for every account.",
+  }
+}
+
+export function productUpdateMessage(input: {
+  readonly subject: string
+  readonly preview: string
+  readonly heading: string
+  readonly message: string
+  readonly actionLabel?: string | null
+  readonly actionUrl?: string | null
+  readonly unsubscribeUrl: string
+}): EmailContent {
+  return {
+    template: "product-update",
+    subject: input.subject,
+    preview: input.preview,
+    heading: input.heading,
+    message: input.message,
+    action:
+      input.actionLabel && input.actionUrl
+        ? { label: input.actionLabel, url: input.actionUrl }
+        : undefined,
+    footnote: "You received this because product update emails are enabled for your account.",
+    unsubscribeUrl: input.unsubscribeUrl,
   }
 }

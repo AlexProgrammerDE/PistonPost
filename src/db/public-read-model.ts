@@ -242,6 +242,7 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
   const structuredComments = await database
     .select({
       id: comments.id,
+      parentId: comments.parentId,
       content: comments.content,
       createdAt: comments.createdAt,
       updatedAt: comments.updatedAt,

@@ -23,7 +23,10 @@ export const emailTemplateKeys = [
   "two-factor-otp",
   "new-device",
   "comment-notification",
+  "reply-notification",
   "moderation-action",
+  "product-update",
+  "email-change-approval",
 ] as const
 
 export type EmailTemplateKey = (typeof emailTemplateKeys)[number]
@@ -37,6 +40,7 @@ export type EmailContent = {
   readonly action?: Readonly<{ label: string; url: string }>
   readonly code?: string
   readonly footnote?: string
+  readonly unsubscribeUrl?: string
 }
 
 export type RenderedEmail = {
@@ -68,8 +72,19 @@ export function PistonPostEmail({ content }: { readonly content: EmailContent })
             </Button>
           ) : null}
           {content.footnote ? <Text style={styles.footnote}>{content.footnote}</Text> : null}
+          {content.unsubscribeUrl ? (
+            <Text style={styles.footnote}>
+              You can{" "}
+              <Link href={content.unsubscribeUrl} style={styles.link}>
+                stop product update emails
+              </Link>{" "}
+              at any time.
+            </Text>
+          ) : null}
           <Text style={styles.footer}>
-            If you did not request this message, you can ignore it or contact{" "}
+            {content.template === "product-update"
+              ? "Questions about this update? Contact "
+              : "If you did not request this message, you can ignore it or contact "}
             <Link href="mailto:support@pistonmaster.net" style={styles.link}>
               PistonPost support
             </Link>

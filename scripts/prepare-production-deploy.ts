@@ -3,6 +3,7 @@ const generatedConfigPath = new URL("../dist/server/wrangler.json", import.meta.
 const secretBindings = [
   "BETTER_AUTH_API_KEY",
   "BETTER_AUTH_SECRET",
+  "EMAIL_UNSUBSCRIBE_SECRET",
   "TURNSTILE_SECRET",
   "STREAM_WEBHOOK_SECRET",
   "STREAM_ACCOUNT_ID",

@@ -69,6 +69,11 @@ describe("prepareProductionDeployConfig", () => {
         secret_name: "BETTER_AUTH_SECRET",
       },
       {
+        binding: "EMAIL_UNSUBSCRIBE_SECRET",
+        store_id: input.secretsStoreId,
+        secret_name: "EMAIL_UNSUBSCRIBE_SECRET",
+      },
+      {
         binding: "TURNSTILE_SECRET",
         store_id: input.secretsStoreId,
         secret_name: "TURNSTILE_SECRET",

@@ -5,7 +5,7 @@ import { user } from "./auth.generated"
 import { now, timestamp } from "./common"
 
 export type AuditMetadata = Readonly<Record<string, string | number | boolean | null>>
-export type OutboxPayload = Readonly<Record<string, unknown>>
+export type OutboxPayload = object
 
 export const auditEvents = sqliteTable(
   "audit_events",
@@ -31,12 +31,20 @@ export const outbox = sqliteTable(
     payload: text("payload", { mode: "json" }).$type<OutboxPayload>().notNull(),
     attempts: integer("attempts").notNull().default(0),
     availableAt: timestamp("available_at").notNull().default(now),
+    leaseExpiresAt: timestamp("lease_expires_at"),
     processedAt: timestamp("processed_at"),
+    deadLetteredAt: timestamp("dead_lettered_at"),
+    completedReason: text("completed_reason"),
     lastError: text("last_error"),
     createdAt: timestamp("created_at").notNull().default(now),
   },
   (table) => [
-    index("outbox_processed_available_idx").on(table.processedAt, table.availableAt),
+    index("outbox_delivery_idx").on(
+      table.processedAt,
+      table.deadLetteredAt,
+      table.availableAt,
+      table.leaseExpiresAt,
+    ),
     check("outbox_attempts_check", sql`${table.attempts} >= 0`),
   ],
 )
