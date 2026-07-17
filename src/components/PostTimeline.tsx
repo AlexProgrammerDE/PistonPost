@@ -12,7 +12,7 @@ export function PostTimeline({ posts }: { readonly posts: readonly PublicPostRea
   const firstPostId = posts[0]?.id
 
   return (
-    <Timeline className="gap-0">
+    <Timeline className="gap-0" aria-orientation={undefined}>
       {posts.map((post) => (
         <TimelineItem key={post.id} id={`timeline-post-${post.id}`} className="gap-4">
           <TimelineDot className="mt-3" />

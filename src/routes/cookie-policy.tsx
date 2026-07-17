@@ -45,6 +45,10 @@ function CookiePolicyPage() {
           for up to 365 days after accepting all categories or 180 days after rejecting optional
           analytics.
         </p>
+        <p>
+          The <code>sidebar_state</code> cookie remembers whether you collapsed the navigation
+          sidebar. It lasts for up to seven days.
+        </p>
 
         <h2>Optional PostHog analytics</h2>
         <p>

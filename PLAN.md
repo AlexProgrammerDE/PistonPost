@@ -769,7 +769,7 @@ Exit criteria:
 ### Phase 5: Public reading experience
 
 - [x] Establish final PistonPost visual system and page shell.
-- [x] Build accessible navigation, account menu, footer, error boundaries, not-found view, and metadata defaults.
+- [x] Build an accessible responsive sidebar, account menu, error boundaries, not-found view, and metadata defaults.
 - [x] Implement public feed query and cursor pagination.
 - [x] Implement text, image-gallery, and video post renderers.
 - [x] Implement public post detail.
@@ -984,9 +984,13 @@ Record future changes here with date, decision, reason, and affected phases.
   shadcn usage and does not depend on a local icon barrel. This affects the shared UI system across
   Phases 4 to 7.
 - 2026-07-16: Add user and tag following as an explicit product expansion requested after the
-  initial scope was implemented. A private `/following` navbar destination combines public posts
+  initial scope was implemented. A private `/following` navigation destination combines public posts
   from followed accounts and followed tags, while profile and tag pages own the follow controls.
   This affects Phases 3, 5, 7, and 9.
+- 2026-07-17: Replace the global navbar and footer with the Base UI-backed shadcn Sidebar. The
+  desktop shell uses a collapsible navigation rail, while narrow screens use the Sidebar's built-in
+  off-canvas Sheet and a compact trigger bar. Brand, post creation, feed navigation, account access,
+  legal links, and copyright now share one responsive shell. This affects Phase 5.
 - 2026-07-16: Add EnderDash-style consent-gated PostHog browser analytics alongside Cloudflare
   Analytics Engine. PistonPost keeps post-view tracking in Analytics Engine and limits PostHog to
   anonymous route classes with memory-only persistence and sensitive capture features disabled.

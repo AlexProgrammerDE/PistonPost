@@ -1,25 +1,10 @@
 import { Link } from "@tanstack/react-router"
-import { Newspaper, Plus, UsersRound } from "lucide-react"
-import { lazy, Suspense, useSyncExternalStore, type PropsWithChildren } from "react"
+import { useSyncExternalStore, type PropsWithChildren } from "react"
 
-import { buttonVariants } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
-import { cn } from "@/lib/utils"
-
-const PublicAccountMenu = lazy(() =>
-  import("@/components/public-account-menu").then((module) => ({
-    default: module.PublicAccountMenu,
-  })),
-)
-
-const legalLinks = [
-  { to: "/privacy" as const, label: "Privacy" },
-  { to: "/cookie-policy" as const, label: "Cookies" },
-  { to: "/terms" as const, label: "Terms" },
-]
+import { AppSidebar } from "@/components/AppSidebar"
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 
 export function AppShell({ children }: PropsWithChildren) {
-  const currentYear = new Date().getUTCFullYear()
   const hydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -27,98 +12,31 @@ export function AppShell({ children }: PropsWithChildren) {
   )
 
   return (
-    <div className="flex min-h-svh flex-col" data-hydrated={hydrated}>
+    <SidebarProvider data-hydrated={hydrated}>
       <a
         href="#main-content"
         className="sr-only fixed top-3 left-3 z-50 bg-background px-3 py-2 text-sm font-medium shadow-sm focus:not-sr-only"
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-40 border-b bg-background">
-        <div className="mx-auto flex h-16 w-full max-w-5xl items-center px-4 sm:px-6">
+      <AppSidebar />
+      <div className="flex min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-3 md:hidden">
+          <SidebarTrigger aria-label="Open navigation" />
           <Link
             to="/"
-            className="shrink-0 font-heading text-xl font-extrabold tracking-[-0.045em]"
+            className="font-heading text-lg font-extrabold tracking-[-0.045em]"
             aria-label="PistonPost home"
             translate="no"
           >
             piston<span className="text-primary">post</span>
           </Link>
+        </header>
 
-          <nav className="ml-4 flex items-center gap-4 sm:ml-5" aria-label="Main navigation">
-            <Link
-              to="/"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
-              activeOptions={{ exact: true }}
-              activeProps={{ "aria-current": "page" }}
-            >
-              <Newspaper aria-hidden="true" className="hidden size-4 sm:block" />
-              Timeline
-            </Link>
-            <Link
-              to="/following"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground underline-offset-8 hover:text-foreground aria-[current=page]:text-foreground aria-[current=page]:underline"
-              activeProps={{ "aria-current": "page" }}
-            >
-              <UsersRound aria-hidden="true" className="hidden size-4 sm:block" />
-              Following
-            </Link>
-          </nav>
-
-          <div className="ml-auto flex items-center gap-2">
-            <Link
-              to="/account/posts/new"
-              className={cn(
-                buttonVariants({ variant: "default", size: "lg" }),
-                "w-10 px-0 sm:w-auto sm:px-4",
-              )}
-            >
-              <Plus aria-hidden="true" data-icon="inline-start" />
-              <span className="sr-only sm:not-sr-only">New post</span>
-            </Link>
-            <Suspense
-              fallback={
-                <Skeleton
-                  role="status"
-                  className="size-9 rounded-full"
-                  aria-label="Loading account menu"
-                />
-              }
-            >
-              <PublicAccountMenu />
-            </Suspense>
-          </div>
+        <div id="main-content" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+          {children}
         </div>
-      </header>
-
-      <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
-        {children}
       </div>
-
-      <footer className="border-t">
-        <div className="mx-auto flex w-full max-w-5xl flex-col items-start justify-between gap-5 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:px-6">
-          <div className="flex flex-col items-start gap-1">
-            <Link
-              to="/"
-              className="font-heading text-xl font-extrabold tracking-[-0.045em] text-foreground"
-              aria-label="PistonPost home"
-              translate="no"
-            >
-              piston<span className="text-primary">post</span>
-            </Link>
-            <p>
-              © <span suppressHydrationWarning>{currentYear}</span> PistonPost
-            </p>
-          </div>
-          <nav className="flex flex-wrap items-center gap-x-4 gap-y-2" aria-label="Legal">
-            {legalLinks.map((item) => (
-              <Link key={item.to} to={item.to} className="hover:text-foreground hover:underline">
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </footer>
-    </div>
+    </SidebarProvider>
   )
 }
