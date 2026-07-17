@@ -99,6 +99,40 @@ async function fillPost(page: Page, title: string, tag: string) {
 }
 
 test.describe.serial("authenticated authoring", () => {
+  test("saves optional email choices while required notifications stay on", async ({
+    context,
+    page,
+  }) => {
+    await createVerifiedSession(context)
+    await page.goto("/account/settings/notifications")
+    await page.locator('[data-hydrated="true"]').waitFor()
+
+    const comments = page.getByRole("switch", { name: "Comments" })
+    const replies = page.getByRole("switch", { name: "Replies" })
+    const security = page.getByRole("switch", { name: "Security" })
+    const moderation = page.getByRole("switch", { name: "Moderation" })
+    const productUpdates = page.getByRole("switch", { name: "Product updates" })
+
+    await expect(comments).toBeChecked()
+    await expect(replies).toBeChecked()
+    await expect(productUpdates).not.toBeChecked()
+    await expect(security).toBeChecked()
+    await expect(security).toBeDisabled()
+    await expect(moderation).toBeChecked()
+    await expect(moderation).toBeDisabled()
+
+    await comments.click()
+    await productUpdates.click()
+    await page.getByRole("button", { name: "Save preferences" }).click()
+    await expect(page.getByText("Notification preferences updated")).toBeVisible()
+
+    await page.reload()
+    await page.locator('[data-hydrated="true"]').waitFor()
+    await expect(page.getByRole("switch", { name: "Comments" })).not.toBeChecked()
+    await expect(page.getByRole("switch", { name: "Replies" })).toBeChecked()
+    await expect(page.getByRole("switch", { name: "Product updates" })).toBeChecked()
+  })
+
   test("uploads, serves, and deletes a managed avatar", async ({ context, page }) => {
     await createVerifiedSession(context)
     await page.goto("/account/settings/profile")

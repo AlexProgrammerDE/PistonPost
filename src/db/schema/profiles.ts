@@ -36,17 +36,10 @@ export const userSettings = sqliteTable(
     userId: text("user_id")
       .primaryKey()
       .references(() => user.id, { onDelete: "cascade" }),
-    emailNotifications: integer("email_notifications", { mode: "boolean" }).notNull().default(true),
     commentNotifications: integer("comment_notifications", { mode: "boolean" })
       .notNull()
       .default(true),
     replyNotifications: integer("reply_notifications", { mode: "boolean" }).notNull().default(true),
-    securityNotifications: integer("security_notifications", { mode: "boolean" })
-      .notNull()
-      .default(true),
-    moderationNotifications: integer("moderation_notifications", { mode: "boolean" })
-      .notNull()
-      .default(true),
     productNotifications: integer("product_notifications", { mode: "boolean" })
       .notNull()
       .default(false),

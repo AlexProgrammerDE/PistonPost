@@ -18,11 +18,8 @@ export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
         bio: schema.profiles.bio,
         website: schema.profiles.website,
         location: schema.profiles.location,
-        emailNotifications: schema.userSettings.emailNotifications,
         commentNotifications: schema.userSettings.commentNotifications,
         replyNotifications: schema.userSettings.replyNotifications,
-        securityNotifications: schema.userSettings.securityNotifications,
-        moderationNotifications: schema.userSettings.moderationNotifications,
         productNotifications: schema.userSettings.productNotifications,
       })
       .from(schema.user)
@@ -33,11 +30,8 @@ export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
     if (!row) throw new Error("Profile settings were not found.")
     return {
       ...row,
-      emailNotifications: row.emailNotifications ?? true,
       commentNotifications: row.commentNotifications ?? true,
       replyNotifications: row.replyNotifications ?? true,
-      securityNotifications: row.securityNotifications ?? true,
-      moderationNotifications: row.moderationNotifications ?? true,
       productNotifications: row.productNotifications ?? false,
     }
   },
@@ -90,11 +84,8 @@ export const updateProfile = createServerFn({ method: "POST" })
   })
 
 const preferencesSchema = z.object({
-  emailNotifications: z.boolean(),
   commentNotifications: z.boolean(),
   replyNotifications: z.boolean(),
-  securityNotifications: z.boolean(),
-  moderationNotifications: z.boolean(),
   productNotifications: z.boolean(),
 })
 

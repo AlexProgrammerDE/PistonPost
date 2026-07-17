@@ -9,7 +9,6 @@ import { createCloudflareEmailTransport, renderEmail, securityNotificationMessag
 import type { AppRequestContext } from "../server"
 import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
-import { notificationEnabled } from "./notification-policy"
 
 async function readSecret(secret: string | SecretsStoreSecret) {
   return typeof secret === "string" ? secret : secret.get()
@@ -65,20 +64,11 @@ export async function createRequestAuth(context: AppRequestContext) {
       if (sessions.length < 2) return
 
       const signedInUser = await database
-        .select({
-          email: schema.user.email,
-          emailNotifications: schema.userSettings.emailNotifications,
-          securityNotifications: schema.userSettings.securityNotifications,
-        })
+        .select({ email: schema.user.email })
         .from(schema.user)
-        .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.user.id))
         .where(eq(schema.user.id, userId))
         .get()
-      if (
-        !signedInUser ||
-        !notificationEnabled(signedInUser.emailNotifications, signedInUser.securityNotifications)
-      )
-        return
+      if (!signedInUser) return
 
       const rendered = await renderEmail(securityNotificationMessage({ template: "new-device" }))
       await Effect.runPromise(
@@ -140,27 +130,18 @@ export async function sendSecurityNotification(
   template: "password-changed" | "email-changed",
   idempotencyKey: string,
 ) {
-  const preference = await createD1Database(context.env.DB)
-    .select({
-      email: schema.user.email,
-      emailNotifications: schema.userSettings.emailNotifications,
-      securityNotifications: schema.userSettings.securityNotifications,
-    })
+  const recipient = await createD1Database(context.env.DB)
+    .select({ email: schema.user.email })
     .from(schema.user)
-    .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.user.id))
     .where(eq(schema.user.id, userId))
     .get()
-  if (
-    !preference ||
-    !notificationEnabled(preference.emailNotifications, preference.securityNotifications)
-  )
-    return
+  if (!recipient) return
   const rendered = await renderEmail(securityNotificationMessage({ template }))
   const transport = createCloudflareEmailTransport(requireEmailBinding(context.env))
   await Effect.runPromise(
     transport.send({
       ...rendered,
-      to: preference.email,
+      to: recipient.email,
       from: context.env.AUTH_EMAIL_FROM,
       replyTo: context.env.SUPPORT_EMAIL,
       idempotencyKey,

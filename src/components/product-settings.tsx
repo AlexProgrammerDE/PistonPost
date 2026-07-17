@@ -7,7 +7,16 @@ import { toast } from "sonner"
 
 import { ChangeAvatar } from "@/components/auth/settings/account/change-avatar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
+import {
+  Field,
+  FieldContent,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
+import { Switch } from "@/components/ui/switch"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
   getMyProductSettings,
@@ -16,6 +25,26 @@ import {
 } from "@/server/settings"
 
 type ProductSettings = Awaited<ReturnType<typeof getMyProductSettings>>
+
+function RequiredNotificationSwitch({
+  id,
+  label,
+  description,
+}: {
+  id: string
+  label: string
+  description: string
+}) {
+  return (
+    <Field orientation="horizontal" data-disabled className="max-w-2xl">
+      <FieldContent>
+        <FieldLabel htmlFor={id}>{label}</FieldLabel>
+        <FieldDescription>{description}</FieldDescription>
+      </FieldContent>
+      <Switch id={id} checked disabled />
+    </Field>
+  )
+}
 
 function ErrorMessage({ message }: { message: string | null }) {
   return message ? (
@@ -98,11 +127,8 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
   const [error, setError] = useState<string | null>(null)
   const form = useAppForm({
     defaultValues: {
-      emailNotifications: settings.emailNotifications,
       commentNotifications: settings.commentNotifications,
       replyNotifications: settings.replyNotifications,
-      securityNotifications: settings.securityNotifications,
-      moderationNotifications: settings.moderationNotifications,
       productNotifications: settings.productNotifications,
     },
     onSubmit: async ({ value }) => {
@@ -130,65 +156,40 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
             Email notifications
           </FieldLegend>
           <FieldGroup>
-            <form.AppField name="emailNotifications">
+            <form.AppField name="commentNotifications">
               {(field) => (
                 <field.SwitchField
-                  label="Email delivery"
-                  description="Master switch for optional email notifications."
+                  label="Comments"
+                  description="A new comment appears on your post."
                 />
               )}
             </form.AppField>
-            <form.Subscribe selector={(state) => state.values.emailNotifications}>
-              {(emailNotifications) => (
-                <>
-                  <form.AppField name="commentNotifications">
-                    {(field) => (
-                      <field.SwitchField
-                        label="Comments"
-                        description="A new comment appears on your post."
-                        disabled={!emailNotifications}
-                      />
-                    )}
-                  </form.AppField>
-                  <form.AppField name="replyNotifications">
-                    {(field) => (
-                      <field.SwitchField
-                        label="Replies"
-                        description="Someone replies to one of your comments."
-                        disabled={!emailNotifications}
-                      />
-                    )}
-                  </form.AppField>
-                  <form.AppField name="securityNotifications">
-                    {(field) => (
-                      <field.SwitchField
-                        label="Security"
-                        description="Important account and sign-in activity."
-                        disabled={!emailNotifications}
-                      />
-                    )}
-                  </form.AppField>
-                  <form.AppField name="moderationNotifications">
-                    {(field) => (
-                      <field.SwitchField
-                        label="Moderation"
-                        description="An administrator takes action on your content."
-                        disabled={!emailNotifications}
-                      />
-                    )}
-                  </form.AppField>
-                  <form.AppField name="productNotifications">
-                    {(field) => (
-                      <field.SwitchField
-                        label="Product updates"
-                        description="Occasional changes to PistonPost itself."
-                        disabled={!emailNotifications}
-                      />
-                    )}
-                  </form.AppField>
-                </>
+            <form.AppField name="replyNotifications">
+              {(field) => (
+                <field.SwitchField
+                  label="Replies"
+                  description="Someone replies to one of your comments."
+                />
               )}
-            </form.Subscribe>
+            </form.AppField>
+            <RequiredNotificationSwitch
+              id="security-notifications"
+              label="Security"
+              description="Important account and sign-in activity. Always on."
+            />
+            <RequiredNotificationSwitch
+              id="moderation-notifications"
+              label="Moderation"
+              description="An administrator takes action on your content. Always on."
+            />
+            <form.AppField name="productNotifications">
+              {(field) => (
+                <field.SwitchField
+                  label="Product updates"
+                  description="Occasional changes to PistonPost itself."
+                />
+              )}
+            </form.AppField>
           </FieldGroup>
         </FieldSet>
         <ErrorMessage message={error} />

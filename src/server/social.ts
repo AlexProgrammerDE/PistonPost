@@ -184,13 +184,12 @@ export const createComment = createServerFn({ method: "POST" })
         .select({
           email: schema.user.email,
           enabled: schema.userSettings.commentNotifications,
-          master: schema.userSettings.emailNotifications,
         })
         .from(schema.user)
         .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.user.id))
         .where(eq(schema.user.id, post.authorId))
         .get()
-      if (recipient && notificationEnabled(recipient.master, recipient.enabled)) {
+      if (recipient && notificationEnabled(recipient.enabled)) {
         const job: EmailJob = {
           version: 1,
           type: "email.comment",

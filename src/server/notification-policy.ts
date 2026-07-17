@@ -1,3 +1,3 @@
-export function notificationEnabled(master: boolean | null, category: boolean | null) {
-  return master !== false && category !== false
+export function notificationEnabled(category: boolean | null) {
+  return category !== false
 }

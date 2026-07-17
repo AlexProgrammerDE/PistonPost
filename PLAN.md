@@ -1020,3 +1020,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-16: Remove the full-post preview from the composer. The preview repeated the form content
   and made longer image posts cumbersome to author. Keep upload thumbnails and Markdown formatting
   preview where they directly help edit the selected media or text. This affects Phase 6.
+- 2026-07-17: Store comment, reply, and product email choices independently without a master email
+  switch. Security and moderation notices are required service messages, so they are always sent,
+  are not stored as user preferences, and appear as disabled, enabled controls in account settings.
+  This affects Phases 3, 4, 5, and 7.

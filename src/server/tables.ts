@@ -8,7 +8,6 @@ import type { EmailJob } from "@/email"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
-import { notificationEnabled } from "./notification-policy"
 import { assertMutationOrigin, requireAdministrator, requireRequestSession } from "./session"
 
 export const getMyPosts = createServerFn({ method: "GET" }).handler(async ({ context }) => {
@@ -465,13 +464,10 @@ export const moderateEntity = createServerFn({ method: "POST" })
               authorId: schema.posts.authorId,
               authorEmail: schema.user.email,
               authorUsername: schema.profiles.username,
-              notify: schema.userSettings.moderationNotifications,
-              notifyMaster: schema.userSettings.emailNotifications,
             })
             .from(schema.posts)
             .innerJoin(schema.user, eq(schema.user.id, schema.posts.authorId))
             .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
-            .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.posts.authorId))
             .where(eq(schema.posts.id, data.id))
             .get()
         : await database
@@ -482,13 +478,10 @@ export const moderateEntity = createServerFn({ method: "POST" })
               authorId: schema.comments.authorId,
               authorEmail: schema.user.email,
               authorUsername: schema.profiles.username,
-              notify: schema.userSettings.moderationNotifications,
-              notifyMaster: schema.userSettings.emailNotifications,
             })
             .from(schema.comments)
             .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
             .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
-            .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.comments.authorId))
             .where(eq(schema.comments.id, data.id))
             .get()
     if (!target) throw new Error("The moderation target was not found.")
@@ -530,10 +523,7 @@ export const moderateEntity = createServerFn({ method: "POST" })
     const jobs: Array<EmailJob | ReturnType<typeof cacheInvalidationJob>> = [
       cacheInvalidationJob(target.postId, target.authorUsername),
     ]
-    if (
-      target.authorId !== session.user.id &&
-      notificationEnabled(target.notifyMaster, target.notify)
-    ) {
+    if (target.authorId !== session.user.id) {
       jobs.push({
         version: 1,
         type: "email.moderation",
