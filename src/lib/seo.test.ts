@@ -88,11 +88,13 @@ describe("SEO metadata", () => {
     }
     const head = createPostSeoHead(post, 1)
 
-    expect(metaContent(head.meta, "property", "og:image")).toBe(`${SITE_URL}/media/image/second/og`)
+    expect(metaContent(head.meta, "property", "og:image")).toBe(
+      `${SITE_URL}/media/image/second/og?v=2`,
+    )
     expect(metaContent(head.meta, "property", "og:image:alt")).toBe("A sleepy fox")
     expect(metaContent(head.meta, "property", "og:image:type")).toBe("image/jpeg")
-    expect(metaContent(head.meta, "property", "og:image:width")).toBe("1200")
-    expect(metaContent(head.meta, "property", "og:image:height")).toBe("630")
+    expect(metaContent(head.meta, "property", "og:image:width")).toBe("900")
+    expect(metaContent(head.meta, "property", "og:image:height")).toBe("700")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary_large_image")
     expect(head.scripts[0]?.children).toContain(
       `"contentUrl":"${SITE_URL}/media/image/first/detail"`,
@@ -165,8 +167,10 @@ describe("SEO metadata", () => {
     )
     expect(metaContent(head.meta, "property", "og:video:type")).toBe("video/mp4")
     expect(metaContent(head.meta, "property", "og:image")).toBe(
-      `${SITE_URL}/media/video/video-id/thumbnail`,
+      `${SITE_URL}/media/video/video-id/thumbnail?v=2`,
     )
+    expect(metaContent(head.meta, "property", "og:image:width")).toBe("1200")
+    expect(metaContent(head.meta, "property", "og:image:height")).toBe("675")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("player")
     expect(metaContent(head.meta, "name", "twitter:player")).toBe(
       `${SITE_URL}/media/video/video-id/player`,

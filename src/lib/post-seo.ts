@@ -1,10 +1,9 @@
 import type { PublicPostRead } from "@/db/public-read-model"
 
 import { markdownToPlainText } from "./markdown"
+import { fitMediaDimensions, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "./media-image"
 import {
   SITE_NAME,
-  SOCIAL_IMAGE_HEIGHT,
-  SOCIAL_IMAGE_WIDTH,
   absoluteUrl,
   createSeoHead,
   truncateDescription,
@@ -42,13 +41,20 @@ export function millisecondsToIsoDuration(duration: number | null) {
 function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
   return post.media
     .filter((media) => media.kind === "image")
-    .map((image) => ({
-      url: `/media/image/${image.id}/og`,
-      alt: image.altText ?? post.title,
-      type: "image/jpeg",
-      width: SOCIAL_IMAGE_WIDTH,
-      height: SOCIAL_IMAGE_HEIGHT,
-    }))
+    .map((image) => {
+      const dimensions = fitMediaDimensions(
+        image,
+        SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+        SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+      )
+      return {
+        url: `/media/image/${image.id}/og?v=2`,
+        alt: image.altText ?? post.title,
+        type: "image/jpeg",
+        width: dimensions?.width,
+        height: dimensions?.height,
+      }
+    })
 }
 
 function structuredPostImages(post: PublicPostRead): ReadonlyArray<JsonLdObject> {
@@ -81,13 +87,18 @@ function postVideo(post: PublicPostRead) {
   if (!media) return undefined
   const width = media.width ?? 1280
   const height = media.height ?? 720
+  const thumbnailDimensions = fitMediaDimensions(
+    media,
+    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+  )
   return {
     image: {
-      url: `/media/video/${media.id}/thumbnail`,
+      url: `/media/video/${media.id}/thumbnail?v=2`,
       alt: `Video thumbnail for ${post.title}`,
       type: "image/jpeg",
-      width: SOCIAL_IMAGE_WIDTH,
-      height: SOCIAL_IMAGE_HEIGHT,
+      width: thumbnailDimensions?.width,
+      height: thumbnailDimensions?.height,
     } satisfies SeoImage,
     player: {
       url: `/media/video/${media.id}/player`,

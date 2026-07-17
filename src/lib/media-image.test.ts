@@ -3,6 +3,7 @@ import { describe, expect, it } from "bun:test"
 import {
   createManagedAvatarSrcSet,
   createMediaImageSources,
+  fitMediaDimensions,
   isMediaImageVariantAllowed,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
@@ -35,6 +36,22 @@ describe("responsive media images", () => {
       { src: "/media/image/image%20id/feed?width=320", width: 320, height: 640 },
       { src: "/media/image/image%20id/feed?width=640", width: 640, height: 1280 },
     ])
+  })
+
+  it("fits social images inside a maximum box without cropping or upscaling", () => {
+    expect(fitMediaDimensions({ width: 2400, height: 1200 }, 1200, 1200)).toEqual({
+      width: 1200,
+      height: 600,
+    })
+    expect(fitMediaDimensions({ width: 1200, height: 2400 }, 1200, 1200)).toEqual({
+      width: 600,
+      height: 1200,
+    })
+    expect(fitMediaDimensions({ width: 900, height: 700 }, 1200, 1200)).toEqual({
+      width: 900,
+      height: 700,
+    })
+    expect(fitMediaDimensions({ width: null, height: null }, 1200, 1200)).toBeUndefined()
   })
 
   it("adds responsive candidates only to managed avatar URLs", () => {

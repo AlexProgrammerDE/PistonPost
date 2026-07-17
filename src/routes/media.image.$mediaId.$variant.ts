@@ -10,8 +10,8 @@ import {
   isResponsiveMediaImageVariant,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
+  SOCIAL_MEDIA_IMAGE_MAX_SIZE,
 } from "@/lib/media-image"
-import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 
@@ -26,9 +26,9 @@ const variants = {
   detail: { width: 2400, height: 2400, fit: "scale-down" as const, quality: 88 },
   thumbnail: { width: 480, height: 360, fit: "cover" as const, quality: 76 },
   og: {
-    width: SOCIAL_IMAGE_WIDTH,
-    height: SOCIAL_IMAGE_HEIGHT,
-    fit: "cover" as const,
+    width: SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+    height: SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+    fit: "scale-down" as const,
     quality: 84,
   },
 } as const

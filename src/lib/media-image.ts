@@ -14,6 +14,7 @@ export type MediaImageSource = {
 }
 
 export const AVATAR_IMAGE_SIZE = 256
+export const SOCIAL_MEDIA_IMAGE_MAX_SIZE = 1200
 
 export const RESPONSIVE_MEDIA_WIDTHS: ReadonlyArray<number> = [
   32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256, 320, 480, 640, 768, 960, 1280, 1600, 1920, 2400,
@@ -36,6 +37,29 @@ const responsiveVariantLimits: Record<
   avatar: { width: AVATAR_IMAGE_SIZE, height: AVATAR_IMAGE_SIZE },
   feed: { width: 1280, height: 1280 },
   detail: { width: 2400, height: 2400 },
+}
+
+export function fitMediaDimensions(
+  image: Pick<MediaImageDimensions, "width" | "height">,
+  maximumWidth: number,
+  maximumHeight: number,
+) {
+  if (
+    !image.width ||
+    !image.height ||
+    image.width < 1 ||
+    image.height < 1 ||
+    maximumWidth < 1 ||
+    maximumHeight < 1
+  ) {
+    return undefined
+  }
+
+  const scale = Math.min(1, maximumWidth / image.width, maximumHeight / image.height)
+  return {
+    width: Math.max(1, Math.floor(image.width * scale)),
+    height: Math.max(1, Math.floor(image.height * scale)),
+  }
 }
 
 export function mediaImageUrl(mediaId: string, variant: MediaImageVariant, width?: number) {
