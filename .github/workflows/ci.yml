@@ -31,6 +31,19 @@ jobs:
       - name: Run local CI gate
         run: bun run ci
 
+      - name: Prepare browser test environment
+        run: |
+          umask 077
+          printf '%s\n' \
+            'BETTER_AUTH_SECRET=ci-only-better-auth-secret-that-is-never-deployed' \
+            'BETTER_AUTH_API_KEY=ci-only-better-auth-api-key' \
+            'TURNSTILE_SECRET=1x0000000000000000000000000000000AA' \
+            'STREAM_WEBHOOK_SECRET=ci-only-stream-webhook-secret' \
+            'STREAM_ACCOUNT_ID=ci-only-stream-account-id' \
+            'STREAM_API_TOKEN=ci-only-stream-api-token' \
+            > .dev.vars
+          bunx --bun wrangler d1 migrations apply DB --local
+
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
 

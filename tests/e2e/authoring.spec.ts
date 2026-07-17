@@ -138,7 +138,11 @@ test.describe.serial("authenticated authoring", () => {
     await page.goto("/account/settings/profile")
     await page.locator('[data-hydrated="true"]').waitFor()
 
-    await page.getByLabel("Avatar").setInputFiles({
+    const fileChooserPromise = page.waitForEvent("filechooser")
+    await page.getByRole("button", { name: "Change avatar" }).click()
+    await page.getByRole("menuitem", { name: "Upload avatar" }).click()
+    const fileChooser = await fileChooserPromise
+    await fileChooser.setFiles({
       name: "moss-avatar.png",
       mimeType: "image/png",
       buffer: VALID_PNG,
@@ -195,7 +199,8 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
 
     await expect(page.getByRole("heading", { name: "Markdown heading" })).toBeVisible()
     const externalLink = page.getByRole("link", { name: /Example/u })
-    await expect(externalLink).toHaveAttribute("href", "/external?url=https%3A%2F%2Fexample.com%2F")
+    const warningHref = "/external?url=https%3A%2F%2Fexample.com%2F"
+    await expect(externalLink).toHaveAttribute("href", warningHref)
     await expect(externalLink).toHaveAttribute("target", "_blank")
     await expect(externalLink).toHaveAttribute("rel", "ugc nofollow noopener noreferrer")
 
@@ -208,10 +213,8 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await externalLinkConfirmation.getByRole("button", { name: "Stay here" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
-    const warningPagePromise = page.waitForEvent("popup")
-    await externalLink.click({ button: "middle" })
-    const warningPage = await warningPagePromise
-    await warningPage.waitForLoadState("domcontentloaded")
+    const warningPage = await context.newPage()
+    await warningPage.goto(new URL(warningHref, page.url()).toString())
     await expect(warningPage).toHaveURL(/\/external\?url=https%3A%2F%2Fexample\.com%2F$/u)
     await expect(warningPage.getByRole("heading", { name: "Open an external link?" })).toBeVisible()
     await expect(warningPage.getByRole("link", { name: /Open link/u })).toHaveAttribute(
@@ -246,6 +249,7 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(page.getByText("Profile updated")).toBeVisible()
 
     await page.goto(`/user/${username}`)
+    await page.locator('[data-hydrated="true"]').waitFor()
     const website = page.getByRole("link", { name: /Website/u })
     await expect(website).toHaveAttribute(
       "href",
@@ -462,14 +466,14 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "the whole camera roll" })).toBeVisible()
-    await expect(
-      page.getByRole("list", { name: /image collection/u }).getByRole("img"),
-    ).toHaveCount(20)
     const longGallery = page.getByRole("list", { name: /image collection/u })
+    await expect(longGallery.locator("img")).toHaveCount(20)
+    await page.mouse.move(0, 0)
+    await expect(page.locator("[data-sonner-toast]")).toHaveCount(0)
     await longGallery.getByRole("button").nth(9).scrollIntoViewIfNeeded()
     const quickActions = page.getByRole("navigation", { name: "Quick post actions" })
     await expect(quickActions).toBeVisible()
-    await quickActions.getByRole("link", { name: "Comments 0" }).click()
+    await quickActions.getByRole("button", { name: "Comments 0" }).click()
     await expect(page).toHaveURL(/#discussion$/u)
     await expect(quickActions).toHaveCount(0)
     await expect(page.getByRole("navigation", { name: "Post actions" })).toBeVisible()

@@ -6,6 +6,7 @@ import { HUMAN_VERIFICATION_ERROR_MESSAGE } from "@/lib/turnstile"
 import type { AppRequestContext } from "@/server"
 
 const TURNSTILE_SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
+const TURNSTILE_ALWAYS_PASS_TEST_SECRET = "1x0000000000000000000000000000000AA"
 
 export const turnstileTokenSchema = z.string().min(1).max(2048)
 
@@ -85,17 +86,20 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
   const result = yield* Schema.decodeUnknown(turnstileResponseSchema)(body).pipe(
     Effect.mapError(() => verificationError("provider")),
   )
+  const actionMatches =
+    result.action === input.action ||
+    (secret === TURNSTILE_ALWAYS_PASS_TEST_SECRET && result.action === undefined)
 
   if (
     !result.success ||
-    result.action !== input.action ||
+    !actionMatches ||
     !result.hostname ||
     !expectedHostnames.has(result.hostname)
   ) {
     return yield* verificationError("rejected")
   }
 
-  return { action: result.action, hostname: result.hostname }
+  return { action: input.action, hostname: result.hostname }
 })
 
 export function verifyRequestTurnstile(

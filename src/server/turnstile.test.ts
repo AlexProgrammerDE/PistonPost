@@ -22,7 +22,11 @@ const input = {
 }
 
 function siteverifyResponse(
-  overrides: Partial<{ success: boolean; hostname: string; action: string }> = {},
+  overrides: Partial<{
+    success: boolean
+    hostname: string
+    action: string | undefined
+  }> = {},
 ) {
   return new Response(
     JSON.stringify({
@@ -92,6 +96,27 @@ describe("Turnstile verification", () => {
     expect(allowedTurnstileHostnames("http://127.0.0.1:3000")).toEqual(
       new Set(["127.0.0.1", "example.com"]),
     )
+  })
+
+  test("accepts Cloudflare's actionless test response only with its test secret", async () => {
+    const testResponse = siteverifyResponse({ hostname: "example.com", action: undefined })
+    const localInput = {
+      ...input,
+      publicAppUrl: "http://localhost:3000",
+      secret: "1x0000000000000000000000000000000AA",
+      fetch: () => Promise.resolve(testResponse.clone()),
+    }
+
+    const result = await Effect.runPromise(verifyTurnstile(localInput))
+    expect(result).toEqual({
+      action: TURNSTILE_ACTIONS.createPost,
+      hostname: "example.com",
+    })
+
+    const productionSecretExit = await Effect.runPromiseExit(
+      verifyTurnstile({ ...localInput, secret: input.secret }),
+    )
+    expect(Exit.isFailure(productionSecretExit)).toBeTrue()
   })
 
   test("wraps provider and response failures without leaking credentials", async () => {

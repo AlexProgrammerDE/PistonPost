@@ -3,7 +3,12 @@
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile"
 import { useCallback, useEffect, useImperativeHandle, useMemo, useRef, type Ref } from "react"
 
-import { HUMAN_VERIFICATION_ERROR_MESSAGE, type TurnstileAction } from "@/lib/turnstile"
+import {
+  HUMAN_VERIFICATION_ERROR_MESSAGE,
+  isTurnstileTestSiteKey,
+  TURNSTILE_TEST_TOKEN,
+  type TurnstileAction,
+} from "@/lib/turnstile"
 
 const WIDGET_READY_TIMEOUT_MS = 10_000
 const CHALLENGE_TIMEOUT_MS = 60_000
@@ -43,6 +48,7 @@ function waitForWidget(instance: { readonly current: TurnstileInstance | null })
 export function TurnstileChallenge({ action, ref, siteKey }: TurnstileChallengeProps) {
   const turnstile = useRef<TurnstileInstance>(null)
   const rejectPending = useRef<((error: Error) => void) | null>(null)
+  const testSiteKey = isTurnstileTestSiteKey(siteKey)
   const options = useMemo(
     () => ({
       action,
@@ -72,6 +78,7 @@ export function TurnstileChallenge({ action, ref, siteKey }: TurnstileChallengeP
     ref,
     () => ({
       execute: async () => {
+        if (testSiteKey) return TURNSTILE_TEST_TOKEN
         if (rejectPending.current) throw challengeError()
         const instance = await waitForWidget(turnstile)
         const failed = new Promise<never>((_, reject) => {
@@ -97,8 +104,10 @@ export function TurnstileChallenge({ action, ref, siteKey }: TurnstileChallengeP
         turnstile.current?.reset()
       },
     }),
-    [failPendingChallenge],
+    [failPendingChallenge, testSiteKey],
   )
+
+  if (testSiteKey) return null
 
   return (
     <Turnstile

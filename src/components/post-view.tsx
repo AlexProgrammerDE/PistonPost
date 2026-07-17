@@ -115,8 +115,10 @@ function GalleryLayoutMenu({
   readonly selectedImageIndex: number | undefined
 }) {
   const navigate = useNavigate()
+  const [menuOpen, setMenuOpen] = useState(false)
 
   function selectLayout(value: string) {
+    setMenuOpen(false)
     if (!isGalleryLayout(value) || value === layout) return
 
     void navigate({
@@ -132,7 +134,7 @@ function GalleryLayoutMenu({
   }
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
       <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
         <LayoutGrid aria-hidden="true" data-icon="inline-start" />
         Gallery options

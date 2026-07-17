@@ -8,6 +8,7 @@
     "vite.config.ts",
     "scripts/**/*.ts",
     "tests/e2e/**/*.ts",
+    "src/client.tsx",
     "src/lib/auth/auth-plugin.ts",
     "src/router.tsx",
     "src/routes/**/*.{ts,tsx}",
