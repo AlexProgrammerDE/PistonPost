@@ -2,7 +2,7 @@ import { stat } from "node:fs/promises"
 import { resolve } from "node:path"
 
 const clientDirectory = resolve("dist/client/assets")
-const forbiddenMarkers = ["@/db", "cloudflare:workers", "migration_mappings"]
+const forbiddenMarkers = ["@/db", "cloudflare:workers"]
 const maximumChunkBytes = 600 * 1024
 const maximumTotalBytes = 2_500_000
 

@@ -31,8 +31,6 @@ group by provider, status;
 
 ```
 
-`migration_runs` and `migration_mappings` remain in D1 as retained historical state. The application no longer exposes migration tooling or an administration view for those tables.
-
 ## Alerts
 
 Configure Cloudflare alerts against persisted error logs for `queue.dead-letter`, Stream webhook rejection spikes, Workflow failures, and elevated 5xx responses. Add queue backlog and oldest-message alerts for both the primary and dead-letter queues. Alert destinations are production operator configuration and must not be committed.

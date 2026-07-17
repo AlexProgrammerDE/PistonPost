@@ -366,14 +366,6 @@ Changing reaction type updates the row. Removing a reaction deletes it. Aggregat
 - id, kind, payload, attempts, availableAt, processedAt, and lastError.
 - Used only where a D1 transaction must reliably schedule queue work.
 
-#### migrationRuns and migrationMappings
-
-- Source fingerprint, startedAt, finishedAt, state, and counters.
-- Source collection, legacy ID, target table, target ID, checksum, and state.
-- Unique source collection and legacy ID.
-- Retained as historical database state until a separate schema change deliberately removes them.
-- The application does not expose migration tooling, routes, or administration views.
-
 ### Required indexes
 
 At minimum:
@@ -662,9 +654,9 @@ discard IP data. A missing public project key must disable the integration witho
 application. Keep the PostHog toolbar extension available and allow the regional PostHog assets it
 requires in the Content Security Policy.
 
-## Retained migration state
+## Retired legacy migration
 
-The retired legacy importer is no longer part of the repository or release process. Keep `migration_runs` and `migration_mappings` unchanged for now so historical state remains available for direct database inspection. Removing those tables requires a separate schema change and generated Drizzle migration.
+The legacy importer is no longer part of the repository or release process. Its final bookkeeping tables, `migration_runs` and `migration_mappings`, were removed after the migration tooling and operator surfaces were retired.
 
 ## Delivery phases
 
@@ -843,15 +835,15 @@ Exit criteria:
 - Tables update immediately and correctly after mutations.
 - Account deletion completes or resumes without leaving live credentials or orphaned private media.
 
-### Phase 8: Retained migration state
+### Phase 8: Legacy migration retirement
 
-- [x] Preserve `migrationRuns` and `migrationMappings` in the D1 schema and generated migrations.
 - [x] Remove the retired legacy migration CLI, fixtures, configuration, UI, and runbooks.
+- [x] Remove `migrationRuns` and `migrationMappings` through a generated D1 migration.
 
 Exit criteria:
 
 - The application has no migration route, administration view, or operator CLI.
-- Historical migration tables and generated D1 artifacts remain unchanged.
+- D1 contains no legacy migration bookkeeping tables.
 
 ### Phase 9: Security, performance, and operational hardening
 
@@ -965,6 +957,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Account deletion starts a durable Workflow before Better Auth removes the user. Media ownership becomes nullable only during that handoff, provider objects are deleted idempotently, and the final media records are removed after R2 and Stream succeed.
 - 2026-07-14: Administration tables use server-side `(created_at, id)` cursors. Cursor history, sort direction, filters, and column visibility live in URL search parameters so large datasets never rely on offset pagination.
 - 2026-07-16: Retire the legacy migration CLI, fixtures, configuration, public and administrator routes, transactional email variant, and operator runbooks. Preserve `migrationRuns`, `migrationMappings`, and generated D1 artifacts until a separate schema change deliberately removes the historical state. This affects Phases 7 through 10.
+- 2026-07-17: Remove `migrationRuns` and `migrationMappings` through a generated Drizzle migration. The importer and every application or operator surface that used the tables had already been retired, so keeping their historical state no longer justified the schema surface.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
 - 2026-07-15: Use a responsive management list for `/account/posts` instead of TanStack Table. The
   screen has one primary object and action per row, so a list keeps status and actions readable on

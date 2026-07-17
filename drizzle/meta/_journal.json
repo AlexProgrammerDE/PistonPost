@@ -71,6 +71,13 @@
       "when": 1784273788104,
       "tag": "0009_individual-notification-preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1784283155683,
+      "tag": "0010_remove-legacy-migration-state",
+      "breakpoints": true
     }
   ]
 }

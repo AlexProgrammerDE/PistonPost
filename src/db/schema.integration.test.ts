@@ -34,6 +34,17 @@ describe("domain schema", () => {
     expect(postIndexes.map((index) => index.name)).toContain("posts_author_status_created_idx")
   })
 
+  it("removes retired migration bookkeeping tables", () => {
+    const db = database()
+    const legacyTables = db.$client
+      .query(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('migration_runs', 'migration_mappings')",
+      )
+      .all()
+
+    expect(legacyTables).toHaveLength(0)
+  })
+
   it("rejects duplicate normalized usernames", () => {
     const db = database()
     db.insert(user)
