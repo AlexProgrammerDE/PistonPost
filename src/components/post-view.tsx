@@ -14,6 +14,7 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { MarkdownContent } from "@/components/MarkdownContent"
+import { PostTextPreview } from "@/components/PostTextPreview"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
@@ -633,14 +634,15 @@ export function PostView({
             </Link>
           </h2>
         )}
-        {post.textContent && (
-          <MarkdownContent
-            postId={post.id}
-            className={cn(detail ? "typeset-post max-w-3xl" : "typeset-feed")}
-          >
-            {post.textContent}
-          </MarkdownContent>
-        )}
+        {post.textContent ? (
+          detail ? (
+            <MarkdownContent postId={post.id} className="typeset-post max-w-3xl">
+              {post.textContent}
+            </MarkdownContent>
+          ) : (
+            <PostTextPreview postId={post.id} markdown={post.textContent} />
+          )
+        ) : null}
       </div>
 
       {detail ? (
