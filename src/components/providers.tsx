@@ -11,6 +11,7 @@ import { TurnstileWidget } from "@/components/turnstile-widget"
 import { authSettingsViewPaths, authViewPaths } from "@/lib/auth-ui-metadata"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
+import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 import { themePlugin } from "@/lib/auth/theme-plugin"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
@@ -83,6 +84,7 @@ export function AuthenticationProvider({
           localization: { usernamePlaceholder: "garage-name" },
         }),
         magicLinkPlugin(),
+        multiSessionPlugin(),
         passkeyPlugin(),
         twoFactorPlugin(),
         deleteUserPlugin({ sendDeleteAccountVerification: true }),

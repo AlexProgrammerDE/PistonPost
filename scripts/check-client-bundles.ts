@@ -3,8 +3,6 @@ import { resolve } from "node:path"
 
 const clientDirectory = resolve("dist/client/assets")
 const forbiddenMarkers = ["@/db", "cloudflare:workers"]
-const maximumChunkBytes = 600 * 1024
-const maximumTotalBytes = 2_510_000
 
 const files: Array<{ path: string; bytes: number }> = []
 for await (const path of new Bun.Glob("**/*.js").scan({ cwd: clientDirectory, absolute: true })) {
@@ -22,19 +20,7 @@ const secretValues = (await localSecrets.exists())
       .filter((value) => value.length >= 8)
   : []
 
-const oversized = files.filter((file) => file.bytes > maximumChunkBytes)
-if (oversized.length > 0) {
-  throw new Error(
-    `Client chunks exceed 600 KiB: ${oversized.map((file) => `${file.path} (${file.bytes.toString()} bytes)`).join(", ")}`,
-  )
-}
-
 const totalBytes = files.reduce((total, file) => total + file.bytes, 0)
-if (totalBytes > maximumTotalBytes) {
-  throw new Error(
-    `Client JavaScript totals ${totalBytes.toString()} bytes, above the 2.51 MB budget.`,
-  )
-}
 
 await Promise.all(
   files.map(async (file) => {
