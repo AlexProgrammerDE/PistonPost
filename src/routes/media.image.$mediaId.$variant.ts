@@ -5,20 +5,32 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import {
+  AVATAR_IMAGE_SIZE,
   isMediaImageVariantAllowed,
   isResponsiveMediaImageVariant,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
 } from "@/lib/media-image"
+import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 
 const variants = {
-  avatar: { width: 256, height: 256, fit: "cover" as const, quality: 82 },
+  avatar: {
+    width: AVATAR_IMAGE_SIZE,
+    height: AVATAR_IMAGE_SIZE,
+    fit: "cover" as const,
+    quality: 82,
+  },
   feed: { width: 1280, height: 1280, fit: "scale-down" as const, quality: 82 },
   detail: { width: 2400, height: 2400, fit: "scale-down" as const, quality: 88 },
   thumbnail: { width: 480, height: 360, fit: "cover" as const, quality: 76 },
-  og: { width: 1200, height: 630, fit: "cover" as const, quality: 84 },
+  og: {
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
+    fit: "cover" as const,
+    quality: 84,
+  },
 } as const
 
 const routeInput = z.object({

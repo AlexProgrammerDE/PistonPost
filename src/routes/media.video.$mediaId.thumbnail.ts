@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
+import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
 import type { AppRequestContext } from "@/server"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
@@ -21,8 +22,8 @@ async function videoThumbnail({
 
   const details = await context.env.STREAM.video(video.streamUid).details()
   const thumbnail = new URL(details.thumbnail)
-  thumbnail.searchParams.set("width", "1200")
-  thumbnail.searchParams.set("height", "630")
+  thumbnail.searchParams.set("width", SOCIAL_IMAGE_WIDTH.toString())
+  thumbnail.searchParams.set("height", SOCIAL_IMAGE_HEIGHT.toString())
   thumbnail.searchParams.set("fit", "crop")
 
   return new Response(null, {

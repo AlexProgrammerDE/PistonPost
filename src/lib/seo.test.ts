@@ -56,6 +56,9 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "name", "twitter:title")).toBe("PistonPost")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary")
     expect(metaContent(head.meta, "name", "twitter:creator")).toBeUndefined()
+    expect(metaContent(head.meta, "property", "og:image:type")).toBe("image/png")
+    expect(metaContent(head.meta, "property", "og:image:width")).toBe("1200")
+    expect(metaContent(head.meta, "property", "og:image:height")).toBe("630")
     expect(metaContent(head.meta, "name", "robots")).toBe(
       "index, follow, max-image-preview:large, max-video-preview:-1, max-snippet:-1",
     )
@@ -87,6 +90,9 @@ describe("SEO metadata", () => {
 
     expect(metaContent(head.meta, "property", "og:image")).toBe(`${SITE_URL}/media/image/second/og`)
     expect(metaContent(head.meta, "property", "og:image:alt")).toBe("A sleepy fox")
+    expect(metaContent(head.meta, "property", "og:image:type")).toBe("image/jpeg")
+    expect(metaContent(head.meta, "property", "og:image:width")).toBe("1200")
+    expect(metaContent(head.meta, "property", "og:image:height")).toBe("630")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary_large_image")
     expect(head.scripts[0]?.children).toContain(
       `"contentUrl":"${SITE_URL}/media/image/first/detail"`,
@@ -166,6 +172,7 @@ describe("SEO metadata", () => {
       `${SITE_URL}/media/video/video-id/player`,
     )
     expect(metaContent(head.meta, "name", "twitter:player:width")).toBe("1920")
+    expect(metaContent(head.meta, "name", "twitter:player:height")).toBe("1080")
     expect(head.scripts[0]?.children).toContain(
       `"contentUrl":"${SITE_URL}/media/video/video-id/download"`,
     )

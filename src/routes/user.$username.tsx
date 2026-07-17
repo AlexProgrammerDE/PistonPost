@@ -12,6 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import { feedPageHref } from "@/lib/feed-pagination"
+import { AVATAR_IMAGE_SIZE } from "@/lib/media-image"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
 import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
 import { safeUserGeneratedUrl } from "@/lib/user-generated-link"
@@ -59,7 +60,13 @@ export const Route = createFileRoute("/user/$username")({
       path,
       type: "profile",
       image: loaderData?.image
-        ? { url: loaderData.image, alt: `${name}'s profile picture` }
+        ? {
+            url: loaderData.image,
+            alt: `${name}'s profile picture`,
+            type: "image/webp",
+            width: AVATAR_IMAGE_SIZE,
+            height: AVATAR_IMAGE_SIZE,
+          }
         : undefined,
       twitterCard: "summary",
       indexing: loaderData?.searchIndexable ? "index" : "noindex",

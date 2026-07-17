@@ -5,6 +5,8 @@ export const SITE_URL = "https://post.pistonmaster.net"
 export const SITE_DESCRIPTION =
   "Posts, pictures, videos, and whatever else is worth passing around."
 export const SITE_TWITTER_HANDLE = "@AlexProgrammer3"
+export const SOCIAL_IMAGE_WIDTH = 1200
+export const SOCIAL_IMAGE_HEIGHT = 630
 
 type JsonLdPrimitive = string | number | boolean | null
 type JsonLdValue = JsonLdPrimitive | JsonLdObject | ReadonlyArray<JsonLdValue>
@@ -48,8 +50,8 @@ const defaultImage: SeoImage = {
   url: "/og-default.png",
   alt: "PistonPost",
   type: "image/png",
-  width: 1200,
-  height: 630,
+  width: SOCIAL_IMAGE_WIDTH,
+  height: SOCIAL_IMAGE_HEIGHT,
 }
 
 export function absoluteUrl(path: string) {
@@ -65,6 +67,20 @@ export function truncateDescription(value: string, maximumLength = 160) {
 export function createSeoHead(options: SeoOptions) {
   const canonical = absoluteUrl(options.path)
   const image = options.image ?? defaultImage
+  const imageUrl = absoluteUrl(image.url)
+  const imageMeta: Array<ComponentProps<"meta">> = [
+    { property: "og:image", content: imageUrl },
+    { property: "og:image:secure_url", content: imageUrl },
+  ]
+  if (image.type) imageMeta.push({ property: "og:image:type", content: image.type })
+  if (image.width) {
+    imageMeta.push({ property: "og:image:width", content: image.width.toString() })
+  }
+  if (image.height) {
+    imageMeta.push({ property: "og:image:height", content: image.height.toString() })
+  }
+  imageMeta.push({ property: "og:image:alt", content: image.alt })
+
   const meta: Array<ComponentProps<"meta">> = [
     { title: options.title },
     { name: "description", content: options.description },
@@ -74,15 +90,13 @@ export function createSeoHead(options: SeoOptions) {
     { property: "og:locale", content: "en_US" },
     { property: "og:type", content: options.type ?? "website" },
     { property: "og:url", content: canonical },
-    { property: "og:image", content: absoluteUrl(image.url) },
-    { property: "og:image:secure_url", content: absoluteUrl(image.url) },
-    { property: "og:image:alt", content: image.alt },
+    ...imageMeta,
     { name: "twitter:card", content: options.twitterCard },
     { name: "twitter:site", content: SITE_TWITTER_HANDLE },
     { name: "twitter:title", content: options.title },
     { name: "twitter:description", content: options.description },
     { name: "twitter:url", content: canonical },
-    { name: "twitter:image", content: absoluteUrl(image.url) },
+    { name: "twitter:image", content: imageUrl },
     { name: "twitter:image:alt", content: image.alt },
   ]
 
@@ -90,9 +104,6 @@ export function createSeoHead(options: SeoOptions) {
     meta.push({ name: "twitter:creator", content: options.twitterCreator })
   }
 
-  if (image.type) meta.push({ property: "og:image:type", content: image.type })
-  if (image.width) meta.push({ property: "og:image:width", content: image.width.toString() })
-  if (image.height) meta.push({ property: "og:image:height", content: image.height.toString() })
   if (options.publishedAt) {
     meta.push({ property: "article:published_time", content: options.publishedAt })
   }

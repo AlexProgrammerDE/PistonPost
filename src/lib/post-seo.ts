@@ -3,6 +3,8 @@ import type { PublicPostRead } from "@/db/public-read-model"
 import { markdownToPlainText } from "./markdown"
 import {
   SITE_NAME,
+  SOCIAL_IMAGE_HEIGHT,
+  SOCIAL_IMAGE_WIDTH,
   absoluteUrl,
   createSeoHead,
   truncateDescription,
@@ -44,8 +46,8 @@ function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
       url: `/media/image/${image.id}/og`,
       alt: image.altText ?? post.title,
       type: "image/jpeg",
-      width: 1200,
-      height: 630,
+      width: SOCIAL_IMAGE_WIDTH,
+      height: SOCIAL_IMAGE_HEIGHT,
     }))
 }
 
@@ -84,8 +86,8 @@ function postVideo(post: PublicPostRead) {
       url: `/media/video/${media.id}/thumbnail`,
       alt: `Video thumbnail for ${post.title}`,
       type: "image/jpeg",
-      width: 1200,
-      height: 630,
+      width: SOCIAL_IMAGE_WIDTH,
+      height: SOCIAL_IMAGE_HEIGHT,
     } satisfies SeoImage,
     player: {
       url: `/media/video/${media.id}/player`,

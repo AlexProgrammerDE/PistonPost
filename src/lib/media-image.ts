@@ -13,6 +13,8 @@ export type MediaImageSource = {
   readonly height: number
 }
 
+export const AVATAR_IMAGE_SIZE = 256
+
 export const RESPONSIVE_MEDIA_WIDTHS: ReadonlyArray<number> = [
   32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256, 320, 480, 640, 768, 960, 1280, 1600, 1920, 2400,
 ]
@@ -31,7 +33,7 @@ const responsiveVariantLimits: Record<
   ResponsiveMediaImageVariant,
   { readonly width: number; readonly height: number }
 > = {
-  avatar: { width: 256, height: 256 },
+  avatar: { width: AVATAR_IMAGE_SIZE, height: AVATAR_IMAGE_SIZE },
   feed: { width: 1280, height: 1280 },
   detail: { width: 2400, height: 2400 },
 }
