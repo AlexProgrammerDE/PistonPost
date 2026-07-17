@@ -104,7 +104,8 @@ The design direction is a content-first social feed: casual, warm, and slightly 
 - This project uses Base UI, not Radix. Use render props where Base UI expects them and do not use asChild.
 - Add components through the shadcn CLI from the repository root so they land in src/components/ui.
 - Inspect shadcn component docs and examples before composing unfamiliar components.
-- Fix consumer composition first. Modify src/components/ui only when the shared primitive itself is demonstrably wrong.
+- Treat the Better Auth UI components in src/components/auth and the shadcn components in src/components/ui as upstream-owned. Do not modify them to fix application issues.
+- Always fix issues in app-owned consumer code. Compose and use the auth and UI components idiomatically instead of tweaking their local implementations.
 - Use semantic Tailwind tokens such as bg-background and text-muted-foreground.
 - Use gap-* utilities. Never use space-* utilities.
 - Use the shared cn utility for conditional class names.
