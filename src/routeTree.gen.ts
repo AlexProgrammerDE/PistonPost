@@ -14,6 +14,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as FollowingRouteImport } from './routes/following'
+import { Route as ExternalRouteImport } from './routes/external'
 import { Route as CookiePolicyRouteImport } from './routes/cookie-policy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -64,6 +65,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const FollowingRoute = FollowingRouteImport.update({
   id: '/following',
   path: '/following',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExternalRoute = ExternalRouteImport.update({
+  id: '/external',
+  path: '/external',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CookiePolicyRoute = CookiePolicyRouteImport.update({
@@ -207,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/cookie-policy': typeof CookiePolicyRoute
+  '/external': typeof ExternalRoute
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cookie-policy': typeof CookiePolicyRoute
+  '/external': typeof ExternalRoute
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -270,6 +278,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/auth': typeof AuthRouteWithChildren
   '/cookie-policy': typeof CookiePolicyRoute
+  '/external': typeof ExternalRoute
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -305,6 +314,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cookie-policy'
+    | '/external'
     | '/following'
     | '/privacy'
     | '/robots.txt'
@@ -336,6 +346,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/cookie-policy'
+    | '/external'
     | '/following'
     | '/privacy'
     | '/robots.txt'
@@ -367,6 +378,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/cookie-policy'
+    | '/external'
     | '/following'
     | '/privacy'
     | '/robots.txt'
@@ -401,6 +413,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   AuthRoute: typeof AuthRouteWithChildren
   CookiePolicyRoute: typeof CookiePolicyRoute
+  ExternalRoute: typeof ExternalRoute
   FollowingRoute: typeof FollowingRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -456,6 +469,13 @@ declare module '@tanstack/react-router' {
       path: '/following'
       fullPath: '/following'
       preLoaderRoute: typeof FollowingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/external': {
+      id: '/external'
+      path: '/external'
+      fullPath: '/external'
+      preLoaderRoute: typeof ExternalRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/cookie-policy': {
@@ -712,6 +732,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   AuthRoute: AuthRouteWithChildren,
   CookiePolicyRoute: CookiePolicyRoute,
+  ExternalRoute: ExternalRoute,
   FollowingRoute: FollowingRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

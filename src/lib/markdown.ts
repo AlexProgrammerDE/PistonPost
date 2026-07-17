@@ -1,5 +1,3 @@
-import { SITE_URL } from "./seo"
-
 const YOUTUBE_VIDEO_ID = /^[A-Za-z0-9_-]{11}$/u
 const SPOTIFY_ENTITY_ID = /^[A-Za-z0-9]{22}$/u
 const SPOTIFY_ENTITY_TYPES = ["album", "artist", "episode", "playlist", "show", "track"] as const
@@ -25,37 +23,6 @@ function parseHttpUrl(value: string) {
     return url.protocol === "http:" || url.protocol === "https:" ? url : null
   } catch {
     return null
-  }
-}
-
-export function safeMarkdownUrl(value: string) {
-  try {
-    const url = new URL(value, `${SITE_URL}/`)
-    return url.protocol === "http:" || url.protocol === "https:" || url.protocol === "mailto:"
-      ? value
-      : ""
-  } catch {
-    return ""
-  }
-}
-
-export function isExternalMarkdownUrl(value: string) {
-  try {
-    const site = new URL(SITE_URL)
-    const url = new URL(value, site)
-    return url.protocol === "mailto:" || url.origin !== site.origin
-  } catch {
-    return false
-  }
-}
-
-export function externalLinkDestination(value: string) {
-  try {
-    const url = new URL(value, `${SITE_URL}/`)
-    if (url.protocol === "mailto:") return "your email app"
-    return url.hostname.replace(/^www\./u, "") || "another site"
-  } catch {
-    return "another site"
   }
 }
 

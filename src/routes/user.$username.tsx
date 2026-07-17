@@ -9,8 +9,10 @@ import { FeedItemsSkeleton, ProfilePageSkeleton } from "@/components/LoadingStat
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
 import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
+import { safeUserGeneratedUrl } from "@/lib/user-generated-link"
 
 const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
@@ -118,14 +120,16 @@ function ProfileFeed() {
                 </span>
               )}
               {website && (
-                <a
-                  href={website}
-                  rel="me noreferrer"
-                  className="inline-flex items-center gap-1.5 underline underline-offset-4"
-                >
-                  <ExternalLink aria-hidden="true" className="size-4" />
-                  Website
-                </a>
+                <UserGeneratedLinkProvider>
+                  <UserGeneratedLink
+                    href={website}
+                    relationship="me"
+                    className="inline-flex items-center gap-1.5 underline underline-offset-4"
+                  >
+                    <ExternalLink aria-hidden="true" className="size-4" />
+                    Website
+                  </UserGeneratedLink>
+                </UserGeneratedLinkProvider>
               )}
             </div>
           </div>
@@ -150,7 +154,9 @@ function ProfileFeed() {
 function safeWebsite(value: string | null) {
   if (!value) return null
   try {
-    const url = new URL(value)
+    const safeUrl = safeUserGeneratedUrl(value)
+    if (!safeUrl) return null
+    const url = new URL(safeUrl)
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null
   } catch {
     return null

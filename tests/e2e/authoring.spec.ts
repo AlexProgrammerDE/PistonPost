@@ -52,6 +52,7 @@ async function verificationUrlSince(startedAt: number) {
 async function createVerifiedSession(context: BrowserContext) {
   const stamp = Date.now().toString()
   const email = `author-${stamp}@example.com`
+  const username = `moss_${stamp}`
   const startedAt = Date.now() - 1_000
   const signUp = await context.request.post("/api/auth/sign-up/email", {
     headers: { Origin: "http://localhost:3000", "x-captcha-response": CAPTCHA_TEST_TOKEN },
@@ -59,7 +60,7 @@ async function createVerifiedSession(context: BrowserContext) {
       email,
       password: TEST_PASSWORD,
       name: "Moss",
-      username: `moss_${stamp}`,
+      username,
     },
   })
   expect(signUp.status()).toBe(200)
@@ -81,6 +82,7 @@ async function createVerifiedSession(context: BrowserContext) {
     data: { email, password: TEST_PASSWORD },
   })
   expect(signIn.status()).toBe(200)
+  return { username }
 }
 
 async function selectFormat(page: Page, format: "Text" | "Images" | "Video") {
@@ -158,13 +160,67 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     page.off("dialog", acceptPublishDialog)
 
     await expect(page.getByRole("heading", { name: "Markdown heading" })).toBeVisible()
-    await page.getByRole("link", { name: /Example/u }).click()
+    const externalLink = page.getByRole("link", { name: /Example/u })
+    await expect(externalLink).toHaveAttribute("href", "/external?url=https%3A%2F%2Fexample.com%2F")
+    await expect(externalLink).toHaveAttribute("target", "_blank")
+    await expect(externalLink).toHaveAttribute("rel", "ugc nofollow noopener noreferrer")
+
+    await externalLink.click()
     const externalLinkConfirmation = page.getByRole("alertdialog", {
       name: "Open an external link?",
     })
     await expect(externalLinkConfirmation).toBeVisible()
     await externalLinkConfirmation.getByRole("button", { name: "Stay here" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+
+    const warningPagePromise = page.waitForEvent("popup")
+    await externalLink.click({ button: "middle" })
+    const warningPage = await warningPagePromise
+    await warningPage.waitForLoadState("domcontentloaded")
+    await expect(warningPage).toHaveURL(/\/external\?url=https%3A%2F%2Fexample\.com%2F$/u)
+    await expect(warningPage.getByRole("heading", { name: "Open an external link?" })).toBeVisible()
+    await expect(warningPage.getByRole("link", { name: /Open link/u })).toHaveAttribute(
+      "rel",
+      "ugc nofollow noopener noreferrer",
+    )
+    await warningPage.close()
+
+    await context.route("https://example.com/**", async (route) => {
+      await route.fulfill({
+        contentType: "text/html",
+        body: "<!doctype html><title>External</title>",
+      })
+    })
+    await externalLink.click()
+    const destinationPagePromise = page.waitForEvent("popup")
+    await externalLinkConfirmation.getByRole("button", { name: "Open link" }).click()
+    const destinationPage = await destinationPagePromise
+    await destinationPage.waitForLoadState("domcontentloaded")
+    await expect(destinationPage).toHaveURL("https://example.com/")
+    expect(await destinationPage.evaluate(() => window.opener)).toBeNull()
+    await destinationPage.close()
+    await context.unroute("https://example.com/**")
+  })
+
+  test("guards user-provided profile websites", async ({ context, page }) => {
+    const { username } = await createVerifiedSession(context)
+    await page.goto("/account/settings/profile")
+    await page.locator('[data-hydrated="true"]').waitFor()
+    await page.getByLabel("Website").fill("https://example.com/profile")
+    await page.getByRole("button", { name: "Save profile" }).click()
+    await expect(page.getByText("Profile updated")).toBeVisible()
+
+    await page.goto(`/user/${username}`)
+    const website = page.getByRole("link", { name: /Website/u })
+    await expect(website).toHaveAttribute(
+      "href",
+      "/external?url=https%3A%2F%2Fexample.com%2Fprofile",
+    )
+    await expect(website).toHaveAttribute("target", "_blank")
+    await expect(website).toHaveAttribute("rel", "ugc nofollow noopener noreferrer me")
+
+    await website.click()
+    await expect(page.getByRole("alertdialog", { name: "Open an external link?" })).toBeVisible()
   })
 
   test("confirms before discarding unfinished composer changes", async ({ context, page }) => {

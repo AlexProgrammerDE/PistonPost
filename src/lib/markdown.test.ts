@@ -1,26 +1,13 @@
 import { describe, expect, test } from "bun:test"
 
 import {
-  isExternalMarkdownUrl,
   isProxyableExternalImageUrl,
   markdownContainsImageUrl,
   markdownToPlainText,
   parseMarkdownEmbed,
-  safeMarkdownUrl,
 } from "./markdown"
 
 describe("Markdown boundaries", () => {
-  test("keeps safe destinations and drops executable URL schemes", () => {
-    expect(safeMarkdownUrl("/post/example")).toBe("/post/example")
-    expect(safeMarkdownUrl("https://example.com/page")).toBe("https://example.com/page")
-    expect(safeMarkdownUrl("mailto:hello@example.com")).toBe("mailto:hello@example.com")
-    expect(safeMarkdownUrl("javascript:alert(1)")).toBe("")
-    expect(safeMarkdownUrl("data:text/html,unsafe")).toBe("")
-
-    expect(isExternalMarkdownUrl("/post/example")).toBe(false)
-    expect(isExternalMarkdownUrl("https://example.com/page")).toBe(true)
-  })
-
   test("recognizes only strict YouTube and Spotify embed destinations", () => {
     expect(parseMarkdownEmbed("https://youtu.be/M7lc1UVf-VE?t=30")).toMatchObject({
       provider: "youtube",

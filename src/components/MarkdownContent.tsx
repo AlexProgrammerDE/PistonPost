@@ -6,32 +6,24 @@ import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
 import remarkGfm from "remark-gfm"
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Button } from "@/components/ui/button"
+import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import {
   externalImageProxyUrl,
-  externalLinkDestination,
-  isExternalMarkdownUrl,
   isProxyableExternalImageUrl,
   parseMarkdownEmbed,
-  safeMarkdownUrl,
   type MarkdownEmbed,
 } from "@/lib/markdown"
+import {
+  externalLinkDestination,
+  isExternalUserGeneratedUrl,
+  safeUserGeneratedUrl,
+} from "@/lib/user-generated-link"
 import { cn } from "@/lib/utils"
 
 type MarkdownContextValue = {
   readonly postId?: string
-  readonly confirmExternalLink: (href: string) => void
 }
 
 const MarkdownContext = createContext<MarkdownContextValue | null>(null)
@@ -44,38 +36,13 @@ function useMarkdownContext() {
   return context
 }
 
-function ConfirmedLink({
-  href,
-  onClick,
-  children,
-  ...props
-}: ComponentProps<"a"> & { href: string }) {
-  const { confirmExternalLink } = useMarkdownContext()
-  const external = isExternalMarkdownUrl(href)
-
-  return (
-    <a
-      {...props}
-      href={href}
-      onClick={(event) => {
-        onClick?.(event)
-        if (!external || event.defaultPrevented) return
-        event.preventDefault()
-        confirmExternalLink(href)
-      }}
-    >
-      {children}
-    </a>
-  )
-}
-
 function MarkdownLink({ href, children, node, ...props }: ComponentProps<"a"> & ExtraProps) {
   void node
   if (!href) return <span>{children}</span>
   return (
-    <ConfirmedLink {...props} href={href}>
+    <UserGeneratedLink {...props} href={href}>
       {children}
-    </ConfirmedLink>
+    </UserGeneratedLink>
   )
 }
 
@@ -150,7 +117,7 @@ function EmbedConsent({ embed }: { embed: MarkdownEmbed }) {
 
 function ExternalLinkCard({ href, label }: { href: string; label: string }) {
   return (
-    <ConfirmedLink
+    <UserGeneratedLink
       href={href}
       className="not-typeset my-4 flex items-center gap-3 border bg-muted/15 p-4 no-underline transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
@@ -159,17 +126,17 @@ function ExternalLinkCard({ href, label }: { href: string; label: string }) {
         <span className="block text-sm font-medium">{label || externalLinkDestination(href)}</span>
         <span className="block truncate text-xs text-muted-foreground">{href}</span>
       </span>
-    </ConfirmedLink>
+    </UserGeneratedLink>
   )
 }
 
 function MarkdownParagraph({ node, children, ...props }: ComponentProps<"p"> & ExtraProps) {
   const standalone = node ? standaloneLink(node) : null
-  const href = standalone ? safeMarkdownUrl(standalone.href) : null
+  const href = standalone ? safeUserGeneratedUrl(standalone.href) : null
   if (href) {
     const embed = parseMarkdownEmbed(href)
     if (embed) return <EmbedConsent embed={embed} />
-    if (isExternalMarkdownUrl(href)) {
+    if (isExternalUserGeneratedUrl(href)) {
       return <ExternalLinkCard href={href} label={standalone?.label ?? ""} />
     }
   }
@@ -188,7 +155,7 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
   }
 
   return (
-    <ConfirmedLink
+    <UserGeneratedLink
       href={src}
       className="not-typeset my-2 inline-flex items-center gap-2 border bg-muted/15 px-3 py-2 no-underline"
     >
@@ -199,7 +166,7 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
           The image will be proxied after this post is saved.
         </span>
       </span>
-    </ConfirmedLink>
+    </UserGeneratedLink>
   )
 }
 
@@ -218,58 +185,23 @@ export function MarkdownContent({
   readonly className?: string
   readonly postId?: string
 }) {
-  const [pendingLink, setPendingLink] = useState<string | null>(null)
-
-  function openPendingLink() {
-    if (!pendingLink) return
-    const url = new URL(pendingLink, window.location.origin)
-    if (url.protocol === "mailto:") window.location.assign(url.toString())
-    else window.open(url.toString(), "_blank", "noopener,noreferrer")
-    setPendingLink(null)
-  }
-
-  const context = useMemo<MarkdownContextValue>(
-    () =>
-      postId
-        ? { postId, confirmExternalLink: setPendingLink }
-        : { confirmExternalLink: setPendingLink },
-    [postId],
-  )
+  const context = useMemo<MarkdownContextValue>(() => (postId ? { postId } : {}), [postId])
 
   return (
-    <MarkdownContext value={context}>
-      <div className={cn("typeset", className)}>
-        <ReactMarkdown
-          remarkPlugins={markdownPlugins}
-          rehypePlugins={htmlPlugins}
-          components={markdownComponents}
-          skipHtml
-          urlTransform={safeMarkdownUrl}
-        >
-          {children}
-        </ReactMarkdown>
-      </div>
-      <AlertDialog
-        open={pendingLink !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingLink(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Open an external link?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This link goes to{" "}
-              {pendingLink ? externalLinkDestination(pendingLink) : "another site"}. External sites
-              have their own privacy and security policies.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Stay here</AlertDialogCancel>
-            <AlertDialogAction onClick={openPendingLink}>Open link</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </MarkdownContext>
+    <UserGeneratedLinkProvider>
+      <MarkdownContext value={context}>
+        <div className={cn("typeset", className)}>
+          <ReactMarkdown
+            remarkPlugins={markdownPlugins}
+            rehypePlugins={htmlPlugins}
+            components={markdownComponents}
+            skipHtml
+            urlTransform={safeUserGeneratedUrl}
+          >
+            {children}
+          </ReactMarkdown>
+        </div>
+      </MarkdownContext>
+    </UserGeneratedLinkProvider>
   )
 }
