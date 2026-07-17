@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
 import { createPost, createUser } from "./factories"
-import { listPublicPostReads } from "./public-read-model"
+import { getPublicSitemapCounts, getPublicTagRead, listPublicPostReads } from "./public-read-model"
 import {
   posts,
   postTags,
@@ -100,5 +100,70 @@ describe("following feed read model", () => {
     expect(page.posts.map((post) => post.id)).toEqual(["followed-and-tagged", "tagged", "followed"])
     expect(page.posts.map((post) => post.viewCount)).toEqual([0, 0, 42])
     expect(page.nextCursor).toBeNull()
+  })
+
+  it("distinguishes empty tags and probationary content for search discovery", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => database.$client.close()
+    database
+      .insert(user)
+      .values([
+        createUser({ id: "established", email: "established@example.com" }),
+        createUser({
+          id: "new-author",
+          email: "new@example.com",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ])
+      .run()
+    database
+      .insert(profiles)
+      .values([
+        {
+          userId: "established",
+          username: "established",
+          normalizedUsername: "established",
+        },
+        { userId: "new-author", username: "new-author", normalizedUsername: "new-author" },
+      ])
+      .run()
+    database
+      .insert(posts)
+      .values([
+        createPost({
+          id: "trusted-post",
+          authorId: "established",
+          status: "published",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+        }),
+        createPost({
+          id: "probation-post",
+          authorId: "new-author",
+          status: "published",
+          publishedAt: new Date(),
+        }),
+      ])
+      .run()
+    database
+      .insert(tags)
+      .values([
+        { id: "trusted", displayName: "Trusted", normalizedName: "trusted" },
+        { id: "probation", displayName: "Probation", normalizedName: "probation" },
+        { id: "empty", displayName: "Empty", normalizedName: "empty" },
+      ])
+      .run()
+    database
+      .insert(postTags)
+      .values([
+        { postId: "trusted-post", tagId: "trusted", ordinal: 0 },
+        { postId: "probation-post", tagId: "probation", ordinal: 0 },
+      ])
+      .run()
+
+    expect(await getPublicTagRead(database, "empty")).toBeNull()
+    expect((await getPublicTagRead(database, "probation"))?.searchIndexable).toBe(false)
+    expect((await getPublicTagRead(database, "trusted"))?.searchIndexable).toBe(true)
+    expect(await getPublicSitemapCounts(database)).toEqual({ posts: 1, profiles: 1, tags: 1 })
   })
 })

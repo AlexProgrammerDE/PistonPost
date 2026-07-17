@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, eq, inArray, ne } from "drizzle-orm"
+import { and, count, eq, gte, inArray, ne } from "drizzle-orm"
 import { Effect } from "effect"
 import { z } from "zod"
 
@@ -350,7 +350,26 @@ export const publishPost = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     assertMutationOrigin(context)
     const session = await requireRequestSession(context)
+    const limited = await context.env.USER_RATE_LIMITER.limit({
+      key: `publish:${session.user.id}`,
+    })
+    if (!limited.success) throw new Error("Too many posts were published at once.")
     const database = createD1Database(context.env.DB)
+    const recentWindow = new Date(Date.now() - 10 * 60 * 1_000)
+    const recentPublishes = await database
+      .select({ value: count() })
+      .from(schema.posts)
+      .where(
+        and(
+          eq(schema.posts.authorId, session.user.id),
+          eq(schema.posts.status, "published"),
+          gte(schema.posts.publishedAt, recentWindow),
+        ),
+      )
+      .get()
+    if ((recentPublishes?.value ?? 0) >= 10) {
+      throw new Error("You can publish up to 10 posts every 10 minutes.")
+    }
     const post = await database
       .select()
       .from(schema.posts)

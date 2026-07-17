@@ -41,7 +41,14 @@ import { z } from "zod"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { Field, FieldGroup, FieldLabel, FieldLegend, FieldSet } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -673,6 +680,10 @@ function SortableUpload({
               disabled={item.status !== "queued"}
               onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
             />
+            <FieldDescription>
+              Optional. Describe what matters in the image, or leave this empty for a decorative
+              image.
+            </FieldDescription>
           </Field>
         ) : null}
         {item.status !== "queued" ? (

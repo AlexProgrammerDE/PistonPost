@@ -13,6 +13,7 @@ import { startTransition, useEffect, useOptimistic, useRef, useState } from "rea
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
+import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
@@ -301,7 +302,10 @@ export function SocialPanel({
         className="flex flex-wrap items-center justify-between gap-3 border-y py-3"
         aria-label="Post actions"
       >
-        <PostShareActions postId={postId} imageCount={imageCount} />
+        <div className="flex items-center gap-1">
+          <PostShareActions postId={postId} imageCount={imageCount} />
+          <ContentReportDialog target={{ type: "post", id: postId }} />
+        </div>
         {viewerPending ? (
           <DiscussionViewerSkeleton />
         ) : (
@@ -384,6 +388,7 @@ export function SocialPanel({
               return (
                 <article
                   key={comment.id}
+                  id={`comment-${comment.id}`}
                   className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-5"
                 >
                   <Avatar>
@@ -403,40 +408,48 @@ export function SocialPanel({
                       {comment.optimistic ? (
                         <span className="text-xs text-muted-foreground">Sending…</span>
                       ) : null}
-                      {canDelete ? (
-                        <AlertDialog>
-                          <AlertDialogTrigger
-                            render={
-                              <Button
-                                className="ml-auto"
-                                variant="ghost"
-                                size="icon-xs"
-                                aria-label="Delete comment"
-                              />
-                            }
-                          >
-                            <Trash2 aria-hidden="true" />
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                The comment text will be removed from the discussion.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Keep comment</AlertDialogCancel>
-                              <AlertDialogAction
-                                variant="destructive"
-                                disabled={deleteMutation.isPending}
-                                onClick={() => deleteMutation.mutate(comment.id)}
+                      {!comment.optimistic ? (
+                        <span className="ml-auto flex items-center gap-1">
+                          <ContentReportDialog
+                            target={{ type: "comment", id: comment.id }}
+                            size="xs"
+                          />
+                          {canDelete ? (
+                            <AlertDialog>
+                              <AlertDialogTrigger
+                                render={
+                                  <Button
+                                    className="ml-auto"
+                                    variant="ghost"
+                                    size="icon-xs"
+                                    aria-label="Delete comment"
+                                  />
+                                }
                               >
-                                <Trash2 aria-hidden="true" data-icon="inline-start" />
-                                Delete comment
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
+                                <Trash2 aria-hidden="true" />
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    The comment text will be removed from the discussion.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Keep comment</AlertDialogCancel>
+                                  <AlertDialogAction
+                                    variant="destructive"
+                                    disabled={deleteMutation.isPending}
+                                    onClick={() => deleteMutation.mutate(comment.id)}
+                                  >
+                                    <Trash2 aria-hidden="true" data-icon="inline-start" />
+                                    Delete comment
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          ) : null}
+                        </span>
                       ) : null}
                     </div>
                     <p className="mt-1 text-sm leading-6 whitespace-pre-wrap">{comment.content}</p>

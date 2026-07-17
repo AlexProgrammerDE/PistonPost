@@ -92,7 +92,11 @@ async function deliverImage({
         : { width: requestedWidth, fit: "scale-down" }
   const transformed = await context.env.IMAGES.input(object.body)
     .transform(transform)
-    .output({ format: "image/webp", quality: selected.quality, anim: false })
+    .output({
+      format: input.data.variant === "og" ? "image/jpeg" : "image/webp",
+      quality: selected.quality,
+      anim: false,
+    })
   const response = transformed.response()
   const headers = new Headers(response.headers)
   headers.set("Content-Type", transformed.contentType())

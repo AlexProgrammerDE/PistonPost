@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 
 import type { PublicPostRead } from "@/db/public-read-model"
 
-import { createPostSeoHead } from "./post-seo"
+import { createPostSeoHead, millisecondsToIsoDuration } from "./post-seo"
 import { createPostShareLinks } from "./post-share-links"
 import { SITE_URL, absoluteUrl, createSeoHead, truncateDescription } from "./seo"
 
@@ -19,6 +19,7 @@ const basePost: PublicPostRead = {
     normalizedUsername: "alex",
     name: "Alex",
     image: null,
+    searchIndexable: true,
   },
   media: [],
   tags: [{ slug: "friends", name: "friends" }],
@@ -54,7 +55,7 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "og:url")).toBe(`${SITE_URL}/tag/cute%20things`)
     expect(metaContent(head.meta, "name", "twitter:title")).toBe("PistonPost")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary")
-    expect(metaContent(head.meta, "name", "twitter:creator")).toBe("@AlexProgrammer3")
+    expect(metaContent(head.meta, "name", "twitter:creator")).toBeUndefined()
     expect(metaContent(head.meta, "name", "robots")).toBe(
       "index, follow, max-image-preview:large, max-video-preview:-1, max-snippet:-1",
     )
@@ -99,7 +100,14 @@ describe("SEO metadata", () => {
       type: "video",
       textContent: null,
       media: [
-        { id: "video-id", kind: "video", width: 1920, height: 1080, duration: 12, altText: null },
+        {
+          id: "video-id",
+          kind: "video",
+          width: 1920,
+          height: 1080,
+          duration: 12_000,
+          altText: null,
+        },
       ],
     })
 
@@ -133,7 +141,14 @@ describe("SEO metadata", () => {
       type: "video",
       textContent: null,
       media: [
-        { id: "video-id", kind: "video", width: 1920, height: 1080, duration: 12, altText: null },
+        {
+          id: "video-id",
+          kind: "video",
+          width: 1920,
+          height: 1080,
+          duration: 12_000,
+          altText: null,
+        },
       ],
     }
     const head = createPostSeoHead(post)
@@ -168,6 +183,21 @@ describe("SEO metadata", () => {
     const head = createPostSeoHead({ ...basePost, visibility: "unlisted" })
     expect(metaContent(head.meta, "name", "robots")).toBe("noindex, nofollow")
     expect(absoluteUrl("/post/example")).toBe(`${SITE_URL}/post/example`)
+  })
+
+  it("keeps probationary authors out of indexes", () => {
+    const head = createPostSeoHead({
+      ...basePost,
+      author: { ...basePost.author, searchIndexable: false },
+    })
+
+    expect(metaContent(head.meta, "name", "robots")).toBe("noindex, nofollow")
+  })
+
+  it("converts stored millisecond durations to ISO seconds", () => {
+    expect(millisecondsToIsoDuration(9_700)).toBe("PT9.7S")
+    expect(millisecondsToIsoDuration(12_000)).toBe("PT12S")
+    expect(millisecondsToIsoDuration(null)).toBeUndefined()
   })
 
   it("escapes user text embedded in structured data", () => {

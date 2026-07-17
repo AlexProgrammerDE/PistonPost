@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router"
 
 import { createD1Database } from "@/db/d1-database"
-import { listPublicSitemapRecords } from "@/db/public-read-model"
-import { buildSitemapXml } from "@/lib/sitemap"
+import { getPublicSitemapCounts } from "@/db/public-read-model"
+import { buildSitemapIndexXml } from "@/lib/sitemap"
 import type { AppRequestContext } from "@/server"
 
 async function sitemap({ request, context }: { request: Request; context: AppRequestContext }) {
-  const records = await listPublicSitemapRecords(createD1Database(context.env.DB))
+  const counts = await getPublicSitemapCounts(createD1Database(context.env.DB))
   const origin = context.runtime.config.PUBLIC_APP_URL.origin
-  const body = request.method === "HEAD" ? null : buildSitemapXml(origin, records)
+  const body = request.method === "HEAD" ? null : buildSitemapIndexXml(origin, counts)
   return new Response(body, {
     headers: {
       "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=3600",

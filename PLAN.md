@@ -883,6 +883,9 @@ Exit criteria:
 - [ ] Configure production routes, domain, email, Turnstile, R2, Images, Stream, Queues, Workflows, D1, cache, and secrets.
 - [ ] Deploy the Worker with generated migrations applied by the defined CI flow.
 - [ ] Run production smoke tests.
+- [ ] Verify Google Search Console ownership and submit the production sitemap index.
+- [ ] Validate representative text, gallery, video, profile, and paginated URLs with Google Rich Results Test and URL Inspection.
+- [ ] Validate representative social cards with the Facebook, LinkedIn, and X inspection tools.
 - [ ] Monitor auth, 404, media, queue, D1, and Worker metrics.
 - [ ] Publish user guidance explaining the required fresh sign-in.
 - [ ] Close launch only after the rollback window and verification pass.
@@ -975,6 +978,14 @@ Record future changes here with date, decision, reason, and affected phases.
   use cache keys that never contain viewer state, while reactions and permissions use a separate
   viewer-scoped key. Route loaders prefetch critical public data and localized Suspense boundaries
   preserve the surrounding page while slower content arrives. This affects Phases 5, 7, and 9.
+- 2026-07-17: Keep public pages from new accounts out of search until the account is verified and
+  seven days old. Administrators bypass the probation period. Public content remains visible inside
+  PistonPost, while metadata and sitemaps apply the search trust rule consistently. Add reporting for
+  posts, comments, and profiles with a shared administrator queue and publishing rate controls. This
+  affects Phases 5, 6, 7, and 9.
+- 2026-07-17: Replace the single discovery document with a sitemap index and bounded post, profile,
+  tag, and static child sitemaps. Post sitemaps include crawlable image and video records. Public
+  cursor pages expose real links and use self-canonical URLs. This affects Phases 5 and 9.
 - 2026-07-16: Standardize the icon system on Lucide and configure shadcn to generate Lucide
   components. Import icons directly from `lucide-react` so application code follows generated
   shadcn usage and does not depend on a local icon barrel. This affects the shared UI system across

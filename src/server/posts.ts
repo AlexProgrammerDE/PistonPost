@@ -9,6 +9,7 @@ import {
   getPublishedPostRead,
   getPublishedPostTrackingContext,
   getPublicProfileRead,
+  getPublicTagRead,
   listPublicPostReads,
 } from "@/db/public-read-model"
 import { decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
@@ -70,4 +71,10 @@ export const getPublicProfile = createServerFn({ method: "GET" })
   .validator(z.object({ username: z.string().trim().min(1).max(32) }))
   .handler(async ({ context, data }) =>
     getPublicProfileRead(createD1Database(context.env.DB), data.username),
+  )
+
+export const getPublicTag = createServerFn({ method: "GET" })
+  .validator(z.object({ tag: z.string().trim().min(1).max(64) }))
+  .handler(async ({ context, data }) =>
+    getPublicTagRead(createD1Database(context.env.DB), data.tag.toLocaleLowerCase("en-US")),
   )

@@ -2,6 +2,7 @@ import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { Newspaper, Plus, RotateCcw, TriangleAlert } from "lucide-react"
 import { Suspense } from "react"
+import { z } from "zod"
 
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
@@ -16,30 +17,41 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import { feedPageHref } from "@/lib/feed-pagination"
 import { feedQueryOptions } from "@/lib/queries/posts"
 import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, createSeoHead } from "@/lib/seo"
 
+const feedSearchSchema = z.object({
+  cursor: z.string().max(512).optional().catch(undefined),
+})
+
 export const Route = createFileRoute("/")({
-  loader: ({ context }) => {
-    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions())
+  validateSearch: feedSearchSchema,
+  loaderDeps: ({ search }) => ({ cursor: search.cursor }),
+  loader: ({ context, deps }) => {
+    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({}, deps.cursor))
   },
-  head: () =>
-    createSeoHead({
-      title: SITE_NAME,
-      description: SITE_DESCRIPTION,
-      path: "/",
+  head: ({ match }) => {
+    const cursor = match.search.cursor
+    const path = feedPageHref("/", cursor)
+    const title = cursor ? `Older posts · ${SITE_NAME}` : SITE_NAME
+    return createSeoHead({
+      title,
+      description: cursor ? `Older public posts on ${SITE_NAME}.` : SITE_DESCRIPTION,
+      path,
       twitterCard: "summary_large_image",
       jsonLd: {
         "@context": "https://schema.org",
-        "@type": "WebSite",
-        "@id": absoluteUrl("/#website"),
-        name: SITE_NAME,
-        alternateName: "post.pistonmaster.net",
-        url: absoluteUrl("/"),
-        description: SITE_DESCRIPTION,
+        "@type": cursor ? "CollectionPage" : "WebSite",
+        "@id": cursor ? absoluteUrl(path) : absoluteUrl("/#website"),
+        name: title,
+        alternateName: cursor ? undefined : "post.pistonmaster.net",
+        url: absoluteUrl(path),
+        description: cursor ? `Older public posts on ${SITE_NAME}.` : SITE_DESCRIPTION,
         inLanguage: "en",
       },
-    }),
+    })
+  },
   component: PublicFeed,
   pendingComponent: FeedPageSkeleton,
   errorComponent: FeedError,
@@ -59,7 +71,8 @@ function PublicFeed() {
 }
 
 function PublicFeedResults() {
-  const feed = useSuspenseInfiniteQuery(feedQueryOptions())
+  const { cursor } = Route.useSearch()
+  const feed = useSuspenseInfiniteQuery(feedQueryOptions({}, cursor))
   const posts = feed.data.pages.flatMap((page) => page.posts)
 
   return (
@@ -100,6 +113,7 @@ function PublicFeedResults() {
         isFetchingNextPage={feed.isFetchingNextPage}
         isFetchNextPageError={feed.isFetchNextPageError}
         isPaused={feed.fetchStatus === "paused"}
+        nextPageHref={feedPageHref("/", feed.data.pages.at(-1)?.nextCursor ?? undefined)}
         onLoadMore={feed.fetchNextPage}
       />
     </>

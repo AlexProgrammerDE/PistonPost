@@ -93,14 +93,14 @@ export function ImageLightbox({
         const srcSet = createMediaImageSources(image, "detail", DETAIL_IMAGE_WIDTHS)
         return {
           src: mediaImageUrl(image.id, "detail"),
-          alt: image.altText ?? title,
+          alt: image.altText ?? "",
           ...(image.width && image.height
             ? { width: image.width, height: image.height }
             : undefined),
           ...(srcSet.length > 0 ? { srcSet } : undefined),
         }
       }),
-    [images, title],
+    [images],
   )
 
   return (

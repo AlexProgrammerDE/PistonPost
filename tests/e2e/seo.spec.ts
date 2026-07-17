@@ -12,10 +12,7 @@ test("serves complete public metadata and discovery documents", async ({ page, r
     "content",
     "https://post.pistonmaster.net/og-default.png",
   )
-  await expect(page.locator('meta[name="twitter:creator"]')).toHaveAttribute(
-    "content",
-    "@AlexProgrammer3",
-  )
+  await expect(page.locator('meta[name="twitter:creator"]')).toHaveCount(0)
   await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute(
     "content",
     "summary_large_image",
@@ -36,5 +33,5 @@ test("serves complete public metadata and discovery documents", async ({ page, r
 
   const sitemap = await request.get("/sitemap.xml")
   expect(sitemap.headers()["content-type"]).toContain("application/xml")
-  expect(await sitemap.text()).toContain("<loc>http://localhost:3000/</loc>")
+  expect(await sitemap.text()).toContain("<loc>http://localhost:3000/sitemaps/static/1</loc>")
 })

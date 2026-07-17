@@ -1,19 +1,19 @@
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query"
 
 import { getFollowingFeed } from "@/server/follows"
-import { getPublicFeed, getPublishedPost, getPublicProfile } from "@/server/posts"
+import { getPublicFeed, getPublishedPost, getPublicProfile, getPublicTag } from "@/server/posts"
 
 export type FeedFilters = {
   readonly tag?: string
   readonly username?: string
 }
 
-export function feedQueryOptions(filters: FeedFilters = {}) {
+export function feedQueryOptions(filters: FeedFilters = {}, initialCursor?: string) {
   return infiniteQueryOptions({
-    queryKey: ["posts", "public-feed", filters] as const,
+    queryKey: ["posts", "public-feed", filters, initialCursor ?? null] as const,
     queryFn: ({ pageParam }) =>
       getPublicFeed({ data: { ...filters, cursor: pageParam, limit: 12 } }),
-    initialPageParam: undefined as string | undefined,
+    initialPageParam: initialCursor,
     getNextPageParam: (page) => page.nextCursor ?? undefined,
     staleTime: 15_000,
   })
@@ -41,6 +41,14 @@ export function profileQueryOptions(username: string) {
   return queryOptions({
     queryKey: ["profiles", "public", username] as const,
     queryFn: () => getPublicProfile({ data: { username } }),
+    staleTime: 60_000,
+  })
+}
+
+export function tagQueryOptions(tag: string) {
+  return queryOptions({
+    queryKey: ["tags", "public", tag] as const,
+    queryFn: () => getPublicTag({ data: { tag } }),
     staleTime: 60_000,
   })
 }

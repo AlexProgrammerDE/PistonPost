@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, lt, or, sql } from "drizzle-orm"
+import { and, count, countDistinct, desc, eq, inArray, lt, or, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 
 import type { PublicPostCursor } from "@/domain"
+import { isSearchIndexingTrusted, searchIndexingTrustCondition } from "@/lib/search-indexing"
 
 import type * as databaseSchema from "./schema"
 import {
@@ -43,6 +44,7 @@ export type PublicPostRead = {
     readonly normalizedUsername: string
     readonly name: string
     readonly image: string | null
+    readonly searchIndexable: boolean
   }
   readonly media: ReadonlyArray<PublicPostMedia>
   readonly tags: ReadonlyArray<{ readonly slug: string; readonly name: string }>
@@ -53,6 +55,15 @@ export type PublicPostRead = {
     readonly dislike: number
     readonly heart: number
   }
+  readonly structuredComments?: ReadonlyArray<{
+    readonly id: string
+    readonly content: string
+    readonly createdAt: Date
+    readonly updatedAt: Date
+    readonly authorName: string
+    readonly authorUsername: string
+    readonly authorNormalizedUsername: string
+  }>
 }
 
 export type PublicFeedInput = {
@@ -68,12 +79,27 @@ export type PublicFeedPage = {
   readonly nextCursor: PublicPostCursor | null
 }
 
-export type PublicSitemapRecord = {
-  readonly postId: string
-  readonly postUpdatedAt: Date
+export type PublicPostSitemapRecord = {
+  readonly id: string
+  readonly title: string
+  readonly type: "text" | "images" | "video"
+  readonly publishedAt: Date
+  readonly updatedAt: Date
+  readonly media: ReadonlyArray<{
+    readonly id: string
+    readonly kind: "image" | "video" | "avatar"
+    readonly duration: number | null
+  }>
+}
+
+export type PublicProfileSitemapRecord = {
   readonly username: string
-  readonly profileUpdatedAt: Date
-  readonly tag: string | null
+  readonly updatedAt: Date
+}
+
+export type PublicTagSitemapRecord = {
+  readonly tag: string
+  readonly updatedAt: Date
 }
 
 export type PublishedPostTrackingContext = {
@@ -94,6 +120,9 @@ type BasePostRow = {
   readonly authorNormalizedUsername: string
   readonly authorName: string
   readonly authorImage: string | null
+  readonly authorCreatedAt: Date
+  readonly authorEmailVerified: boolean
+  readonly authorRole: string | null
   readonly viewCount: number
 }
 
@@ -145,6 +174,9 @@ export async function listPublicPostReads(
       authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
       authorImage: user.image,
+      authorCreatedAt: user.createdAt,
+      authorEmailVerified: user.emailVerified,
+      authorRole: user.role,
       viewCount: sql<number>`coalesce(${postViewCounts.viewCount}, 0)`,
     })
     .from(posts)
@@ -191,6 +223,9 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
       authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
       authorImage: user.image,
+      authorCreatedAt: user.createdAt,
+      authorEmailVerified: user.emailVerified,
+      authorRole: user.role,
       viewCount: sql<number>`coalesce(${postViewCounts.viewCount}, 0)`,
     })
     .from(posts)
@@ -202,7 +237,25 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
 
   if (!row?.publishedAt) return null
   const hydrated = await hydratePublicPosts(database, [{ ...row, publishedAt: row.publishedAt }])
-  return hydrated[0] ?? null
+  const post = hydrated[0]
+  if (!post) return null
+  const structuredComments = await database
+    .select({
+      id: comments.id,
+      content: comments.content,
+      createdAt: comments.createdAt,
+      updatedAt: comments.updatedAt,
+      authorName: user.name,
+      authorUsername: profiles.username,
+      authorNormalizedUsername: profiles.normalizedUsername,
+    })
+    .from(comments)
+    .innerJoin(user, eq(user.id, comments.authorId))
+    .innerJoin(profiles, eq(profiles.userId, comments.authorId))
+    .where(and(eq(comments.postId, post.id), eq(comments.status, "published")))
+    .orderBy(desc(comments.createdAt), desc(comments.id))
+    .limit(25)
+  return { ...post, structuredComments }
 }
 
 export async function getPublishedPostTrackingContext(
@@ -219,8 +272,9 @@ export async function getPublishedPostTrackingContext(
 }
 
 export async function getPublicProfileRead(database: ReadDatabase, username: string) {
-  return database
+  const profile = await database
     .select({
+      userId: profiles.userId,
       username: profiles.username,
       normalizedUsername: profiles.normalizedUsername,
       name: user.name,
@@ -230,32 +284,263 @@ export async function getPublicProfileRead(database: ReadDatabase, username: str
       image: user.image,
       createdAt: profiles.createdAt,
       updatedAt: profiles.updatedAt,
+      accountCreatedAt: user.createdAt,
+      emailVerified: user.emailVerified,
+      role: user.role,
     })
     .from(profiles)
     .innerJoin(user, eq(user.id, profiles.userId))
     .where(eq(profiles.normalizedUsername, username.toLocaleLowerCase("en-US")))
     .get()
+  if (!profile) return null
+
+  const [postCount, followerCount, recentPosts] = await Promise.all([
+    database
+      .select({ value: count() })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.authorId, profile.userId),
+          eq(posts.status, "published"),
+          eq(posts.visibility, "public"),
+        ),
+      )
+      .get(),
+    database
+      .select({ value: count() })
+      .from(userFollows)
+      .where(eq(userFollows.followedUserId, profile.userId))
+      .get(),
+    database
+      .select({ id: posts.id, title: posts.title, publishedAt: posts.publishedAt })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.authorId, profile.userId),
+          eq(posts.status, "published"),
+          eq(posts.visibility, "public"),
+        ),
+      )
+      .orderBy(desc(posts.publishedAt), desc(posts.id))
+      .limit(10),
+  ])
+
+  return {
+    username: profile.username,
+    normalizedUsername: profile.normalizedUsername,
+    name: profile.name,
+    bio: profile.bio,
+    website: profile.website,
+    location: profile.location,
+    image: profile.image,
+    createdAt: profile.createdAt,
+    updatedAt: profile.updatedAt,
+    postCount: postCount?.value ?? 0,
+    followerCount: followerCount?.value ?? 0,
+    recentPosts: recentPosts.filter(
+      (post): post is typeof post & { publishedAt: Date } => post.publishedAt !== null,
+    ),
+    searchIndexable: isSearchIndexingTrusted({
+      createdAt: profile.accountCreatedAt,
+      emailVerified: profile.emailVerified,
+      role: profile.role,
+    }),
+  }
 }
 
-export async function listPublicSitemapRecords(
+export async function getPublicTagRead(database: ReadDatabase, normalizedName: string) {
+  const tag = await database
+    .select({ id: tags.id, displayName: tags.displayName, normalizedName: tags.normalizedName })
+    .from(tags)
+    .where(eq(tags.normalizedName, normalizedName))
+    .get()
+  if (!tag) return null
+
+  const [publicPost, trustedPost] = await Promise.all([
+    database
+      .select({ id: posts.id })
+      .from(postTags)
+      .innerJoin(posts, eq(posts.id, postTags.postId))
+      .where(
+        and(
+          eq(postTags.tagId, tag.id),
+          eq(posts.status, "published"),
+          eq(posts.visibility, "public"),
+        ),
+      )
+      .limit(1)
+      .get(),
+    database
+      .select({ id: posts.id })
+      .from(postTags)
+      .innerJoin(posts, eq(posts.id, postTags.postId))
+      .innerJoin(user, eq(user.id, posts.authorId))
+      .where(
+        and(
+          eq(postTags.tagId, tag.id),
+          eq(posts.status, "published"),
+          eq(posts.visibility, "public"),
+          searchIndexingTrustCondition(),
+        ),
+      )
+      .limit(1)
+      .get(),
+  ])
+
+  return publicPost ? { ...tag, searchIndexable: trustedPost !== undefined } : null
+}
+
+export async function getPublicSitemapCounts(database: ReadDatabase) {
+  const publicPostExists = sql`exists (
+    select 1 from ${posts} sitemap_posts
+    where sitemap_posts.author_id = ${profiles.userId}
+      and sitemap_posts.status = 'published'
+      and sitemap_posts.visibility = 'public'
+  )`
+  const [postCount, profileCount, tagCount] = await Promise.all([
+    database
+      .select({ value: count() })
+      .from(posts)
+      .innerJoin(user, eq(user.id, posts.authorId))
+      .where(
+        and(
+          eq(posts.status, "published"),
+          eq(posts.visibility, "public"),
+          searchIndexingTrustCondition(),
+        ),
+      )
+      .get(),
+    database
+      .select({ value: count() })
+      .from(profiles)
+      .innerJoin(user, eq(user.id, profiles.userId))
+      .where(and(searchIndexingTrustCondition(), publicPostExists))
+      .get(),
+    database
+      .select({ value: countDistinct(tags.id) })
+      .from(tags)
+      .innerJoin(postTags, eq(postTags.tagId, tags.id))
+      .innerJoin(posts, eq(posts.id, postTags.postId))
+      .innerJoin(user, eq(user.id, posts.authorId))
+      .where(
+        and(
+          eq(posts.status, "published"),
+          eq(posts.visibility, "public"),
+          searchIndexingTrustCondition(),
+        ),
+      )
+      .get(),
+  ])
+  return {
+    posts: postCount?.value ?? 0,
+    profiles: profileCount?.value ?? 0,
+    tags: tagCount?.value ?? 0,
+  }
+}
+
+export async function listPublicPostSitemapRecords(
   database: ReadDatabase,
-  limit = 49_997,
-): Promise<ReadonlyArray<PublicSitemapRecord>> {
-  return database
+  offset: number,
+  limit: number,
+): Promise<ReadonlyArray<PublicPostSitemapRecord>> {
+  const rows = await database
     .select({
-      postId: posts.id,
-      postUpdatedAt: posts.updatedAt,
-      username: profiles.normalizedUsername,
-      profileUpdatedAt: profiles.updatedAt,
-      tag: tags.normalizedName,
+      id: posts.id,
+      title: posts.title,
+      type: posts.type,
+      publishedAt: posts.publishedAt,
+      updatedAt: posts.updatedAt,
     })
     .from(posts)
-    .innerJoin(profiles, eq(profiles.userId, posts.authorId))
-    .leftJoin(postTags, eq(postTags.postId, posts.id))
-    .leftJoin(tags, eq(tags.id, postTags.tagId))
-    .where(and(eq(posts.status, "published"), eq(posts.visibility, "public")))
-    .orderBy(desc(posts.updatedAt), desc(posts.id), postTags.ordinal)
-    .limit(Math.min(Math.max(limit, 1), 49_997))
+    .innerJoin(user, eq(user.id, posts.authorId))
+    .where(
+      and(
+        eq(posts.status, "published"),
+        eq(posts.visibility, "public"),
+        searchIndexingTrustCondition(),
+      ),
+    )
+    .orderBy(desc(posts.updatedAt), desc(posts.id))
+    .limit(limit)
+    .offset(offset)
+  const visibleRows = rows.filter(
+    (post): post is typeof post & { publishedAt: Date } => post.publishedAt !== null,
+  )
+  const postIds = visibleRows.map((post) => post.id)
+  const media =
+    postIds.length === 0
+      ? []
+      : await database
+          .select({
+            postId: postMedia.postId,
+            id: mediaAssets.id,
+            kind: mediaAssets.kind,
+            duration: mediaAssets.duration,
+          })
+          .from(postMedia)
+          .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaId))
+          .where(and(inArray(postMedia.postId, postIds), eq(mediaAssets.status, "ready")))
+          .orderBy(postMedia.ordinal)
+
+  return visibleRows.map((post) => ({
+    id: post.id,
+    title: post.title,
+    type: post.type,
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt,
+    media: media.filter((asset) => asset.postId === post.id),
+  }))
+}
+
+export async function listPublicProfileSitemapRecords(
+  database: ReadDatabase,
+  offset: number,
+  limit: number,
+): Promise<ReadonlyArray<PublicProfileSitemapRecord>> {
+  return database
+    .select({ username: profiles.normalizedUsername, updatedAt: profiles.updatedAt })
+    .from(profiles)
+    .innerJoin(user, eq(user.id, profiles.userId))
+    .where(
+      and(
+        searchIndexingTrustCondition(),
+        sql`exists (
+          select 1 from ${posts} sitemap_posts
+          where sitemap_posts.author_id = ${profiles.userId}
+            and sitemap_posts.status = 'published'
+            and sitemap_posts.visibility = 'public'
+        )`,
+      ),
+    )
+    .orderBy(desc(profiles.updatedAt), desc(profiles.userId))
+    .limit(limit)
+    .offset(offset)
+}
+
+export async function listPublicTagSitemapRecords(
+  database: ReadDatabase,
+  offset: number,
+  limit: number,
+): Promise<ReadonlyArray<PublicTagSitemapRecord>> {
+  const lastModified = sql<number>`max(${posts.updatedAt})`
+  const rows = await database
+    .select({ tag: tags.normalizedName, updatedAt: lastModified })
+    .from(tags)
+    .innerJoin(postTags, eq(postTags.tagId, tags.id))
+    .innerJoin(posts, eq(posts.id, postTags.postId))
+    .innerJoin(user, eq(user.id, posts.authorId))
+    .where(
+      and(
+        eq(posts.status, "published"),
+        eq(posts.visibility, "public"),
+        searchIndexingTrustCondition(),
+      ),
+    )
+    .groupBy(tags.id, tags.normalizedName)
+    .orderBy(desc(lastModified), desc(tags.id))
+    .limit(limit)
+    .offset(offset)
+  return rows.map((row) => ({ tag: row.tag, updatedAt: new Date(row.updatedAt) }))
 }
 
 async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArray<BasePostRow>) {
@@ -318,6 +603,11 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
         normalizedUsername: post.authorNormalizedUsername,
         name: post.authorName,
         image: post.authorImage,
+        searchIndexable: isSearchIndexingTrusted({
+          createdAt: post.authorCreatedAt,
+          emailVerified: post.authorEmailVerified,
+          role: post.authorRole,
+        }),
       },
       media: mediaRows.filter((media) => media.postId === post.id),
       tags: tagRows.filter((tag) => tag.postId === post.id),

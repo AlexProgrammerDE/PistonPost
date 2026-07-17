@@ -18,6 +18,15 @@ export const adminSections = [
     searchPlaceholder: "Search comments…",
   },
   {
+    value: "reports",
+    label: "Reports",
+    description: "Review content flagged by community members.",
+    primaryLabel: "Reason",
+    secondaryLabel: "Target",
+    statusLabel: "Status",
+    searchPlaceholder: "Search reports…",
+  },
+  {
     value: "users",
     label: "Users",
     description: "Manage administrator access and account status.",

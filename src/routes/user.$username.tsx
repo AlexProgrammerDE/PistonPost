@@ -4,12 +4,14 @@ import { ExternalLink, MapPin } from "lucide-react"
 import { lazy, Suspense } from "react"
 import { z } from "zod"
 
+import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, ProfilePageSkeleton } from "@/components/LoadingStates"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
+import { feedPageHref } from "@/lib/feed-pagination"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
 import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
 import { safeUserGeneratedUrl } from "@/lib/user-generated-link"
@@ -18,8 +20,14 @@ const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
 )
 
+const feedSearchSchema = z.object({
+  cursor: z.string().max(512).optional().catch(undefined),
+})
+
 export const Route = createFileRoute("/user/$username")({
-  loader: async ({ context, params }) => {
+  validateSearch: feedSearchSchema,
+  loaderDeps: ({ search }) => ({ cursor: search.cursor }),
+  loader: async ({ context, params, deps }) => {
     const username = z
       .string()
       .trim()
@@ -28,12 +36,12 @@ export const Route = createFileRoute("/user/$username")({
       .parse(params.username)
       .toLocaleLowerCase("en-US")
     const profilePromise = context.queryClient.ensureQueryData(profileQueryOptions(username))
-    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ username }))
+    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ username }, deps.cursor))
     const profile = await profilePromise
     if (!profile) throw notFound()
     return profile
   },
-  head: ({ loaderData, params }) => {
+  head: ({ loaderData, params, match }) => {
     const username = loaderData?.username ?? params.username
     const normalizedUsername =
       loaderData?.normalizedUsername ?? params.username.toLocaleLowerCase("en-US")
@@ -41,7 +49,8 @@ export const Route = createFileRoute("/user/$username")({
     const description = truncateDescription(
       loaderData?.bio ?? `Public posts from @${username} on PistonPost.`,
     )
-    const path = `/user/${encodeURIComponent(normalizedUsername)}`
+    const pagePath = `/user/${encodeURIComponent(normalizedUsername)}`
+    const path = feedPageHref(pagePath, match.search.cursor)
     const profileUrl = absoluteUrl(path)
     const website = safeWebsite(loaderData?.website ?? null)
     return createSeoHead({
@@ -53,6 +62,7 @@ export const Route = createFileRoute("/user/$username")({
         ? { url: loaderData.image, alt: `${name}'s profile picture` }
         : undefined,
       twitterCard: "summary",
+      indexing: loaderData?.searchIndexable ? "index" : "noindex",
       profileUsername: username,
       jsonLd: {
         "@context": "https://schema.org",
@@ -63,6 +73,13 @@ export const Route = createFileRoute("/user/$username")({
         description,
         dateCreated: loaderData?.createdAt.toISOString(),
         dateModified: loaderData?.updatedAt.toISOString(),
+        hasPart: loaderData?.recentPosts.map((post) => ({
+          "@type": "SocialMediaPosting",
+          "@id": absoluteUrl(`/post/${encodeURIComponent(post.id)}`),
+          url: absoluteUrl(`/post/${encodeURIComponent(post.id)}`),
+          headline: post.title,
+          datePublished: post.publishedAt.toISOString(),
+        })),
         mainEntity: {
           "@type": "Person",
           "@id": `${profileUrl}#person`,
@@ -71,6 +88,18 @@ export const Route = createFileRoute("/user/$username")({
           url: profileUrl,
           image: loaderData?.image ? absoluteUrl(loaderData.image) : undefined,
           sameAs: website ? [website] : undefined,
+          interactionStatistic: [
+            {
+              "@type": "InteractionCounter",
+              interactionType: "https://schema.org/FollowAction",
+              userInteractionCount: loaderData?.followerCount ?? 0,
+            },
+            {
+              "@type": "InteractionCounter",
+              interactionType: "https://schema.org/CreateAction",
+              userInteractionCount: loaderData?.postCount ?? 0,
+            },
+          ],
         },
       },
     })
@@ -82,6 +111,7 @@ export const Route = createFileRoute("/user/$username")({
 function ProfileFeed() {
   const { username } = Route.useParams()
   const normalizedUsername = username.toLocaleLowerCase("en-US")
+  const { cursor } = Route.useSearch()
   const profile = useSuspenseQuery(profileQueryOptions(normalizedUsername)).data
   if (!profile) return null
   const website = safeWebsite(profile.website)
@@ -133,18 +163,23 @@ function ProfileFeed() {
               )}
             </div>
           </div>
-          <Suspense fallback={<Skeleton className="mt-4 h-9 w-20 sm:mt-1" />}>
-            <FollowButton
-              target={{ kind: "user", username: profile.normalizedUsername }}
-              className="mt-4 sm:mt-1"
+          <div className="mt-4 flex items-center gap-1 sm:mt-1">
+            <Suspense fallback={<Skeleton className="h-9 w-20" />}>
+              <FollowButton target={{ kind: "user", username: profile.normalizedUsername }} />
+            </Suspense>
+            <ContentReportDialog
+              target={{ type: "profile", id: profile.normalizedUsername }}
+              variant="outline"
             />
-          </Suspense>
+          </div>
         </div>
       </header>
       <Suspense fallback={<FeedItemsSkeleton />}>
         <FilteredFeed
           filters={{ username: normalizedUsername }}
           emptyMessage={`${profile.name} has not posted anything here yet.`}
+          initialCursor={cursor}
+          pagePath={`/user/${encodeURIComponent(normalizedUsername)}`}
         />
       </Suspense>
     </main>

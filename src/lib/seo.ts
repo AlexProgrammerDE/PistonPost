@@ -40,6 +40,7 @@ type SeoOptions = {
   readonly authorUrl?: string
   readonly tags?: ReadonlyArray<string>
   readonly profileUsername?: string
+  readonly twitterCreator?: string
   readonly jsonLd?: JsonLdObject
 }
 
@@ -78,13 +79,16 @@ export function createSeoHead(options: SeoOptions) {
     { property: "og:image:alt", content: image.alt },
     { name: "twitter:card", content: options.twitterCard },
     { name: "twitter:site", content: SITE_TWITTER_HANDLE },
-    { name: "twitter:creator", content: SITE_TWITTER_HANDLE },
     { name: "twitter:title", content: options.title },
     { name: "twitter:description", content: options.description },
     { name: "twitter:url", content: canonical },
     { name: "twitter:image", content: absoluteUrl(image.url) },
     { name: "twitter:image:alt", content: image.alt },
   ]
+
+  if (options.twitterCreator) {
+    meta.push({ name: "twitter:creator", content: options.twitterCreator })
+  }
 
   if (image.type) meta.push({ property: "og:image:type", content: image.type })
   if (image.width) meta.push({ property: "og:image:width", content: image.width.toString() })

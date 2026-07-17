@@ -33,7 +33,7 @@ export const getMyPosts = createServerFn({ method: "GET" }).handler(async ({ con
     .limit(500)
 })
 
-const adminSection = z.enum(["posts", "comments", "users", "media", "jobs", "audit"])
+const adminSection = z.enum(["posts", "comments", "reports", "users", "media", "jobs", "audit"])
 const adminPageSize = 20
 const adminCursor = z.object({
   createdAt: z.coerce.date(),
@@ -146,6 +146,46 @@ export const getAdminRows = createServerFn({ method: "GET" })
             .orderBy(order(schema.comments.createdAt), order(schema.comments.id))
             .limit(adminPageSize + 1),
         )
+      case "reports":
+        return adminPage(
+          await database
+            .select({
+              id: schema.contentReports.id,
+              primary: sql<string>`${schema.contentReports.reason} || case when ${schema.contentReports.details} is null then '' else ': ' || ${schema.contentReports.details} end`,
+              secondary: sql<string>`case
+                when ${schema.contentReports.targetType} = 'post'
+                  then '/post/' || ${schema.contentReports.targetId}
+                when ${schema.contentReports.targetType} = 'profile'
+                  then '/user/' || ${schema.contentReports.targetId}
+                else '/post/' || coalesce(
+                  (select report_comments.post_id from comments report_comments where report_comments.id = ${schema.contentReports.targetId}),
+                  ''
+                ) || '#discussion'
+              end`,
+              status: schema.contentReports.status,
+              createdAt: schema.contentReports.createdAt,
+            })
+            .from(schema.contentReports)
+            .where(
+              and(
+                data.query
+                  ? or(
+                      like(schema.contentReports.reason, search),
+                      like(schema.contentReports.details, search),
+                      like(schema.contentReports.targetId, search),
+                    )
+                  : undefined,
+                adminCursorCondition(
+                  schema.contentReports.createdAt,
+                  schema.contentReports.id,
+                  cursor,
+                  data.direction,
+                ),
+              ),
+            )
+            .orderBy(order(schema.contentReports.createdAt), order(schema.contentReports.id))
+            .limit(adminPageSize + 1),
+        )
       case "users":
         return adminPage(
           await database
@@ -251,26 +291,33 @@ export const getAdminRows = createServerFn({ method: "GET" })
 export const getAdminOverview = createServerFn({ method: "GET" }).handler(async ({ context }) => {
   await requireAdministrator(context)
   const database = createD1Database(context.env.DB)
-  const [posts, comments, users, failedMedia, pendingJobs, auditEvents] = await Promise.all([
-    database.select({ value: count() }).from(schema.posts).get(),
-    database.select({ value: count() }).from(schema.comments).get(),
-    database.select({ value: count() }).from(schema.user).get(),
-    database
-      .select({ value: count() })
-      .from(schema.mediaAssets)
-      .where(eq(schema.mediaAssets.status, "failed"))
-      .get(),
-    database
-      .select({ value: count() })
-      .from(schema.outbox)
-      .where(isNull(schema.outbox.processedAt))
-      .get(),
-    database.select({ value: count() }).from(schema.auditEvents).get(),
-  ])
+  const [posts, comments, reports, users, failedMedia, pendingJobs, auditEvents] =
+    await Promise.all([
+      database.select({ value: count() }).from(schema.posts).get(),
+      database.select({ value: count() }).from(schema.comments).get(),
+      database
+        .select({ value: count() })
+        .from(schema.contentReports)
+        .where(eq(schema.contentReports.status, "open"))
+        .get(),
+      database.select({ value: count() }).from(schema.user).get(),
+      database
+        .select({ value: count() })
+        .from(schema.mediaAssets)
+        .where(eq(schema.mediaAssets.status, "failed"))
+        .get(),
+      database
+        .select({ value: count() })
+        .from(schema.outbox)
+        .where(isNull(schema.outbox.processedAt))
+        .get(),
+      database.select({ value: count() }).from(schema.auditEvents).get(),
+    ])
 
   return {
     posts: posts?.value ?? 0,
     comments: comments?.value ?? 0,
+    reports: reports?.value ?? 0,
     users: users?.value ?? 0,
     media: failedMedia?.value ?? 0,
     jobs: pendingJobs?.value ?? 0,

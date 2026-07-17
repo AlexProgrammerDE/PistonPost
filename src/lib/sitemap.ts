@@ -1,13 +1,13 @@
-import type { PublicSitemapRecord } from "@/db/public-read-model"
+import type {
+  PublicPostSitemapRecord,
+  PublicProfileSitemapRecord,
+  PublicTagSitemapRecord,
+} from "@/db/public-read-model"
 
-const MAX_SITEMAP_URLS = 50_000
+export const SITEMAP_PAGE_SIZE = 10_000
 
-type SitemapEntry = {
-  readonly path: string
-  readonly lastModified?: Date
-  readonly changeFrequency: "daily" | "weekly" | "monthly"
-  readonly priority: number
-}
+export type SitemapKind = "static" | "posts" | "profiles" | "tags"
+export type SitemapCounts = Readonly<Record<Exclude<SitemapKind, "static">, number>>
 
 function escapeXml(value: string) {
   return value
@@ -18,66 +18,89 @@ function escapeXml(value: string) {
     .replaceAll("'", "&apos;")
 }
 
-function newestDate(current: Date | undefined, candidate: Date) {
-  return !current || candidate > current ? candidate : current
+function absoluteXmlUrl(origin: string, path: string) {
+  return escapeXml(new URL(path, `${origin}/`).toString())
 }
 
-function publicEntries(records: ReadonlyArray<PublicSitemapRecord>) {
-  const posts = new Map<string, Date>()
-  const profiles = new Map<string, Date>()
-  const tags = new Map<string, Date>()
+function lastModifiedXml(value: Date) {
+  return `\n    <lastmod>${value.toISOString()}</lastmod>`
+}
 
-  for (const record of records) {
-    posts.set(record.postId, newestDate(posts.get(record.postId), record.postUpdatedAt))
-    profiles.set(
-      record.username,
-      newestDate(profiles.get(record.username), record.profileUpdatedAt),
-    )
-    if (record.tag) {
-      tags.set(record.tag, newestDate(tags.get(record.tag), record.postUpdatedAt))
+function urlSetXml(entries: ReadonlyArray<string>, media = false) {
+  const namespaces = media
+    ? ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"'
+    : ""
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"${namespaces}>\n${entries.join("\n")}\n</urlset>\n`
+}
+
+function basicEntry(origin: string, path: string, updatedAt?: Date) {
+  return `  <url>\n    <loc>${absoluteXmlUrl(origin, path)}</loc>${updatedAt ? lastModifiedXml(updatedAt) : ""}\n  </url>`
+}
+
+export function sitemapPageCount(count: number) {
+  return Math.ceil(Math.max(0, count) / SITEMAP_PAGE_SIZE)
+}
+
+export function buildSitemapIndexXml(origin: string, counts: SitemapCounts) {
+  const locations = ["/sitemaps/static/1"]
+  for (const kind of ["posts", "profiles", "tags"] as const) {
+    for (let page = 1; page <= sitemapPageCount(counts[kind]); page += 1) {
+      locations.push(`/sitemaps/${kind}/${page.toString()}`)
     }
   }
-
-  return [
-    ...[...posts].map<SitemapEntry>(([postId, lastModified]) => ({
-      path: `/post/${encodeURIComponent(postId)}`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.8,
-    })),
-    ...[...profiles].map<SitemapEntry>(([username, lastModified]) => ({
-      path: `/user/${encodeURIComponent(username)}`,
-      lastModified,
-      changeFrequency: "weekly",
-      priority: 0.6,
-    })),
-    ...[...tags].map<SitemapEntry>(([tag, lastModified]) => ({
-      path: `/tag/${encodeURIComponent(tag)}`,
-      lastModified,
-      changeFrequency: "daily",
-      priority: 0.6,
-    })),
-  ]
+  const entries = locations.map(
+    (location) => `  <sitemap>\n    <loc>${absoluteXmlUrl(origin, location)}</loc>\n  </sitemap>`,
+  )
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries.join("\n")}\n</sitemapindex>\n`
 }
 
-function renderEntry(origin: string, entry: SitemapEntry) {
-  const location = new URL(entry.path, `${origin}/`).toString()
-  const lastModified = entry.lastModified
-    ? `\n    <lastmod>${entry.lastModified.toISOString()}</lastmod>`
-    : ""
-  return `  <url>\n    <loc>${escapeXml(location)}</loc>${lastModified}\n    <changefreq>${entry.changeFrequency}</changefreq>\n    <priority>${entry.priority.toFixed(1)}</priority>\n  </url>`
+export function buildStaticSitemapXml(origin: string) {
+  return urlSetXml(
+    ["/", "/cookie-policy", "/privacy", "/terms"].map((path) => basicEntry(origin, path)),
+  )
 }
 
-export function buildSitemapXml(origin: string, records: ReadonlyArray<PublicSitemapRecord>) {
-  const entries: ReadonlyArray<SitemapEntry> = [
-    { path: "/", changeFrequency: "daily", priority: 1 },
-    { path: "/cookie-policy", changeFrequency: "monthly", priority: 0.2 },
-    { path: "/privacy", changeFrequency: "monthly", priority: 0.2 },
-    { path: "/terms", changeFrequency: "monthly", priority: 0.2 },
-    ...publicEntries(records),
-  ]
-  const urls = entries.slice(0, MAX_SITEMAP_URLS).map((entry) => renderEntry(origin, entry))
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`
+export function buildPostSitemapXml(
+  origin: string,
+  records: ReadonlyArray<PublicPostSitemapRecord>,
+) {
+  return urlSetXml(
+    records.map((post) => {
+      const media = post.media
+        .map((asset) => {
+          if (asset.kind === "image") {
+            return `\n    <image:image>\n      <image:loc>${absoluteXmlUrl(origin, `/media/image/${asset.id}/detail`)}</image:loc>\n    </image:image>`
+          }
+          if (asset.kind === "video") {
+            const duration = asset.duration
+              ? `\n      <video:duration>${Math.max(1, Math.round(asset.duration / 1_000)).toString()}</video:duration>`
+              : ""
+            return `\n    <video:video>\n      <video:thumbnail_loc>${absoluteXmlUrl(origin, `/media/video/${asset.id}/thumbnail`)}</video:thumbnail_loc>\n      <video:title>${escapeXml(post.title)}</video:title>\n      <video:description>${escapeXml(`${post.title}, a video on PistonPost.`)}</video:description>\n      <video:player_loc allow_embed="yes">${absoluteXmlUrl(origin, `/media/video/${asset.id}/player`)}</video:player_loc>${duration}\n      <video:publication_date>${post.publishedAt.toISOString()}</video:publication_date>\n    </video:video>`
+          }
+          return ""
+        })
+        .join("")
+      return `  <url>\n    <loc>${absoluteXmlUrl(origin, `/post/${encodeURIComponent(post.id)}`)}</loc>${lastModifiedXml(post.updatedAt)}${media}\n  </url>`
+    }),
+    true,
+  )
+}
+
+export function buildProfileSitemapXml(
+  origin: string,
+  records: ReadonlyArray<PublicProfileSitemapRecord>,
+) {
+  return urlSetXml(
+    records.map((profile) =>
+      basicEntry(origin, `/user/${encodeURIComponent(profile.username)}`, profile.updatedAt),
+    ),
+  )
+}
+
+export function buildTagSitemapXml(origin: string, records: ReadonlyArray<PublicTagSitemapRecord>) {
+  return urlSetXml(
+    records.map((tag) => basicEntry(origin, `/tag/${encodeURIComponent(tag.tag)}`, tag.updatedAt)),
+  )
 }
 
 export function buildRobotsTxt(origin: string, indexable: boolean) {
@@ -85,10 +108,7 @@ export function buildRobotsTxt(origin: string, indexable: boolean) {
   return [
     "User-agent: *",
     "Allow: /",
-    "Disallow: /account/",
-    "Disallow: /admin/",
     "Disallow: /api/",
-    "Disallow: /auth/",
     "Disallow: /media/upload/",
     "Disallow: /_serverFn/",
     "",

@@ -298,7 +298,7 @@ function FeedPostImageMedia({
           image={image}
           variant="feed"
           sizes={feedImageSizes}
-          alt={image.altText ?? post.title}
+          alt={image.altText ?? ""}
           className="max-h-[46rem] w-full bg-muted object-contain"
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : undefined}
@@ -395,7 +395,7 @@ function DetailPostImageMedia({
             image={image}
             variant="detail"
             sizes={detailImageSizes}
-            alt={image.altText ?? post.title}
+            alt={image.altText ?? ""}
             className="max-h-[85svh] w-full object-contain"
             loading="eager"
             fetchPriority="high"
@@ -427,7 +427,7 @@ function DetailPostImageMedia({
                   image={image}
                   variant="feed"
                   sizes={masonryImageSizes}
-                  alt={image.altText ?? post.title}
+                  alt={image.altText ?? ""}
                   className="w-full object-contain"
                   loading={index === 0 ? "eager" : "lazy"}
                   fetchPriority={index === 0 ? "high" : undefined}
@@ -526,7 +526,7 @@ function ImageBrowser({
           image={selectedImage}
           variant="detail"
           sizes={detailImageSizes}
-          alt={selectedImage.altText ?? post.title}
+          alt={selectedImage.altText ?? ""}
           className="max-h-[85svh] w-full object-contain"
           loading="eager"
           fetchPriority="high"

@@ -33,6 +33,7 @@ import {
   pushCursorTrail,
   type DataTableUrlState,
 } from "@/lib/table/app-table"
+import { resolveContentReport } from "@/server/reports"
 import {
   cleanupAdminMedia,
   getAdminRows,
@@ -267,11 +268,44 @@ function JobAction({ row }: { row: AdminRow }) {
   )
 }
 
+function ReportAction({ row }: { row: AdminRow }) {
+  const router = useRouter()
+  const mutation = useMutation({
+    mutationFn: (resolution: "resolved" | "dismissed") =>
+      resolveContentReport({ data: { id: row.id, resolution } }),
+    onSuccess: async (_, resolution) => {
+      toast.success(resolution === "resolved" ? "Report resolved" : "Report dismissed")
+      await router.invalidate()
+    },
+    onError: () => toast.error("The report could not be updated."),
+  })
+  if (row.status !== "open") return null
+  return (
+    <div className="flex gap-2">
+      <ConfirmationAction
+        label="Resolve"
+        title="Mark this report resolved?"
+        description="Use this after the reported content has been reviewed and any needed action is complete."
+        disabled={mutation.isPending}
+        onConfirm={() => mutation.mutate("resolved")}
+      />
+      <ConfirmationAction
+        label="Dismiss"
+        title="Dismiss this report?"
+        description="The report will be closed without a moderation action."
+        disabled={mutation.isPending}
+        onConfirm={() => mutation.mutate("dismissed")}
+      />
+    </div>
+  )
+}
+
 function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
   if (section === "posts" || section === "comments") {
     return <ModerationAction row={row} section={section} />
   }
   if (section === "users") return <UserActions row={row} />
+  if (section === "reports") return <ReportAction row={row} />
   if (section === "media") return <MediaAction row={row} />
   if (section === "jobs") return <JobAction row={row} />
   return null
@@ -357,9 +391,14 @@ function AdminTableView({
     column.accessor("secondary", {
       header: details.secondaryLabel,
       enableSorting: false,
-      cell: ({ getValue }) => (
-        <span className="block max-w-72 truncate text-muted-foreground">{getValue()}</span>
-      ),
+      cell: ({ getValue }) =>
+        section === "reports" ? (
+          <a className="text-sm underline underline-offset-4" href={getValue()}>
+            Open reported content
+          </a>
+        ) : (
+          <span className="block max-w-72 truncate text-muted-foreground">{getValue()}</span>
+        ),
     }),
     column.accessor("status", {
       header: details.statusLabel,

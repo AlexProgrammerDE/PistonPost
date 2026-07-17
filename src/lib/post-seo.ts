@@ -17,15 +17,24 @@ function postDescription(post: PublicPostRead) {
   if (post.type === "images") {
     const count = post.media.filter((media) => media.kind === "image").length
     return truncateDescription(
-      `Post by ${post.author.name} · ${count.toString()} image${count === 1 ? "" : "s"}${suffix}`,
+      `${post.title} · ${count.toString()} image${count === 1 ? "" : "s"} by ${post.author.name}${suffix}`,
     )
   }
   if (post.type === "video") {
-    return truncateDescription(`Video by ${post.author.name}${suffix}`)
+    return truncateDescription(`${post.title} · Video by ${post.author.name}${suffix}`)
   }
   const text = post.textContent ? markdownToPlainText(post.textContent) : null
   const content = text ? ` · ${text}` : ""
-  return truncateDescription(`Post by ${post.author.name}${suffix}${content}`)
+  return truncateDescription(`${post.title} · Post by ${post.author.name}${suffix}${content}`)
+}
+
+export function millisecondsToIsoDuration(duration: number | null) {
+  if (!duration || duration <= 0 || !Number.isFinite(duration)) return undefined
+  const seconds = duration / 1_000
+  const value = Number.isInteger(seconds)
+    ? seconds.toString()
+    : seconds.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")
+  return `PT${value}S`
 }
 
 function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
@@ -34,7 +43,7 @@ function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
     .map((image) => ({
       url: `/media/image/${image.id}/og`,
       alt: image.altText ?? post.title,
-      type: "image/webp",
+      type: "image/jpeg",
       width: 1200,
       height: 630,
     }))
@@ -90,7 +99,7 @@ function postVideo(post: PublicPostRead) {
       width,
       height,
     } satisfies SeoVideo,
-    duration: media.duration && media.duration > 0 ? `PT${media.duration.toString()}S` : undefined,
+    duration: millisecondsToIsoDuration(media.duration),
   }
 }
 
@@ -174,6 +183,23 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
       : undefined,
     commentCount: post.commentCount,
     interactionStatistic: postInteractionStatistics(post),
+    comment: post.structuredComments?.map((comment) => ({
+      "@type": "Comment",
+      "@id": `${canonical}#comment-${encodeURIComponent(comment.id)}`,
+      text: comment.content,
+      dateCreated: comment.createdAt.toISOString(),
+      dateModified:
+        comment.updatedAt > comment.createdAt ? comment.updatedAt.toISOString() : undefined,
+      author: {
+        "@type": "Person",
+        "@id": `${absoluteUrl(
+          `/user/${encodeURIComponent(comment.authorNormalizedUsername)}`,
+        )}#person`,
+        name: comment.authorName,
+        alternateName: `@${comment.authorUsername}`,
+        url: absoluteUrl(`/user/${encodeURIComponent(comment.authorNormalizedUsername)}`),
+      },
+    })),
   }
 
   return createSeoHead({
@@ -188,7 +214,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     video: video?.download,
     player: video?.player,
     twitterCard: video ? "player" : image ? "summary_large_image" : "summary",
-    indexing: post.visibility === "unlisted" ? "noindex" : "index",
+    indexing: post.visibility === "unlisted" || !post.author.searchIndexable ? "noindex" : "index",
     publishedAt,
     modifiedAt,
     authorUrl,

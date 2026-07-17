@@ -30,6 +30,7 @@ import { Route as AccountSettingsRouteImport } from './routes/account.settings'
 import { Route as AccountPostsRouteImport } from './routes/account.posts'
 import { Route as AccountSettingsIndexRouteImport } from './routes/account.settings.index'
 import { Route as AccountPostsIndexRouteImport } from './routes/account.posts.index'
+import { Route as SitemapsKindPageRouteImport } from './routes/sitemaps.$kind.$page'
 import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
 import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
 import { Route as MediaExternalImagePostIdRouteImport } from './routes/media.external-image.$postId'
@@ -147,6 +148,11 @@ const AccountPostsIndexRoute = AccountPostsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AccountPostsRoute,
 } as any)
+const SitemapsKindPageRoute = SitemapsKindPageRouteImport.update({
+  id: '/sitemaps/$kind/$page',
+  path: '/sitemaps/$kind/$page',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PostPostIdEditRoute = PostPostIdEditRouteImport.update({
   id: '/edit',
   path: '/edit',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
   '/account/posts/': typeof AccountPostsIndexRoute
   '/account/settings/': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
@@ -265,6 +272,7 @@ export interface FileRoutesByTo {
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
   '/account/posts': typeof AccountPostsIndexRoute
   '/account/settings': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
@@ -300,6 +308,7 @@ export interface FileRoutesById {
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
   '/account/posts/': typeof AccountPostsIndexRoute
   '/account/settings/': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
@@ -336,6 +345,7 @@ export interface FileRouteTypes {
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
+    | '/sitemaps/$kind/$page'
     | '/account/posts/'
     | '/account/settings/'
     | '/media/image/$mediaId/$variant'
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
+    | '/sitemaps/$kind/$page'
     | '/account/posts'
     | '/account/settings'
     | '/media/image/$mediaId/$variant'
@@ -400,6 +411,7 @@ export interface FileRouteTypes {
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
+    | '/sitemaps/$kind/$page'
     | '/account/posts/'
     | '/account/settings/'
     | '/media/image/$mediaId/$variant'
@@ -428,6 +440,7 @@ export interface RootRouteChildren {
   ApiStreamWebhookRoute: typeof ApiStreamWebhookRoute
   MediaExternalImagePostIdRoute: typeof MediaExternalImagePostIdRoute
   MediaUploadMediaIdRoute: typeof MediaUploadMediaIdRoute
+  SitemapsKindPageRoute: typeof SitemapsKindPageRoute
   MediaImageMediaIdVariantRoute: typeof MediaImageMediaIdVariantRoute
   MediaVideoMediaIdDownloadRoute: typeof MediaVideoMediaIdDownloadRoute
   MediaVideoMediaIdPlayerRoute: typeof MediaVideoMediaIdPlayerRoute
@@ -582,6 +595,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/account/posts/'
       preLoaderRoute: typeof AccountPostsIndexRouteImport
       parentRoute: typeof AccountPostsRoute
+    }
+    '/sitemaps/$kind/$page': {
+      id: '/sitemaps/$kind/$page'
+      path: '/sitemaps/$kind/$page'
+      fullPath: '/sitemaps/$kind/$page'
+      preLoaderRoute: typeof SitemapsKindPageRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/post/$postId/edit': {
       id: '/post/$postId/edit'
@@ -747,6 +767,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiStreamWebhookRoute: ApiStreamWebhookRoute,
   MediaExternalImagePostIdRoute: MediaExternalImagePostIdRoute,
   MediaUploadMediaIdRoute: MediaUploadMediaIdRoute,
+  SitemapsKindPageRoute: SitemapsKindPageRoute,
   MediaImageMediaIdVariantRoute: MediaImageMediaIdVariantRoute,
   MediaVideoMediaIdDownloadRoute: MediaVideoMediaIdDownloadRoute,
   MediaVideoMediaIdPlayerRoute: MediaVideoMediaIdPlayerRoute,

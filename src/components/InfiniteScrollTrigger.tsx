@@ -16,6 +16,7 @@ export function InfiniteScrollTrigger({
   isFetchingNextPage,
   isFetchNextPageError,
   isPaused,
+  nextPageHref,
   onLoadMore,
 }: {
   readonly hasNextPage: boolean
@@ -24,6 +25,7 @@ export function InfiniteScrollTrigger({
   readonly isFetchingNextPage: boolean
   readonly isFetchNextPageError: boolean
   readonly isPaused: boolean
+  readonly nextPageHref?: string
   readonly onLoadMore: () => Promise<unknown>
 }) {
   const triggerRef = useRef<HTMLDivElement>(null)
@@ -80,16 +82,37 @@ export function InfiniteScrollTrigger({
           : "Load older posts"
   const ActionIcon = isPaused ? WifiOff : isFetchNextPageError ? RotateCcw : History
 
+  const content = (
+    <>
+      {isFetchingNextPage ? (
+        <Spinner aria-hidden="true" data-icon="inline-start" />
+      ) : (
+        <ActionIcon aria-hidden="true" data-icon="inline-start" />
+      )}
+      {label}
+    </>
+  )
+
   return (
     <div ref={triggerRef} className="mt-10 flex justify-center [overflow-anchor:none]">
-      <Button variant="outline" disabled={isFetching || isPaused} onClick={handleLoadMore}>
-        {isFetchingNextPage ? (
-          <Spinner aria-hidden="true" data-icon="inline-start" />
-        ) : (
-          <ActionIcon aria-hidden="true" data-icon="inline-start" />
-        )}
-        {label}
-      </Button>
+      {nextPageHref ? (
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<a href={nextPageHref} aria-label={label} />}
+          aria-disabled={isFetching || isPaused}
+          onClick={(event) => {
+            event.preventDefault()
+            if (!isFetching && !isPaused) handleLoadMore()
+          }}
+        >
+          {content}
+        </Button>
+      ) : (
+        <Button variant="outline" disabled={isFetching || isPaused} onClick={handleLoadMore}>
+          {content}
+        </Button>
+      )}
       <span className="sr-only" aria-live="polite">
         {isFetchingNextPage
           ? "Loading older posts."
