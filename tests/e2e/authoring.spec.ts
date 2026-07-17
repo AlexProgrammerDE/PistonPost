@@ -8,6 +8,7 @@ import { generateN } from "../../src/lib/generate-n"
 
 const CAPTCHA_TEST_TOKEN = "XXXX.DUMMY.TOKEN.XXXX"
 const TEST_PASSWORD = "PistonPost-Test-2026!"
+let testSessionSequence = 0
 const VALID_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
@@ -53,9 +54,15 @@ async function createVerifiedSession(context: BrowserContext) {
   const stamp = Date.now().toString()
   const email = `author-${stamp}@example.com`
   const username = `moss_${stamp}`
+  const clientAddress = `192.0.2.${String(++testSessionSequence)}`
+  const authHeaders = {
+    Origin: "http://localhost:3000",
+    "cf-connecting-ip": clientAddress,
+    "x-captcha-response": CAPTCHA_TEST_TOKEN,
+  }
   const startedAt = Date.now() - 1_000
   const signUp = await context.request.post("/api/auth/sign-up/email", {
-    headers: { Origin: "http://localhost:3000", "x-captcha-response": CAPTCHA_TEST_TOKEN },
+    headers: authHeaders,
     data: {
       email,
       password: TEST_PASSWORD,
@@ -74,11 +81,13 @@ async function createVerifiedSession(context: BrowserContext) {
     .not.toBeNull()
   if (!verificationUrl) throw new Error("The local verification email was not written.")
 
-  const verification = await context.request.get(verificationUrl)
+  const verification = await context.request.get(verificationUrl, {
+    headers: { "cf-connecting-ip": clientAddress },
+  })
   expect(verification.status()).toBeLessThan(400)
 
   const signIn = await context.request.post("/api/auth/sign-in/email", {
-    headers: { Origin: "http://localhost:3000", "x-captcha-response": CAPTCHA_TEST_TOKEN },
+    headers: authHeaders,
     data: { email, password: TEST_PASSWORD },
   })
   expect(signIn.status()).toBe(200)
