@@ -119,11 +119,13 @@ function ExternalLinkCard({ href, label }: { href: string; label: string }) {
   return (
     <UserGeneratedLink
       href={href}
-      className="not-typeset my-4 flex items-center gap-3 border bg-muted/15 p-4 no-underline transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="not-typeset my-4 flex items-center gap-3 overflow-hidden border bg-muted/15 p-4 no-underline transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <ExternalLink aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
       <span className="min-w-0">
-        <span className="block text-sm font-medium">{label || externalLinkDestination(href)}</span>
+        <span className="block overflow-hidden text-sm font-medium">
+          {label || externalLinkDestination(href)}
+        </span>
         <span className="block truncate text-xs text-muted-foreground">{href}</span>
       </span>
     </UserGeneratedLink>
@@ -157,12 +159,12 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
   return (
     <UserGeneratedLink
       href={src}
-      className="not-typeset my-2 inline-flex items-center gap-2 border bg-muted/15 px-3 py-2 no-underline"
+      className="not-typeset my-2 inline-flex items-center gap-2 overflow-hidden border bg-muted/15 px-3 py-2 no-underline"
     >
       <ImageIcon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
       <span className="min-w-0">
-        <span className="block text-sm font-medium">{alt || "External image"}</span>
-        <span className="block text-xs text-muted-foreground">
+        <span className="block overflow-hidden text-sm font-medium">{alt || "External image"}</span>
+        <span className="block overflow-hidden text-xs text-muted-foreground">
           The image will be proxied after this post is saved.
         </span>
       </span>
@@ -190,7 +192,13 @@ export function MarkdownContent({
   return (
     <UserGeneratedLinkProvider>
       <MarkdownContext value={context}>
-        <div dir="auto" className={cn("typeset min-w-0 wrap-anywhere", className)}>
+        <div
+          dir="auto"
+          className={cn(
+            "typeset min-w-0 overflow-hidden wrap-anywhere [&_blockquote]:overflow-hidden [&_figcaption]:overflow-hidden [&_h1]:overflow-hidden [&_h2]:overflow-hidden [&_h3]:overflow-hidden [&_h4]:overflow-hidden [&_h5]:overflow-hidden [&_h6]:overflow-hidden [&_li]:overflow-hidden [&_p]:overflow-hidden [&_td]:overflow-hidden [&_th]:overflow-hidden",
+            className,
+          )}
+        >
           <ReactMarkdown
             remarkPlugins={markdownPlugins}
             rehypePlugins={htmlPlugins}

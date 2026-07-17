@@ -140,21 +140,27 @@ function ProfileFeed() {
         </Avatar>
         <div className="max-w-2xl min-w-0 sm:flex sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h1 dir="auto" className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1
+              dir="auto"
+              className="overflow-hidden font-heading text-3xl font-bold tracking-tight sm:text-4xl"
+            >
               {profile.name}
             </h1>
-            <p className="mt-1 text-sm text-muted-foreground">@{profile.username}</p>
+            <p className="mt-1 truncate text-sm text-muted-foreground">@{profile.username}</p>
             {profile.bio && (
               <p
                 dir="auto"
-                className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground"
+                className="mt-4 max-w-xl overflow-hidden text-base leading-relaxed text-muted-foreground"
               >
                 {profile.bio}
               </p>
             )}
             <div className="mt-3 flex flex-wrap gap-3 text-sm text-muted-foreground">
               {profile.location && (
-                <span dir="auto" className="inline-flex min-w-0 items-center gap-1.5">
+                <span
+                  dir="auto"
+                  className="inline-flex min-w-0 items-center gap-1.5 overflow-hidden"
+                >
                   <MapPin aria-hidden="true" className="size-4" />
                   {profile.location}
                 </span>

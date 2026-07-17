@@ -735,7 +735,9 @@ function SortableUpload({
             <ProgressValue />
           </Progress>
         ) : null}
-        {item.error ? <p className="mt-2 text-xs text-destructive">{item.error}</p> : null}
+        {item.error ? (
+          <p className="mt-2 overflow-hidden text-xs text-destructive">{item.error}</p>
+        ) : null}
       </div>
       <Button
         type="button"

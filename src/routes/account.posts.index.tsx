@@ -82,7 +82,7 @@ function MyPosts() {
               >
                 <div className="min-w-0">
                   {post.status === "deleted" ? (
-                    <p dir="auto" className="font-semibold wrap-anywhere">
+                    <p dir="auto" className="overflow-hidden font-semibold wrap-anywhere">
                       {post.title}
                     </p>
                   ) : (
@@ -90,7 +90,7 @@ function MyPosts() {
                       to={destination}
                       params={{ postId: post.id }}
                       dir="auto"
-                      className="font-semibold wrap-anywhere hover:underline"
+                      className="block overflow-hidden font-semibold wrap-anywhere hover:underline"
                     >
                       {post.title}
                     </Link>

@@ -606,7 +606,7 @@ export function PostView({
           >
             {post.author.name}
           </Link>
-          <p className="text-xs text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
             @{post.author.username} ·{" "}
             <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt)}</time>
           </p>
@@ -623,12 +623,15 @@ export function PostView({
         {detail ? (
           <h1
             dir="auto"
-            className="font-heading text-3xl font-bold tracking-tight text-balance sm:text-5xl"
+            className="overflow-hidden font-heading text-3xl font-bold tracking-tight text-balance sm:text-5xl"
           >
             {post.title}
           </h1>
         ) : (
-          <h2 dir="auto" className="font-heading text-2xl font-bold tracking-tight text-balance">
+          <h2
+            dir="auto"
+            className="overflow-hidden font-heading text-2xl font-bold tracking-tight text-balance"
+          >
             <Link to="/post/$postId" params={{ postId: post.id }} className="hover:underline">
               {post.title}
             </Link>

@@ -29,7 +29,7 @@ export function FilteredFeed({
           <EmptyMedia>
             <SearchX aria-hidden="true" className="size-8 text-muted-foreground" />
           </EmptyMedia>
-          <EmptyTitle>{emptyMessage}</EmptyTitle>
+          <EmptyTitle className="overflow-hidden">{emptyMessage}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )

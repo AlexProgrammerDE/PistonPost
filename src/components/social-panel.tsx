@@ -401,7 +401,7 @@ export function SocialPanel({
                   <div className="min-w-0">
                     <div className="flex min-w-0 items-center gap-2 text-sm">
                       <bdi className="min-w-0 truncate font-semibold">{comment.authorName}</bdi>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="min-w-0 truncate text-xs text-muted-foreground">
                         @{comment.authorUsername}
                       </span>
                       {comment.optimistic ? (
@@ -453,7 +453,10 @@ export function SocialPanel({
                         </span>
                       ) : null}
                     </div>
-                    <p dir="auto" className="mt-1 text-sm leading-6 whitespace-pre-wrap">
+                    <p
+                      dir="auto"
+                      className="mt-1 overflow-hidden text-sm leading-6 whitespace-pre-wrap"
+                    >
                       {comment.content}
                     </p>
                   </div>
