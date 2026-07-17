@@ -7,18 +7,18 @@ import { useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  Credenza,
+  CredenzaBody,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   Select,
@@ -64,7 +64,7 @@ export function ContentReportDialog({
   })
 
   return (
-    <AlertDialog
+    <Credenza
       open={open}
       onOpenChange={(nextOpen) => {
         if (nextOpen && !session.data?.user) {
@@ -74,58 +74,66 @@ export function ContentReportDialog({
         setOpen(nextOpen)
       }}
     >
-      <AlertDialogTrigger
+      <CredenzaTrigger
         render={<Button variant={variant} size={size} disabled={session.isPending} />}
       >
         <Flag aria-hidden="true" data-icon="inline-start" />
         Report
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Report this {target.type}?</AlertDialogTitle>
-          <AlertDialogDescription>
+      </CredenzaTrigger>
+      <CredenzaContent>
+        <CredenzaHeader>
+          <CredenzaTitle>Report this {target.type}?</CredenzaTitle>
+          <CredenzaDescription>
             A moderator will review the report. Reporting does not remove content automatically.
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor={`report-reason-${target.type}-${target.id}`}>Reason</FieldLabel>
-            <Select
-              value={reason}
-              onValueChange={(value) => {
-                if (isContentReportReason(value)) setReason(value)
-              }}
-            >
-              <SelectTrigger id={`report-reason-${target.type}-${target.id}`} className="w-full">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  {contentReportReasons.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor={`report-details-${target.type}-${target.id}`}>Details</FieldLabel>
-            <Textarea
-              id={`report-details-${target.type}-${target.id}`}
-              value={details}
-              maxLength={1000}
-              rows={4}
-              placeholder="Add context that will help a moderator…"
-              onChange={(event) => setDetails(event.currentTarget.value)}
-            />
-            <FieldDescription>Optional. Do not include passwords or private data.</FieldDescription>
-          </Field>
-        </FieldGroup>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={mutation.isPending}>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+          </CredenzaDescription>
+        </CredenzaHeader>
+        <CredenzaBody>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor={`report-reason-${target.type}-${target.id}`}>Reason</FieldLabel>
+              <Select
+                value={reason}
+                onValueChange={(value) => {
+                  if (isContentReportReason(value)) setReason(value)
+                }}
+              >
+                <SelectTrigger id={`report-reason-${target.type}-${target.id}`} className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    {contentReportReasons.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field>
+              <FieldLabel htmlFor={`report-details-${target.type}-${target.id}`}>
+                Details
+              </FieldLabel>
+              <Textarea
+                id={`report-details-${target.type}-${target.id}`}
+                value={details}
+                maxLength={1000}
+                rows={4}
+                placeholder="Add context that will help a moderator…"
+                onChange={(event) => setDetails(event.currentTarget.value)}
+              />
+              <FieldDescription>
+                Optional. Do not include passwords or private data.
+              </FieldDescription>
+            </Field>
+          </FieldGroup>
+        </CredenzaBody>
+        <CredenzaFooter>
+          <CredenzaClose disabled={mutation.isPending} render={<Button variant="outline" />}>
+            Cancel
+          </CredenzaClose>
+          <Button
             disabled={mutation.isPending}
             onClick={(event) => {
               event.preventDefault()
@@ -133,9 +141,9 @@ export function ContentReportDialog({
             }}
           >
             {mutation.isPending ? "Sending…" : "Send report"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </CredenzaFooter>
+      </CredenzaContent>
+    </Credenza>
   )
 }

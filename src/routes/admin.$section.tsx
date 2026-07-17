@@ -6,19 +6,19 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { AdminTablePageSkeleton } from "@/components/LoadingStates"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Credenza,
+  CredenzaBody,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
@@ -78,31 +78,31 @@ function ConfirmationAction({
   onConfirm: () => void
 }) {
   return (
-    <AlertDialog>
-      <AlertDialogTrigger
+    <Credenza>
+      <CredenzaTrigger
         render={
           <Button variant={destructive ? "destructive" : "outline"} size="sm" disabled={disabled} />
         }
       >
         {label}
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+      </CredenzaTrigger>
+      <CredenzaContent>
+        <CredenzaHeader>
+          <CredenzaTitle>{title}</CredenzaTitle>
+          <CredenzaDescription>{description}</CredenzaDescription>
+        </CredenzaHeader>
+        <CredenzaFooter>
+          <CredenzaClose render={<Button variant="outline" />}>Cancel</CredenzaClose>
+          <Button
             variant={destructive ? "destructive" : "default"}
             disabled={disabled}
             onClick={onConfirm}
           >
             {label}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </CredenzaFooter>
+      </CredenzaContent>
+    </Credenza>
   )
 }
 
@@ -124,37 +124,39 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
     onError: () => toast.error(`The ${target} could not be updated.`),
   })
   return (
-    <AlertDialog>
-      <AlertDialogTrigger render={<Button variant="outline" size="sm" />}>
+    <Credenza>
+      <CredenzaTrigger render={<Button variant="outline" size="sm" />}>
         {action === "hide" ? "Hide" : "Restore"}
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
+      </CredenzaTrigger>
+      <CredenzaContent>
+        <CredenzaHeader>
+          <CredenzaTitle>
             {action === "hide" ? `Hide this ${target}?` : `Restore this ${target}?`}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
+          </CredenzaTitle>
+          <CredenzaDescription>
             {action === "hide"
               ? `The ${target} will stop appearing to other users.`
               : `The ${target} will become visible again.`}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <Field>
-          <FieldLabel htmlFor={`moderation-reason-${row.id}`}>Reason</FieldLabel>
-          <Textarea
-            id={`moderation-reason-${row.id}`}
-            name="reason"
-            value={reason}
-            maxLength={500}
-            autoComplete="off"
-            placeholder="Explain the decision…"
-            onChange={(event) => setReason(event.currentTarget.value)}
-          />
-          <FieldDescription>This reason is saved in the audit log.</FieldDescription>
-        </Field>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+          </CredenzaDescription>
+        </CredenzaHeader>
+        <CredenzaBody>
+          <Field>
+            <FieldLabel htmlFor={`moderation-reason-${row.id}`}>Reason</FieldLabel>
+            <Textarea
+              id={`moderation-reason-${row.id}`}
+              name="reason"
+              value={reason}
+              maxLength={500}
+              autoComplete="off"
+              placeholder="Explain the decision…"
+              onChange={(event) => setReason(event.currentTarget.value)}
+            />
+            <FieldDescription>This reason is saved in the audit log.</FieldDescription>
+          </Field>
+        </CredenzaBody>
+        <CredenzaFooter>
+          <CredenzaClose render={<Button variant="outline" />}>Cancel</CredenzaClose>
+          <Button
             variant={action === "hide" ? "destructive" : "default"}
             disabled={reason.trim().length < 3 || mutation.isPending}
             onClick={() => mutation.mutate()}
@@ -164,10 +166,10 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
               : action === "hide"
                 ? `Hide ${target}`
                 : `Restore ${target}`}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </CredenzaFooter>
+      </CredenzaContent>
+    </Credenza>
   )
 }
 

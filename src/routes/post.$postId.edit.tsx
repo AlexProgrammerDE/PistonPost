@@ -7,18 +7,17 @@ import { z } from "zod"
 import { FormPageSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  Credenza,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
@@ -171,32 +170,32 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
           ) : null}
 
           <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <AlertDialog>
-              <AlertDialogTrigger render={<Button type="button" variant="destructive" />}>
+            <Credenza>
+              <CredenzaTrigger render={<Button type="button" variant="destructive" />}>
                 <Trash2 aria-hidden="true" data-icon="inline-start" />
                 Delete post
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this post?</AlertDialogTitle>
-                  <AlertDialogDescription>
+              </CredenzaTrigger>
+              <CredenzaContent>
+                <CredenzaHeader>
+                  <CredenzaTitle>Delete this post?</CredenzaTitle>
+                  <CredenzaDescription>
                     Public access stops immediately. Images, video, comments, reactions, and tag
                     links are then removed through the cleanup queue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Keep post</AlertDialogCancel>
-                  <AlertDialogAction
+                  </CredenzaDescription>
+                </CredenzaHeader>
+                <CredenzaFooter>
+                  <CredenzaClose render={<Button variant="outline" />}>Keep post</CredenzaClose>
+                  <Button
                     variant="destructive"
                     disabled={deleting}
                     onClick={() => void removePost()}
                   >
                     {deleting ? null : <Trash2 aria-hidden="true" data-icon="inline-start" />}
                     {deleting ? "Deleting…" : "Delete post"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  </Button>
+                </CredenzaFooter>
+              </CredenzaContent>
+            </Credenza>
             <form.SubmitButton>
               <Save aria-hidden="true" data-icon="inline-start" />
               Save changes

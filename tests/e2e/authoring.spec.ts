@@ -189,7 +189,7 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
 
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
-    await expect(page.getByRole("alertdialog")).toHaveCount(0)
+    await expect(page.getByRole("dialog")).toHaveCount(0)
     expect(publishDialogCount).toBe(0)
     page.off("dialog", acceptPublishDialog)
 
@@ -200,10 +200,11 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(externalLink).toHaveAttribute("rel", "ugc nofollow noopener noreferrer")
 
     await externalLink.click()
-    const externalLinkConfirmation = page.getByRole("alertdialog", {
+    const externalLinkConfirmation = page.getByRole("dialog", {
       name: "Open an external link?",
     })
     await expect(externalLinkConfirmation).toBeVisible()
+    await expect(page.locator('[data-slot="dialog-content"]')).toBeVisible()
     await externalLinkConfirmation.getByRole("button", { name: "Stay here" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
@@ -253,8 +254,10 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(website).toHaveAttribute("target", "_blank")
     await expect(website).toHaveAttribute("rel", "ugc nofollow noopener noreferrer me")
 
+    await page.setViewportSize({ width: 390, height: 844 })
     await website.click()
-    await expect(page.getByRole("alertdialog", { name: "Open an external link?" })).toBeVisible()
+    await expect(page.getByRole("dialog", { name: "Open an external link?" })).toBeVisible()
+    await expect(page.locator('[data-slot="drawer-content"]')).toBeVisible()
   })
 
   test("confirms before discarding unfinished composer changes", async ({ context, page }) => {
@@ -263,7 +266,7 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await fillPost(page, "an unfinished post", "draft")
 
     await page.getByRole("link", { name: "Timeline" }).click()
-    const confirmation = page.getByRole("alertdialog")
+    const confirmation = page.getByRole("dialog")
     await expect(confirmation).toBeVisible()
 
     await confirmation.getByRole("button", { name: "Keep editing" }).click()

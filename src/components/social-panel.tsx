@@ -17,19 +17,18 @@ import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import {
+  Credenza,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
@@ -415,8 +414,8 @@ export function SocialPanel({
                             size="xs"
                           />
                           {canDelete ? (
-                            <AlertDialog>
-                              <AlertDialogTrigger
+                            <Credenza>
+                              <CredenzaTrigger
                                 render={
                                   <Button
                                     className="ml-auto"
@@ -427,27 +426,29 @@ export function SocialPanel({
                                 }
                               >
                                 <Trash2 aria-hidden="true" />
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
-                                  <AlertDialogDescription>
+                              </CredenzaTrigger>
+                              <CredenzaContent>
+                                <CredenzaHeader>
+                                  <CredenzaTitle>Delete this comment?</CredenzaTitle>
+                                  <CredenzaDescription>
                                     The comment text will be removed from the discussion.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Keep comment</AlertDialogCancel>
-                                  <AlertDialogAction
+                                  </CredenzaDescription>
+                                </CredenzaHeader>
+                                <CredenzaFooter>
+                                  <CredenzaClose render={<Button variant="outline" />}>
+                                    Keep comment
+                                  </CredenzaClose>
+                                  <Button
                                     variant="destructive"
                                     disabled={deleteMutation.isPending}
                                     onClick={() => deleteMutation.mutate(comment.id)}
                                   >
                                     <Trash2 aria-hidden="true" data-icon="inline-start" />
                                     Delete comment
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
+                                  </Button>
+                                </CredenzaFooter>
+                              </CredenzaContent>
+                            </Credenza>
                           ) : null}
                         </span>
                       ) : null}
