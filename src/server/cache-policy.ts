@@ -1,5 +1,4 @@
-export const PUBLIC_CACHE_CONTROL =
-  "public, max-age=0, s-maxage=60, stale-while-revalidate=300, stale-if-error=86400"
+export const PUBLIC_CACHE_CONTROL = "no-cache"
 export const PRIVATE_CACHE_CONTROL = "private, no-store, max-age=0, must-revalidate"
 
 const PUBLIC_DOCUMENT_PATH = /^\/(?:post|tag|user)\/[^/]+\/?$/

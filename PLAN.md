@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-16
+Last updated: 2026-07-17
 
 ## How to execute this plan
 
@@ -153,7 +153,7 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 - Analytics Engine records privacy-safe product and operational events, including post views.
 - Consent-gated PostHog records anonymous browser page views by stable route class without content,
   identity, or dynamic URL properties.
-- Workers Cache caches explicitly public document and feed responses only.
+- Workers Cache may retain public document and feed responses for revalidation, but it never serves document HTML without checking the current Worker.
 - Secrets Store provides production secrets.
 - Cron triggers schedule orphan cleanup, reconciliation, retention, and delivery retries.
 - Worker logs, traces, source maps, and deployment metadata provide operational visibility.
@@ -622,7 +622,7 @@ Do not put every section inside a Card. Use borders, separators, typography, and
 
 Workers Cache is enabled, but code decides what is safe:
 
-- Public home, tag, profile, and published-post documents may use short edge TTL plus stale-while-revalidate.
+- Public home, tag, profile, and published-post documents use `Cache-Control: no-cache` so browsers and Cloudflare revalidate HTML before using it.
 - Static assets use content hashes and immutable caching.
 - Public image variants can use long cache lifetimes.
 - Better Auth, account, admin, following, mutation, preview, draft, unlisted, and viewer-personalized responses use private or no-store.
@@ -958,6 +958,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Administration tables use server-side `(created_at, id)` cursors. Cursor history, sort direction, filters, and column visibility live in URL search parameters so large datasets never rely on offset pagination.
 - 2026-07-16: Retire the legacy migration CLI, fixtures, configuration, public and administrator routes, transactional email variant, and operator runbooks. Preserve `migrationRuns`, `migrationMappings`, and generated D1 artifacts until a separate schema change deliberately removes the historical state. This affects Phases 7 through 10.
 - 2026-07-17: Remove `migrationRuns` and `migrationMappings` through a generated Drizzle migration. The importer and every application or operator surface that used the tables had already been retired, so keeping their historical state no longer justified the schema surface.
+- 2026-07-17: Revalidate public HTML on every use and reload once when Vite reports a missing preload. Content-hashed route chunks change between deployments, so stale document caching can otherwise reference assets that no longer exist. This affects Phases 2 and 9.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
 - 2026-07-15: Use a responsive management list for `/account/posts` instead of TanStack Table. The
   screen has one primary object and action per row, so a list keeps status and actions readable on

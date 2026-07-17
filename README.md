@@ -47,7 +47,7 @@ bun run db:check
 bun run wrangler:dry-run
 ```
 
-The Worker exposes a shallow `GET /health` endpoint. Public document responses receive a short shared-cache policy only when the request is anonymous and the application has not already selected a stricter policy. Authenticated, mutation, auth, admin, draft, preview, and unlisted responses stay private or `no-store`.
+The Worker exposes a shallow `GET /health` endpoint. Anonymous public documents use `Cache-Control: no-cache` so browsers and Cloudflare revalidate HTML before using it. Authenticated, mutation, auth, admin, draft, preview, and unlisted responses stay private or `no-store`.
 
 ## Browser analytics
 

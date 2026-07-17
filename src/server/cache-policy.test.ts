@@ -7,13 +7,14 @@ import {
 } from "./cache-policy"
 
 describe("applyResponseCachePolicy", () => {
-  it("caches anonymous public documents and varies viewer-bearing headers", () => {
+  it("revalidates anonymous public documents and varies viewer-bearing headers", () => {
     const response = applyResponseCachePolicy(
       new Request("https://post.pistonmaster.net/post/example"),
       new Response("post"),
     )
 
     expect(response.headers.get("Cache-Control")).toBe(PUBLIC_CACHE_CONTROL)
+    expect(response.headers.get("Cache-Control")).toBe("no-cache")
     expect(response.headers.get("Vary")).toContain("Cookie")
     expect(response.headers.get("Vary")).toContain("Authorization")
   })

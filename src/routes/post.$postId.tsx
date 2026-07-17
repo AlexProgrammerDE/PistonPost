@@ -30,10 +30,7 @@ export const Route = createFileRoute("/post/$postId")({
     return post
   },
   headers: ({ loaderData }) => ({
-    "Cache-Control":
-      loaderData?.visibility === "public"
-        ? "public, max-age=0, s-maxage=120, stale-while-revalidate=600"
-        : "private, no-store",
+    "Cache-Control": loaderData?.visibility === "public" ? "no-cache" : "private, no-store",
   }),
   head: ({ loaderData, match }) =>
     loaderData
