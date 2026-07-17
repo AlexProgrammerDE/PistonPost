@@ -1,3 +1,4 @@
+import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import { eq } from "drizzle-orm"
 
@@ -6,9 +7,20 @@ import * as schema from "@/db/schema"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 
-export async function requireRequestSession(context: AppRequestContext) {
+async function findRequestSession(context: AppRequestContext) {
+  const headers = getRequestHeaders()
+  if (!headers.has("cookie")) return null
+
   const auth = await createRequestAuth(context)
-  const session = await auth.api.getSession({ headers: getRequestHeaders() })
+  return auth.api.getSession({ headers })
+}
+
+export const getCurrentSession = createServerFn({ method: "GET" }).handler(({ context }) =>
+  findRequestSession(context),
+)
+
+export async function requireRequestSession(context: AppRequestContext) {
+  const session = await findRequestSession(context)
   if (!session) throw new Error("Authentication is required.")
   return session
 }

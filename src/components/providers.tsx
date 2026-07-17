@@ -36,9 +36,11 @@ async function invalidateAvatarQueries(queryClient: QueryClient) {
 export function AuthenticationProvider({
   children,
   queryClient,
+  redirectTo = "/",
   turnstileSiteKey,
 }: PropsWithChildren<{
   readonly queryClient: QueryClient
+  readonly redirectTo?: string
   readonly turnstileSiteKey?: string
 }>) {
   const navigate = useNavigate()
@@ -49,7 +51,7 @@ export function AuthenticationProvider({
       queryClient={queryClient}
       Link={RouterLink}
       navigate={({ to, replace }) => navigate({ to, replace })}
-      redirectTo="/"
+      redirectTo={redirectTo}
       avatar={{
         extension: "inherit",
         resize: preserveAvatarOriginal,

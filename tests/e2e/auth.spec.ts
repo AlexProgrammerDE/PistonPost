@@ -1,6 +1,32 @@
 import { expect, test } from "@playwright/test"
 
 test.describe("authentication", () => {
+  test("redirects protected settings before rendering and preserves the return path", async ({
+    page,
+  }) => {
+    const response = await page.goto("/account/settings/security")
+
+    const location = new URL(page.url())
+    expect(location.pathname).toBe("/auth/sign-in")
+    expect(location.searchParams.get("redirectTo")).toBe("/account/settings/security")
+
+    const protectedRequest = response?.request().redirectedFrom()
+    expect(protectedRequest && new URL(protectedRequest.url()).pathname).toBe(
+      "/account/settings/security",
+    )
+    expect((await protectedRequest?.response())?.status()).toBe(307)
+    await expect(page.getByRole("region", { name: "Account access" })).toBeVisible()
+  })
+
+  test("removes unsafe return destinations before rendering auth UI", async ({ page }) => {
+    await page.goto("/auth/sign-in?redirectTo=https%3A%2F%2Fexample.com%2Faccount")
+
+    const location = new URL(page.url())
+    expect(location.pathname).toBe("/auth/sign-in")
+    expect(location.searchParams.has("redirectTo")).toBe(false)
+    await expect(page.getByRole("region", { name: "Account access" })).toBeVisible()
+  })
+
   test("offers username, password, magic-link, and recovery entry points", async ({ page }) => {
     await page.goto("/auth/sign-in")
 

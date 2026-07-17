@@ -1,13 +1,39 @@
-import { Outlet, createFileRoute } from "@tanstack/react-router"
-import { Link, useLocation } from "@tanstack/react-router"
+import { authQueryKeys } from "@better-auth-ui/core"
+import { ensureSession } from "@better-auth-ui/react"
+import type { QueryClient } from "@tanstack/react-query"
+import { Link, Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router"
+import { createIsomorphicFn } from "@tanstack/react-start"
 import { Bell, KeyRound, ShieldCheck, UserRound } from "lucide-react"
 
+import { authClient } from "@/auth/client"
 import { SettingsLayoutSkeleton } from "@/components/LoadingStates"
 import { AuthenticationProvider } from "@/components/providers"
 import { settingsViews } from "@/lib/settings-views"
 import { getPublicRuntimeConfig } from "@/server/public-config"
+import { getCurrentSession } from "@/server/session"
+
+const ensureSettingsSession = createIsomorphicFn()
+  .server((queryClient: QueryClient) =>
+    queryClient.ensureQueryData({
+      queryKey: authQueryKeys.session,
+      queryFn: () => getCurrentSession(),
+    }),
+  )
+  .client((queryClient) => ensureSession(queryClient, authClient))
 
 export const Route = createFileRoute("/account/settings")({
+  beforeLoad: async ({ context: { queryClient }, location }) => {
+    const session = await ensureSettingsSession(queryClient)
+    if (!session) {
+      throw redirect({
+        to: "/auth/$authView",
+        params: { authView: "sign-in" },
+        search: { redirectTo: location.href },
+      })
+    }
+
+    return { session }
+  },
   loader: () => getPublicRuntimeConfig(),
   head: () => ({ meta: [{ name: "robots", content: "noindex, nofollow" }] }),
   component: SettingsLayout,
