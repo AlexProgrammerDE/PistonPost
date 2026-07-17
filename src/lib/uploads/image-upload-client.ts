@@ -32,14 +32,15 @@ function responseError(status: number, body: string) {
 export function uploadImage(
   uploadUrl: string,
   file: File,
+  metadata: { filename: string; mimeType: string },
   onProgress: (percentage: number) => void,
   signal?: AbortSignal,
 ) {
   return new Promise<void>((resolve, reject) => {
     const request = new XMLHttpRequest()
     request.open("PUT", uploadUrl)
-    request.setRequestHeader("Content-Type", file.type)
-    request.setRequestHeader("X-File-Name", encodeURIComponent(file.name))
+    request.setRequestHeader("Content-Type", metadata.mimeType)
+    request.setRequestHeader("X-File-Name", encodeURIComponent(metadata.filename))
     request.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) onProgress((event.loaded / event.total) * 100)
     })

@@ -3,6 +3,8 @@ export type UploadKind = "image" | "video"
 export type UploadItem = {
   clientId: string
   file: File
+  filename: string
+  mimeType: string
   kind: UploadKind
   previewUrl: string | null
   assetId: string | null
@@ -90,10 +92,19 @@ export function mediaUploadReducer(items: UploadItem[], action: UploadAction): U
   return exhaustiveAction
 }
 
-export function createUploadItem(file: File, kind: UploadKind): UploadItem {
+export function createUploadItem(
+  file: File,
+  kind: UploadKind,
+  metadata: { filename: string; mimeType: string } = {
+    filename: file.name,
+    mimeType: file.type,
+  },
+): UploadItem {
   return {
     clientId: crypto.randomUUID(),
     file,
+    filename: metadata.filename,
+    mimeType: metadata.mimeType,
     kind,
     previewUrl: kind === "image" ? URL.createObjectURL(file) : null,
     assetId: null,

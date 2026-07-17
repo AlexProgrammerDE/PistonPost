@@ -1,4 +1,5 @@
 import { mediaImageUrl } from "@/lib/media-image"
+import { normalizeImageUploadMetadata } from "@/lib/uploads/image-file-normalization"
 import { MAX_IMAGE_UPLOAD_BYTES, isImageUploadMimeType } from "@/lib/uploads/image-upload-policy"
 import { cancelAvatarUpload, createAvatarUploadIntent, deleteManagedAvatar } from "@/server/avatar"
 
@@ -9,23 +10,24 @@ export function preserveAvatarOriginal(file: File) {
 }
 
 export async function uploadManagedAvatar(file: File) {
-  if (!isImageUploadMimeType(file.type)) {
-    throw new UploadClientError("Choose a JPEG, PNG, WebP, or AVIF image.")
-  }
   if (file.size < 1 || file.size > MAX_IMAGE_UPLOAD_BYTES) {
     throw new UploadClientError("The avatar must be no larger than 15 MB.")
+  }
+  const metadata = await normalizeImageUploadMetadata(file)
+  if (!isImageUploadMimeType(metadata.mimeType)) {
+    throw new UploadClientError("Choose a JPEG, PNG, WebP, or AVIF image.")
   }
 
   const intent = await createAvatarUploadIntent({
     data: {
-      filename: file.name,
-      mimeType: file.type,
+      filename: metadata.filename,
+      mimeType: metadata.mimeType,
       byteSize: file.size,
     },
   })
 
   try {
-    await uploadImage(intent.uploadUrl, file, () => undefined)
+    await uploadImage(intent.uploadUrl, file, metadata, () => undefined)
   } catch (error) {
     await cancelAvatarUpload({ data: { id: intent.assetId } }).catch(() => undefined)
     throw error

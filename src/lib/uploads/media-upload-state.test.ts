@@ -6,6 +6,8 @@ function item(clientId: string): UploadItem {
   return {
     clientId,
     file: new File([clientId], `${clientId}.jpg`, { type: "image/jpeg" }),
+    filename: `${clientId}.jpg`,
+    mimeType: "image/jpeg",
     kind: "image",
     previewUrl: null,
     assetId: null,

@@ -56,6 +56,13 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
+import { normalizeImageUploadMetadata } from "@/lib/uploads/image-file-normalization"
+import {
+  IMAGE_UPLOAD_ACCEPT,
+  IMAGE_UPLOAD_MIME_TYPES,
+  MAX_IMAGE_UPLOAD_BYTES,
+  isImageUploadMimeType,
+} from "@/lib/uploads/image-upload-policy"
 import {
   createUploadItem,
   mediaUploadReducer,
@@ -85,7 +92,7 @@ const tagsSchema = z
   .array(z.string())
   .min(1, "Add at least one tag.")
   .max(5, "Use at most five tags.")
-const imageMimeSchema = z.enum(["image/jpeg", "image/png", "image/webp", "image/avif"])
+const imageMimeSchema = z.enum(IMAGE_UPLOAD_MIME_TYPES)
 
 const loadImageLightbox = () =>
   import("@/components/ImageLightbox").then((module) => ({
@@ -210,8 +217,8 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
             data: {
               postId: draft.id,
               files: uploads.map((item) => ({
-                filename: item.file.name,
-                mimeType: imageMimeSchema.parse(item.file.type),
+                filename: item.filename,
+                mimeType: imageMimeSchema.parse(item.mimeType),
                 byteSize: item.file.size,
                 altText: item.altText,
               })),
@@ -232,6 +239,7 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
               await uploadImage(
                 intent.uploadUrl,
                 item.file,
+                { filename: item.filename, mimeType: item.mimeType },
                 (progress) => dispatch({ type: "progress", clientId: item.clientId, progress }),
                 controller.signal,
               )
@@ -324,13 +332,27 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
     form.setFieldValue("mediaId", null)
   }
 
-  function selectFiles(files: FileList | null, type: ComposerValues["type"]) {
+  async function selectFiles(files: FileList | null, type: ComposerValues["type"]) {
     if (!files) return
     const selected = [...files]
-    const accepted = selected.filter((file) =>
+    const selections =
       type === "images"
-        ? ["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type) &&
-          file.size <= 15 * 1024 * 1024
+        ? await Promise.all(
+            selected.map(async (file) => ({
+              file,
+              metadata:
+                file.size <= MAX_IMAGE_UPLOAD_BYTES
+                  ? await normalizeImageUploadMetadata(file)
+                  : { filename: file.name, mimeType: file.type },
+            })),
+          )
+        : selected.map((file) => ({
+            file,
+            metadata: { filename: file.name, mimeType: file.type },
+          }))
+    const accepted = selections.filter(({ file, metadata }) =>
+      type === "images"
+        ? isImageUploadMimeType(metadata.mimeType) && file.size <= MAX_IMAGE_UPLOAD_BYTES
         : file.type.startsWith("video/") && file.size <= 2 * 1024 * 1024 * 1024,
     )
     const remaining = type === "images" ? Math.max(0, 20 - uploads.length) : 1
@@ -338,7 +360,9 @@ export function PostComposer({ authenticated }: { authenticated: boolean }) {
       type: "add",
       items: accepted
         .slice(0, remaining)
-        .map((file) => createUploadItem(file, type === "images" ? "image" : "video")),
+        .map(({ file, metadata }) =>
+          createUploadItem(file, type === "images" ? "image" : "video", metadata),
+        ),
     })
     if (accepted.length !== selected.length) {
       toast.error(
@@ -515,13 +539,13 @@ function MediaPicker({
   type: "images" | "video"
   uploads: UploadItem[]
   sensors: ReturnType<typeof useSensors>
-  onFiles: (files: FileList | null, type: ComposerValues["type"]) => void
+  onFiles: (files: FileList | null, type: ComposerValues["type"]) => Promise<void>
   onRemove: (item: UploadItem) => void
   onAltText: (clientId: string, altText: string) => void
   onDragEnd: (event: DragEndEvent) => void
 }) {
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null)
-  const accept = type === "images" ? "image/jpeg,image/png,image/webp,image/avif" : "video/*"
+  const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
   const limit =
     type === "images"
       ? "JPG, PNG, WebP, or AVIF. Up to 20 files, 15 MB and 80 megapixels each."
@@ -537,7 +561,7 @@ function MediaPicker({
       : imageUploads.findIndex((item) => item.clientId === selectedImageId)
   const imageSlides = imageUploads.map((item) => ({
     src: item.previewUrl,
-    alt: item.altText.trim() || item.file.name,
+    alt: item.altText.trim() || item.filename,
   }))
 
   function changeLightboxImage(index: number) {
@@ -560,7 +584,7 @@ function MediaPicker({
           multiple={type === "images"}
           disabled={type === "video" && uploads.length > 0}
           onChange={(event) => {
-            onFiles(event.currentTarget.files, type)
+            void onFiles(event.currentTarget.files, type)
             event.currentTarget.value = ""
           }}
         />
@@ -636,7 +660,7 @@ function SortableUpload({
         <button
           type="button"
           className="relative size-14 shrink-0 cursor-zoom-in overflow-hidden bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          aria-label={`View ${item.file.name} full size`}
+          aria-label={`View ${item.filename} full size`}
           onPointerEnter={preloadImageLightbox}
           onFocus={preloadImageLightbox}
           onClick={() => onView(item.clientId)}
@@ -656,14 +680,14 @@ function SortableUpload({
             variant="ghost"
             size="icon-sm"
             className="-ml-2 cursor-grab text-muted-foreground active:cursor-grabbing disabled:cursor-default"
-            aria-label={`Reorder ${item.file.name}`}
+            aria-label={`Reorder ${item.filename}`}
             disabled={dragDisabled}
             {...sortable.attributes}
             {...sortable.listeners}
           >
             <GripVertical aria-hidden="true" />
           </Button>
-          <p className="truncate text-sm font-medium">{item.file.name}</p>
+          <p className="truncate text-sm font-medium">{item.filename}</p>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           {(item.file.size / 1024 / 1024).toFixed(1)} MB · {item.status}
@@ -698,7 +722,7 @@ function SortableUpload({
         type="button"
         variant="ghost"
         size="icon"
-        aria-label={`Remove ${item.file.name}`}
+        aria-label={`Remove ${item.filename}`}
         disabled={item.status === "ready"}
         onClick={() => onRemove(item)}
       >

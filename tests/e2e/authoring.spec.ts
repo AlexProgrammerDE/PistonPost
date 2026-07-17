@@ -275,6 +275,30 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(page).toHaveURL(/\/$/u)
   })
 
+  test("normalizes a valid image with incorrect browser metadata", async ({ context, page }) => {
+    await createVerifiedSession(context)
+    await page.goto("/account/posts/new")
+    await selectFormat(page, "Images")
+    await fillPost(page, "the extension is lying", "testing")
+    await page.getByLabel("Choose images to upload").setInputFiles({
+      name: "actually-a-png.jpg",
+      mimeType: "image/jpeg",
+      buffer: VALID_PNG,
+    })
+
+    await expect(
+      page.getByRole("button", { name: "View actually-a-png.png full size" }),
+    ).toBeVisible()
+    await page.getByLabel("Alt text").fill("A tiny valid PNG with misleading metadata")
+    await page.getByRole("button", { name: "Post it" }).click()
+
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    await expect(page.getByRole("heading", { name: "the extension is lying" })).toBeVisible()
+    await expect(
+      page.getByRole("img", { name: "A tiny valid PNG with misleading metadata" }),
+    ).toBeVisible()
+  })
+
   test("posts text and images and recovers failed image and video uploads", async ({
     context,
     page,
