@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 
 import { absoluteUrl, createSeoHead } from "@/lib/seo"
 
@@ -57,7 +57,7 @@ function PrivacyPage() {
           PostHog analytics stay disabled until you allow them and receive only anonymous route
           categories. PistonPost disables PostHog autocapture, session replay, and person profiles,
           and removes dynamic URLs and content before sending an event. Read the{" "}
-          <a href="/cookie-policy">Cookie Policy</a> for details and preference controls.
+          <Link to="/cookie-policy">Cookie Policy</Link> for details and preference controls.
         </p>
         <h2>Deletion and exports</h2>
         <p>

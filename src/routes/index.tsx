@@ -1,7 +1,7 @@
-import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
-import { createFileRoute, Link } from "@tanstack/react-router"
+import { useQueryErrorResetBoundary, useSuspenseInfiniteQuery } from "@tanstack/react-query"
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { Newspaper, Plus, RotateCcw, TriangleAlert } from "lucide-react"
-import { Suspense } from "react"
+import { Suspense, useEffect } from "react"
 import { z } from "zod"
 
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
@@ -120,7 +120,19 @@ function PublicFeedResults() {
   )
 }
 
-function FeedError({ reset }: { readonly error: Error; readonly reset: () => void }) {
+function FeedError() {
+  const router = useRouter()
+  const queryErrorResetBoundary = useQueryErrorResetBoundary()
+
+  useEffect(() => {
+    queryErrorResetBoundary.reset()
+  }, [queryErrorResetBoundary])
+
+  function retry() {
+    queryErrorResetBoundary.reset()
+    void router.invalidate()
+  }
+
   return (
     <main className="mx-auto grid min-h-[60svh] w-full max-w-2xl place-items-center px-4">
       <Alert variant="destructive">
@@ -128,7 +140,7 @@ function FeedError({ reset }: { readonly error: Error; readonly reset: () => voi
         <AlertTitle>The feed could not be loaded</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
           <span>Check your connection and try again.</span>
-          <Button variant="outline" onClick={reset}>
+          <Button variant="outline" onClick={retry}>
             <RotateCcw aria-hidden="true" data-icon="inline-start" />
             Try again
           </Button>

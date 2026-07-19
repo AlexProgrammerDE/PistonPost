@@ -395,9 +395,9 @@ function AdminTableView({
       enableSorting: false,
       cell: ({ getValue }) =>
         section === "reports" ? (
-          <a className="text-sm underline underline-offset-4" href={getValue()}>
+          <Link className="text-sm underline underline-offset-4" to={getValue()}>
             Open reported content
-          </a>
+          </Link>
         ) : (
           <span className="block max-w-72 truncate text-muted-foreground">{getValue()}</span>
         ),

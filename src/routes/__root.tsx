@@ -1,6 +1,13 @@
-import type { QueryClient } from "@tanstack/react-query"
-import { HeadContent, Link, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
+import { useQueryErrorResetBoundary, type QueryClient } from "@tanstack/react-query"
+import {
+  HeadContent,
+  Link,
+  Scripts,
+  createRootRouteWithContext,
+  useRouter,
+} from "@tanstack/react-router"
 import { ArrowLeft, House, RotateCcw } from "lucide-react"
+import { useEffect } from "react"
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
@@ -73,14 +80,31 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       </div>
     </main>
   ),
-  errorComponent: ({ reset }) => (
+  errorComponent: RootError,
+  shellComponent: RootDocument,
+})
+
+function RootError() {
+  const router = useRouter()
+  const queryErrorResetBoundary = useQueryErrorResetBoundary()
+
+  useEffect(() => {
+    queryErrorResetBoundary.reset()
+  }, [queryErrorResetBoundary])
+
+  function retry() {
+    queryErrorResetBoundary.reset()
+    void router.invalidate()
+  }
+
+  return (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
       <div className="typeset typeset-post text-center">
         <p className="text-sm font-medium text-destructive">Something went wrong</p>
         <h1>We couldn’t load this page.</h1>
         <p>Try again. If the problem continues, return to the latest posts.</p>
         <div className="not-typeset mt-4 flex justify-center gap-2">
-          <Button onClick={reset}>
+          <Button onClick={retry}>
             <RotateCcw aria-hidden="true" data-icon="inline-start" />
             Try again
           </Button>
@@ -91,9 +115,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         </div>
       </div>
     </main>
-  ),
-  shellComponent: RootDocument,
-})
+  )
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext()
