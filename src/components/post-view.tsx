@@ -10,7 +10,7 @@ import {
   MessageCircle,
   TriangleAlert,
 } from "lucide-react"
-import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from "react"
+import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
 import { DateTime } from "@/components/DateTime"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
@@ -617,12 +617,59 @@ function findTransitionPost(event: MouseEvent<HTMLAnchorElement>) {
   return event.currentTarget.closest("[data-view-transition-post]")
 }
 
+export function PostAuthorAvatar({
+  post,
+  className,
+  avatarClassName,
+  sizes = "2.5rem",
+}: {
+  readonly post: PublicPostRead
+  readonly className?: string
+  readonly avatarClassName?: string
+  readonly sizes?: string
+}) {
+  const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
+
+  function openProfile(event: MouseEvent<HTMLAnchorElement>) {
+    activateSharedViewTransition(
+      event,
+      {
+        kind: "profile",
+        sourcePostId: post.id,
+        username: post.author.username,
+      },
+      findTransitionPost(event),
+    )
+  }
+
+  return (
+    <Link
+      to="/user/$username"
+      params={{ username: post.author.username }}
+      aria-label={`View ${post.author.name}'s profile`}
+      onClick={openProfile}
+      className={cn(
+        "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        className,
+      )}
+    >
+      <Avatar size="lg" data-view-transition-part="profile-avatar" className={avatarClassName}>
+        {post.author.image && (
+          <ResponsiveAvatarImage src={post.author.image} sizes={sizes} alt="" />
+        )}
+        <AvatarFallback className="text-foreground">{initials}</AvatarFallback>
+      </Avatar>
+    </Link>
+  )
+}
+
 export function PostView({
   post,
   detail = false,
   priority = false,
   selectedImageIndex,
   galleryLayout,
+  authorAvatar,
   className,
 }: {
   readonly post: PublicPostRead
@@ -630,9 +677,9 @@ export function PostView({
   readonly priority?: boolean
   readonly selectedImageIndex?: number | undefined
   readonly galleryLayout?: GalleryLayout | undefined
+  readonly authorAvatar?: ReactNode
   readonly className?: string
 }) {
-  const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
   const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
   const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
   const activePostTransition = activeSharedViewTransitionKind({
@@ -681,18 +728,7 @@ export function PostView({
       )}
     >
       <header className="mb-4 flex items-center gap-3">
-        <Link
-          to="/user/$username"
-          params={{ username: post.author.username }}
-          onClick={openProfile}
-        >
-          <Avatar size="lg" data-view-transition-part="profile-avatar">
-            {post.author.image && (
-              <ResponsiveAvatarImage src={post.author.image} sizes="2.5rem" alt="" />
-            )}
-            <AvatarFallback className="text-foreground">{initials}</AvatarFallback>
-          </Avatar>
-        </Link>
+        {authorAvatar === undefined ? <PostAuthorAvatar post={post} /> : authorAvatar}
         <div className="min-w-0 flex-1">
           <Link
             to="/user/$username"

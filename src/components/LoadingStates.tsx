@@ -30,19 +30,22 @@ function LoadingRegion({
 
 function FeedItemsPlaceholder() {
   return (
-    <Timeline className="gap-0">
+    <Timeline className="gap-0 [--timeline-connector-thickness:0.0625rem] [--timeline-dot-size:2.25rem] sm:[--timeline-dot-size:2.75rem]">
       {generateN(3).map((identity) => (
-        <TimelineItem key={identity} id={`timeline-placeholder-${identity}`} className="gap-4">
-          <TimelineDot className="mt-3" />
-          <TimelineConnector className="top-6" />
+        <TimelineItem
+          key={identity}
+          id={`timeline-placeholder-${identity}`}
+          className="gap-3 pb-10 sm:gap-4"
+        >
+          <TimelineDot>
+            <Skeleton className="size-8 rounded-full sm:size-10" />
+          </TimelineDot>
+          <TimelineConnector />
           <TimelineContent className="min-w-0">
             <article className="grid gap-4">
-              <div className="flex items-center gap-3">
-                <Skeleton className="size-10 rounded-full" />
-                <div className="grid flex-1 gap-2">
-                  <Skeleton className="h-4 w-36" />
-                  <Skeleton className="h-3 w-24" />
-                </div>
+              <div className="grid min-h-8 content-center gap-2 sm:min-h-10">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-24" />
               </div>
               <Skeleton className="h-8 w-3/4" />
               <Skeleton className="aspect-[4/3] w-full" />
