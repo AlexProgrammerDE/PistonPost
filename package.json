@@ -106,7 +106,7 @@
     "oxlint-tsgolint": "0.24.0",
     "shadcn": "4.13.0",
     "tailwindcss": "4.3.2",
-    "typescript": "6.0.3",
+    "typescript": "7.0.2",
     "vite": "8.1.4",
     "wrangler": "4.110.0"
   },
