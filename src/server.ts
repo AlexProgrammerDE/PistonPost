@@ -7,6 +7,7 @@ import { handleScheduled } from "./server/maintenance"
 import { writeOperationalEvent } from "./server/operational-events"
 import { applySecurityHeaders, validateRequestSecurity } from "./server/request-security"
 import { resolveRuntimeEnv, type RuntimeEnv } from "./server/runtime-env"
+import { missingStaticAssetResponse } from "./server/static-assets"
 
 export { AccountDeletionWorkflow } from "./server/account-deletion-workflow"
 
@@ -97,6 +98,19 @@ export function createWorkerFetch(handlerFetch: typeof handler.fetch) {
         [rejected.status],
       )
       return secure(rejected)
+    }
+
+    // Existing assets bypass the Worker. Reaching this branch means the active
+    // deployment does not contain the requested fingerprinted file.
+    const missingAsset = missingStaticAssetResponse(request)
+    if (missingAsset) {
+      writeOperationalEvent(
+        env,
+        "request.completed",
+        [request.method, "asset-miss"],
+        [missingAsset.status, performance.now() - startedAt],
+      )
+      return secure(missingAsset)
     }
 
     if (url.pathname.startsWith("/api/auth/")) {
