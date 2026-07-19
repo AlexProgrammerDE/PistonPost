@@ -25,7 +25,13 @@ export function SidebarAccountMenu() {
     links.push(
       <DropdownMenuItem
         key="public-profile"
-        render={<Link to="/user/$username" params={{ username: user.username }} />}
+        render={
+          <Link
+            to="/user/$username"
+            params={{ username: user.username }}
+            viewTransition={isMobile ? false : undefined}
+          />
+        }
         onClick={closeMobileSidebar}
       >
         <User2 aria-hidden="true" />
@@ -38,7 +44,7 @@ export function SidebarAccountMenu() {
     links.push(
       <DropdownMenuItem
         key="my-posts"
-        render={<Link to="/account/posts" />}
+        render={<Link to="/account/posts" viewTransition={isMobile ? false : undefined} />}
         onClick={closeMobileSidebar}
       >
         <FileText aria-hidden="true" />
@@ -50,7 +56,7 @@ export function SidebarAccountMenu() {
       links.push(
         <DropdownMenuItem
           key="administration"
-          render={<Link to="/admin" />}
+          render={<Link to="/admin" viewTransition={isMobile ? false : undefined} />}
           onClick={closeMobileSidebar}
         >
           <Shield aria-hidden="true" />
@@ -62,7 +68,13 @@ export function SidebarAccountMenu() {
     links.push(
       <DropdownMenuItem
         key="settings"
-        render={<Link to="/account/settings/$settingsView" params={{ settingsView: "profile" }} />}
+        render={
+          <Link
+            to="/account/settings/$settingsView"
+            params={{ settingsView: "profile" }}
+            viewTransition={isMobile ? false : undefined}
+          />
+        }
         onClick={closeMobileSidebar}
       >
         <Settings aria-hidden="true" />

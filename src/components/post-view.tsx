@@ -10,7 +10,7 @@ import {
   MessageCircle,
   TriangleAlert,
 } from "lucide-react"
-import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent } from "react"
 
 import { DateTime } from "@/components/DateTime"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
@@ -35,6 +35,10 @@ import type { PublicPostRead } from "@/db/public-read-model"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
+import {
+  activateSharedViewTransition,
+  activeSharedViewTransitionKind,
+} from "@/lib/view-transitions"
 
 const loadImageLightbox = () =>
   import("@/components/ImageLightbox").then((module) => ({ default: module.ImageLightbox }))
@@ -83,7 +87,15 @@ function PostImageCount({ count }: { readonly count: number }) {
   )
 }
 
-function PostCommentCount({ postId, count }: { readonly postId: string; readonly count: number }) {
+function PostCommentCount({
+  postId,
+  count,
+  onOpen,
+}: {
+  readonly postId: string
+  readonly count: number
+  readonly onOpen: (event: MouseEvent<HTMLAnchorElement>) => void
+}) {
   const noun = count === 1 ? "comment" : "comments"
 
   return (
@@ -91,6 +103,7 @@ function PostCommentCount({ postId, count }: { readonly postId: string; readonly
       to="/post/$postId"
       params={{ postId }}
       hash="discussion"
+      onClick={onOpen}
       className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
     >
       <MessageCircle aria-hidden="true" className="size-3.5" />
@@ -156,10 +169,14 @@ function PostDetailMetadata({
   post,
   galleryLayout,
   selectedImageIndex,
+  onOpenPost,
+  onOpenTag,
 }: {
   readonly post: PublicPostRead
   readonly galleryLayout: GalleryLayout
   readonly selectedImageIndex: number | undefined
+  readonly onOpenPost: (event: MouseEvent<HTMLAnchorElement>) => void
+  readonly onOpenTag: (event: MouseEvent<HTMLAnchorElement>, tag: string) => void
 }) {
   return (
     <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-y py-3">
@@ -167,7 +184,19 @@ function PostDetailMetadata({
         <Badge
           key={tag.slug}
           variant="secondary"
-          render={<Link to="/tag/$tag" params={{ tag: tag.slug }} />}
+          render={
+            <Link
+              to="/tag/$tag"
+              params={{ tag: tag.slug }}
+              data-view-transition-active={activeSharedViewTransitionKind({
+                kind: "tag",
+                sourcePostId: post.id,
+                tag: tag.slug,
+              })}
+              data-view-transition-part="tag-name"
+              onClick={(event) => onOpenTag(event, tag.slug)}
+            />
+          }
         >
           #{tag.name}
         </Badge>
@@ -180,7 +209,7 @@ function PostDetailMetadata({
       >
         {post.type === "images" ? <PostImageCount count={post.media.length} /> : null}
         <PostViewCount count={post.viewCount} />
-        <PostCommentCount postId={post.id} count={post.commentCount} />
+        <PostCommentCount postId={post.id} count={post.commentCount} onOpen={onOpenPost} />
         {post.type === "images" && post.media.length > 1 ? (
           <GalleryLayoutMenu
             postId={post.id}
@@ -199,12 +228,14 @@ function PostMedia({
   priority,
   selectedImageIndex,
   galleryLayout,
+  onOpenPost,
 }: {
   readonly post: PublicPostRead
   readonly detail: boolean
   readonly priority: boolean
   readonly selectedImageIndex: number | undefined
   readonly galleryLayout: GalleryLayout
+  readonly onOpenPost: (event: MouseEvent<HTMLAnchorElement>) => void
 }) {
   if (post.media.length === 0) {
     if (post.type === "text") return null
@@ -222,7 +253,11 @@ function PostMedia({
     const video = post.media[0]
     if (!video) return null
     return (
-      <AspectRatio ratio={16 / 9} className="overflow-hidden bg-black">
+      <AspectRatio
+        ratio={16 / 9}
+        data-view-transition-part="post-media-1"
+        className="overflow-hidden bg-black"
+      >
         <iframe
           src={`/media/video/${video.id}/player?v=2`}
           title={`Video: ${post.title}`}
@@ -243,6 +278,7 @@ function PostMedia({
       priority={priority}
       selectedImageIndex={selectedImageIndex}
       galleryLayout={galleryLayout}
+      onOpenPost={onOpenPost}
     />
   )
 }
@@ -253,12 +289,14 @@ function PostImageMedia({
   priority,
   selectedImageIndex,
   galleryLayout,
+  onOpenPost,
 }: {
   readonly post: PublicPostRead
   readonly detail: boolean
   readonly priority: boolean
   readonly selectedImageIndex: number | undefined
   readonly galleryLayout: GalleryLayout
+  readonly onOpenPost: (event: MouseEvent<HTMLAnchorElement>) => void
 }) {
   if (detail) {
     return (
@@ -270,15 +308,17 @@ function PostImageMedia({
     )
   }
 
-  return <FeedPostImageMedia post={post} priority={priority} />
+  return <FeedPostImageMedia post={post} priority={priority} onOpenPost={onOpenPost} />
 }
 
 function FeedPostImageMedia({
   post,
   priority,
+  onOpenPost,
 }: {
   readonly post: PublicPostRead
   readonly priority: boolean
+  readonly onOpenPost: (event: MouseEvent<HTMLAnchorElement>) => void
 }) {
   if (post.media.length === 1) {
     const image = post.media[0]
@@ -288,6 +328,8 @@ function FeedPostImageMedia({
       <Link
         to="/post/$postId"
         params={{ postId: post.id }}
+        data-view-transition-part="post-media-1"
+        onClick={onOpenPost}
         className="block"
         aria-label={`Open ${post.title}`}
       >
@@ -313,11 +355,16 @@ function FeedPostImageMedia({
     <Link
       to="/post/$postId"
       params={{ postId: post.id }}
+      onClick={onOpenPost}
       className="grid grid-cols-2 gap-1 overflow-hidden bg-muted"
       aria-label={`Open ${post.title}, ${post.media.length.toString()} images`}
     >
-      {preview.map((image) => (
-        <span key={image.id} className="relative block">
+      {preview.map((image, index) => (
+        <span
+          key={image.id}
+          data-view-transition-part={`post-media-${String(index + 1)}`}
+          className="relative block"
+        >
           <ResponsiveMediaImage
             image={image}
             variant="feed"
@@ -382,6 +429,7 @@ function DetailPostImageMedia({
       <>
         <button
           type="button"
+          data-view-transition-part="post-media-1"
           className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           aria-label={`Expand ${image.altText ?? post.title}`}
           onPointerEnter={preloadImageLightbox}
@@ -414,6 +462,9 @@ function DetailPostImageMedia({
             <li key={image.id} className="break-inside-avoid pb-2">
               <button
                 type="button"
+                data-view-transition-part={
+                  index < 4 ? `post-media-${String(index + 1)}` : undefined
+                }
                 className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 aria-label={`Expand image ${String(index + 1)} of ${String(post.media.length)}`}
                 onPointerEnter={preloadImageLightbox}
@@ -513,6 +564,10 @@ function ImageBrowser({
       </div>
       <button
         type="button"
+        data-view-transition-gallery="focus"
+        data-view-transition-part={
+          selectedIndex < 4 ? `post-media-${String(selectedIndex + 1)}` : undefined
+        }
         className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         aria-label={`Expand image ${String(selectedIndex + 1)} of ${String(post.media.length)}`}
         onPointerEnter={preloadImageLightbox}
@@ -557,6 +612,10 @@ function ImageBrowser({
   )
 }
 
+function findTransitionPost(event: MouseEvent<HTMLAnchorElement>) {
+  return event.currentTarget.closest("[data-view-transition-post]")
+}
+
 export function PostView({
   post,
   detail = false,
@@ -575,9 +634,45 @@ export function PostView({
   const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
   const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
   const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
+  const activePostTransition = activeSharedViewTransitionKind({
+    kind: "post",
+    postId: post.id,
+  })
+  const activeProfileTransition = activeSharedViewTransitionKind({
+    kind: "profile",
+    sourcePostId: post.id,
+    username: post.author.username,
+  })
+  const activeArticleTransition = activePostTransition ?? activeProfileTransition
+
+  function openPost(event: MouseEvent<HTMLAnchorElement>) {
+    activateSharedViewTransition(
+      event,
+      { kind: "post", postId: post.id },
+      findTransitionPost(event),
+    )
+  }
+
+  function openProfile(event: MouseEvent<HTMLAnchorElement>) {
+    activateSharedViewTransition(
+      event,
+      {
+        kind: "profile",
+        sourcePostId: post.id,
+        username: post.author.username,
+      },
+      findTransitionPost(event),
+    )
+  }
+
+  function openTag(event: MouseEvent<HTMLAnchorElement>, tag: string) {
+    activateSharedViewTransition(event, { kind: "tag", sourcePostId: post.id, tag })
+  }
 
   return (
     <article
+      data-view-transition-post={post.id}
+      data-view-transition-active={activeArticleTransition}
       className={cn(
         "min-w-0 wrap-anywhere",
         detail ? "mx-auto max-w-5xl" : "border-b pb-10",
@@ -585,8 +680,12 @@ export function PostView({
       )}
     >
       <header className="mb-4 flex items-center gap-3">
-        <Link to="/user/$username" params={{ username: post.author.username }}>
-          <Avatar size="lg">
+        <Link
+          to="/user/$username"
+          params={{ username: post.author.username }}
+          onClick={openProfile}
+        >
+          <Avatar size="lg" data-view-transition-part="profile-avatar">
             {post.author.image && (
               <ResponsiveAvatarImage src={post.author.image} sizes="2.5rem" alt="" />
             )}
@@ -598,6 +697,8 @@ export function PostView({
             to="/user/$username"
             params={{ username: post.author.username }}
             dir="auto"
+            data-view-transition-part="profile-name"
+            onClick={openProfile}
             className="block truncate text-sm font-semibold hover:underline"
           >
             {post.author.name}
@@ -619,6 +720,7 @@ export function PostView({
         {detail ? (
           <h1
             dir="auto"
+            data-view-transition-part="post-title"
             className="overflow-hidden font-heading text-3xl font-bold tracking-tight text-balance sm:text-5xl"
           >
             {post.title}
@@ -626,21 +728,29 @@ export function PostView({
         ) : (
           <h2
             dir="auto"
+            data-view-transition-part="post-title"
             className="overflow-hidden font-heading text-2xl font-bold tracking-tight text-balance"
           >
-            <Link to="/post/$postId" params={{ postId: post.id }} className="hover:underline">
+            <Link
+              to="/post/$postId"
+              params={{ postId: post.id }}
+              onClick={openPost}
+              className="hover:underline"
+            >
               {post.title}
             </Link>
           </h2>
         )}
         {post.textContent ? (
-          detail ? (
-            <MarkdownContent postId={post.id} className="typeset-post max-w-3xl">
-              {post.textContent}
-            </MarkdownContent>
-          ) : (
-            <PostTextPreview postId={post.id} markdown={post.textContent} />
-          )
+          <div data-view-transition-part="post-copy">
+            {detail ? (
+              <MarkdownContent postId={post.id} className="typeset-post max-w-3xl">
+                {post.textContent}
+              </MarkdownContent>
+            ) : (
+              <PostTextPreview postId={post.id} markdown={post.textContent} onOpen={openPost} />
+            )}
+          </div>
         ) : null}
       </div>
 
@@ -649,6 +759,8 @@ export function PostView({
           post={post}
           galleryLayout={resolvedGalleryLayout}
           selectedImageIndex={selectedImageIndex}
+          onOpenPost={openPost}
+          onOpenTag={openTag}
         />
       ) : null}
       {detail ? (
@@ -661,6 +773,7 @@ export function PostView({
         priority={priority}
         selectedImageIndex={selectedImageIndex}
         galleryLayout={resolvedGalleryLayout}
+        onOpenPost={openPost}
       />
 
       {!detail ? (
@@ -669,7 +782,19 @@ export function PostView({
             <Badge
               key={tag.slug}
               variant="secondary"
-              render={<Link to="/tag/$tag" params={{ tag: tag.slug }} />}
+              render={
+                <Link
+                  to="/tag/$tag"
+                  params={{ tag: tag.slug }}
+                  data-view-transition-active={activeSharedViewTransitionKind({
+                    kind: "tag",
+                    sourcePostId: post.id,
+                    tag: tag.slug,
+                  })}
+                  data-view-transition-part="tag-name"
+                  onClick={(event) => openTag(event, tag.slug)}
+                />
+              }
             >
               #{tag.name}
             </Badge>
@@ -680,6 +805,7 @@ export function PostView({
               to="/post/$postId"
               params={{ postId: post.id }}
               hash="discussion"
+              onClick={openPost}
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
             >
               <MessageCircle aria-hidden="true" className="size-3.5" />

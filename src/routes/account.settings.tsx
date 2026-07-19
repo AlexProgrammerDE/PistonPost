@@ -73,7 +73,7 @@ function SettingsLayout() {
           )
         })}
       </nav>
-      <div className="max-w-3xl">
+      <div data-view-transition-settings-panel className="max-w-3xl">
         <Outlet />
       </div>
     </main>

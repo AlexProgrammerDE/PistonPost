@@ -1042,3 +1042,9 @@ Record future changes here with date, decision, reason, and affected phases.
   Cloudflare request background tasks with a small bounded transport retry and are never persisted.
   Product and account notifications use ID-only outbox jobs, delivery-time preference checks,
   expiring claims, and terminal dead-letter state. This affects Phases 3, 4, 5, 7, and 9.
+- 2026-07-19: Use TanStack Router's native same-document View Transitions for route navigation.
+  Transition types select forward, back, gallery, settings, and shared-element choreography, while
+  an interaction marker limits shared snapshots to the post, profile, or tag that initiated the
+  navigation. Keep Motion scoped to local interactions, preserve the sidebar as stationary chrome,
+  and disable navigation motion for reduced-motion users and open mobile sidebar links. This
+  affects Phases 5, 7, and 9.

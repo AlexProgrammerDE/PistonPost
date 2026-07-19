@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { feedPageHref } from "@/lib/feed-pagination"
 import { feedQueryOptions, tagQueryOptions } from "@/lib/queries/posts"
 import { absoluteUrl, createSeoHead } from "@/lib/seo"
+import { activeSharedViewTransitionKind } from "@/lib/view-transitions"
 
 const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
@@ -60,10 +61,20 @@ function TagFeed() {
   const tag = Route.useLoaderData()
   const { cursor } = Route.useSearch()
   const pagePath = `/tag/${encodeURIComponent(tag.normalizedName)}`
+  const activeTransition = activeSharedViewTransitionKind({
+    kind: "tag",
+    tag: tag.normalizedName,
+  })
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-8 flex items-center justify-between gap-4 border-b pb-4">
-        <h1 className="overflow-hidden font-heading text-3xl font-bold tracking-tight">
+      <header
+        data-view-transition-active={activeTransition}
+        className="mb-8 flex items-center justify-between gap-4 border-b pb-4"
+      >
+        <h1
+          data-view-transition-part="tag-name"
+          className="overflow-hidden font-heading text-3xl font-bold tracking-tight"
+        >
           #{tag.displayName}
         </h1>
         <Suspense fallback={<Skeleton className="h-9 w-20" />}>

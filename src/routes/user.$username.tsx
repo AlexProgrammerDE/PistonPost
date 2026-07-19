@@ -16,6 +16,7 @@ import { AVATAR_IMAGE_SIZE } from "@/lib/media-image"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
 import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
 import { safeUserGeneratedUrl } from "@/lib/user-generated-link"
+import { activeSharedViewTransitionKind } from "@/lib/view-transitions"
 
 const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
@@ -122,11 +123,18 @@ function ProfileFeed() {
   const profile = useSuspenseQuery(profileQueryOptions(normalizedUsername)).data
   if (!profile) return null
   const website = safeWebsite(profile.website)
+  const activeTransition = activeSharedViewTransitionKind({
+    kind: "profile",
+    username: profile.normalizedUsername,
+  })
 
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-10 grid min-w-0 gap-5 border-b pb-7 wrap-anywhere sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
-        <Avatar className="size-20 sm:size-24">
+      <header
+        data-view-transition-active={activeTransition}
+        className="mb-10 grid min-w-0 gap-5 border-b pb-7 wrap-anywhere sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center"
+      >
+        <Avatar data-view-transition-part="profile-avatar" className="size-20 sm:size-24">
           {profile.image && (
             <ResponsiveAvatarImage
               src={profile.image}
@@ -142,6 +150,7 @@ function ProfileFeed() {
           <div className="min-w-0">
             <h1
               dir="auto"
+              data-view-transition-part="profile-name"
               className="overflow-hidden font-heading text-3xl font-bold tracking-tight sm:text-4xl"
             >
               {profile.name}

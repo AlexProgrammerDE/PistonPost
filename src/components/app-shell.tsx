@@ -21,7 +21,10 @@ export function AppShell({ children }: PropsWithChildren) {
       </a>
       <AppSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-3 md:hidden">
+        <header
+          data-view-transition-chrome="mobile-header"
+          className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-3 md:hidden"
+        >
           <SidebarTrigger aria-label="Open navigation" />
           <Link
             to="/"

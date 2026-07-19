@@ -74,14 +74,25 @@ export function AppSidebar() {
   }
 
   return (
-    <Sidebar collapsible="icon" role="complementary" aria-label="Application sidebar">
+    <Sidebar
+      collapsible="icon"
+      role="complementary"
+      aria-label="Application sidebar"
+      data-view-transition-chrome="sidebar"
+    >
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
               size="lg"
               tooltip="PistonPost home"
-              render={<Link to="/" aria-label="PistonPost home" />}
+              render={
+                <Link
+                  to="/"
+                  aria-label="PistonPost home"
+                  viewTransition={isMobile ? false : undefined}
+                />
+              }
               onClick={closeMobileSidebar}
             >
               <span
@@ -119,7 +130,7 @@ export function AppSidebar() {
                         variant={item.to === "/account/posts/new" ? "outline" : "default"}
                         isActive={active}
                         aria-current={active ? "page" : undefined}
-                        render={<Link to={item.to} />}
+                        render={<Link to={item.to} viewTransition={isMobile ? false : undefined} />}
                         onClick={closeMobileSidebar}
                       >
                         <Icon aria-hidden="true" />
@@ -147,6 +158,7 @@ export function AppSidebar() {
             <Link
               key={item.to}
               to={item.to}
+              viewTransition={isMobile ? false : undefined}
               aria-current={pathname === item.to ? "page" : undefined}
               className="hover:text-sidebar-foreground hover:underline"
               onClick={closeMobileSidebar}
