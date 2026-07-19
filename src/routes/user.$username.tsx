@@ -54,6 +54,7 @@ export const Route = createFileRoute("/user/$username")({
     const pagePath = `/user/${encodeURIComponent(normalizedUsername)}`
     const path = feedPageHref(pagePath, match.search.cursor)
     const profileUrl = absoluteUrl(path)
+    const profileIdentityUrl = absoluteUrl(pagePath)
     const website = safeWebsite(loaderData?.website ?? null)
     return createSeoHead({
       title: `${name} (@${username}) · ${SITE_NAME}`,
@@ -87,13 +88,14 @@ export const Route = createFileRoute("/user/$username")({
           url: absoluteUrl(`/post/${encodeURIComponent(post.id)}`),
           headline: post.title,
           datePublished: post.publishedAt.toISOString(),
+          author: { "@id": `${profileIdentityUrl}#person` },
         })),
         mainEntity: {
           "@type": "Person",
-          "@id": `${profileUrl}#person`,
+          "@id": `${profileIdentityUrl}#person`,
           name,
           alternateName: `@${username}`,
-          url: profileUrl,
+          url: profileIdentityUrl,
           image: loaderData?.image ? absoluteUrl(loaderData.image) : undefined,
           sameAs: website ? [website] : undefined,
           interactionStatistic: [
@@ -102,12 +104,12 @@ export const Route = createFileRoute("/user/$username")({
               interactionType: "https://schema.org/FollowAction",
               userInteractionCount: loaderData?.followerCount ?? 0,
             },
-            {
-              "@type": "InteractionCounter",
-              interactionType: "https://schema.org/CreateAction",
-              userInteractionCount: loaderData?.postCount ?? 0,
-            },
           ],
+          agentInteractionStatistic: {
+            "@type": "InteractionCounter",
+            interactionType: "https://schema.org/WriteAction",
+            userInteractionCount: loaderData?.postCount ?? 0,
+          },
         },
       },
     })

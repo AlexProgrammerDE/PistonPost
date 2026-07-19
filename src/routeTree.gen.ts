@@ -14,6 +14,7 @@ import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as FollowingRouteImport } from './routes/following'
+import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
 import { Route as ExternalRouteImport } from './routes/external'
 import { Route as CookiePolicyRouteImport } from './routes/cookie-policy'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -69,6 +70,11 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const FollowingRoute = FollowingRouteImport.update({
   id: '/following',
   path: '/following',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedDotxmlRoute = FeedDotxmlRouteImport.update({
+  id: '/feed.xml',
+  path: '/feed.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExternalRoute = ExternalRouteImport.update({
@@ -238,6 +244,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRouteWithChildren
   '/cookie-policy': typeof CookiePolicyRoute
   '/external': typeof ExternalRoute
+  '/feed.xml': typeof FeedDotxmlRoute
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -274,6 +281,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cookie-policy': typeof CookiePolicyRoute
   '/external': typeof ExternalRoute
+  '/feed.xml': typeof FeedDotxmlRoute
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -311,6 +319,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRouteWithChildren
   '/cookie-policy': typeof CookiePolicyRoute
   '/external': typeof ExternalRoute
+  '/feed.xml': typeof FeedDotxmlRoute
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
@@ -351,6 +360,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cookie-policy'
     | '/external'
+    | '/feed.xml'
     | '/following'
     | '/privacy'
     | '/robots.txt'
@@ -387,6 +397,7 @@ export interface FileRouteTypes {
     | '/'
     | '/cookie-policy'
     | '/external'
+    | '/feed.xml'
     | '/following'
     | '/privacy'
     | '/robots.txt'
@@ -423,6 +434,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/cookie-policy'
     | '/external'
+    | '/feed.xml'
     | '/following'
     | '/privacy'
     | '/robots.txt'
@@ -462,6 +474,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRouteWithChildren
   CookiePolicyRoute: typeof CookiePolicyRoute
   ExternalRoute: typeof ExternalRoute
+  FeedDotxmlRoute: typeof FeedDotxmlRoute
   FollowingRoute: typeof FollowingRoute
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
@@ -520,6 +533,13 @@ declare module '@tanstack/react-router' {
       path: '/following'
       fullPath: '/following'
       preLoaderRoute: typeof FollowingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feed.xml': {
+      id: '/feed.xml'
+      path: '/feed.xml'
+      fullPath: '/feed.xml'
+      preLoaderRoute: typeof FeedDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/external': {
@@ -814,6 +834,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRouteWithChildren,
   CookiePolicyRoute: CookiePolicyRoute,
   ExternalRoute: ExternalRoute,
+  FeedDotxmlRoute: FeedDotxmlRoute,
   FollowingRoute: FollowingRoute,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,

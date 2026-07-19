@@ -92,6 +92,10 @@ export type PublicPostSitemapRecord = {
   }>
 }
 
+type MutablePublicPostSitemapRecord = Omit<PublicPostSitemapRecord, "media"> & {
+  media: Array<PublicPostSitemapRecord["media"][number]>
+}
+
 export type PublicProfileSitemapRecord = {
   readonly username: string
   readonly updatedAt: Date
@@ -444,7 +448,7 @@ export async function listPublicPostSitemapRecords(
   offset: number,
   limit: number,
 ): Promise<ReadonlyArray<PublicPostSitemapRecord>> {
-  const rows = await database
+  const sitemapPosts = database
     .select({
       id: posts.id,
       title: posts.title,
@@ -464,33 +468,53 @@ export async function listPublicPostSitemapRecords(
     .orderBy(desc(posts.updatedAt), desc(posts.id))
     .limit(limit)
     .offset(offset)
-  const visibleRows = rows.filter(
-    (post): post is typeof post & { publishedAt: Date } => post.publishedAt !== null,
-  )
-  const postIds = visibleRows.map((post) => post.id)
-  const media =
-    postIds.length === 0
-      ? []
-      : await database
-          .select({
-            postId: postMedia.postId,
-            id: mediaAssets.id,
-            kind: mediaAssets.kind,
-            duration: mediaAssets.duration,
-          })
-          .from(postMedia)
-          .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaId))
-          .where(and(inArray(postMedia.postId, postIds), eq(mediaAssets.status, "ready")))
-          .orderBy(postMedia.ordinal)
+    .as("sitemap_posts_page")
+  const rows = await database
+    .select({
+      id: sitemapPosts.id,
+      title: sitemapPosts.title,
+      type: sitemapPosts.type,
+      publishedAt: sitemapPosts.publishedAt,
+      updatedAt: sitemapPosts.updatedAt,
+      mediaId: mediaAssets.id,
+      mediaKind: mediaAssets.kind,
+      mediaDuration: mediaAssets.duration,
+    })
+    .from(sitemapPosts)
+    .leftJoin(postMedia, eq(postMedia.postId, sitemapPosts.id))
+    .leftJoin(
+      mediaAssets,
+      and(eq(mediaAssets.id, postMedia.mediaId), eq(mediaAssets.status, "ready")),
+    )
+    .orderBy(desc(sitemapPosts.updatedAt), desc(sitemapPosts.id), postMedia.ordinal)
 
-  return visibleRows.map((post) => ({
-    id: post.id,
-    title: post.title,
-    type: post.type,
-    publishedAt: post.publishedAt,
-    updatedAt: post.updatedAt,
-    media: media.filter((asset) => asset.postId === post.id),
-  }))
+  const records = new Map<string, MutablePublicPostSitemapRecord>()
+  for (const row of rows) {
+    if (row.publishedAt === null) continue
+
+    let record = records.get(row.id)
+    if (!record) {
+      record = {
+        id: row.id,
+        title: row.title,
+        type: row.type,
+        publishedAt: row.publishedAt,
+        updatedAt: row.updatedAt,
+        media: [],
+      }
+      records.set(row.id, record)
+    }
+
+    if (row.mediaId !== null && row.mediaKind !== null) {
+      record.media.push({
+        id: row.mediaId,
+        kind: row.mediaKind,
+        duration: row.mediaDuration,
+      })
+    }
+  }
+
+  return [...records.values()]
 }
 
 export async function listPublicProfileSitemapRecords(

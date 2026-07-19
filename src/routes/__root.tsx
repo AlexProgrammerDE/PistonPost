@@ -45,16 +45,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "msapplication-TileColor", content: "#dc3850" },
       { name: "msapplication-tap-highlight", content: "no" },
-      {
-        name: "theme-color",
-        content: "#fff9ed",
-        media: "(prefers-color-scheme: light)",
-      },
-      {
-        name: "theme-color",
-        content: "#241b1b",
-        media: "(prefers-color-scheme: dark)",
-      },
       ...defaultSeo.meta,
     ],
     links: [
@@ -64,7 +54,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { rel: "icon", href: "/icon.svg", type: "image/svg+xml" },
       { rel: "shortcut icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
       { rel: "manifest", href: "/manifest.json" },
+      {
+        rel: "alternate",
+        href: "/feed.xml",
+        type: "application/atom+xml",
+        title: "PistonPost latest posts",
+      },
     ],
   }),
   notFoundComponent: () => (
@@ -125,6 +122,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <meta name="color-scheme" content="light dark" />
+        <meta name="theme-color" content="#fff9ed" media="(prefers-color-scheme: light)" />
+        <meta name="theme-color" content="#241b1b" media="(prefers-color-scheme: dark)" />
         <HeadContent />
       </head>
       <body>

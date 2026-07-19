@@ -1,8 +1,15 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
 import { createPost, createUser } from "./factories"
-import { getPublicSitemapCounts, getPublicTagRead, listPublicPostReads } from "./public-read-model"
 import {
+  getPublicSitemapCounts,
+  getPublicTagRead,
+  listPublicPostReads,
+  listPublicPostSitemapRecords,
+} from "./public-read-model"
+import {
+  mediaAssets,
+  postMedia,
   posts,
   postTags,
   postViewCounts,
@@ -165,5 +172,73 @@ describe("following feed read model", () => {
     expect((await getPublicTagRead(database, "probation"))?.searchIndexable).toBe(false)
     expect((await getPublicTagRead(database, "trusted"))?.searchIndexable).toBe(true)
     expect(await getPublicSitemapCounts(database)).toEqual({ posts: 1, profiles: 1, tags: 1 })
+  })
+})
+
+describe("public sitemap read model", () => {
+  it("hydrates ordered media for sitemap pages with more than 100 posts", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => database.$client.close()
+    const sitemapPostCount = 125
+    const sitemapPosts = Array.from({ length: sitemapPostCount }, (_, index) => {
+      const id = `sitemap-post-${index.toString().padStart(3, "0")}`
+      const updatedAt = new Date(Date.UTC(2026, 0, 1, 0, index))
+      return createPost({
+        id,
+        authorId: "sitemap-author",
+        type: "images",
+        title: `Sitemap post ${index.toString()}`,
+        status: "published",
+        publishedAt: updatedAt,
+        updatedAt,
+      })
+    })
+
+    database
+      .insert(user)
+      .values(createUser({ id: "sitemap-author", email: "sitemap@example.com" }))
+      .run()
+    database.insert(posts).values(sitemapPosts).run()
+    database
+      .insert(mediaAssets)
+      .values(
+        sitemapPosts.flatMap(
+          (post): Array<typeof mediaAssets.$inferInsert> =>
+            [0, 1].map((ordinal) => ({
+              id: `${post.id}-media-${ordinal.toString()}`,
+              ownerId: "sitemap-author",
+              kind: "image",
+              provider: "images",
+              status: "ready",
+              originalFilename: `${post.id}-${ordinal.toString()}.png`,
+              mimeType: "image/png",
+              byteSize: 1,
+            })),
+        ),
+      )
+      .run()
+    database
+      .insert(postMedia)
+      .values(
+        sitemapPosts.flatMap(
+          (post): Array<typeof postMedia.$inferInsert> =>
+            [1, 0].map((ordinal) => ({
+              postId: post.id,
+              mediaId: `${post.id}-media-${ordinal.toString()}`,
+              ordinal,
+            })),
+        ),
+      )
+      .run()
+
+    const records = await listPublicPostSitemapRecords(database, 10, 110)
+
+    expect(records).toHaveLength(110)
+    expect(records[0]?.id).toBe("sitemap-post-114")
+    expect(records.at(-1)?.id).toBe("sitemap-post-005")
+    expect(records[0]?.media.map((asset) => asset.id)).toEqual([
+      "sitemap-post-114-media-0",
+      "sitemap-post-114-media-1",
+    ])
   })
 })

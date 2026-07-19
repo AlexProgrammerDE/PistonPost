@@ -248,7 +248,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
       "@type": "Comment",
       "@id": `${canonical}#comment-${encodeURIComponent(comment.id)}`,
       text: comment.content,
-      dateCreated: comment.createdAt.toISOString(),
+      datePublished: comment.createdAt.toISOString(),
       dateModified:
         comment.updatedAt > comment.createdAt ? comment.updatedAt.toISOString() : undefined,
       author: {

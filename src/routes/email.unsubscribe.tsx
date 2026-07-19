@@ -11,7 +11,12 @@ import { unsubscribeFromProductEmail } from "@/server/email-preferences"
 
 export const Route = createFileRoute("/email/unsubscribe")({
   validateSearch: z.object({ token: z.string().max(4096).catch("") }),
-  head: () => ({ meta: [{ title: "Email preferences · PistonPost" }] }),
+  head: () => ({
+    meta: [
+      { title: "Email preferences · PistonPost" },
+      { name: "robots", content: "noindex, nofollow" },
+    ],
+  }),
   component: ProductEmailUnsubscribe,
 })
 
