@@ -37,7 +37,7 @@ export function FilteredFeed({
 
   return (
     <>
-      <PostTimeline posts={posts} />
+      <PostTimeline posts={posts} surface={filters.tag ? "tag" : "profile"} />
       <InfiniteScrollTrigger
         key={feedIdentity}
         hasNextPage={feed.hasNextPage}

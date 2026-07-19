@@ -12,7 +12,7 @@ import {
   getPublicTagRead,
   listPublicPostReads,
 } from "@/db/public-read-model"
-import { decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
+import { POST_VIEW_SURFACES, decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
 
 import { recordPostView } from "./post-view-tracking"
 
@@ -21,6 +21,11 @@ const feedInput = z.object({
   limit: z.number().int().min(1).max(30).default(12),
   tag: z.string().trim().min(1).max(64).optional(),
   username: z.string().trim().min(1).max(32).optional(),
+})
+
+const postViewInput = z.object({
+  postIds: z.array(z.string().trim().min(1).max(64)).min(1).max(30),
+  surface: z.enum(POST_VIEW_SURFACES),
 })
 
 export const getPublicFeed = createServerFn({ method: "GET" })
@@ -46,25 +51,37 @@ export const getPublishedPost = createServerFn({ method: "GET" })
     getPublishedPostRead(createD1Database(context.env.DB), data.id),
   )
 
-export const trackPostView = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().trim().min(1).max(64) }))
+export const trackPostViews = createServerFn({ method: "POST" })
+  .validator(postViewInput)
   .handler(async ({ context, data }) => {
     const headers = getRequestHeaders()
     const database = createD1Database(context.env.DB)
-    const viewCount = await recordPostView(
-      {
-        analytics: context.env.ANALYTICS,
-        findPublishedPost: (postId) => getPublishedPostTrackingContext(database, postId),
-        incrementViewCount: (postId) => incrementPostViewCount(database, postId),
-        limiter: context.env.POST_VIEW_RATE_LIMITER,
-      },
-      {
-        address: headers.get("cf-connecting-ip") ?? "local",
-        postId: data.id,
-      },
+    const address = headers.get("cf-connecting-ip") ?? "local"
+    const dependencies = {
+      analytics: context.env.ANALYTICS,
+      findPublishedPost: (postId: string) => getPublishedPostTrackingContext(database, postId),
+      incrementViewCount: (postId: string) => incrementPostViewCount(database, postId),
+      limiter: context.env.POST_VIEW_RATE_LIMITER,
+    }
+    const postIds = Array.from(new Set(data.postIds))
+    const results = await Effect.runPromise(
+      Effect.all(
+        postIds.map((postId) =>
+          recordPostView(dependencies, {
+            address,
+            postId,
+            surface: data.surface,
+          }).pipe(Effect.map((viewCount) => ({ postId, viewCount }))),
+        ),
+        { concurrency: 4 },
+      ),
     )
 
-    return { tracked: viewCount !== null, viewCount }
+    return {
+      views: results.flatMap(({ postId, viewCount }) =>
+        viewCount === null ? [] : [{ postId, viewCount }],
+      ),
+    }
   })
 
 export const getPublicProfile = createServerFn({ method: "GET" })

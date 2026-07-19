@@ -99,7 +99,7 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
 
   return (
     <>
-      <PostTimeline posts={posts} />
+      <PostTimeline posts={posts} surface="following" />
       <InfiniteScrollTrigger
         key={`following:${viewerId}`}
         hasNextPage={feed.hasNextPage}

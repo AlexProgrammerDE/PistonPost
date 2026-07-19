@@ -102,7 +102,7 @@ function PublicFeedResults() {
           </EmptyContent>
         </Empty>
       ) : (
-        <PostTimeline posts={posts} />
+        <PostTimeline posts={posts} surface="timeline" />
       )}
 
       <InfiniteScrollTrigger

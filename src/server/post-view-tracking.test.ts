@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
+import { Effect } from "effect"
+
 import { recordPostView, type TrackablePost } from "./post-view-tracking"
 
 const post: TrackablePost = {
@@ -8,7 +10,13 @@ const post: TrackablePost = {
   visibility: "public",
 }
 
-function setup(options: { limited?: boolean; publishedPost?: TrackablePost | null } = {}) {
+function setup(
+  options: {
+    limitedOpens?: boolean
+    limitedViews?: boolean
+    publishedPost?: TrackablePost | null
+  } = {},
+) {
   const rateLimitKeys: Array<string> = []
   const dataPoints: Array<AnalyticsEngineDataPoint | undefined> = []
   const incrementedPostIds: Array<string> = []
@@ -36,7 +44,8 @@ function setup(options: { limited?: boolean; publishedPost?: TrackablePost | nul
       limiter: {
         async limit({ key }: RateLimitOptions) {
           rateLimitKeys.push(key)
-          return { success: !options.limited }
+          const limited = key.startsWith("post-open:") ? options.limitedOpens : options.limitedViews
+          return { success: !limited }
         },
       },
     },
@@ -47,10 +56,13 @@ describe("post view tracking", () => {
   it("records a privacy-safe event for a published post", async () => {
     const state = setup()
 
-    const tracked = await recordPostView(state.dependencies, {
-      address: "203.0.113.42",
-      postId: post.id,
-    })
+    const tracked = await Effect.runPromise(
+      recordPostView(state.dependencies, {
+        address: "203.0.113.42",
+        postId: post.id,
+        surface: "timeline",
+      }),
+    )
 
     expect(tracked).toBe(1)
     expect(state.rateLimitKeys).toHaveLength(1)
@@ -59,7 +71,7 @@ describe("post view tracking", () => {
     expect(state.dataPoints).toEqual([
       {
         indexes: [post.id],
-        blobs: ["post.view", post.id, post.type, post.visibility],
+        blobs: ["post.impression", post.id, post.type, post.visibility, "timeline"],
         doubles: [1],
       },
     ])
@@ -67,12 +79,15 @@ describe("post view tracking", () => {
   })
 
   it("drops limited views before querying the post", async () => {
-    const state = setup({ limited: true })
+    const state = setup({ limitedViews: true })
 
-    const tracked = await recordPostView(state.dependencies, {
-      address: "203.0.113.42",
-      postId: post.id,
-    })
+    const tracked = await Effect.runPromise(
+      recordPostView(state.dependencies, {
+        address: "203.0.113.42",
+        postId: post.id,
+        surface: "timeline",
+      }),
+    )
 
     expect(tracked).toBeNull()
     expect(state.lookedUpPostIds).toEqual([])
@@ -83,10 +98,13 @@ describe("post view tracking", () => {
   it("does not record views for missing or unpublished posts", async () => {
     const state = setup({ publishedPost: null })
 
-    const tracked = await recordPostView(state.dependencies, {
-      address: "203.0.113.42",
-      postId: "draft-post",
-    })
+    const tracked = await Effect.runPromise(
+      recordPostView(state.dependencies, {
+        address: "203.0.113.42",
+        postId: "draft-post",
+        surface: "timeline",
+      }),
+    )
 
     expect(tracked).toBeNull()
     expect(state.lookedUpPostIds).toEqual(["draft-post"])
@@ -100,12 +118,64 @@ describe("post view tracking", () => {
       throw new Error("Analytics unavailable")
     }
 
-    const tracked = await recordPostView(state.dependencies, {
-      address: "203.0.113.42",
-      postId: post.id,
-    })
+    const tracked = await Effect.runPromise(
+      recordPostView(state.dependencies, {
+        address: "203.0.113.42",
+        postId: post.id,
+        surface: "timeline",
+      }),
+    )
 
     expect(tracked).toBe(1)
     expect(state.incrementedPostIds).toEqual([post.id])
+  })
+
+  it("records a separate open event for a detail view", async () => {
+    const state = setup()
+
+    const tracked = await Effect.runPromise(
+      recordPostView(state.dependencies, {
+        address: "203.0.113.42",
+        postId: post.id,
+        surface: "detail",
+      }),
+    )
+
+    expect(tracked).toBe(1)
+    expect(state.dataPoints).toEqual([
+      {
+        indexes: [post.id],
+        blobs: ["post.impression", post.id, post.type, post.visibility, "detail"],
+        doubles: [1],
+      },
+      {
+        indexes: [post.id],
+        blobs: ["post.open", post.id, post.type, post.visibility, "detail"],
+        doubles: [1],
+      },
+    ])
+  })
+
+  it("records a detail open when the aggregate view is rate limited", async () => {
+    const state = setup({ limitedViews: true })
+
+    const tracked = await Effect.runPromise(
+      recordPostView(state.dependencies, {
+        address: "203.0.113.42",
+        postId: post.id,
+        surface: "detail",
+      }),
+    )
+
+    expect(tracked).toBeNull()
+    expect(state.rateLimitKeys).toHaveLength(2)
+    expect(state.incrementedPostIds).toEqual([])
+    expect(state.dataPoints).toEqual([
+      {
+        indexes: [post.id],
+        blobs: ["post.open", post.id, post.type, post.visibility, "detail"],
+        doubles: [1],
+      },
+    ])
   })
 })

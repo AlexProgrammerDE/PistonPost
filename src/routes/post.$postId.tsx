@@ -13,7 +13,7 @@ import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
 import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
-import { trackPostView } from "@/server/posts"
+import { trackPostViews } from "@/server/posts"
 
 const postSearchSchema = z.object({
   image: z.coerce.number().int().min(0).max(149).optional().catch(undefined),
@@ -57,11 +57,14 @@ function PostDetail() {
   useEffect(() => {
     if (!visiblePostId || trackedPostId.current === visiblePostId) return
     trackedPostId.current = visiblePostId
-    void trackPostView({ data: { id: visiblePostId } })
-      .then(({ viewCount }) => {
-        if (viewCount === null) return
+    void trackPostViews({ data: { postIds: [visiblePostId], surface: "detail" } })
+      .then(({ views }) => {
+        const trackedView = views.find((view) => view.postId === visiblePostId)
+        if (!trackedView) return
         queryClient.setQueryData(postQueryOptions(visiblePostId).queryKey, (current) =>
-          current && current.viewCount < viewCount ? { ...current, viewCount } : current,
+          current && current.viewCount < trackedView.viewCount
+            ? { ...current, viewCount: trackedView.viewCount }
+            : current,
         )
       })
       .catch(() => undefined)
