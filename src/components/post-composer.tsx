@@ -55,6 +55,7 @@ import {
   FileUploadDropzone,
   FileUploadList,
   FileUploadTrigger,
+  useFileUpload,
 } from "@/components/ui/file-upload"
 import { Input } from "@/components/ui/input"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
@@ -79,6 +80,7 @@ import {
 } from "@/lib/uploads/media-upload-state"
 import { UploadClientError, uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
 import { selectVideoThumbnailTimestamp } from "@/lib/uploads/video-thumbnail-selection"
+import { cn } from "@/lib/utils"
 import { DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT } from "@/lib/video-thumbnail"
 import {
   abortMediaUpload,
@@ -576,6 +578,35 @@ function TypeSync({
   return null
 }
 
+function MediaDropzonePrompt({ type }: { readonly type: "images" | "video" }) {
+  const dragOver = useFileUpload((state) => state.dragOver)
+  const mediaLabel = type === "images" ? "images" : "a video"
+  const draggedMediaLabel = type === "images" ? "these images" : "this video"
+  const mediaPronoun = type === "images" ? "them" : "it"
+
+  return (
+    <>
+      <Upload
+        aria-hidden="true"
+        className={cn(
+          "text-muted-foreground transition-colors",
+          dragOver ? "text-primary" : undefined,
+        )}
+      />
+      <div className="flex max-w-sm flex-col items-center gap-1 text-center">
+        <p role="status" className={cn("font-medium", dragOver ? "text-primary" : undefined)}>
+          {dragOver ? `Release to add ${draggedMediaLabel}` : `Drop ${mediaLabel} here`}
+        </p>
+        <p className="text-sm text-muted-foreground">
+          {dragOver
+            ? `Uploading starts as soon as you drop ${mediaPronoun}.`
+            : "You can also paste from your clipboard."}
+        </p>
+      </div>
+    </>
+  )
+}
+
 function MediaPicker({
   type,
   uploads,
@@ -637,13 +668,9 @@ function MediaPicker({
       >
         <FileUploadDropzone
           aria-label={type === "images" ? "Image dropzone" : "Video dropzone"}
-          className="min-h-40"
+          className="min-h-40 data-dragging:border-primary data-dragging:bg-primary/5 data-dragging:ring-[3px] data-dragging:ring-primary/15"
         >
-          <Upload aria-hidden="true" className="text-muted-foreground" />
-          <div className="flex max-w-sm flex-col items-center gap-1 text-center">
-            <p className="font-medium">Drop {type === "images" ? "images" : "a video"} here</p>
-            <p className="text-sm text-muted-foreground">You can also paste from your clipboard.</p>
-          </div>
+          <MediaDropzonePrompt type={type} />
           <FileUploadTrigger render={<Button type="button" variant="outline" size="sm" />}>
             <Upload aria-hidden="true" data-icon="inline-start" />
             {type === "images" ? "Browse images" : "Browse for a video"}

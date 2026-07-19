@@ -345,6 +345,10 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
       },
       { bytes: Array.from(VALID_PNG) },
     )
+    await dropzone.dispatchEvent("dragenter", { dataTransfer })
+    await expect(dropzone).toHaveAttribute("data-dragging", "")
+    await expect(dropzone.getByRole("status")).toHaveText("Release to add these images")
+
     await dropzone.dispatchEvent("drop", { dataTransfer })
     await dataTransfer.dispose()
 
