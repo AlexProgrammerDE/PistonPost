@@ -50,6 +50,12 @@ import {
   FieldLegend,
   FieldSet,
 } from "@/components/ui/field"
+import {
+  FileUpload,
+  FileUploadDropzone,
+  FileUploadList,
+  FileUploadTrigger,
+} from "@/components/ui/file-upload"
 import { Input } from "@/components/ui/input"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
@@ -95,6 +101,8 @@ const tagsSchema = z
   .min(1, "Add at least one tag.")
   .max(5, "Use at most five tags.")
 const imageMimeSchema = z.enum(IMAGE_UPLOAD_MIME_TYPES)
+const MAX_POST_IMAGES = 20
+const MAX_VIDEO_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 
 const loadImageLightbox = () =>
   import("@/components/ImageLightbox").then((module) => ({
@@ -146,6 +154,19 @@ function readableError(error: unknown) {
   if (error instanceof UploadClientError) return error.message
   if (error instanceof Error && composerMessages.has(error.message)) return error.message
   return "The post could not be posted. Try again."
+}
+
+function fileRejectionMessage(type: "images" | "video", message: string) {
+  const maxFiles = type === "images" ? MAX_POST_IMAGES : 1
+  if (message === `Maximum ${maxFiles} files allowed`) {
+    return type === "images"
+      ? `A post can contain up to ${MAX_POST_IMAGES} images.`
+      : "A post can contain one video."
+  }
+
+  return type === "images"
+    ? "Images must be JPG, PNG, GIF, WebP, or AVIF files no larger than 15 MB."
+    : "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload."
 }
 
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
@@ -346,9 +367,8 @@ export function PostComposer({
     form.setFieldValue("mediaId", null)
   }
 
-  async function selectFiles(files: FileList | null, type: ComposerValues["type"]) {
-    if (!files) return
-    const selected = [...files]
+  async function selectFiles(files: File[], type: ComposerValues["type"]) {
+    const selected = files
     const selections =
       type === "images"
         ? await Promise.all(
@@ -367,9 +387,9 @@ export function PostComposer({
     const accepted = selections.filter(({ file, metadata }) =>
       type === "images"
         ? isImageUploadMimeType(metadata.mimeType) && file.size <= MAX_IMAGE_UPLOAD_BYTES
-        : file.type.startsWith("video/") && file.size <= 2 * 1024 * 1024 * 1024,
+        : file.type.startsWith("video/") && file.size <= MAX_VIDEO_UPLOAD_BYTES,
     )
-    const remaining = type === "images" ? Math.max(0, 20 - uploads.length) : 1
+    const remaining = type === "images" ? Math.max(0, MAX_POST_IMAGES - uploads.length) : 1
     dispatch({
       type: "add",
       items: accepted
@@ -386,7 +406,9 @@ export function PostComposer({
       )
     } else if (accepted.length > remaining) {
       toast.error(
-        type === "images" ? "A post can contain up to 20 images." : "A post can contain one video.",
+        type === "images"
+          ? `A post can contain up to ${MAX_POST_IMAGES} images.`
+          : "A post can contain one video.",
       )
     }
   }
@@ -558,7 +580,7 @@ function MediaPicker({
   type: "images" | "video"
   uploads: UploadItem[]
   sensors: ReturnType<typeof useSensors>
-  onFiles: (files: FileList | null, type: ComposerValues["type"]) => Promise<void>
+  onFiles: (files: File[], type: ComposerValues["type"]) => Promise<void>
   onRemove: (item: UploadItem) => void
   onAltText: (clientId: string, altText: string) => void
   onDragEnd: (event: DragEndEvent) => void
@@ -567,9 +589,9 @@ function MediaPicker({
   const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
   const limit =
     type === "images"
-      ? "JPG, PNG, GIF, WebP, or AVIF. Up to 20 files, 15 MB and 80 megapixels each."
+      ? `JPG, PNG, GIF, WebP, or AVIF. Up to ${MAX_POST_IMAGES} files, 15 MB and 80 megapixels each.`
       : "One Stream-supported video, up to 2 GB and 10 minutes. Large files upload in resumable chunks."
-  const inputId = `post-media-${type}`
+  const inputLabel = `Choose ${type === "images" ? "images" : "a video"} to upload`
   const imageUploads = uploads.filter(
     (item): item is UploadItem & { previewUrl: string } =>
       item.kind === "image" && item.previewUrl !== null,
@@ -590,48 +612,56 @@ function MediaPicker({
 
   return (
     <div className="grid gap-4">
-      <label
-        htmlFor={inputId}
-        aria-label={`Choose ${type === "images" ? "images" : "a video"} to upload`}
-        className="group grid min-h-40 cursor-pointer place-items-center border border-dashed bg-muted/20 p-6 text-center transition-colors focus-within:ring-2 focus-within:ring-ring hover:bg-muted/40"
+      <FileUpload
+        value={uploads.map(({ file }) => file)}
+        accept={accept}
+        maxFiles={type === "images" ? MAX_POST_IMAGES : 1}
+        maxSize={type === "images" ? MAX_IMAGE_UPLOAD_BYTES : MAX_VIDEO_UPLOAD_BYTES}
+        label={inputLabel}
+        multiple={type === "images"}
+        disabled={type === "video" && uploads.length > 0}
+        onAccept={(files) => void onFiles(files, type)}
+        onFileReject={(_, message) =>
+          toast.error(fileRejectionMessage(type, message), {
+            id: `composer-${type}-file-rejection`,
+          })
+        }
       >
-        <input
-          id={inputId}
-          className="sr-only"
-          type="file"
-          accept={accept}
-          multiple={type === "images"}
-          disabled={type === "video" && uploads.length > 0}
-          onChange={(event) => {
-            void onFiles(event.currentTarget.files, type)
-            event.currentTarget.value = ""
-          }}
-        />
-        <span className="flex max-w-sm flex-col items-center gap-2">
-          <Upload aria-hidden="true" className="text-muted-foreground" />
-          <span className="font-medium">Choose {type === "images" ? "images" : "a video"}</span>
-          <span className="text-sm text-muted-foreground">{limit}</span>
-        </span>
-      </label>
-
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext
-          items={uploads.map((item) => item.clientId)}
-          strategy={verticalListSortingStrategy}
+        <FileUploadDropzone
+          aria-label={type === "images" ? "Image dropzone" : "Video dropzone"}
+          className="min-h-40"
         >
-          <div className="grid gap-2">
-            {uploads.map((item) => (
-              <SortableUpload
-                key={item.clientId}
-                item={item}
-                onRemove={onRemove}
-                onAltText={onAltText}
-                onView={setSelectedImageId}
-              />
-            ))}
+          <Upload aria-hidden="true" className="text-muted-foreground" />
+          <div className="flex max-w-sm flex-col items-center gap-1 text-center">
+            <p className="font-medium">Drop {type === "images" ? "images" : "a video"} here</p>
+            <p className="text-sm text-muted-foreground">You can also paste from your clipboard.</p>
           </div>
-        </SortableContext>
-      </DndContext>
+          <FileUploadTrigger render={<Button type="button" variant="outline" size="sm" />}>
+            <Upload aria-hidden="true" data-icon="inline-start" />
+            {type === "images" ? "Browse images" : "Browse for a video"}
+          </FileUploadTrigger>
+          <p className="max-w-sm text-xs text-muted-foreground">{limit}</p>
+        </FileUploadDropzone>
+
+        <FileUploadList>
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext
+              items={uploads.map((item) => item.clientId)}
+              strategy={verticalListSortingStrategy}
+            >
+              {uploads.map((item) => (
+                <SortableUpload
+                  key={item.clientId}
+                  item={item}
+                  onRemove={onRemove}
+                  onAltText={onAltText}
+                  onView={setSelectedImageId}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        </FileUploadList>
+      </FileUpload>
       {selectedImageIndex >= 0 ? (
         <Suspense fallback={<LightboxLoadingFallback />}>
           <ComposerImageLightbox
@@ -673,6 +703,7 @@ function SortableUpload({
     <div
       ref={sortable.setNodeRef}
       style={style}
+      role="listitem"
       className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border bg-background p-3"
     >
       {item.previewUrl ? (

@@ -323,16 +323,30 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(page.getByText("No comments yet")).toBeVisible()
   })
 
-  test("normalizes a valid image with incorrect browser metadata", async ({ context, page }) => {
+  test("accepts dropped images and normalizes incorrect browser metadata", async ({
+    context,
+    page,
+  }) => {
     await createVerifiedSession(context)
     await page.goto("/account/posts/new")
     await selectFormat(page, "Images")
     await fillPost(page, "the extension is lying", "testing")
-    await page.getByLabel("Choose images to upload").setInputFiles({
-      name: "actually-a-png.jpg",
-      mimeType: "image/jpeg",
-      buffer: VALID_PNG,
-    })
+
+    const dropzone = page.getByRole("region", { name: "Image dropzone" })
+    await expect(dropzone).toBeVisible()
+    await expect(page.getByRole("button", { name: "Browse images" })).toBeVisible()
+    const dataTransfer = await page.evaluateHandle(
+      ({ bytes }) => {
+        const transfer = new DataTransfer()
+        transfer.items.add(
+          new File([Uint8Array.from(bytes)], "actually-a-png.jpg", { type: "image/jpeg" }),
+        )
+        return transfer
+      },
+      { bytes: Array.from(VALID_PNG) },
+    )
+    await dropzone.dispatchEvent("drop", { dataTransfer })
+    await dataTransfer.dispose()
 
     await expect(
       page.getByRole("button", { name: "View actually-a-png.png full size" }),
