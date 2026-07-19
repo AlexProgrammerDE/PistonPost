@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
 
+import { DateTime } from "@/components/DateTime"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { MarkdownContent } from "@/components/MarkdownContent"
 import { PostTextPreview } from "@/components/PostTextPreview"
@@ -55,13 +56,6 @@ const compactNumberFormat = new Intl.NumberFormat("en", {
   maximumFractionDigits: 1,
 })
 const exactNumberFormat = new Intl.NumberFormat("en")
-
-function formatDate(date: Date) {
-  return new Intl.DateTimeFormat("en", {
-    dateStyle: "medium",
-    timeZone: "UTC",
-  }).format(date)
-}
 
 function PostViewCount({ count }: { readonly count: number }) {
   const exactCount = exactNumberFormat.format(count)
@@ -610,7 +604,7 @@ export function PostView({
           </Link>
           <p className="truncate text-xs text-muted-foreground">
             @{post.author.username} ·{" "}
-            <time dateTime={post.publishedAt.toISOString()}>{formatDate(post.publishedAt)}</time>
+            <DateTime value={post.publishedAt} presentation={detail ? "absolute" : "relative"} />
           </p>
         </div>
         {post.visibility === "unlisted" && (

@@ -24,6 +24,7 @@ import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
 import { ContentReportDialog } from "@/components/ContentReportDialog"
+import { DateTime } from "@/components/DateTime"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
@@ -443,7 +444,12 @@ export function SocialPanel({
                       </span>
                       {comment.optimistic ? (
                         <span className="text-xs text-muted-foreground">Sending…</span>
-                      ) : null}
+                      ) : (
+                        <DateTime
+                          value={comment.createdAt}
+                          className="shrink-0 text-xs text-muted-foreground"
+                        />
+                      )}
                       {!comment.optimistic ? (
                         <span className="ml-auto flex items-center gap-1">
                           <ContentReportDialog

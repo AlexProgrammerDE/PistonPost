@@ -11,6 +11,7 @@ import {
   TriangleAlert,
 } from "lucide-react"
 
+import { DateTime } from "@/components/DateTime"
 import { ManagementPageSkeleton } from "@/components/LoadingStates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -102,9 +103,9 @@ function MyPosts() {
                     </Badge>
                     <span className="capitalize">{post.type}</span>
                     <span>{post.visibility === "public" ? "Public" : "Unlisted"}</span>
-                    <time dateTime={post.updatedAt.toISOString()}>
-                      Updated {post.updatedAt.toLocaleDateString("en")}
-                    </time>
+                    <span>
+                      Updated <DateTime value={post.updatedAt} presentation="absolute" />
+                    </span>
                     <span>
                       {post.comments} {post.comments === 1 ? "comment" : "comments"}
                     </span>
