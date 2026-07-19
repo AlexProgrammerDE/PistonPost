@@ -2,7 +2,6 @@ import { Link, useLocation } from "@tanstack/react-router"
 import { Newspaper, SquarePen, UsersRound } from "lucide-react"
 import { lazy, Suspense, useEffect } from "react"
 
-import { buttonVariants } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -19,7 +18,6 @@ import {
 } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { cn } from "@/lib/utils"
 
 const SidebarAccountMenu = lazy(() =>
   import("@/components/SidebarAccountMenu").then((module) => ({
@@ -83,17 +81,14 @@ export function AppSidebar() {
       aria-label="Application sidebar"
       data-view-transition-chrome="sidebar"
     >
-      <SidebarHeader className="items-start px-5 py-6 group-data-[collapsible=icon]:p-2">
+      <SidebarHeader className="items-start px-4 py-3 group-data-[collapsible=icon]:p-2">
         <Tooltip>
           <TooltipTrigger
             render={
               <Link
                 to="/"
                 aria-label="PistonPost home"
-                className={cn(
-                  buttonVariants({ variant: "ghost" }),
-                  "h-auto w-fit p-0 text-sidebar-foreground",
-                )}
+                className="inline-flex w-fit items-center text-sidebar-foreground outline-none focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
                 viewTransition={isMobile ? false : undefined}
               />
             }
