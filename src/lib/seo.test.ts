@@ -187,13 +187,13 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "article:published_time")).toBeUndefined()
     expect(metaContent(head.meta, "property", "article:tag")).toBeUndefined()
     expect(metaContent(head.meta, "property", "og:image")).toBe(
-      `${SITE_URL}/media/video/video-id/thumbnail?v=3`,
+      `${SITE_URL}/media/video/video-id/thumbnail?v=4`,
     )
     expect(metaContent(head.meta, "property", "og:image:width")).toBe("1200")
-    expect(metaContent(head.meta, "property", "og:image:height")).toBe("675")
+    expect(metaContent(head.meta, "property", "og:image:height")).toBe("674")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("player")
     expect(metaContent(head.meta, "name", "twitter:player")).toBe(
-      `${SITE_URL}/media/video/video-id/player`,
+      `${SITE_URL}/media/video/video-id/player?v=3`,
     )
     expect(metaContent(head.meta, "name", "twitter:player:width")).toBe("1920")
     expect(metaContent(head.meta, "name", "twitter:player:height")).toBe("1080")

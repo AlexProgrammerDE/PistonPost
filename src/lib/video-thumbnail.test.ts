@@ -3,7 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { createStreamThumbnailUrl, resolveVideoThumbnailTimestampPct } from "./video-thumbnail"
 
 describe("Stream thumbnail URLs", () => {
-  test("uses the selected frame and requested output dimensions", () => {
+  test("uses the selected frame and Stream-compatible output dimensions", () => {
     const thumbnail = createStreamThumbnailUrl({
       source: "https://customer.example.com/video/thumbnails/thumbnail.jpg",
       durationSeconds: 40,
@@ -14,7 +14,7 @@ describe("Stream thumbnail URLs", () => {
 
     expect(thumbnail.searchParams.get("time")).toBe("10s")
     expect(thumbnail.searchParams.get("width")).toBe("1200")
-    expect(thumbnail.searchParams.get("height")).toBe("675")
+    expect(thumbnail.searchParams.get("height")).toBe("674")
     expect(thumbnail.searchParams.get("fit")).toBe("clip")
   })
 

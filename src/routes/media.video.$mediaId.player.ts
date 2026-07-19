@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
+import { VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
@@ -21,7 +22,10 @@ async function videoPlayer({
   const player = new URL(`https://iframe.videodelivery.net/${video.streamUid}`)
   player.searchParams.set(
     "poster",
-    new URL(`/media/video/${mediaId.data}/thumbnail?v=3`, request.url).toString(),
+    new URL(
+      `/media/video/${mediaId.data}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`,
+      context.runtime.config.PUBLIC_APP_URL,
+    ).toString(),
   )
 
   return new Response(null, {

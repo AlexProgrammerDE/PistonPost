@@ -35,6 +35,7 @@ import type { PublicPostRead } from "@/db/public-read-model"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
+import { VIDEO_PLAYER_CACHE_VERSION } from "@/lib/video-thumbnail"
 import {
   activateSharedViewTransition,
   activeSharedViewTransitionKind,
@@ -259,7 +260,7 @@ function PostMedia({
         className="overflow-hidden bg-black"
       >
         <iframe
-          src={`/media/video/${video.id}/player?v=2`}
+          src={`/media/video/${video.id}/player?v=${VIDEO_PLAYER_CACHE_VERSION.toString()}`}
           title={`Video: ${post.title}`}
           className="size-full border-0"
           sandbox="allow-scripts allow-presentation"

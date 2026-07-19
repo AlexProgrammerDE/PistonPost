@@ -14,6 +14,11 @@ import {
   type SeoImage,
   type SeoVideo,
 } from "./seo"
+import {
+  normalizeStreamThumbnailDimensions,
+  VIDEO_PLAYER_CACHE_VERSION,
+  VIDEO_THUMBNAIL_CACHE_VERSION,
+} from "./video-thumbnail"
 
 function postDescription(post: PublicPostRead, authorName: string) {
   const tags = post.tags.map((tag) => `#${tag.name}`).join(" ")
@@ -107,21 +112,24 @@ function postVideo(post: PublicPostRead, postTitle: string) {
   if (!media) return undefined
   const width = media.width ?? 1280
   const height = media.height ?? 720
-  const thumbnailDimensions = fitMediaDimensions(
+  const fittedThumbnailDimensions = fitMediaDimensions(
     media,
     SOCIAL_MEDIA_IMAGE_MAX_SIZE,
     SOCIAL_MEDIA_IMAGE_MAX_SIZE,
   )
+  const thumbnailDimensions = fittedThumbnailDimensions
+    ? normalizeStreamThumbnailDimensions(fittedThumbnailDimensions)
+    : undefined
   return {
     image: {
-      url: `/media/video/${media.id}/thumbnail?v=3`,
+      url: `/media/video/${media.id}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`,
       alt: `Video thumbnail for ${postTitle}`,
       type: "image/jpeg",
       width: thumbnailDimensions?.width,
       height: thumbnailDimensions?.height,
     } satisfies SeoImage,
     player: {
-      url: `/media/video/${media.id}/player`,
+      url: `/media/video/${media.id}/player?v=${VIDEO_PLAYER_CACHE_VERSION.toString()}`,
       type: "text/html",
       width,
       height,
