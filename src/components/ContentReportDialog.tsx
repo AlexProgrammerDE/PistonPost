@@ -111,6 +111,7 @@ export function ContentReportDialog({
             <Field>
               <FieldLabel htmlFor={`report-reason-${target.type}-${target.id}`}>Reason</FieldLabel>
               <Select
+                items={contentReportReasons}
                 value={reason}
                 onValueChange={(value) => {
                   if (isContentReportReason(value)) setReason(value)
