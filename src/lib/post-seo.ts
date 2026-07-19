@@ -4,29 +4,46 @@ import { markdownToPlainText } from "./markdown"
 import { fitMediaDimensions, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "./media-image"
 import {
   SITE_NAME,
+  SOCIAL_IMAGE_HEIGHT,
+  SOCIAL_IMAGE_WIDTH,
   absoluteUrl,
   createSeoHead,
   truncateDescription,
+  truncateTitle,
   type JsonLdObject,
   type SeoImage,
   type SeoVideo,
 } from "./seo"
 
-function postDescription(post: PublicPostRead) {
+function postDescription(post: PublicPostRead, authorName: string) {
   const tags = post.tags.map((tag) => `#${tag.name}`).join(" ")
   const suffix = tags ? ` · ${tags}` : ""
   if (post.type === "images") {
     const count = post.media.filter((media) => media.kind === "image").length
     return truncateDescription(
-      `${post.title} · ${count.toString()} image${count === 1 ? "" : "s"} by ${post.author.name}${suffix}`,
+      `${count.toString()} image${count === 1 ? "" : "s"} by ${authorName}${suffix}`,
     )
   }
   if (post.type === "video") {
-    return truncateDescription(`${post.title} · Video by ${post.author.name}${suffix}`)
+    const duration = formatCompactDuration(
+      post.media.find((media) => media.kind === "video")?.duration ?? null,
+    )
+    return truncateDescription(`Video by ${authorName}${duration ? ` · ${duration}` : ""}${suffix}`)
   }
   const text = post.textContent ? markdownToPlainText(post.textContent) : null
   const content = text ? ` · ${text}` : ""
-  return truncateDescription(`${post.title} · Post by ${post.author.name}${suffix}${content}`)
+  return truncateDescription(`By ${authorName}${content}${suffix}`)
+}
+
+function formatCompactDuration(duration: number | null) {
+  if (!duration || duration <= 0 || !Number.isFinite(duration)) return undefined
+  const totalSeconds = Math.max(1, Math.round(duration / 1_000))
+  const hours = Math.floor(totalSeconds / 3_600)
+  const minutes = Math.floor((totalSeconds % 3_600) / 60)
+  const seconds = totalSeconds % 60
+  return hours > 0
+    ? `${hours.toString()}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
+    : `${minutes.toString()}:${seconds.toString().padStart(2, "0")}`
 }
 
 export function millisecondsToIsoDuration(duration: number | null) {
@@ -38,7 +55,7 @@ export function millisecondsToIsoDuration(duration: number | null) {
   return `PT${value}S`
 }
 
-function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
+function postImages(post: PublicPostRead, postTitle: string): ReadonlyArray<SeoImage> {
   return post.media
     .filter((media) => media.kind === "image")
     .map((image) => {
@@ -49,7 +66,7 @@ function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
       )
       return {
         url: `/media/image/${image.id}/og?v=2`,
-        alt: image.altText ?? post.title,
+        alt: image.altText ?? postTitle,
         type: "image/jpeg",
         width: dimensions?.width,
         height: dimensions?.height,
@@ -57,7 +74,10 @@ function postImages(post: PublicPostRead): ReadonlyArray<SeoImage> {
     })
 }
 
-function structuredPostImages(post: PublicPostRead): ReadonlyArray<JsonLdObject> {
+function structuredPostImages(
+  post: PublicPostRead,
+  postTitle: string,
+): ReadonlyArray<JsonLdObject> {
   return post.media
     .filter((media) => media.kind === "image")
     .map((image) => {
@@ -66,7 +86,7 @@ function structuredPostImages(post: PublicPostRead): ReadonlyArray<JsonLdObject>
         "@type": "ImageObject",
         url,
         contentUrl: url,
-        caption: image.altText ?? post.title,
+        caption: image.altText ?? postTitle,
         width: image.width ?? undefined,
         height: image.height ?? undefined,
       }
@@ -82,7 +102,7 @@ function selectedPostImage(
   return images[index]
 }
 
-function postVideo(post: PublicPostRead) {
+function postVideo(post: PublicPostRead, postTitle: string) {
   const media = post.media.find((entry) => entry.kind === "video")
   if (!media) return undefined
   const width = media.width ?? 1280
@@ -95,7 +115,7 @@ function postVideo(post: PublicPostRead) {
   return {
     image: {
       url: `/media/video/${media.id}/thumbnail?v=2`,
-      alt: `Video thumbnail for ${post.title}`,
+      alt: `Video thumbnail for ${postTitle}`,
       type: "image/jpeg",
       width: thumbnailDimensions?.width,
       height: thumbnailDimensions?.height,
@@ -113,6 +133,20 @@ function postVideo(post: PublicPostRead) {
       height,
     } satisfies SeoVideo,
     duration: millisecondsToIsoDuration(media.duration),
+    durationSeconds:
+      media.duration && media.duration > 0 && Number.isFinite(media.duration)
+        ? Math.max(1, Math.round(media.duration / 1_000))
+        : undefined,
+  }
+}
+
+function textPostImage(post: PublicPostRead, postTitle: string, authorName: string): SeoImage {
+  return {
+    url: `/media/post/${encodeURIComponent(post.id)}/card?v=${post.updatedAt.getTime().toString()}`,
+    alt: truncateDescription(`${postTitle} by ${authorName}`),
+    type: "image/png",
+    width: SOCIAL_IMAGE_WIDTH,
+    height: SOCIAL_IMAGE_HEIGHT,
   }
 }
 
@@ -144,12 +178,18 @@ function postInteractionStatistics(post: PublicPostRead): ReadonlyArray<JsonLdOb
 export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) {
   const path = `/post/${encodeURIComponent(post.id)}`
   const authorUrl = absoluteUrl(`/user/${encodeURIComponent(post.author.normalizedUsername)}`)
-  const description = postDescription(post)
-  const video = post.type === "video" ? postVideo(post) : undefined
-  const galleryImages = post.type === "images" ? postImages(post) : []
-  const structuredImages = post.type === "images" ? structuredPostImages(post) : []
+  const postTitle = truncateTitle(post.title, 64)
+  const authorName = truncateTitle(post.author.name, 24)
+  const description = postDescription(post, authorName)
+  const video = post.type === "video" ? postVideo(post, postTitle) : undefined
+  const galleryImages = post.type === "images" ? postImages(post, postTitle) : []
+  const structuredImages = post.type === "images" ? structuredPostImages(post, postTitle) : []
   const image =
-    post.type === "images" ? selectedPostImage(galleryImages, selectedImageIndex) : video?.image
+    post.type === "images"
+      ? selectedPostImage(galleryImages, selectedImageIndex)
+      : post.type === "text"
+        ? textPostImage(post, postTitle, authorName)
+        : video?.image
   const canonical = absoluteUrl(path)
   const publishedAt = post.publishedAt.toISOString()
   const modifiedAt = post.updatedAt > post.publishedAt ? post.updatedAt.toISOString() : undefined
@@ -159,7 +199,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     "@id": canonical,
     mainEntityOfPage: canonical,
     url: canonical,
-    headline: post.title,
+    headline: postTitle,
     description,
     text:
       post.type === "text" && post.textContent ? markdownToPlainText(post.textContent) : undefined,
@@ -168,7 +208,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     author: {
       "@type": "Person",
       "@id": `${authorUrl}#person`,
-      name: post.author.name,
+      name: authorName,
       alternateName: `@${post.author.username}`,
       url: authorUrl,
     },
@@ -183,7 +223,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     video: video
       ? {
           "@type": "VideoObject",
-          name: post.title,
+          name: postTitle,
           description,
           uploadDate: post.publishedAt.toISOString(),
           thumbnailUrl: absoluteUrl(video.image.url),
@@ -218,13 +258,14 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   return createSeoHead({
     title:
       post.type === "video"
-        ? `${post.title} · ${post.author.name} · ${SITE_NAME}`
-        : `${post.title} · ${SITE_NAME}`,
+        ? `${truncateTitle(post.title, 40)} · ${authorName} · ${SITE_NAME}`
+        : `${postTitle} · ${SITE_NAME}`,
     description,
     path,
     type: post.type === "video" ? "video.other" : "article",
     image,
     video: video?.download,
+    videoDuration: video?.durationSeconds,
     player: video?.player,
     twitterCard: video ? "player" : image ? "summary_large_image" : "summary",
     indexing: post.visibility === "unlisted" || !post.author.searchIndexable ? "noindex" : "index",

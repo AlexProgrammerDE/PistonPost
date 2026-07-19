@@ -8,6 +8,14 @@ export const SITE_TWITTER_HANDLE = "@AlexProgrammer3"
 export const SOCIAL_IMAGE_WIDTH = 1200
 export const SOCIAL_IMAGE_HEIGHT = 630
 
+const SEO_TITLE_GRAPHEME_LIMIT = 80
+const SEO_TITLE_CODE_POINT_LIMIT = 240
+const SEO_DESCRIPTION_CODE_POINT_LIMIT = 480
+
+const graphemeSegmenter = new Intl.Segmenter(undefined, {
+  granularity: "grapheme",
+})
+
 type JsonLdPrimitive = string | number | boolean | null
 type JsonLdValue = JsonLdPrimitive | JsonLdObject | ReadonlyArray<JsonLdValue>
 export type JsonLdObject = { readonly [key: string]: JsonLdValue | undefined }
@@ -34,6 +42,7 @@ type SeoOptions = {
   readonly type?: "website" | "article" | "profile" | "video.other"
   readonly image?: SeoImage
   readonly video?: SeoVideo
+  readonly videoDuration?: number
   readonly player?: SeoVideo
   readonly twitterCard: "summary" | "summary_large_image" | "player"
   readonly indexing?: "index" | "noindex" | "inherit"
@@ -58,16 +67,52 @@ export function absoluteUrl(path: string) {
   return new URL(path, `${SITE_URL}/`).toString()
 }
 
+function truncateSeoText(value: string, maximumGraphemes: number, maximumCodePoints: number) {
+  if (maximumGraphemes <= 0 || maximumCodePoints <= 0) return ""
+
+  const normalized = value
+    .normalize("NFC")
+    .replaceAll(/\p{Cc}+/gu, " ")
+    .replaceAll(/\s+/g, " ")
+    .trim()
+  const accepted: Array<string> = []
+  let codePointCount = 0
+  let truncated = false
+
+  for (const { segment } of graphemeSegmenter.segment(normalized)) {
+    const segmentCodePoints = Array.from(segment).length
+    if (
+      accepted.length === maximumGraphemes ||
+      codePointCount + segmentCodePoints > maximumCodePoints
+    ) {
+      truncated = true
+      break
+    }
+    accepted.push(segment)
+    codePointCount += segmentCodePoints
+  }
+
+  if (!truncated) return accepted.join("")
+  if (accepted.length === maximumGraphemes) accepted.pop()
+  const text = accepted.join("").trimEnd()
+  return text ? `${text}…` : "…"
+}
+
+export function truncateTitle(value: string, maximumLength = SEO_TITLE_GRAPHEME_LIMIT) {
+  return truncateSeoText(value, maximumLength, SEO_TITLE_CODE_POINT_LIMIT)
+}
+
 export function truncateDescription(value: string, maximumLength = 160) {
-  const normalized = value.replaceAll(/\s+/g, " ").trim()
-  if (normalized.length <= maximumLength) return normalized
-  return `${normalized.slice(0, Math.max(0, maximumLength - 1)).trimEnd()}…`
+  return truncateSeoText(value, maximumLength, SEO_DESCRIPTION_CODE_POINT_LIMIT)
 }
 
 export function createSeoHead(options: SeoOptions) {
+  const title = truncateTitle(options.title)
+  const description = truncateDescription(options.description)
   const canonical = absoluteUrl(options.path)
   const image = options.image ?? defaultImage
   const imageUrl = absoluteUrl(image.url)
+  const imageAlt = truncateDescription(image.alt)
   const imageMeta: Array<ComponentProps<"meta">> = [
     { property: "og:image", content: imageUrl },
     { property: "og:image:secure_url", content: imageUrl },
@@ -79,13 +124,13 @@ export function createSeoHead(options: SeoOptions) {
   if (image.height) {
     imageMeta.push({ property: "og:image:height", content: image.height.toString() })
   }
-  imageMeta.push({ property: "og:image:alt", content: image.alt })
+  imageMeta.push({ property: "og:image:alt", content: imageAlt })
 
   const meta: Array<ComponentProps<"meta">> = [
-    { title: options.title },
-    { name: "description", content: options.description },
-    { property: "og:title", content: options.title },
-    { property: "og:description", content: options.description },
+    { title },
+    { name: "description", content: description },
+    { property: "og:title", content: title },
+    { property: "og:description", content: description },
     { property: "og:site_name", content: SITE_NAME },
     { property: "og:locale", content: "en_US" },
     { property: "og:type", content: options.type ?? "website" },
@@ -93,26 +138,38 @@ export function createSeoHead(options: SeoOptions) {
     ...imageMeta,
     { name: "twitter:card", content: options.twitterCard },
     { name: "twitter:site", content: SITE_TWITTER_HANDLE },
-    { name: "twitter:title", content: options.title },
-    { name: "twitter:description", content: options.description },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: description },
     { name: "twitter:url", content: canonical },
     { name: "twitter:image", content: imageUrl },
-    { name: "twitter:image:alt", content: image.alt },
+    { name: "twitter:image:alt", content: imageAlt },
   ]
 
   if (options.twitterCreator) {
     meta.push({ name: "twitter:creator", content: options.twitterCreator })
   }
 
-  if (options.publishedAt) {
-    meta.push({ property: "article:published_time", content: options.publishedAt })
-  }
-  if (options.modifiedAt) {
-    meta.push({ property: "article:modified_time", content: options.modifiedAt })
-  }
-  if (options.authorUrl) meta.push({ property: "article:author", content: options.authorUrl })
-  for (const tag of options.tags ?? []) {
-    meta.push({ property: "article:tag", content: tag })
+  if (options.type === "video.other") {
+    if (options.publishedAt) {
+      meta.push({ property: "video:release_date", content: options.publishedAt })
+    }
+    if (options.videoDuration) {
+      meta.push({ property: "video:duration", content: options.videoDuration.toString() })
+    }
+    for (const tag of options.tags ?? []) {
+      meta.push({ property: "video:tag", content: tag })
+    }
+  } else if (options.type === "article") {
+    if (options.publishedAt) {
+      meta.push({ property: "article:published_time", content: options.publishedAt })
+    }
+    if (options.modifiedAt) {
+      meta.push({ property: "article:modified_time", content: options.modifiedAt })
+    }
+    if (options.authorUrl) meta.push({ property: "article:author", content: options.authorUrl })
+    for (const tag of options.tags ?? []) {
+      meta.push({ property: "article:tag", content: tag })
+    }
   }
   if (options.profileUsername) {
     meta.push({ property: "profile:username", content: options.profileUsername })

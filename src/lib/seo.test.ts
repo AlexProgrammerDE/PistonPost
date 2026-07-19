@@ -4,7 +4,7 @@ import type { PublicPostRead } from "@/db/public-read-model"
 
 import { createPostSeoHead, millisecondsToIsoDuration } from "./post-seo"
 import { createPostShareLinks } from "./post-share-links"
-import { SITE_URL, absoluteUrl, createSeoHead, truncateDescription } from "./seo"
+import { SITE_URL, absoluteUrl, createSeoHead, truncateDescription, truncateTitle } from "./seo"
 
 const basePost: PublicPostRead = {
   id: "post one",
@@ -67,6 +67,8 @@ describe("SEO metadata", () => {
   it("keeps descriptions compact and readable", () => {
     expect(truncateDescription("  one\n\n two  ")).toBe("one two")
     expect(truncateDescription("abcdef", 5)).toBe("abcd…")
+    expect(truncateTitle("a".repeat(81))).toBe(`${"a".repeat(79)}…`)
+    expect(truncateTitle(`A${"\u0301".repeat(500)}B`)).toBe("…")
   })
 
   it("uses the selected gallery image for large social cards", () => {
@@ -119,8 +121,16 @@ describe("SEO metadata", () => {
       ],
     })
 
-    expect(metaContent(textHead.meta, "name", "description")).toContain("Post by Alex · #friends")
-    expect(metaContent(textHead.meta, "name", "twitter:card")).toBe("summary")
+    expect(metaContent(textHead.meta, "name", "description")).toBe(
+      "By Alex · A tiny post with enough personality for a useful description. · #friends",
+    )
+    expect(metaContent(textHead.meta, "name", "twitter:card")).toBe("summary_large_image")
+    expect(metaContent(textHead.meta, "property", "og:image")).toBe(
+      `${SITE_URL}/media/post/post%20one/card?v=${basePost.updatedAt.getTime().toString()}`,
+    )
+    expect(metaContent(textHead.meta, "property", "og:image:type")).toBe("image/png")
+    expect(metaContent(textHead.meta, "property", "og:image:width")).toBe("1200")
+    expect(metaContent(textHead.meta, "property", "og:image:height")).toBe("630")
     expect(metaContent(textHead.meta, "property", "article:modified_time")).toBe(
       "2026-07-16T12:00:00.000Z",
     )
@@ -131,6 +141,9 @@ describe("SEO metadata", () => {
     expect(textHead.scripts[0]?.children).toContain(`"@id":"${SITE_URL}/user/alex#person"`)
     expect(metaContent(videoHead.meta, "property", "og:title")).toBe(
       "look at this · Alex · PistonPost",
+    )
+    expect(metaContent(videoHead.meta, "name", "description")).toBe(
+      "Video by Alex · 0:12 · #friends",
     )
   })
 
@@ -166,6 +179,13 @@ describe("SEO metadata", () => {
       `${SITE_URL}/media/video/video-id/download`,
     )
     expect(metaContent(head.meta, "property", "og:video:type")).toBe("video/mp4")
+    expect(metaContent(head.meta, "property", "video:duration")).toBe("12")
+    expect(metaContent(head.meta, "property", "video:release_date")).toBe(
+      "2026-07-15T12:00:00.000Z",
+    )
+    expect(metaContent(head.meta, "property", "video:tag")).toBe("friends")
+    expect(metaContent(head.meta, "property", "article:published_time")).toBeUndefined()
+    expect(metaContent(head.meta, "property", "article:tag")).toBeUndefined()
     expect(metaContent(head.meta, "property", "og:image")).toBe(
       `${SITE_URL}/media/video/video-id/thumbnail?v=2`,
     )

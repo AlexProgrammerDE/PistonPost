@@ -291,6 +291,38 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(page).toHaveURL(/\/$/u)
   })
 
+  test("keeps animated social actions functional with reduced motion", async ({
+    context,
+    page,
+  }) => {
+    await createVerifiedSession(context)
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    await page.goto("/account/posts/new")
+    await fillPost(page, "motion without the fuss", "testing")
+    await page.getByLabel("Text").fill("A small post for checking reactions and comments.")
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+
+    const postActions = page.getByRole("navigation", { name: "Post actions" })
+    const like = postActions.getByRole("button", { name: "Like", exact: true })
+    await like.click()
+    await expect(like).toHaveAttribute("aria-pressed", "true")
+    await expect(like).toContainText("1")
+
+    const commentText = "The animated discussion still works."
+    await page.getByLabel("Add a comment").fill(commentText)
+    await page.getByRole("button", { name: "Post comment" }).click()
+    const comment = page.getByRole("article").filter({ hasText: commentText })
+    await expect(comment).toBeVisible()
+    await expect(comment.getByText("Sending…")).toHaveCount(0)
+
+    await comment.getByRole("button", { name: "Delete comment" }).click()
+    const confirmation = page.getByRole("dialog", { name: "Delete this comment?" })
+    await confirmation.getByRole("button", { name: "Delete comment" }).click()
+    await expect(comment).toHaveCount(0)
+    await expect(page.getByText("No comments yet")).toBeVisible()
+  })
+
   test("normalizes a valid image with incorrect browser metadata", async ({ context, page }) => {
     await createVerifiedSession(context)
     await page.goto("/account/posts/new")

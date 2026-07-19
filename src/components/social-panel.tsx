@@ -11,6 +11,7 @@ import { Link } from "@tanstack/react-router"
 import {
   Heart,
   History,
+  type LucideIcon,
   MessageCircle,
   Reply,
   Send,
@@ -19,6 +20,8 @@ import {
   Trash2,
   X,
 } from "lucide-react"
+import { AnimatePresence, useReducedMotion, type Transition } from "motion/react"
+import * as m from "motion/react-m"
 import { startTransition, useEffect, useOptimistic, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -26,6 +29,7 @@ import { authClient } from "@/auth/client"
 import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { DateTime } from "@/components/DateTime"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
+import { MotionBoundary } from "@/components/MotionBoundary"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -68,6 +72,76 @@ import { createComment, deleteComment, getDiscussion, setReaction } from "@/serv
 type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][number]
 type CommentPage = DiscussionComment & { optimistic?: boolean }
 const reactionTypeSet = new Set<string>(reactionTypes)
+const reactionDetails = [
+  { type: "like", label: "Like", icon: ThumbsUp },
+  { type: "dislike", label: "Dislike", icon: ThumbsDown },
+  { type: "heart", label: "Heart", icon: Heart },
+] satisfies ReadonlyArray<{ type: ReactionType; label: string; icon: LucideIcon }>
+const quickActionTransition = {
+  duration: 0.16,
+  ease: [0.22, 1, 0.36, 1],
+} satisfies Transition
+const reactionTransition = {
+  duration: 0.2,
+  ease: [0.22, 1, 0.36, 1],
+} satisfies Transition
+const commentTransition = {
+  duration: 0.18,
+  ease: [0.22, 1, 0.36, 1],
+} satisfies Transition
+
+function AnimatedReactionCount({ count }: { readonly count: number }) {
+  return (
+    <span className="grid min-w-[1ch] overflow-hidden">
+      <AnimatePresence initial={false}>
+        <m.span
+          key={count}
+          className="col-start-1 row-start-1"
+          initial={{ opacity: 0, y: 3 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -3 }}
+          transition={reactionTransition}
+        >
+          {count}
+        </m.span>
+      </AnimatePresence>
+    </span>
+  )
+}
+
+function ReactionItem({
+  type,
+  label,
+  icon: Icon,
+  count,
+  active,
+  disabled,
+}: {
+  readonly type: ReactionType
+  readonly label: string
+  readonly icon: LucideIcon
+  readonly count: number
+  readonly active: boolean
+  readonly disabled: boolean
+}) {
+  return (
+    <ToggleGroupItem value={type} aria-label={label} disabled={disabled}>
+      <m.span
+        className={cn("inline-flex", active ? "text-primary" : undefined)}
+        initial={false}
+        animate={active ? { scale: [1, 1.16, 1] } : { scale: 1 }}
+        transition={reactionTransition}
+      >
+        <Icon
+          aria-hidden="true"
+          data-icon="inline-start"
+          className={cn(type === "heart" && active ? "fill-current" : undefined)}
+        />
+      </m.span>
+      <AnimatedReactionCount count={count} />
+    </ToggleGroupItem>
+  )
+}
 
 function ReactionControls({
   active,
@@ -92,15 +166,17 @@ function ReactionControls({
       size="sm"
       aria-label={label}
     >
-      <ToggleGroupItem value="like" aria-label="Like" disabled={disabled}>
-        <ThumbsUp aria-hidden="true" /> {counts.like}
-      </ToggleGroupItem>
-      <ToggleGroupItem value="dislike" aria-label="Dislike" disabled={disabled}>
-        <ThumbsDown aria-hidden="true" /> {counts.dislike}
-      </ToggleGroupItem>
-      <ToggleGroupItem value="heart" aria-label="Heart" disabled={disabled}>
-        <Heart aria-hidden="true" /> {counts.heart}
-      </ToggleGroupItem>
+      {reactionDetails.map((reaction) => (
+        <ReactionItem
+          key={reaction.type}
+          type={reaction.type}
+          label={reaction.label}
+          icon={reaction.icon}
+          count={counts[reaction.type]}
+          active={active.includes(reaction.type)}
+          disabled={disabled}
+        />
+      ))}
     </ToggleGroup>
   )
 }
@@ -126,6 +202,7 @@ export function SocialPanel({
   imageCount: number
 }) {
   const queryClient = useQueryClient()
+  const reduceMotion = useReducedMotion()
   const footerActionsRef = useRef<HTMLElement | null>(null)
   const [contentStartPosition, setContentStartPosition] =
     useState<ObservedVerticalPosition>("visible")
@@ -283,265 +360,297 @@ export function SocialPanel({
   }
 
   return (
-    <section id="discussion" className="mx-auto mt-5 max-w-5xl" aria-labelledby="discussion-title">
-      {showActionDock ? (
+    <MotionBoundary>
+      <section
+        id="discussion"
+        className="mx-auto mt-5 max-w-5xl"
+        aria-labelledby="discussion-title"
+      >
+        <AnimatePresence initial={false}>
+          {showActionDock ? (
+            <m.nav
+              key="quick-post-actions"
+              className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-[env(safe-area-inset-bottom)]"
+              aria-label="Quick post actions"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={quickActionTransition}
+            >
+              <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:px-6">
+                <PostShareActions postId={postId} imageCount={imageCount} variant="ghost" />
+                <ReactionControls
+                  active={optimisticActive}
+                  counts={displayedCounts}
+                  disabled={viewerPending || !viewerId}
+                  label={viewerId ? "Your quick reactions" : "Quick reaction totals"}
+                  onValueChange={updateReactions}
+                  variant="default"
+                />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link to="/post/$postId" params={{ postId }} hash="discussion" />}
+                >
+                  <MessageCircle aria-hidden="true" data-icon="inline-start" />
+                  <span className="hidden sm:inline">Comments</span>
+                  {commentCount}
+                </Button>
+              </div>
+            </m.nav>
+          ) : null}
+        </AnimatePresence>
+
         <nav
-          className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-[env(safe-area-inset-bottom)]"
-          aria-label="Quick post actions"
+          ref={footerActionsRef}
+          className="flex flex-wrap items-center justify-between gap-3 border-y py-3"
+          aria-label="Post actions"
         >
-          <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:px-6">
-            <PostShareActions postId={postId} imageCount={imageCount} variant="ghost" />
+          <div className="flex items-center gap-1">
+            <PostShareActions postId={postId} imageCount={imageCount} />
+            <ContentReportDialog target={{ type: "post", id: postId }} />
+          </div>
+          {viewerPending ? (
+            <DiscussionViewerSkeleton />
+          ) : (
             <ReactionControls
               active={optimisticActive}
               counts={displayedCounts}
-              disabled={viewerPending || !viewerId}
-              label={viewerId ? "Your quick reactions" : "Quick reaction totals"}
+              disabled={!viewerId}
+              label={viewerId ? "Your reaction" : "Reaction totals"}
               onValueChange={updateReactions}
-              variant="default"
+              variant="outline"
             />
-            <Button
-              variant="ghost"
-              size="sm"
-              nativeButton={false}
-              render={<Link to="/post/$postId" params={{ postId }} hash="discussion" />}
-            >
-              <MessageCircle aria-hidden="true" data-icon="inline-start" />
-              <span className="hidden sm:inline">Comments</span>
-              {commentCount}
-            </Button>
-          </div>
+          )}
         </nav>
-      ) : null}
 
-      <nav
-        ref={footerActionsRef}
-        className="flex flex-wrap items-center justify-between gap-3 border-y py-3"
-        aria-label="Post actions"
-      >
-        <div className="flex items-center gap-1">
-          <PostShareActions postId={postId} imageCount={imageCount} />
-          <ContentReportDialog target={{ type: "post", id: postId }} />
-        </div>
-        {viewerPending ? (
-          <DiscussionViewerSkeleton />
-        ) : (
-          <ReactionControls
-            active={optimisticActive}
-            counts={displayedCounts}
-            disabled={!viewerId}
-            label={viewerId ? "Your reaction" : "Reaction totals"}
-            onValueChange={updateReactions}
-            variant="outline"
-          />
-        )}
-      </nav>
-
-      <div className="mt-10 grid gap-8">
-        <h2
-          id="discussion-title"
-          className="flex items-center gap-2 font-heading text-2xl font-bold"
-        >
-          <MessageCircle aria-hidden="true" className="size-5 text-muted-foreground" />
-          Comments
-        </h2>
-        {viewerPending ? (
-          <CommentComposerSkeleton />
-        ) : viewerId ? (
-          <form
-            id="comment-composer"
-            className="grid gap-3"
-            onSubmit={(event) => {
-              event.preventDefault()
-              void form.handleSubmit()
-            }}
+        <div className="mt-10 grid gap-8">
+          <h2
+            id="discussion-title"
+            className="flex items-center gap-2 font-heading text-2xl font-bold"
           >
-            <form.AppForm>
-              {replyingTo ? (
-                <div className="flex items-center justify-between gap-3 border-l-2 border-primary px-3 py-2 text-sm">
-                  <span className="min-w-0 truncate text-muted-foreground">
-                    Replying to{" "}
-                    <bdi className="font-medium text-foreground">@{replyingTo.authorUsername}</bdi>
-                  </span>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-xs"
-                    aria-label="Cancel reply"
-                    onClick={() => setReplyingTo(null)}
-                  >
-                    <X aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : null}
-              <form.AppField name="content">
-                {(field) => (
-                  <field.TextareaField
-                    label={replyingTo ? "Add a reply" : "Add a comment"}
-                    placeholder={replyingTo ? "Write a reply…" : "Write a comment…"}
-                    maxLength={250}
-                    rows={3}
-                  />
-                )}
-              </form.AppField>
-              <div className="flex justify-end">
-                <form.SubmitButton>
-                  <Send aria-hidden="true" data-icon="inline-start" />
-                  {replyingTo ? "Post reply" : "Post comment"}
-                </form.SubmitButton>
-              </div>
-            </form.AppForm>
-          </form>
-        ) : sessionUserId ? (
-          <p className="text-sm text-muted-foreground" role="status">
-            Your comment and reaction controls could not be loaded. Try refreshing the page.
-          </p>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
-              Sign in
-            </Link>{" "}
-            to react or comment.
-          </p>
-        )}
-
-        {optimisticComments.length === 0 ? (
-          <Empty className="min-h-40 rounded-none border-y p-6">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <MessageCircle aria-hidden="true" />
-              </EmptyMedia>
-              <EmptyTitle>No comments yet</EmptyTitle>
-              <EmptyDescription>Start the conversation.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        ) : (
-          <div className="grid gap-0">
-            {optimisticComments.map((comment) => {
-              const canDelete =
-                !comment.optimistic && (comment.authorId === viewerId || viewerRole === "admin")
-              return (
-                <article
-                  key={comment.id}
-                  id={`comment-${comment.id}`}
-                  className={cn(
-                    "grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 py-5 wrap-anywhere",
-                    comment.parentId && "ml-8 border-l pl-4 sm:ml-12",
+            <MessageCircle aria-hidden="true" className="size-5 text-muted-foreground" />
+            Comments
+          </h2>
+          {viewerPending ? (
+            <CommentComposerSkeleton />
+          ) : viewerId ? (
+            <form
+              id="comment-composer"
+              className="grid gap-3"
+              onSubmit={(event) => {
+                event.preventDefault()
+                void form.handleSubmit()
+              }}
+            >
+              <form.AppForm>
+                {replyingTo ? (
+                  <div className="flex items-center justify-between gap-3 border-l-2 border-primary px-3 py-2 text-sm">
+                    <span className="min-w-0 truncate text-muted-foreground">
+                      Replying to{" "}
+                      <bdi className="font-medium text-foreground">
+                        @{replyingTo.authorUsername}
+                      </bdi>
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      aria-label="Cancel reply"
+                      onClick={() => setReplyingTo(null)}
+                    >
+                      <X aria-hidden="true" />
+                    </Button>
+                  </div>
+                ) : null}
+                <form.AppField name="content">
+                  {(field) => (
+                    <field.TextareaField
+                      label={replyingTo ? "Add a reply" : "Add a comment"}
+                      placeholder={replyingTo ? "Write a reply…" : "Write a comment…"}
+                      maxLength={250}
+                      rows={3}
+                    />
                   )}
-                >
-                  <Avatar>
-                    {comment.authorImage ? (
-                      <ResponsiveAvatarImage src={comment.authorImage} sizes="2rem" alt="" />
-                    ) : null}
-                    <AvatarFallback className="text-foreground">
-                      {comment.authorName.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2 text-sm">
-                      <bdi className="min-w-0 truncate font-semibold">{comment.authorName}</bdi>
-                      <span className="min-w-0 truncate text-xs text-muted-foreground">
-                        @{comment.authorUsername}
-                      </span>
-                      {comment.optimistic ? (
-                        <span className="text-xs text-muted-foreground">Sending…</span>
-                      ) : (
-                        <DateTime
-                          value={comment.createdAt}
-                          className="shrink-0 text-xs text-muted-foreground"
-                        />
-                      )}
-                      {!comment.optimistic ? (
-                        <span className="ml-auto flex items-center gap-1">
-                          <ContentReportDialog
-                            target={{ type: "comment", id: comment.id }}
-                            size="xs"
-                          />
-                          {canDelete ? (
-                            <Credenza>
-                              <CredenzaTrigger
-                                render={
-                                  <Button
-                                    className="ml-auto"
-                                    variant="ghost"
-                                    size="icon-xs"
-                                    aria-label="Delete comment"
-                                  />
-                                }
-                              >
-                                <Trash2 aria-hidden="true" />
-                              </CredenzaTrigger>
-                              <CredenzaContent>
-                                <CredenzaHeader>
-                                  <CredenzaTitle>Delete this comment?</CredenzaTitle>
-                                  <CredenzaDescription>
-                                    The comment text will be removed from the discussion.
-                                  </CredenzaDescription>
-                                </CredenzaHeader>
-                                <CredenzaFooter>
-                                  <CredenzaClose render={<Button variant="outline" />}>
-                                    Keep comment
-                                  </CredenzaClose>
-                                  <Button
-                                    variant="destructive"
-                                    disabled={deleteMutation.isPending}
-                                    onClick={() => deleteMutation.mutate(comment.id)}
-                                  >
-                                    <Trash2 aria-hidden="true" data-icon="inline-start" />
-                                    Delete comment
-                                  </Button>
-                                </CredenzaFooter>
-                              </CredenzaContent>
-                            </Credenza>
-                          ) : null}
+                </form.AppField>
+                <div className="flex justify-end">
+                  <form.SubmitButton>
+                    <Send aria-hidden="true" data-icon="inline-start" />
+                    {replyingTo ? "Post reply" : "Post comment"}
+                  </form.SubmitButton>
+                </div>
+              </form.AppForm>
+            </form>
+          ) : sessionUserId ? (
+            <p className="text-sm text-muted-foreground" role="status">
+              Your comment and reaction controls could not be loaded. Try refreshing the page.
+            </p>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
+                Sign in
+              </Link>{" "}
+              to react or comment.
+            </p>
+          )}
+
+          <div className="grid gap-0">
+            <AnimatePresence initial={false}>
+              {optimisticComments.map((comment) => {
+                const canDelete =
+                  !comment.optimistic && (comment.authorId === viewerId || viewerRole === "admin")
+                return (
+                  <m.article
+                    key={comment.id}
+                    id={`comment-${comment.id}`}
+                    className={cn(
+                      "grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 overflow-hidden py-5 wrap-anywhere",
+                      comment.parentId && "ml-8 border-l pl-4 sm:ml-12",
+                    )}
+                    initial={
+                      comment.optimistic ? { height: reduceMotion ? "auto" : 0, opacity: 0 } : false
+                    }
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: reduceMotion ? "auto" : 0, opacity: 0 }}
+                    transition={commentTransition}
+                  >
+                    <Avatar>
+                      {comment.authorImage ? (
+                        <ResponsiveAvatarImage src={comment.authorImage} sizes="2rem" alt="" />
+                      ) : null}
+                      <AvatarFallback className="text-foreground">
+                        {comment.authorName.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <div className="flex min-w-0 items-center gap-2 text-sm">
+                        <bdi className="min-w-0 truncate font-semibold">{comment.authorName}</bdi>
+                        <span className="min-w-0 truncate text-xs text-muted-foreground">
+                          @{comment.authorUsername}
                         </span>
+                        {comment.optimistic ? (
+                          <span className="text-xs text-muted-foreground">Sending…</span>
+                        ) : (
+                          <DateTime
+                            value={comment.createdAt}
+                            className="shrink-0 text-xs text-muted-foreground"
+                          />
+                        )}
+                        {!comment.optimistic ? (
+                          <span className="ml-auto flex items-center gap-1">
+                            <ContentReportDialog
+                              target={{ type: "comment", id: comment.id }}
+                              size="xs"
+                            />
+                            {canDelete ? (
+                              <Credenza>
+                                <CredenzaTrigger
+                                  render={
+                                    <Button
+                                      className="ml-auto"
+                                      variant="ghost"
+                                      size="icon-xs"
+                                      aria-label="Delete comment"
+                                    />
+                                  }
+                                >
+                                  <Trash2 aria-hidden="true" />
+                                </CredenzaTrigger>
+                                <CredenzaContent>
+                                  <CredenzaHeader>
+                                    <CredenzaTitle>Delete this comment?</CredenzaTitle>
+                                    <CredenzaDescription>
+                                      The comment text will be removed from the discussion.
+                                    </CredenzaDescription>
+                                  </CredenzaHeader>
+                                  <CredenzaFooter>
+                                    <CredenzaClose render={<Button variant="outline" />}>
+                                      Keep comment
+                                    </CredenzaClose>
+                                    <Button
+                                      variant="destructive"
+                                      disabled={deleteMutation.isPending}
+                                      onClick={() => deleteMutation.mutate(comment.id)}
+                                    >
+                                      <Trash2 aria-hidden="true" data-icon="inline-start" />
+                                      Delete comment
+                                    </Button>
+                                  </CredenzaFooter>
+                                </CredenzaContent>
+                              </Credenza>
+                            ) : null}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p
+                        dir="auto"
+                        className="mt-1 overflow-hidden text-sm leading-6 whitespace-pre-wrap"
+                      >
+                        {comment.content}
+                      </p>
+                      {!comment.optimistic && !comment.parentId && viewerId ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="xs"
+                          className="mt-2"
+                          onClick={() => {
+                            setReplyingTo(comment)
+                            document
+                              .getElementById("comment-composer")
+                              ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                          }}
+                        >
+                          <Reply aria-hidden="true" data-icon="inline-start" />
+                          Reply
+                        </Button>
                       ) : null}
                     </div>
-                    <p
-                      dir="auto"
-                      className="mt-1 overflow-hidden text-sm leading-6 whitespace-pre-wrap"
-                    >
-                      {comment.content}
-                    </p>
-                    {!comment.optimistic && !comment.parentId && viewerId ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        className="mt-2"
-                        onClick={() => {
-                          setReplyingTo(comment)
-                          document
-                            .getElementById("comment-composer")
-                            ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                        }}
-                      >
-                        <Reply aria-hidden="true" data-icon="inline-start" />
-                        Reply
-                      </Button>
-                    ) : null}
-                  </div>
-                  <Separator className="col-span-2" />
-                </article>
-              )
-            })}
+                    <Separator className="col-span-2" />
+                  </m.article>
+                )
+              })}
+            </AnimatePresence>
+            <AnimatePresence initial={false}>
+              {optimisticComments.length === 0 ? (
+                <m.div
+                  key="empty-comments"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={commentTransition}
+                >
+                  <Empty className="min-h-40 rounded-none border-y p-6">
+                    <EmptyHeader>
+                      <EmptyMedia variant="icon">
+                        <MessageCircle aria-hidden="true" />
+                      </EmptyMedia>
+                      <EmptyTitle>No comments yet</EmptyTitle>
+                      <EmptyDescription>Start the conversation.</EmptyDescription>
+                    </EmptyHeader>
+                  </Empty>
+                </m.div>
+              ) : null}
+            </AnimatePresence>
           </div>
-        )}
 
-        {discussion.hasNextPage ? (
-          <Button
-            variant="outline"
-            disabled={discussion.isFetchingNextPage}
-            onClick={() => discussion.fetchNextPage()}
-          >
-            {discussion.isFetchingNextPage ? (
-              <Spinner aria-hidden="true" data-icon="inline-start" />
-            ) : (
-              <History aria-hidden="true" data-icon="inline-start" />
-            )}
-            {discussion.isFetchingNextPage ? "Loading…" : "Load earlier comments"}
-          </Button>
-        ) : null}
-      </div>
-    </section>
+          {discussion.hasNextPage ? (
+            <Button
+              variant="outline"
+              disabled={discussion.isFetchingNextPage}
+              onClick={() => discussion.fetchNextPage()}
+            >
+              {discussion.isFetchingNextPage ? (
+                <Spinner aria-hidden="true" data-icon="inline-start" />
+              ) : (
+                <History aria-hidden="true" data-icon="inline-start" />
+              )}
+              {discussion.isFetchingNextPage ? "Loading…" : "Load earlier comments"}
+            </Button>
+          ) : null}
+        </div>
+      </section>
+    </MotionBoundary>
   )
 }
