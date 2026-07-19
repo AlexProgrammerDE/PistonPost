@@ -5,6 +5,7 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { mediaImageUrl } from "@/lib/media-image"
+import { inspectGif, isGifAnimationWithinPixelLimit } from "@/lib/uploads/gif-inspection"
 import {
   MAX_IMAGE_UPLOAD_BYTES,
   imageFilenameMatchesMime,
@@ -92,6 +93,16 @@ async function uploadImage({
     if (info.format !== asset.mimeType) throw new Error("Image MIME mismatch")
     if (!imageFilenameMatchesMime(asset.originalFilename, info.format))
       throw new Error("Image extension mismatch")
+    if (info.format === "image/gif") {
+      const gif = inspectGif(new Uint8Array(body))
+      if (!gif) throw new Error("Invalid GIF structure")
+      if (gif.width !== info.width || gif.height !== info.height) {
+        throw new Error("GIF dimensions mismatch")
+      }
+      if (!isGifAnimationWithinPixelLimit(gif)) {
+        throw new Error("GIF animation pixel limit exceeded")
+      }
+    }
 
     const digest = await crypto.subtle.digest("SHA-256", body)
     const checksum = Array.from(new Uint8Array(digest), (byte) =>

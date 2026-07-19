@@ -8,9 +8,11 @@ import {
   AVATAR_IMAGE_SIZE,
   isMediaImageVariantAllowed,
   isResponsiveMediaImageVariant,
+  parseMediaImageAnimation,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
   SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+  shouldPreserveMediaImageAnimation,
 } from "@/lib/media-image"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
@@ -49,8 +51,11 @@ async function deliverImage({
 }) {
   const input = routeInput.safeParse(params)
   if (!input.success) return new Response("Not found", { status: 404 })
-  const requestedWidth = parseResponsiveMediaWidth(new URL(request.url).searchParams.get("width"))
+  const searchParams = new URL(request.url).searchParams
+  const requestedWidth = parseResponsiveMediaWidth(searchParams.get("width"))
   if (requestedWidth === null) return new Response("Not found", { status: 404 })
+  const animation = parseMediaImageAnimation(searchParams.get("animation"))
+  if (animation === null) return new Response("Not found", { status: 404 })
 
   const database = createD1Database(context.env.DB)
   const rows = await database
@@ -107,7 +112,7 @@ async function deliverImage({
     .output({
       format: input.data.variant === "og" ? "image/jpeg" : "image/webp",
       quality: selected.quality,
-      anim: false,
+      anim: shouldPreserveMediaImageAnimation(row.asset.mimeType, input.data.variant, animation),
     })
   const response = transformed.response()
   const headers = new Headers(response.headers)

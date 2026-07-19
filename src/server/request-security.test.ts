@@ -21,6 +21,21 @@ describe("request security", () => {
     expect(validateRequestSecurity(mutation("/_serverFn/create"), origin)).toBeNull()
   })
 
+  test("accepts GIF image uploads while rejecting non-raster upload types", () => {
+    expect(
+      validateRequestSecurity(
+        mutation("/media/upload/asset-id", { "content-type": "image/gif" }),
+        origin,
+      ),
+    ).toBeNull()
+    expect(
+      validateRequestSecurity(
+        mutation("/media/upload/asset-id", { "content-type": "image/svg+xml" }),
+        origin,
+      )?.status,
+    ).toBe(415)
+  })
+
   test("rejects missing origins, unsupported media, and oversized bodies", async () => {
     const missingOrigin = mutation("/_serverFn/create")
     missingOrigin.headers.delete("origin")

@@ -25,6 +25,18 @@ describe("image file normalization", () => {
         expectedType: "image/jpeg",
       },
       {
+        bytes: new TextEncoder().encode("GIF87a"),
+        filename: "reaction.bin",
+        expectedName: "reaction.gif",
+        expectedType: "image/gif",
+      },
+      {
+        bytes: new TextEncoder().encode("GIF89a"),
+        filename: "avatar.gif",
+        expectedName: "avatar.gif",
+        expectedType: "image/gif",
+      },
+      {
         bytes: new TextEncoder().encode("RIFF0000WEBP"),
         filename: "sticker.bin",
         expectedName: "sticker.webp",

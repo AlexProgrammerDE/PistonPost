@@ -5,6 +5,7 @@ import Counter from "yet-another-react-lightbox/plugins/counter"
 import Zoom from "yet-another-react-lightbox/plugins/zoom"
 
 import type { PublicPostMedia } from "@/db/public-read-model"
+import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { DETAIL_IMAGE_WIDTHS, createMediaImageSources, mediaImageUrl } from "@/lib/media-image"
 
 const lightboxPlugins = [Counter, Zoom]
@@ -87,12 +88,14 @@ export function ImageLightbox({
   readonly onClose: () => void
   readonly onIndexChange: (index: number) => void
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion()
+  const animation = prefersReducedMotion ? "still" : "auto"
   const slides = useMemo<ReadonlyArray<SlideImage>>(
     () =>
       images.map((image) => {
-        const srcSet = createMediaImageSources(image, "detail", DETAIL_IMAGE_WIDTHS)
+        const srcSet = createMediaImageSources(image, "detail", DETAIL_IMAGE_WIDTHS, animation)
         return {
-          src: mediaImageUrl(image.id, "detail"),
+          src: mediaImageUrl(image.id, "detail", undefined, animation),
           alt: image.altText ?? "",
           ...(image.width && image.height
             ? { width: image.width, height: image.height }
@@ -100,7 +103,7 @@ export function ImageLightbox({
           ...(srcSet.length > 0 ? { srcSet } : undefined),
         }
       }),
-    [images],
+    [animation, images],
   )
 
   return (

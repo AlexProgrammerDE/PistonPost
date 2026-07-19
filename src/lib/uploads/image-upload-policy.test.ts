@@ -12,13 +12,14 @@ describe("image upload policy", () => {
     expect(IMAGE_UPLOAD_ACCEPT).toBe(IMAGE_UPLOAD_MIME_TYPES.join(","))
     expect(isImageUploadMimeType("image/jpeg")).toBeTrue()
     expect(isImageUploadMimeType("image/avif")).toBeTrue()
-    expect(isImageUploadMimeType("image/gif")).toBeFalse()
+    expect(isImageUploadMimeType("image/gif")).toBeTrue()
     expect(isImageUploadMimeType("image/svg+xml")).toBeFalse()
   })
 
   test("requires the filename extension to agree with the decoded MIME type", () => {
     expect(imageFilenameMatchesMime("avatar.JPG", "image/jpeg")).toBeTrue()
     expect(imageFilenameMatchesMime("avatar.jpeg", "image/jpeg")).toBeTrue()
+    expect(imageFilenameMatchesMime("avatar.GIF", "image/gif")).toBeTrue()
     expect(imageFilenameMatchesMime("avatar.webp", "image/webp")).toBeTrue()
     expect(imageFilenameMatchesMime("avatar.png", "image/avif")).toBeFalse()
     expect(imageFilenameMatchesMime("avatar", "image/png")).toBeFalse()

@@ -5,8 +5,11 @@ import {
   createMediaImageSources,
   fitMediaDimensions,
   isMediaImageVariantAllowed,
+  mediaImageUrl,
+  parseMediaImageAnimation,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
+  shouldPreserveMediaImageAnimation,
 } from "./media-image"
 
 describe("responsive media images", () => {
@@ -15,6 +18,12 @@ describe("responsive media images", () => {
     expect(parseResponsiveMediaWidth("640")).toBe(640)
     expect(parseResponsiveMediaWidth("641")).toBeNull()
     expect(parseResponsiveMediaWidth("640px")).toBeNull()
+  })
+
+  it("accepts only the still-image animation override", () => {
+    expect(parseMediaImageAnimation(null)).toBe("auto")
+    expect(parseMediaImageAnimation("still")).toBe("still")
+    expect(parseMediaImageAnimation("animate")).toBeNull()
   })
 
   it("keeps responsive candidates inside each variant's bounding box", () => {
@@ -36,6 +45,34 @@ describe("responsive media images", () => {
       { src: "/media/image/image%20id/feed?width=320", width: 320, height: 640 },
       { src: "/media/image/image%20id/feed?width=640", width: 640, height: 1280 },
     ])
+  })
+
+  it("builds distinct still-image URLs for reduced-motion rendering", () => {
+    expect(mediaImageUrl("image id", "feed", undefined, "still")).toBe(
+      "/media/image/image%20id/feed?animation=still",
+    )
+    expect(mediaImageUrl("image id", "feed", 640, "still")).toBe(
+      "/media/image/image%20id/feed?width=640&animation=still",
+    )
+    expect(
+      createMediaImageSources({ id: "image id", width: 640, height: 480 }, "feed", [320], "still"),
+    ).toEqual([
+      {
+        src: "/media/image/image%20id/feed?width=320&animation=still",
+        width: 320,
+        height: 240,
+      },
+    ])
+  })
+
+  it("animates GIF content except for still-only variants and requests", () => {
+    expect(shouldPreserveMediaImageAnimation("image/gif", "feed", "auto")).toBeTrue()
+    expect(shouldPreserveMediaImageAnimation("image/gif", "detail", "auto")).toBeTrue()
+    expect(shouldPreserveMediaImageAnimation("image/gif", "avatar", "auto")).toBeTrue()
+    expect(shouldPreserveMediaImageAnimation("image/gif", "thumbnail", "auto")).toBeFalse()
+    expect(shouldPreserveMediaImageAnimation("image/gif", "og", "auto")).toBeFalse()
+    expect(shouldPreserveMediaImageAnimation("image/gif", "avatar", "still")).toBeFalse()
+    expect(shouldPreserveMediaImageAnimation("image/png", "feed", "auto")).toBeFalse()
   })
 
   it("fits social images inside a maximum box without cropping or upscaling", () => {
@@ -61,6 +98,14 @@ describe("responsive media images", () => {
       [32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256]
         .map(
           (width) => `/media/image/avatar-id/avatar?width=${width.toString()} ${width.toString()}w`,
+        )
+        .join(", "),
+    )
+    expect(createManagedAvatarSrcSet("/media/image/avatar-id/avatar", "still")).toBe(
+      [32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256]
+        .map(
+          (width) =>
+            `/media/image/avatar-id/avatar?width=${width.toString()}&animation=still ${width.toString()}w`,
         )
         .join(", "),
     )

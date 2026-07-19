@@ -5,6 +5,7 @@ const SIGNATURE_BYTES = 512
 const canonicalExtensions: Readonly<Record<ImageUploadMimeType, string>> = {
   "image/jpeg": "jpg",
   "image/png": "png",
+  "image/gif": "gif",
   "image/webp": "webp",
   "image/avif": "avif",
 }
@@ -43,6 +44,7 @@ function detectImageMimeType(bytes: Uint8Array): ImageUploadMimeType | null {
   if (bytesMatch(bytes, 0, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])) {
     return "image/png"
   }
+  if (asciiMatches(bytes, 0, "GIF87a") || asciiMatches(bytes, 0, "GIF89a")) return "image/gif"
   if (asciiMatches(bytes, 0, "RIFF") && asciiMatches(bytes, 8, "WEBP")) return "image/webp"
   if (isAvif(bytes)) return "image/avif"
   return null

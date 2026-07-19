@@ -15,7 +15,7 @@ export async function uploadManagedAvatar(file: File) {
   }
   const metadata = await normalizeImageUploadMetadata(file)
   if (!isImageUploadMimeType(metadata.mimeType)) {
-    throw new UploadClientError("Choose a JPEG, PNG, WebP, or AVIF image.")
+    throw new UploadClientError("Choose a JPEG, PNG, GIF, WebP, or AVIF image.")
   }
 
   const intent = await createAvatarUploadIntent({

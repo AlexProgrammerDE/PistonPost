@@ -1,5 +1,6 @@
 export type MediaImageVariant = "avatar" | "feed" | "detail" | "thumbnail" | "og"
 export type ResponsiveMediaImageVariant = "avatar" | "feed" | "detail"
+export type MediaImageAnimation = "auto" | "still"
 
 export type MediaImageDimensions = {
   readonly id: string
@@ -62,9 +63,18 @@ export function fitMediaDimensions(
   }
 }
 
-export function mediaImageUrl(mediaId: string, variant: MediaImageVariant, width?: number) {
+export function mediaImageUrl(
+  mediaId: string,
+  variant: MediaImageVariant,
+  width?: number,
+  animation: MediaImageAnimation = "auto",
+) {
   const path = `/media/image/${encodeURIComponent(mediaId)}/${variant}`
-  return width === undefined ? path : `${path}?width=${width.toString()}`
+  const search = new URLSearchParams()
+  if (width !== undefined) search.set("width", width.toString())
+  if (animation === "still") search.set("animation", animation)
+  const query = search.toString()
+  return query ? `${path}?${query}` : path
 }
 
 export function parseManagedAvatarMediaId(source: string) {
@@ -77,6 +87,21 @@ export function parseResponsiveMediaWidth(value: string | null) {
 
   const width = Number(value)
   return responsiveMediaWidthSet.has(width) ? width : null
+}
+
+export function parseMediaImageAnimation(value: string | null): MediaImageAnimation | null {
+  if (value === null) return "auto"
+  return value === "still" ? value : null
+}
+
+export function shouldPreserveMediaImageAnimation(
+  mimeType: string,
+  variant: MediaImageVariant,
+  animation: MediaImageAnimation,
+) {
+  return (
+    mimeType === "image/gif" && variant !== "thumbnail" && variant !== "og" && animation !== "still"
+  )
 }
 
 export function isResponsiveMediaImageVariant(
@@ -111,6 +136,7 @@ export function createMediaImageSources(
   image: MediaImageDimensions,
   variant: ResponsiveMediaImageVariant,
   widths: ReadonlyArray<number>,
+  animation: MediaImageAnimation = "auto",
 ): ReadonlyArray<MediaImageSource> {
   const maxWidth = responsiveMediaImageMaxWidth(image, variant)
   if (maxWidth < 1 || !image.width || !image.height) return []
@@ -121,7 +147,7 @@ export function createMediaImageSources(
     .filter((width) => responsiveMediaWidthSet.has(width) && width <= maxWidth)
     .toSorted((left, right) => left - right)
     .map((width) => ({
-      src: mediaImageUrl(image.id, variant, width),
+      src: mediaImageUrl(image.id, variant, width, animation),
       width,
       height: Math.max(1, Math.round((sourceHeight * width) / sourceWidth)),
     }))
@@ -131,14 +157,15 @@ export function createMediaImageSrcSet(
   image: MediaImageDimensions,
   variant: ResponsiveMediaImageVariant,
   widths: ReadonlyArray<number>,
+  animation: MediaImageAnimation = "auto",
 ) {
-  const sources = createMediaImageSources(image, variant, widths)
+  const sources = createMediaImageSources(image, variant, widths, animation)
   return sources.length > 0
     ? sources.map((source) => `${source.src} ${source.width.toString()}w`).join(", ")
     : undefined
 }
 
-export function createManagedAvatarSrcSet(source: string) {
+export function createManagedAvatarSrcSet(source: string, animation: MediaImageAnimation = "auto") {
   if (!source.startsWith("/media/image/")) return undefined
 
   const url = new URL(source, "https://pistonpost.invalid")
@@ -147,6 +174,7 @@ export function createManagedAvatarSrcSet(source: string) {
   return AVATAR_IMAGE_WIDTHS.map((width) => {
     const candidate = new URL(url)
     candidate.searchParams.set("width", width.toString())
+    if (animation === "still") candidate.searchParams.set("animation", animation)
     return `${candidate.pathname}${candidate.search} ${width.toString()}w`
   }).join(", ")
 }

@@ -9,7 +9,13 @@ const allowedBodyTypes = new Set([
   "application/x-www-form-urlencoded",
   "multipart/form-data",
 ])
-const allowedImageTypes = new Set(["image/avif", "image/jpeg", "image/png", "image/webp"])
+const allowedImageTypes = new Set([
+  "image/avif",
+  "image/gif",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+])
 
 function errorResponse(message: string, status: number) {
   return Response.json(

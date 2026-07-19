@@ -381,7 +381,7 @@ export function PostComposer({
     if (accepted.length !== selected.length) {
       toast.error(
         type === "images"
-          ? "Images must be JPG, PNG, WebP, or AVIF files no larger than 15 MB."
+          ? "Images must be JPG, PNG, GIF, WebP, or AVIF files no larger than 15 MB."
           : "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload.",
       )
     } else if (accepted.length > remaining) {
@@ -567,7 +567,7 @@ function MediaPicker({
   const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
   const limit =
     type === "images"
-      ? "JPG, PNG, WebP, or AVIF. Up to 20 files, 15 MB and 80 megapixels each."
+      ? "JPG, PNG, GIF, WebP, or AVIF. Up to 20 files, 15 MB and 80 megapixels each."
       : "One Stream-supported video, up to 2 GB and 10 minutes. Large files upload in resumable chunks."
   const inputId = `post-media-${type}`
   const imageUploads = uploads.filter(

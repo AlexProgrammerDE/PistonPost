@@ -9,6 +9,14 @@ type ResponsiveAvatarImageProps = ComponentProps<typeof AvatarImage> & {
 
 export function ResponsiveAvatarImage({ src, sizes, ...props }: ResponsiveAvatarImageProps) {
   const srcSet = typeof src === "string" ? createManagedAvatarSrcSet(src) : undefined
+  const stillSrcSet = typeof src === "string" ? createManagedAvatarSrcSet(src, "still") : undefined
 
-  return <AvatarImage {...props} src={src} srcSet={srcSet} sizes={srcSet ? sizes : undefined} />
+  if (!srcSet || !stillSrcSet) return <AvatarImage {...props} src={src} />
+
+  return (
+    <picture className="contents">
+      <source media="(prefers-reduced-motion: reduce)" srcSet={stillSrcSet} sizes={sizes} />
+      <AvatarImage {...props} src={src} srcSet={srcSet} sizes={sizes} />
+    </picture>
+  )
 }

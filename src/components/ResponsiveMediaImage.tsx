@@ -29,16 +29,25 @@ export function ResponsiveMediaImage({
   ...props
 }: ResponsiveMediaImageProps) {
   const srcSet = createMediaImageSrcSet(image, variant, widths)
+  const stillSrcSet = createMediaImageSrcSet(image, variant, widths, "still")
+  const stillSource = stillSrcSet ?? mediaImageUrl(image.id, variant, undefined, "still")
 
   return (
-    <img
-      {...props}
-      alt={alt}
-      src={mediaImageUrl(image.id, variant)}
-      srcSet={srcSet}
-      sizes={srcSet ? sizes : undefined}
-      width={image.width ?? undefined}
-      height={image.height ?? undefined}
-    />
+    <picture className="contents">
+      <source
+        media="(prefers-reduced-motion: reduce)"
+        srcSet={stillSource}
+        sizes={stillSrcSet ? sizes : undefined}
+      />
+      <img
+        {...props}
+        alt={alt}
+        src={mediaImageUrl(image.id, variant)}
+        srcSet={srcSet}
+        sizes={srcSet ? sizes : undefined}
+        width={image.width ?? undefined}
+        height={image.height ?? undefined}
+      />
+    </picture>
   )
 }

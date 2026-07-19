@@ -3,6 +3,7 @@ export const MAX_IMAGE_UPLOAD_BYTES = 15 * 1024 * 1024
 export const IMAGE_UPLOAD_MIME_TYPES = [
   "image/jpeg",
   "image/png",
+  "image/gif",
   "image/webp",
   "image/avif",
 ] as const
@@ -15,6 +16,7 @@ const imageUploadMimeTypes: ReadonlySet<string> = new Set(IMAGE_UPLOAD_MIME_TYPE
 const extensionsByMime: ReadonlyMap<ImageUploadMimeType, ReadonlySet<string>> = new Map([
   ["image/jpeg", new Set(["jpg", "jpeg"])],
   ["image/png", new Set(["png"])],
+  ["image/gif", new Set(["gif"])],
   ["image/webp", new Set(["webp"])],
   ["image/avif", new Set(["avif"])],
 ])
