@@ -1,7 +1,8 @@
 import { Link, useLocation } from "@tanstack/react-router"
-import { FilePlus2, Newspaper, UsersRound } from "lucide-react"
+import { Newspaper, SquarePen, UsersRound } from "lucide-react"
 import { lazy, Suspense, useEffect } from "react"
 
+import { buttonVariants } from "@/components/ui/button"
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +18,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { cn } from "@/lib/utils"
 
 const SidebarAccountMenu = lazy(() =>
   import("@/components/SidebarAccountMenu").then((module) => ({
@@ -25,9 +28,9 @@ const SidebarAccountMenu = lazy(() =>
 )
 
 const navigationItems = [
-  { to: "/account/posts/new", label: "New post", icon: FilePlus2, exact: true },
   { to: "/", label: "Timeline", icon: Newspaper, exact: true },
   { to: "/following", label: "Following", icon: UsersRound, exact: false },
+  { to: "/account/posts/new", label: "Post", icon: SquarePen, exact: true },
 ] as const
 
 const legalLinks = [
@@ -62,7 +65,7 @@ function AccountMenuFallback() {
 
 export function AppSidebar() {
   const { pathname } = useLocation()
-  const { isMobile, setOpenMobile } = useSidebar()
+  const { isMobile, setOpenMobile, state } = useSidebar()
   const currentYear = new Date().getUTCFullYear()
 
   useEffect(() => {
@@ -80,39 +83,42 @@ export function AppSidebar() {
       aria-label="Application sidebar"
       data-view-transition-chrome="sidebar"
     >
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip="PistonPost home"
-              render={
-                <Link
-                  to="/"
-                  aria-label="PistonPost home"
-                  viewTransition={isMobile ? false : undefined}
-                />
-              }
-              onClick={closeMobileSidebar}
+      <SidebarHeader className="items-start px-5 py-6 group-data-[collapsible=icon]:p-2">
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Link
+                to="/"
+                aria-label="PistonPost home"
+                className={cn(
+                  buttonVariants({ variant: "ghost" }),
+                  "h-auto w-fit p-0 text-sidebar-foreground",
+                )}
+                viewTransition={isMobile ? false : undefined}
+              />
+            }
+            onClick={closeMobileSidebar}
+          >
+            <span
+              aria-hidden="true"
+              className="hidden size-8 shrink-0 items-center justify-center font-heading text-xl font-extrabold text-sidebar-primary group-data-[collapsible=icon]:flex"
             >
-              <span
-                aria-hidden="true"
-                className="hidden size-8 shrink-0 items-center justify-center font-heading text-xl font-extrabold text-sidebar-primary group-data-[collapsible=icon]:flex"
-              >
-                p
-              </span>
-              <span
-                className="font-heading text-lg font-extrabold tracking-[-0.045em] group-data-[collapsible=icon]:hidden"
-                translate="no"
-              >
-                piston<span className="text-sidebar-primary">post</span>
-              </span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+              p
+            </span>
+            <span
+              className="font-heading text-lg font-extrabold tracking-[-0.045em] group-data-[collapsible=icon]:hidden"
+              translate="no"
+            >
+              piston<span className="text-sidebar-primary">post</span>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile}>
+            PistonPost home
+          </TooltipContent>
+        </Tooltip>
       </SidebarHeader>
 
-      <SidebarSeparator />
+      <SidebarSeparator className="mx-0 data-horizontal:w-full" />
 
       <SidebarContent>
         <nav aria-label="Main navigation">
@@ -145,31 +151,35 @@ export function AppSidebar() {
         </nav>
       </SidebarContent>
 
-      <SidebarFooter>
-        <Suspense fallback={<AccountMenuFallback />}>
-          <SidebarAccountMenu />
-        </Suspense>
-        <SidebarSeparator />
-        <nav
-          aria-label="Legal"
-          className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden"
-        >
-          {legalLinks.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              viewTransition={isMobile ? false : undefined}
-              aria-current={pathname === item.to ? "page" : undefined}
-              className="hover:text-sidebar-foreground hover:underline"
-              onClick={closeMobileSidebar}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <p className="px-2 text-xs text-sidebar-foreground/70 group-data-[collapsible=icon]:hidden">
-          © <span suppressHydrationWarning>{currentYear}</span> PistonPost
-        </p>
+      <SidebarFooter className="gap-0 p-0">
+        <div className="p-2">
+          <Suspense fallback={<AccountMenuFallback />}>
+            <SidebarAccountMenu />
+          </Suspense>
+        </div>
+        <SidebarSeparator className="mx-0 group-data-[collapsible=icon]:hidden data-horizontal:w-full" />
+        <div className="flex flex-col gap-2 p-2 group-data-[collapsible=icon]:hidden">
+          <nav
+            aria-label="Legal"
+            className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-xs text-sidebar-foreground/70"
+          >
+            {legalLinks.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                viewTransition={isMobile ? false : undefined}
+                aria-current={pathname === item.to ? "page" : undefined}
+                className="hover:text-sidebar-foreground hover:underline"
+                onClick={closeMobileSidebar}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <p className="px-2 text-xs text-sidebar-foreground/70">
+            © <span suppressHydrationWarning>{currentYear}</span> PistonPost
+          </p>
+        </div>
       </SidebarFooter>
 
       <SidebarRail />
