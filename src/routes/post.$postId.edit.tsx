@@ -5,7 +5,6 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { FormPageSkeleton } from "@/components/LoadingStates"
-import { AuthenticationProvider } from "@/components/providers"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
@@ -24,16 +23,11 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_POST_MARKDOWN_LENGTH, postMarkdownSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { deletePost, getOwnedPostForEditing, updatePost } from "@/server/composer"
-import { getPublicRuntimeConfig } from "@/server/public-config"
 
 export const Route = createFileRoute("/post/$postId/edit")({
   loader: async ({ params }) => {
     const id = z.string().min(1).max(64).parse(params.postId)
-    const [post, config] = await Promise.all([
-      getOwnedPostForEditing({ data: { id } }),
-      getPublicRuntimeConfig(),
-    ])
-    return { post, config }
+    return getOwnedPostForEditing({ data: { id } })
   },
   head: () => ({
     meta: [{ title: "Edit post · PistonPost" }, { name: "robots", content: "noindex, nofollow" }],
@@ -43,13 +37,8 @@ export const Route = createFileRoute("/post/$postId/edit")({
 })
 
 function EditPostRoute() {
-  const { queryClient } = Route.useRouteContext()
-  const { post, config } = Route.useLoaderData()
-  return (
-    <AuthenticationProvider queryClient={queryClient} turnstileSiteKey={config.turnstileSiteKey}>
-      <EditPost post={post} />
-    </AuthenticationProvider>
-  )
+  const post = Route.useLoaderData()
+  return <EditPost post={post} />
 }
 
 function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEditing>> }) {

@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router"
 import { FilePlus2, Newspaper, UsersRound } from "lucide-react"
-import { lazy, Suspense } from "react"
+import { lazy, Suspense, useEffect } from "react"
 
 import {
   Sidebar,
@@ -64,6 +64,10 @@ export function AppSidebar() {
   const { pathname } = useLocation()
   const { isMobile, setOpenMobile } = useSidebar()
   const currentYear = new Date().getUTCFullYear()
+
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false)
+  }, [isMobile, pathname, setOpenMobile])
 
   function closeMobileSidebar() {
     if (isMobile) setOpenMobile(false)

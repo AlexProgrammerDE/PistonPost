@@ -6,6 +6,7 @@ import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
 import { Button } from "@/components/ui/button"
 import { SITE_DESCRIPTION, createSeoHead } from "@/lib/seo"
+import { getPublicRuntimeConfig } from "@/server/public-config"
 
 import appCss from "@/styles/globals.css?url"
 
@@ -18,6 +19,8 @@ const defaultSeo = createSeoHead({
 })
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+  loader: () => getPublicRuntimeConfig(),
+  staleTime: Infinity,
   head: () => ({
     meta: [
       {
@@ -94,13 +97,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext()
+  const { turnstileSiteKey } = Route.useLoaderData()
+
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
       <body>
-        <AppProviders queryClient={queryClient}>
+        <AppProviders queryClient={queryClient} turnstileSiteKey={turnstileSiteKey}>
           <AppShell>{children}</AppShell>
         </AppProviders>
         <Scripts />

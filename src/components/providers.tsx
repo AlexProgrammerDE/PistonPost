@@ -33,14 +33,37 @@ async function invalidateAvatarQueries(queryClient: QueryClient) {
   ])
 }
 
+export function createAuthenticationPlugins(turnstileSiteKey?: string) {
+  return [
+    usernamePlugin({
+      isUsernameAvailable: true,
+      minUsernameLength: 1,
+      maxUsernameLength: 32,
+      usernamePrefix: "@",
+      localization: { usernamePlaceholder: "garage-name" },
+    }),
+    magicLinkPlugin(),
+    multiSessionPlugin(),
+    passkeyPlugin(),
+    twoFactorPlugin(),
+    deleteUserPlugin({ sendDeleteAccountVerification: true }),
+    themePlugin({ useTheme }),
+    ...(turnstileSiteKey
+      ? [
+          captchaPlugin({
+            render: (props) => <TurnstileWidget {...props} siteKey={turnstileSiteKey} />,
+          }),
+        ]
+      : []),
+  ]
+}
+
 export function AuthenticationProvider({
   children,
   queryClient,
-  redirectTo = "/",
   turnstileSiteKey,
 }: PropsWithChildren<{
   readonly queryClient: QueryClient
-  readonly redirectTo?: string
   readonly turnstileSiteKey?: string
 }>) {
   const navigate = useNavigate()
@@ -51,7 +74,7 @@ export function AuthenticationProvider({
       queryClient={queryClient}
       Link={RouterLink}
       navigate={({ to, replace }) => navigate({ to, replace })}
-      redirectTo={redirectTo}
+      redirectTo="/"
       avatar={{
         extension: "inherit",
         resize: preserveAvatarOriginal,
@@ -77,28 +100,7 @@ export function AuthenticationProvider({
       }}
       basePaths={{ auth: "/auth", settings: "/account/settings" }}
       viewPaths={{ auth: authViewPaths, settings: authSettingsViewPaths }}
-      plugins={[
-        usernamePlugin({
-          isUsernameAvailable: true,
-          minUsernameLength: 1,
-          maxUsernameLength: 32,
-          usernamePrefix: "@",
-          localization: { usernamePlaceholder: "garage-name" },
-        }),
-        magicLinkPlugin(),
-        multiSessionPlugin(),
-        passkeyPlugin(),
-        twoFactorPlugin(),
-        deleteUserPlugin({ sendDeleteAccountVerification: true }),
-        themePlugin({ useTheme }),
-        ...(turnstileSiteKey
-          ? [
-              captchaPlugin({
-                render: (props) => <TurnstileWidget {...props} siteKey={turnstileSiteKey} />,
-              }),
-            ]
-          : []),
-      ]}
+      plugins={createAuthenticationPlugins(turnstileSiteKey)}
     >
       {children}
     </AuthProvider>

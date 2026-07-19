@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-17
+Last updated: 2026-07-19
 
 ## How to execute this plan
 
@@ -975,6 +975,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-17: Remove `migrationRuns` and `migrationMappings` through a generated Drizzle migration. The importer and every application or operator surface that used the tables had already been retired, so keeping their historical state no longer justified the schema surface.
 - 2026-07-17: Revalidate public HTML on every use and reload once when Vite reports a missing preload. Content-hashed route chunks change between deployments, so stale document caching can otherwise reference assets that no longer exist. This affects Phases 2 and 9.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
+- 2026-07-19: Supersede the scoped Better Auth UI provider decision. Follow the official TanStack Start integration with one root AuthProvider so UserButton and plugin-contributed account switching and theme controls share one configuration and session cache across the application. Keep public bundle size measured through the existing build and bundle checks. This affects Phases 4 and 5.
 - 2026-07-15: Use a responsive management list for `/account/posts` instead of TanStack Table. The
   screen has one primary object and action per row, so a list keeps status and actions readable on
   narrow screens without duplicating desktop and mobile presentations. Admin datasets remain on
