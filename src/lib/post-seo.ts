@@ -114,7 +114,7 @@ function postVideo(post: PublicPostRead, postTitle: string) {
   )
   return {
     image: {
-      url: `/media/video/${media.id}/thumbnail?v=2`,
+      url: `/media/video/${media.id}/thumbnail?v=3`,
       alt: `Video thumbnail for ${postTitle}`,
       type: "image/jpeg",
       width: thumbnailDimensions?.width,

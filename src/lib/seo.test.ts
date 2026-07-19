@@ -187,7 +187,7 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "article:published_time")).toBeUndefined()
     expect(metaContent(head.meta, "property", "article:tag")).toBeUndefined()
     expect(metaContent(head.meta, "property", "og:image")).toBe(
-      `${SITE_URL}/media/video/video-id/thumbnail?v=2`,
+      `${SITE_URL}/media/video/video-id/thumbnail?v=3`,
     )
     expect(metaContent(head.meta, "property", "og:image:width")).toBe("1200")
     expect(metaContent(head.meta, "property", "og:image:height")).toBe("675")

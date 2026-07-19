@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
 import { fitMediaDimensions, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "@/lib/media-image"
+import { createStreamThumbnailUrl } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
@@ -21,15 +22,18 @@ async function videoThumbnail({
   if (!video) return new Response("Not found", { status: 404 })
 
   const details = await context.env.STREAM.video(video.streamUid).details()
-  const thumbnail = new URL(details.thumbnail)
   const dimensions = fitMediaDimensions(
     video,
     SOCIAL_MEDIA_IMAGE_MAX_SIZE,
     SOCIAL_MEDIA_IMAGE_MAX_SIZE,
   ) ?? { width: SOCIAL_MEDIA_IMAGE_MAX_SIZE, height: SOCIAL_MEDIA_IMAGE_MAX_SIZE }
-  thumbnail.searchParams.set("width", dimensions.width.toString())
-  thumbnail.searchParams.set("height", dimensions.height.toString())
-  thumbnail.searchParams.set("fit", "clip")
+  const thumbnail = createStreamThumbnailUrl({
+    source: details.thumbnail,
+    durationSeconds: details.duration,
+    timestampPct: details.thumbnailTimestampPct,
+    width: dimensions.width,
+    height: dimensions.height,
+  })
 
   return new Response(null, {
     status: 302,

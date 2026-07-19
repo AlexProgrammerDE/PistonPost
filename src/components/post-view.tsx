@@ -224,7 +224,7 @@ function PostMedia({
     return (
       <AspectRatio ratio={16 / 9} className="overflow-hidden bg-black">
         <iframe
-          src={`/media/video/${video.id}/player`}
+          src={`/media/video/${video.id}/player?v=2`}
           title={`Video: ${post.title}`}
           className="size-full border-0"
           sandbox="allow-scripts allow-presentation"

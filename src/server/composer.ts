@@ -8,6 +8,11 @@ import * as schema from "@/db/schema"
 import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
+import {
+  DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
+  MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
+  MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
+} from "@/lib/video-thumbnail"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 import { createStreamDirectUpload } from "@/server/stream-direct-upload"
 import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
@@ -190,6 +195,11 @@ const videoIntentInput = z.object({
     .trim()
     .regex(/^video\//),
   byteSize: z.number().int().min(1).max(MAX_VIDEO_BYTES),
+  thumbnailTimestampPct: z
+    .number()
+    .min(MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT)
+    .max(MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT)
+    .default(DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT),
 })
 
 async function readOptionalSecret(secret: string | SecretsStoreSecret | undefined) {
@@ -252,6 +262,7 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
             allowedOrigin: context.runtime.config.PUBLIC_APP_URL.toString(),
             expiresAt,
             scheduledDeletion,
+            thumbnailTimestampPct: data.thumbnailTimestampPct,
           }),
         )
         upload = {
@@ -274,6 +285,7 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
         requireSignedURLs: false,
         meta: { assetId, postId: data.postId },
         scheduledDeletion: scheduledDeletion.toISOString(),
+        thumbnailTimestampPct: data.thumbnailTimestampPct,
       })
       upload = {
         id: directUpload.id,
@@ -294,6 +306,7 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
           originalFilename: data.filename,
           mimeType: data.mimeType,
           byteSize: data.byteSize,
+          providerMetadata: { thumbnailTimestampPct: data.thumbnailTimestampPct },
         }),
         database
           .insert(schema.postMedia)

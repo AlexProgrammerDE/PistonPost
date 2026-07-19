@@ -13,6 +13,7 @@ const input = {
   allowedOrigin: "https://post.pistonmaster.net",
   expiresAt: new Date("2026-07-16T12:00:00.000Z"),
   scheduledDeletion: new Date("2026-08-16T12:00:00.000Z"),
+  thumbnailTimestampPct: 0.7,
 }
 
 describe("Stream direct uploads", () => {

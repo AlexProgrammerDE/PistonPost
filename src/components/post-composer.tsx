@@ -78,6 +78,8 @@ import {
   type UploadItem,
 } from "@/lib/uploads/media-upload-state"
 import { UploadClientError, uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
+import { selectVideoThumbnailTimestamp } from "@/lib/uploads/video-thumbnail-selection"
+import { DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT } from "@/lib/video-thumbnail"
 import {
   abortMediaUpload,
   createImageUploadIntents,
@@ -241,6 +243,10 @@ export function PostComposer({
             value.type === "images" ? "Choose at least one image." : "Choose a video.",
           )
         }
+        const videoThumbnailTimestamp =
+          value.type === "video" && uploads[0]
+            ? selectVideoThumbnailTimestamp(uploads[0].file)
+            : null
         const turnstileToken = await turnstile.current?.execute()
         if (!turnstileToken) throw new Error(HUMAN_VERIFICATION_ERROR_MESSAGE)
         const draft = await createPostDraft({ data: { draft: draftInput, turnstileToken } })
@@ -295,6 +301,8 @@ export function PostComposer({
               filename: item.file.name,
               mimeType: item.file.type,
               byteSize: item.file.size,
+              thumbnailTimestampPct:
+                (await videoThumbnailTimestamp) ?? DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
             },
           })
           form.setFieldValue("mediaId", intent.assetId)
