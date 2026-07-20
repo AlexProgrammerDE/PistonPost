@@ -89,7 +89,7 @@ describe("request security", () => {
     )
     expect(policy).toContain("font-src 'self' data: https://*.posthog.com")
     expect(policy?.split("; ").find((directive) => directive.startsWith("img-src "))).toBe(
-      "img-src 'self' data: blob: https://*.posthog.com",
+      "img-src 'self' data: blob: https://*.videodelivery.net https://*.cloudflarestream.com https://*.posthog.com",
     )
     expect(policy).toContain("style-src 'self' 'unsafe-inline' https://*.posthog.com")
   })

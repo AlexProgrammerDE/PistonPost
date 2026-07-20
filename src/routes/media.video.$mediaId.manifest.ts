@@ -6,6 +6,8 @@ import type { AppRequestContext } from "@/server"
 import { getDeliverableVideo } from "@/server/video-delivery"
 import { resolveVideoPlaybackUrl } from "@/server/video-playback"
 
+const playbackFormatSchema = z.enum(["dash", "hls"])
+
 async function videoManifest({
   request,
   context,
@@ -18,11 +20,16 @@ async function videoManifest({
   const mediaId = z.string().uuid().safeParse(params.mediaId)
   if (!mediaId.success) return new Response("Not found", { status: 404 })
 
+  const format = playbackFormatSchema.safeParse(
+    new URL(request.url).searchParams.get("format") ?? "dash",
+  )
+  if (!format.success) return new Response("Invalid playback format", { status: 400 })
+
   const video = await getDeliverableVideo(request, context, mediaId.data)
   if (!video) return new Response("Not found", { status: 404 })
 
   const playbackUrl = await Effect.runPromise(
-    resolveVideoPlaybackUrl(context.env.STREAM.video(video.streamUid)).pipe(
+    resolveVideoPlaybackUrl(context.env.STREAM.video(video.streamUid), format.data).pipe(
       Effect.match({
         onFailure: () => null,
         onSuccess: (url) => url,

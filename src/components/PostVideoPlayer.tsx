@@ -23,10 +23,12 @@ function VideoPoster({ detail, mediaId }: { readonly detail: boolean; readonly m
 
 export function PostVideoPlayer({
   detail,
+  duration,
   mediaId,
   title,
 }: {
   readonly detail: boolean
+  readonly duration: number | null
   readonly mediaId: string
   readonly title: string
 }) {
@@ -59,7 +61,12 @@ export function PostVideoPlayer({
     <div ref={containerRef} className="size-full">
       {shouldLoadPlayer ? (
         <Suspense fallback={poster}>
-          <LazyVidstackVideoPlayer detail={detail} mediaId={mediaId} title={title} />
+          <LazyVidstackVideoPlayer
+            detail={detail}
+            duration={duration}
+            mediaId={mediaId}
+            title={title}
+          />
         </Suspense>
       ) : (
         poster

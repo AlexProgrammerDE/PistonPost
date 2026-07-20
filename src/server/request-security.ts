@@ -77,7 +77,7 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "frame-ancestors 'none'",
   "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com",
-  "img-src 'self' data: blob: https://*.posthog.com",
+  "img-src 'self' data: blob: https://*.videodelivery.net https://*.cloudflarestream.com https://*.posthog.com",
   "media-src 'self' blob: https://*.videodelivery.net https://*.cloudflarestream.com https://*.posthog.com",
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://www.gstatic.com https://t.pistonmaster.net https://*.posthog.com",

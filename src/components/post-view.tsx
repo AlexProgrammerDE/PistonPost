@@ -259,7 +259,12 @@ function PostMedia({
         data-view-transition-part="post-media-1"
         className="overflow-hidden bg-black"
       >
-        <PostVideoPlayer detail={detail} mediaId={video.id} title={post.title} />
+        <PostVideoPlayer
+          detail={detail}
+          duration={video.duration}
+          mediaId={video.id}
+          title={post.title}
+        />
       </AspectRatio>
     )
   }

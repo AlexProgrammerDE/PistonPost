@@ -1,11 +1,13 @@
 import { Effect, Schema } from "effect"
 
 type VideoPlaybackClient = {
-  details(): Promise<Pick<StreamVideo, "allowedOrigins" | "dashPlaybackUrl">>
+  details(): Promise<Pick<StreamVideo, "allowedOrigins" | "dashPlaybackUrl" | "hlsPlaybackUrl">>
   update(
     params: Pick<StreamUpdateVideoParams, "allowedOrigins">,
-  ): Promise<Pick<StreamVideo, "allowedOrigins" | "dashPlaybackUrl">>
+  ): Promise<Pick<StreamVideo, "allowedOrigins" | "dashPlaybackUrl" | "hlsPlaybackUrl">>
 }
+
+export type VideoPlaybackFormat = "dash" | "hls"
 
 export class VideoPlaybackError extends Schema.TaggedError<VideoPlaybackError>()(
   "VideoPlaybackError",
@@ -30,6 +32,7 @@ function cloudflarePlaybackUrl(value: string) {
 
 export const resolveVideoPlaybackUrl = Effect.fn("resolveVideoPlaybackUrl")(function* (
   client: VideoPlaybackClient,
+  format: VideoPlaybackFormat = "dash",
 ) {
   let video = yield* Effect.tryPromise({
     try: () => client.details(),
@@ -43,11 +46,13 @@ export const resolveVideoPlaybackUrl = Effect.fn("resolveVideoPlaybackUrl")(func
     })
   }
 
-  const playbackUrl = cloudflarePlaybackUrl(video.dashPlaybackUrl)
+  const playbackUrl = cloudflarePlaybackUrl(
+    format === "hls" ? video.hlsPlaybackUrl : video.dashPlaybackUrl,
+  )
   if (!playbackUrl) {
     return yield* new VideoPlaybackError({
       operation: "validate",
-      cause: new Error("Cloudflare returned an invalid DASH playback URL."),
+      cause: new Error(`Cloudflare returned an invalid ${format.toUpperCase()} playback URL.`),
     })
   }
   return playbackUrl
