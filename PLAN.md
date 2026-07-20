@@ -144,7 +144,7 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 - Drizzle ORM and generated Drizzle migrations manage D1.
 - R2 stores original images and non-video binary objects.
 - Cloudflare Images transforms and delivers image variants from trusted originals.
-- Cloudflare Stream ingests, transcodes, thumbnails, and plays video.
+- Cloudflare Stream ingests, transcodes, thumbnails, and delivers adaptive DASH video to Limeplay.
 - Queues handle durable asynchronous email, cleanup, media finalization, and analytics projection jobs.
 - Workflows handle long-running, resumable account deletion.
 - Email Service sends Better Auth and product emails.
@@ -956,6 +956,11 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Do not migrate legacy sessions or verification tokens. Require fresh authentication at cutover.
 - 2026-07-14: Do not add Better Auth organizations. PistonPost authorization is user, ownership, and role based.
 - 2026-07-14: Use Cloudflare products where they solve a concrete requirement. Do not add platform services without a matching domain or operational need.
+- 2026-07-20: Replace Cloudflare Stream's iframe player in application-owned post views with the
+  Limeplay video-player block. Resolve authorized videos to Stream's adaptive DASH manifest so
+  Limeplay and its Shaka Player engine own playback while Stream continues to transcode, thumbnail,
+  and deliver the video. Load the player lazily near the viewport to keep it out of the initial feed
+  bundle. This affects Phases 5, 6, and 9.
 - 2026-07-15: Replace the industrial independent-publishing identity with a plain, content-first social identity grounded in the legacy archive. User-facing copy says post rather than transmission or publish, the feed starts with content, image collections receive first-class presentation, and the visual system uses Outfit with a warm neutral, coral, and yellow palette.
 - 2026-07-15: Import incomplete public image posts as partial galleries when at least one image survives. Omit incomplete unlisted posts and media used only by those posts. Keep empty public media posts and incomplete non-gallery media posts as cutover-blocking failures.
 - 2026-07-15: Preserve the legacy SEO contract independently from visual identity changes. Public routes use absolute canonical URLs, complete Open Graph and Twitter metadata, safe JSON-LD, and a crawler-visible PNG card. Image and video posts expose media-specific cards, while a cached dynamic sitemap lists public posts, profiles, and tags and non-production robots rules block indexing.

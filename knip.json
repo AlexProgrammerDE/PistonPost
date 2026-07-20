@@ -18,7 +18,10 @@
   "ignore": [
     "src/routeTree.gen.ts",
     "src/components/auth/**",
+    "src/components/limeplay/**",
     "src/components/ui/**",
+    "src/components/video-player/**",
+    "src/hooks/limeplay/**",
     "src/lib/auth/api-key-plugin.ts",
     "src/lib/auth/multi-session-plugin.ts",
     "src/lib/auth/organization-plugin.tsx"

@@ -79,7 +79,7 @@ describe("request security", () => {
       "connect-src 'self' https://challenges.cloudflare.com https://kv.better-auth.com https://*.videodelivery.net https://*.cloudflarestream.com https://t.pistonmaster.net https://*.posthog.com",
     )
     expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
-      "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.youtube.com https://open.spotify.com",
+      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com",
     )
     expect(policy).toContain(
       "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://t.pistonmaster.net https://*.posthog.com",
@@ -87,6 +87,9 @@ describe("request security", () => {
     expect(policy).toContain("font-src 'self' data: https://*.posthog.com")
     expect(policy?.split("; ").find((directive) => directive.startsWith("img-src "))).toBe(
       "img-src 'self' data: blob: https://*.posthog.com",
+    )
+    expect(policy?.split("; ").find((directive) => directive.startsWith("media-src "))).toBe(
+      "media-src 'self' blob: https://*.videodelivery.net https://*.cloudflarestream.com https://*.posthog.com",
     )
     expect(policy).toContain("style-src 'self' 'unsafe-inline' https://*.posthog.com")
   })

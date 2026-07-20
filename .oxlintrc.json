@@ -51,6 +51,8 @@
     "**/drizzle/**",
     "src/components/auth/**",
     "src/components/ui/**",
+    "**/limeplay/**",
+    "**/video-player/**",
     "src/lib/auth/**",
     "**/auth.generated.ts",
     "**/routeTree.gen.ts",
