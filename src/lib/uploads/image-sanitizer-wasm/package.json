@@ -1,0 +1,15 @@
+{
+  "name": "pistonpost-image-sanitizer",
+  "type": "module",
+  "version": "0.1.0",
+  "files": [
+    "pistonpost_image_sanitizer_bg.wasm",
+    "pistonpost_image_sanitizer.js",
+    "pistonpost_image_sanitizer.d.ts"
+  ],
+  "main": "pistonpost_image_sanitizer.js",
+  "types": "pistonpost_image_sanitizer.d.ts",
+  "sideEffects": [
+    "./snippets/*"
+  ]
+}

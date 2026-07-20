@@ -17,7 +17,7 @@ import { themePlugin } from "@/lib/auth/theme-plugin"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
 import {
-  preserveAvatarOriginal,
+  preserveAvatarSource,
   removeManagedAvatar,
   uploadManagedAvatar,
 } from "@/lib/uploads/avatar-upload"
@@ -77,7 +77,7 @@ export function AuthenticationProvider({
       redirectTo="/"
       avatar={{
         extension: "inherit",
-        resize: preserveAvatarOriginal,
+        resize: preserveAvatarSource,
         upload: async (file) => {
           const image = await uploadManagedAvatar(file)
           await invalidateAvatarQueries(queryClient)

@@ -6,6 +6,7 @@ import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { mediaImageUrl } from "@/lib/media-image"
 import { inspectGif, isGifAnimationWithinPixelLimit } from "@/lib/uploads/gif-inspection"
+import { isSanitizedImage } from "@/lib/uploads/image-sanitizer.server"
 import {
   MAX_IMAGE_UPLOAD_BYTES,
   imageFilenameMatchesMime,
@@ -102,6 +103,9 @@ async function uploadImage({
       if (!isGifAnimationWithinPixelLimit(gif)) {
         throw new Error("GIF animation pixel limit exceeded")
       }
+    }
+    if (!(await isSanitizedImage(body, info.format))) {
+      throw new Error("Image metadata was not sanitized")
     }
 
     const digest = await crypto.subtle.digest("SHA-256", body)

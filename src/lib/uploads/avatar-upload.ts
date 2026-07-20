@@ -1,33 +1,27 @@
 import { mediaImageUrl } from "@/lib/media-image"
-import { normalizeImageUploadMetadata } from "@/lib/uploads/image-file-normalization"
-import { MAX_IMAGE_UPLOAD_BYTES, isImageUploadMimeType } from "@/lib/uploads/image-upload-policy"
+import { prepareImageForUpload } from "@/lib/uploads/image-preparation"
 import { cancelAvatarUpload, createAvatarUploadIntent, deleteManagedAvatar } from "@/server/avatar"
 
-import { UploadClientError, uploadImage } from "./image-upload-client"
+import { uploadImage } from "./image-upload-client"
 
-export function preserveAvatarOriginal(file: File) {
+// Better Auth UI otherwise square-crops and re-encodes before our shared image pipeline runs.
+export function preserveAvatarSource(file: File) {
   return Promise.resolve(file)
 }
 
 export async function uploadManagedAvatar(file: File) {
-  if (file.size < 1 || file.size > MAX_IMAGE_UPLOAD_BYTES) {
-    throw new UploadClientError("The avatar must be no larger than 15 MB.")
-  }
-  const metadata = await normalizeImageUploadMetadata(file)
-  if (!isImageUploadMimeType(metadata.mimeType)) {
-    throw new UploadClientError("Choose a JPEG, PNG, GIF, WebP, or AVIF image.")
-  }
+  const prepared = await prepareImageForUpload(file)
 
   const intent = await createAvatarUploadIntent({
     data: {
-      filename: metadata.filename,
-      mimeType: metadata.mimeType,
-      byteSize: file.size,
+      filename: prepared.metadata.filename,
+      mimeType: prepared.metadata.mimeType,
+      byteSize: prepared.file.size,
     },
   })
 
   try {
-    await uploadImage(intent.uploadUrl, file, metadata, () => undefined)
+    await uploadImage(intent.uploadUrl, prepared.file, prepared.metadata, () => undefined)
   } catch (error) {
     await cancelAvatarUpload({ data: { id: intent.assetId } }).catch(() => undefined)
     throw error

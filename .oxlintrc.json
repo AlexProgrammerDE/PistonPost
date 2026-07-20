@@ -49,6 +49,7 @@
     "**/coverage/**",
     "**/node_modules/**",
     "**/drizzle/**",
+    "src/lib/uploads/image-sanitizer-wasm/**",
     "src/components/auth/**",
     "src/components/ui/**",
     "src/lib/auth/**",

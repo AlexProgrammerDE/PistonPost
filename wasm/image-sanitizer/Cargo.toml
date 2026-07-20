@@ -1,0 +1,27 @@
+[package]
+name = "pistonpost-image-sanitizer"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+gif = { version = "=0.14.2", default-features = false, features = ["std"] }
+img-parts = { version = "=0.4.0", default-features = false }
+libjpeg-turbo-rs = { version = "=0.6.2", default-features = false }
+wasm-bindgen = "=0.2.126"
+
+[dev-dependencies]
+crc32fast = "=1.5.0"
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = "symbols"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

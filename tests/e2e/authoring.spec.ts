@@ -545,9 +545,8 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
       mimeType: "image/png",
       buffer: Buffer.from("this is not a PNG"),
     })
-    await page.getByLabel("Alt text").fill("An intentionally invalid local test file")
-    await page.getByRole("button", { name: "Post it" }).click()
-    await expect(page.getByRole("alert").getByText("Couldn’t post this")).toBeVisible()
+    await expect(page.getByText("Couldn’t prepare broken.png")).toBeVisible()
+    await expect(page.getByLabel("Alt text")).toHaveCount(0)
     await expect(page).toHaveURL(/\/account\/posts\/new$/u)
 
     await page.route("https://upload.videodelivery.net/**", (route) =>

@@ -524,12 +524,16 @@ Visibility rules:
 
 1. Authenticated user requests a batch of upload slots for the selected gallery.
 2. Server validates quota, rate limit, intended count, and declared metadata.
-3. Browser uploads original bytes through a narrowly scoped Worker endpoint or signed mechanism.
-4. Worker validates actual content type, size, dimensions, and checksum.
-5. Original is stored in private R2.
-6. mediaAssets records the finalized object.
-7. Image delivery runs through the Images binding with named variant policies.
-8. Post publication verifies ownership and finalized state for every attached image.
+3. A lazy browser worker removes private metadata before upload. Rust WASM performs lossless
+   container or coefficient rewrites for JPEG, PNG, GIF, and WebP. AVIF is decoded to WebP, and
+   oversized JPEG photos are bounded to 4096 pixels on their longest edge.
+4. Browser uploads the cleaned bytes through a narrowly scoped Worker endpoint.
+5. Worker validates actual content type, size, dimensions, checksum, and sanitizer idempotence. It
+   rejects bytes that are not already in the canonical cleaned form.
+6. The cleaned original is stored in private R2.
+7. mediaAssets records the finalized object.
+8. Image delivery runs through the Images binding with named variant policies.
+9. Post publication verifies ownership and finalized state for every attached image.
 
 Named variants should cover thumbnail, feed, detail, avatar, and Open Graph use. Preserve aspect ratio by default and avoid destructive cropping unless the UI explicitly requests it.
 
@@ -812,6 +816,7 @@ Exit criteria:
 - [x] Add owner and admin edit/delete behavior.
 - [x] Add Queue cleanup and Cron reconciliation.
 - [x] Add Cloudflare-backed media upload rate limits and provider-enforced capacity boundaries.
+- [x] Strip private image metadata in client-side Rust WASM and reject unsanitized bytes before R2.
 - [x] Add local end-to-end coverage for text publishing, multi-image publishing, invalid-image recovery, and interrupted resumable video upload.
 - [ ] Verify successful Stream direct upload, encoding readiness, and TUS resume end to end against disposable Cloudflare preview resources.
 
@@ -1054,3 +1059,9 @@ Record future changes here with date, decision, reason, and affected phases.
   Cast support. Leave Stream playback origins unrestricted because remote receivers fetch media
   independently from the PistonPost page. Keep the legacy Cloudflare embed route only for crawler
   video metadata. This affects Phases 5, 6, and 9.
+- 2026-07-20: Clean image uploads in a lazy browser worker before any bytes reach R2. Use pure Rust
+  codecs instead of local binary parsers: `libjpeg-turbo-rs` performs coefficient-domain JPEG
+  orientation and optimization, `gif` rewrites animated frames, and `img-parts` filters PNG and
+  WebP containers. Keep color profiles that affect rendering, remove private and descriptive
+  metadata, transcode AVIF to WebP, and have the upload Worker run the same WASM sanitizer as an
+  idempotence gate before storage. This affects Phases 2 and 6.

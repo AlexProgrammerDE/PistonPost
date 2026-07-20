@@ -30,6 +30,7 @@
     "test:web": "bun test --path-ignore-patterns='tests/e2e/**'",
     "typecheck": "tsgo --noEmit",
     "typecheck:web": "tsgo --noEmit",
+    "wasm:build": "bun scripts/build-image-sanitizer.ts",
     "wrangler:dry-run": "bun run deploy:dry-run"
   },
   "dependencies": {
@@ -113,6 +114,7 @@
     "tailwindcss": "4.3.2",
     "typescript": "7.0.2",
     "vite": "8.1.4",
+    "wasm-pack": "0.15.0",
     "wrangler": "4.110.0"
   },
   "engines": {
@@ -124,5 +126,8 @@
       "esbuild",
       "lightningcss"
     ]
-  }
+  },
+  "trustedDependencies": [
+    "wasm-pack"
+  ]
 }

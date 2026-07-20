@@ -10,6 +10,7 @@ PistonPost is one Bun package and one deployable Cloudflare Worker:
 
 - `src`: application routes, components, server code, auth, domain logic, database code, email, and shared utilities.
 - `src/components/ui`: shadcn/ui components and Base UI primitives.
+- `wasm/image-sanitizer`: the Rust source for client and Worker image sanitization.
 - `drizzle`: generated D1 migrations and Drizzle metadata.
 - `tests`: shared browser and DOM test setup.
 - `docs`: operator and architecture documentation.
@@ -45,6 +46,14 @@ bun run typecheck:web
 bun run cf:typegen
 bun run db:check
 bun run wrangler:dry-run
+```
+
+The generated image sanitizer is checked in so normal Bun installs do not require Rust. After
+changing `wasm/image-sanitizer`, install the `wasm32-unknown-unknown` Rust target and regenerate it:
+
+```bash
+rustup target add wasm32-unknown-unknown
+bun run wasm:build
 ```
 
 The Worker exposes a shallow `GET /health` endpoint. Anonymous public documents use `Cache-Control: no-cache` so browsers and Cloudflare revalidate HTML before using it. Authenticated, mutation, auth, admin, draft, preview, and unlisted responses stay private or `no-store`.

@@ -28,7 +28,7 @@ function PrivacyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Privacy Policy</h1>
-        <p>Last updated: July 19, 2026.</p>
+        <p>Last updated: July 20, 2026.</p>
         <p>
           This policy explains what PistonPost currently handles when you use the service, why it is
           handled, which providers are involved, and the choices available to you.
@@ -43,7 +43,9 @@ function PrivacyPage() {
           </li>
           <li>
             <strong>Content and activity:</strong> posts, media, tags, comments, reactions, follows,
-            visibility choices, media metadata, captions, and alt text.
+            visibility choices, stored media properties, captions, and alt text. Uploaded images are
+            cleaned in your browser to remove private and descriptive file metadata before
+            PistonPost accepts them for storage.
           </li>
           <li>
             <strong>Moderation data:</strong> reports, the details supplied with them, moderation

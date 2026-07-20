@@ -65,12 +65,11 @@ import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
-import { normalizeImageUploadMetadata } from "@/lib/uploads/image-file-normalization"
+import { ImagePreparationError, prepareImageForUpload } from "@/lib/uploads/image-preparation"
 import {
   IMAGE_UPLOAD_ACCEPT,
   IMAGE_UPLOAD_MIME_TYPES,
   MAX_IMAGE_UPLOAD_BYTES,
-  isImageUploadMimeType,
 } from "@/lib/uploads/image-upload-policy"
 import {
   createUploadItem,
@@ -148,6 +147,7 @@ const composerMessages = new Set([
   "Large video uploads are not configured yet. Try a video under 200 MB.",
   "The video upload could not be started. Try again.",
   "Media is still processing.",
+  "Images are still being cleaned.",
   "Video processing is taking longer than expected. The draft is still saved.",
   "The video could not be processed.",
   HUMAN_VERIFICATION_ERROR_MESSAGE,
@@ -201,9 +201,11 @@ export function PostComposer({
   const [uploads, dispatch] = useReducer(mediaUploadReducer, [])
   const uploadsRef = useRef(uploads)
   const uploadControllers = useRef(new Map<string, AbortController>())
+  const imagePreparationGeneration = useRef(0)
   const turnstile = useRef<TurnstileChallengeHandle>(null)
   const allowNavigationRef = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [preparingImageCount, setPreparingImageCount] = useState(0)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -240,6 +242,9 @@ export function PostComposer({
                 },
         )
 
+        if (value.type === "images" && preparingImageCount > 0) {
+          throw new Error("Images are still being cleaned.")
+        }
         if (value.type !== "text" && uploads.length === 0) {
           throw new Error(
             value.type === "images" ? "Choose at least one image." : "Choose a video.",
@@ -370,6 +375,7 @@ export function PostComposer({
   }
 
   function changeType(type: ComposerValues["type"]) {
+    imagePreparationGeneration.current += 1
     releaseUploadPreviews(uploads)
     dispatch({ type: "reset" })
     form.setFieldValue("type", type)
@@ -378,48 +384,56 @@ export function PostComposer({
   }
 
   async function selectFiles(files: File[], type: ComposerValues["type"]) {
-    const selected = files
-    const selections =
-      type === "images"
-        ? await Promise.all(
-            selected.map(async (file) => ({
-              file,
-              metadata:
-                file.size <= MAX_IMAGE_UPLOAD_BYTES
-                  ? await normalizeImageUploadMetadata(file)
-                  : { filename: file.name, mimeType: file.type },
-            })),
-          )
-        : selected.map((file) => ({
-            file,
-            metadata: { filename: file.name, mimeType: file.type },
-          }))
-    const accepted = selections.filter(({ file, metadata }) =>
-      type === "images"
-        ? isImageUploadMimeType(metadata.mimeType) && file.size <= MAX_IMAGE_UPLOAD_BYTES
-        : file.type.startsWith("video/") && file.size <= MAX_VIDEO_UPLOAD_BYTES,
-    )
     const remaining = type === "images" ? Math.max(0, MAX_POST_IMAGES - uploads.length) : 1
-    dispatch({
-      type: "add",
-      items: accepted
-        .slice(0, remaining)
-        .map(({ file, metadata }) =>
-          createUploadItem(file, type === "images" ? "image" : "video", metadata),
-        ),
-    })
-    if (accepted.length !== selected.length) {
-      toast.error(
-        type === "images"
-          ? "Images must be JPG, PNG, GIF, WebP, or AVIF files no larger than 15 MB."
-          : "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload.",
-      )
-    } else if (accepted.length > remaining) {
+    if (files.length > remaining) {
       toast.error(
         type === "images"
           ? `A post can contain up to ${MAX_POST_IMAGES} images.`
           : "A post can contain one video.",
       )
+    }
+
+    const selected = files.slice(0, remaining)
+    if (type === "video") {
+      const accepted = selected.filter(
+        (file) => file.type.startsWith("video/") && file.size <= MAX_VIDEO_UPLOAD_BYTES,
+      )
+      dispatch({
+        type: "add",
+        items: accepted.map((file) => createUploadItem(file, "video")),
+      })
+      if (accepted.length !== selected.length) {
+        toast.error(
+          "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload.",
+        )
+      }
+      return
+    }
+
+    setPreparingImageCount((count) => count + selected.length)
+    const preparationGeneration = ++imagePreparationGeneration.current
+    const prepared = []
+    for (const file of selected) {
+      try {
+        // Preparation stays ordered to cap peak browser memory for large image dumps.
+        // eslint-disable-next-line no-await-in-loop
+        prepared.push(await prepareImageForUpload(file))
+      } catch (error) {
+        toast.error(`Couldn’t prepare ${file.name}`, {
+          description:
+            error instanceof ImagePreparationError
+              ? error.message
+              : "This image could not be cleaned safely. Try exporting it again.",
+        })
+      } finally {
+        setPreparingImageCount((count) => Math.max(0, count - 1))
+      }
+    }
+    if (imagePreparationGeneration.current === preparationGeneration) {
+      dispatch({
+        type: "add",
+        items: prepared.map(({ file, metadata }) => createUploadItem(file, "image", metadata)),
+      })
     }
   }
 
@@ -493,6 +507,7 @@ export function PostComposer({
                   <MediaPicker
                     type={type}
                     uploads={uploads}
+                    preparingImageCount={preparingImageCount}
                     sensors={sensors}
                     onFiles={selectFiles}
                     onRemove={(item) => cancelUpload(item)}
@@ -578,7 +593,13 @@ function TypeSync({
   return null
 }
 
-function MediaDropzonePrompt({ type }: { readonly type: "images" | "video" }) {
+function MediaDropzonePrompt({
+  type,
+  preparingImageCount,
+}: {
+  readonly type: "images" | "video"
+  readonly preparingImageCount: number
+}) {
   const dragOver = useFileUpload((state) => state.dragOver)
   const mediaLabel = type === "images" ? "images" : "a video"
   const draggedMediaLabel = type === "images" ? "these images" : "this video"
@@ -595,12 +616,18 @@ function MediaDropzonePrompt({ type }: { readonly type: "images" | "video" }) {
       />
       <div className="flex max-w-sm flex-col items-center gap-1 text-center">
         <p role="status" className={cn("font-medium", dragOver ? "text-primary" : undefined)}>
-          {dragOver ? `Release to add ${draggedMediaLabel}` : `Drop ${mediaLabel} here`}
+          {preparingImageCount > 0
+            ? `Cleaning ${preparingImageCount} ${preparingImageCount === 1 ? "image" : "images"}`
+            : dragOver
+              ? `Release to add ${draggedMediaLabel}`
+              : `Drop ${mediaLabel} here`}
         </p>
         <p className="text-sm text-muted-foreground">
-          {dragOver
-            ? `Uploading starts as soon as you drop ${mediaPronoun}.`
-            : "You can also paste from your clipboard."}
+          {preparingImageCount > 0
+            ? "Removing hidden data and trimming oversized photos before upload."
+            : dragOver
+              ? `Uploading starts as soon as you drop ${mediaPronoun}.`
+              : "You can also paste from your clipboard."}
         </p>
       </div>
     </>
@@ -610,6 +637,7 @@ function MediaDropzonePrompt({ type }: { readonly type: "images" | "video" }) {
 function MediaPicker({
   type,
   uploads,
+  preparingImageCount,
   sensors,
   onFiles,
   onRemove,
@@ -618,6 +646,7 @@ function MediaPicker({
 }: {
   type: "images" | "video"
   uploads: UploadItem[]
+  preparingImageCount: number
   sensors: ReturnType<typeof useSensors>
   onFiles: (files: File[], type: ComposerValues["type"]) => Promise<void>
   onRemove: (item: UploadItem) => void
@@ -658,7 +687,7 @@ function MediaPicker({
         maxSize={type === "images" ? MAX_IMAGE_UPLOAD_BYTES : MAX_VIDEO_UPLOAD_BYTES}
         label={inputLabel}
         multiple={type === "images"}
-        disabled={type === "video" && uploads.length > 0}
+        disabled={preparingImageCount > 0 || (type === "video" && uploads.length > 0)}
         onAccept={(files) => void onFiles(files, type)}
         onFileReject={(_, message) =>
           toast.error(fileRejectionMessage(type, message), {
@@ -670,7 +699,7 @@ function MediaPicker({
           aria-label={type === "images" ? "Image dropzone" : "Video dropzone"}
           className="min-h-40 data-dragging:border-primary data-dragging:bg-primary/5 data-dragging:ring-[3px] data-dragging:ring-primary/15"
         >
-          <MediaDropzonePrompt type={type} />
+          <MediaDropzonePrompt type={type} preparingImageCount={preparingImageCount} />
           <FileUploadTrigger render={<Button type="button" variant="outline" size="sm" />}>
             <Upload aria-hidden="true" data-icon="inline-start" />
             {type === "images" ? "Browse images" : "Browse for a video"}
