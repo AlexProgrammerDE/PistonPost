@@ -144,7 +144,8 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 - Drizzle ORM and generated Drizzle migrations manage D1.
 - R2 stores original images and non-video binary objects.
 - Cloudflare Images transforms and delivers image variants from trusted originals.
-- Cloudflare Stream ingests, transcodes, thumbnails, and plays video.
+- Cloudflare Stream ingests, transcodes, and thumbnails video, then Vidstack plays its adaptive
+  DASH manifests with native quality controls and Google Cast support.
 - Queues handle durable asynchronous email, cleanup, media finalization, and analytics projection jobs.
 - Workflows handle long-running, resumable account deletion.
 - Email Service sends Better Auth and product emails.
@@ -1048,3 +1049,8 @@ Record future changes here with date, decision, reason, and affected phases.
   navigation. Keep Motion scoped to local interactions, preserve the sidebar as stationary chrome,
   and disable navigation motion for reduced-motion users and open mobile sidebar links. This
   affects Phases 5, 7, and 9.
+- 2026-07-20: Replace the Cloudflare iframe player with Vidstack and local dash.js playback. Use
+  Cloudflare Stream DASH manifests because both browser playback and Google Cast support adaptive
+  delivery, and leave Stream playback origins unrestricted because the Cast receiver fetches media
+  independently from the PistonPost page. Keep the legacy Cloudflare embed route only for crawler
+  video metadata. This affects Phases 5, 6, and 9.

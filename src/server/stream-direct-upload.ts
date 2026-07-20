@@ -23,7 +23,6 @@ type StreamDirectUploadInput = {
   readonly byteSize: number
   readonly creator: string
   readonly filename: string
-  readonly allowedOrigin: string
   readonly expiresAt: Date
   readonly scheduledDeletion: Date
   readonly thumbnailTimestampPct: number
@@ -37,21 +36,18 @@ function encodeMetadataValue(value: string) {
 }
 
 export function streamUploadMetadata({
-  allowedOrigin,
   expiresAt,
   filename,
   scheduledDeletion,
   thumbnailTimestampPct,
 }: Pick<
   StreamDirectUploadInput,
-  "allowedOrigin" | "expiresAt" | "filename" | "scheduledDeletion" | "thumbnailTimestampPct"
+  "expiresAt" | "filename" | "scheduledDeletion" | "thumbnailTimestampPct"
 >) {
-  const hostname = new URL(allowedOrigin).hostname
   return [
     ["name", filename],
     ["maxDurationSeconds", "600"],
     ["expiry", expiresAt.toISOString()],
-    ["allowedorigins", hostname],
     ["scheduleddeletion", scheduledDeletion.toISOString()],
     ["thumbnailtimestamppct", thumbnailTimestampPct.toString()],
   ]
