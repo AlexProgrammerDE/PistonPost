@@ -965,6 +965,12 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-15: Replace the industrial independent-publishing identity with a plain, content-first social identity grounded in the legacy archive. User-facing copy says post rather than transmission or publish, the feed starts with content, image collections receive first-class presentation, and the visual system uses Outfit with a warm neutral, coral, and yellow palette.
 - 2026-07-15: Import incomplete public image posts as partial galleries when at least one image survives. Omit incomplete unlisted posts and media used only by those posts. Keep empty public media posts and incomplete non-gallery media posts as cutover-blocking failures.
 - 2026-07-15: Preserve the legacy SEO contract independently from visual identity changes. Public routes use absolute canonical URLs, complete Open Graph and Twitter metadata, safe JSON-LD, and a crawler-visible PNG card. Image and video posts expose media-specific cards, while a cached dynamic sitemap lists public posts, profiles, and tags and non-production robots rules block indexing.
+- 2026-07-20: Keep the mixed-visibility R2 bucket private and route every image through PistonPost's
+  visibility checks. Image URLs carry per-variant cache versions, while image sitemaps and structured
+  data reuse the normal feed rendition instead of creating a dedicated detail rendition for every
+  crawler. Share Workers Cache entries across deployments and attach media, post, owner, feed, and
+  sitemap tags so publish, edit, moderation, deletion, and account deletion can purge cached public
+  responses globally. This affects Phases 5, 6, 9, and 10.
 - 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
 - 2026-07-14: Use shadcn Typeset for long-form post rendering and use Base UI-backed shadcn components whenever they own a real product interaction. Do not add components without a concrete use.
 - 2026-07-14: Generate Better Auth-owned tables before adding product-to-user foreign keys. Phase 3 enforces every product-only relationship immediately; Phase 4 adds the user relationships from the generated auth schema so the auth tables are never hand-authored from memory.

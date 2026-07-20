@@ -9,6 +9,7 @@
   },
   "cache": {
     "enabled": true,
+    "cross_version_cache": true,
   },
   "assets": {
     "binding": "ASSETS",

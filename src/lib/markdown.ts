@@ -79,8 +79,13 @@ export function isProxyableExternalImageUrl(value: string) {
   )
 }
 
+export const EXTERNAL_IMAGE_CACHE_VERSION = 1
+
 export function externalImageProxyUrl(postId: string, sourceUrl: string) {
-  const search = new URLSearchParams({ source: sourceUrl })
+  const search = new URLSearchParams({
+    v: EXTERNAL_IMAGE_CACHE_VERSION.toString(),
+    source: sourceUrl,
+  })
   return `/media/external-image/${encodeURIComponent(postId)}?${search.toString()}`
 }
 

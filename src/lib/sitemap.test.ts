@@ -42,10 +42,16 @@ describe("SEO discovery documents", () => {
 
     expect(xml).toContain("<loc>https://post.pistonmaster.net/post/post%26one</loc>")
     expect(xml).toContain(
-      "<image:loc>https://post.pistonmaster.net/media/image/image%20one/detail</image:loc>",
+      "<image:loc>https://post.pistonmaster.net/media/image/image%20one/feed?v=1</image:loc>",
     )
     expect(xml).toContain("<video:title>Cats &amp; dogs</video:title>")
     expect(xml).toContain("<video:duration>10</video:duration>")
+    expect(xml).toContain(
+      "<video:thumbnail_loc>https://post.pistonmaster.net/media/video/video-one/thumbnail?v=5</video:thumbnail_loc>",
+    )
+    expect(xml).toContain(
+      '<video:player_loc allow_embed="yes">https://post.pistonmaster.net/media/video/video-one/player?v=3</video:player_loc>',
+    )
   })
 
   it("keeps static pages in their own sitemap", () => {

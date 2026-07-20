@@ -58,7 +58,7 @@ describe("managed avatar policy", () => {
     ).toBeFalse()
     expect(await isManagedUserAvatar(database, userId, "data:image/png;base64,AAAA")).toBeFalse()
     expect(
-      await isManagedUserAvatar(database, userId, `${mediaImageUrl(mediaId, "avatar")}?width=32`),
+      await isManagedUserAvatar(database, userId, `${mediaImageUrl(mediaId, "avatar")}&width=32`),
     ).toBeFalse()
     expect(
       await isManagedUserAvatar(database, "another-user", mediaImageUrl(mediaId, "avatar")),

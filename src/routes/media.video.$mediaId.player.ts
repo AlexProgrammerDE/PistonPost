@@ -3,6 +3,7 @@ import { z } from "zod"
 
 import { VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
+import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
 async function videoPlayer({
@@ -33,6 +34,15 @@ async function videoPlayer({
     headers: {
       Location: player.toString(),
       "Cache-Control": video.publiclyCacheable ? "public, max-age=3600" : "private, no-store",
+      ...(video.publiclyCacheable
+        ? {
+            "Cache-Tag": cacheTagHeader([
+              mediaCacheTag(mediaId.data),
+              ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
+              ...(video.postId ? [postCacheTag(video.postId)] : []),
+            ]),
+          }
+        : {}),
     },
   })
 }

@@ -6,6 +6,8 @@ import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 
 import { purgeAccountMedia } from "./account-media-purge"
+import { FEED_CACHE_TAG, ownerCacheTag, SITEMAP_CACHE_TAG } from "./cache-tags"
+import { cacheInvalidationTagsJob } from "./jobs"
 
 export type AccountDeletionParams = {
   userId: string
@@ -43,6 +45,20 @@ export class AccountDeletionWorkflow extends WorkflowEntrypoint<
           }),
         )
         return { deleted: assets.length }
+      },
+    )
+
+    await step.do(
+      "schedule cached media purge",
+      { retries: { limit: 8, delay: "10 seconds", backoff: "exponential" } },
+      async () => {
+        const job = cacheInvalidationTagsJob(
+          `account:${userId}`,
+          [ownerCacheTag(userId), FEED_CACHE_TAG, SITEMAP_CACHE_TAG],
+          `cache.invalidate:account:${userId}`,
+        )
+        await this.env.JOBS.send(job)
+        return { scheduled: mediaIds.length }
       },
     )
 

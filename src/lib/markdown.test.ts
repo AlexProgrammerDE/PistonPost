@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import {
+  externalImageProxyUrl,
   isProxyableExternalImageUrl,
   markdownContainsImageUrl,
   markdownToPlainText,
@@ -42,6 +43,12 @@ describe("Markdown boundaries", () => {
     expect(isProxyableExternalImageUrl("https://[::1]/image.png")).toBe(false)
     expect(isProxyableExternalImageUrl("https://user@example.com/image.png")).toBe(false)
     expect(isProxyableExternalImageUrl("https://cdn.example.com:8443/image.png")).toBe(false)
+  })
+
+  test("uses a stable versioned cache key for external images", () => {
+    expect(externalImageProxyUrl("post one", "https://cdn.example.com/image.png?size=large")).toBe(
+      "/media/external-image/post%20one?v=1&source=https%3A%2F%2Fcdn.example.com%2Fimage.png%3Fsize%3Dlarge",
+    )
   })
 
   test("matches authorized Markdown images exactly", () => {

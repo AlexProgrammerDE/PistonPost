@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { FEED_CACHE_TAG, isCacheTag, postCacheTag, SITEMAP_CACHE_TAG } from "./cache-tags"
+
 export const mediaCleanupJobSchema = z.object({
   type: z.literal("media.cleanup"),
   idempotencyKey: z.string().min(1),
@@ -9,7 +11,7 @@ export const mediaCleanupJobSchema = z.object({
 export const cacheInvalidationJobSchema = z.object({
   type: z.literal("cache.invalidate"),
   idempotencyKey: z.string().min(1),
-  paths: z.array(z.string().startsWith("/")).min(1).max(12),
+  tags: z.array(z.string().refine(isCacheTag)).min(1).max(100),
 })
 
 export const internalJobSchema = z.discriminatedUnion("type", [
@@ -27,21 +29,22 @@ export function mediaCleanupJob(mediaId: string): InternalJob {
   }
 }
 
-export function cacheInvalidationPathsJob(
+export function cacheInvalidationTagsJob(
   scope: string,
-  paths: ReadonlyArray<string>,
+  tags: ReadonlyArray<string>,
+  idempotencyKey = `cache.invalidate:${scope}:${crypto.randomUUID()}`,
 ): InternalJob {
-  return {
+  return cacheInvalidationJobSchema.parse({
     type: "cache.invalidate",
-    idempotencyKey: `cache.invalidate:${scope}:${crypto.randomUUID()}`,
-    paths: [...paths],
-  }
+    idempotencyKey,
+    tags: [...new Set(tags)],
+  })
 }
 
-export function cacheInvalidationJob(postId: string, authorUsername?: string): InternalJob {
-  return cacheInvalidationPathsJob(`post:${postId}`, [
-    "/",
-    `/post/${postId}`,
-    ...(authorUsername ? [`/user/${authorUsername}`] : []),
+export function cacheInvalidationJob(postId: string): InternalJob {
+  return cacheInvalidationTagsJob(`post:${postId}`, [
+    postCacheTag(postId),
+    FEED_CACHE_TAG,
+    SITEMAP_CACHE_TAG,
   ])
 }

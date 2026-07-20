@@ -1,14 +1,17 @@
 import outfitFontSource from "@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?inline"
 import { createFileRoute } from "@tanstack/react-router"
+import { eq } from "drizzle-orm"
 import ImageResponse from "takumi-js/response"
 import { z } from "zod"
 
 import { TextPostSocialCard } from "@/components/TextPostSocialCard"
 import { createD1Database } from "@/db/d1-database"
 import { getPublishedPostRead } from "@/db/public-read-model"
+import * as schema from "@/db/schema"
 import { markdownToPlainText } from "@/lib/markdown"
 import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
 import type { AppRequestContext } from "@/server"
+import { cacheTagHeader, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 
 async function textPostCard({
   request,
@@ -22,8 +25,15 @@ async function textPostCard({
   const postId = z.string().trim().min(1).max(64).safeParse(params.postId)
   if (!postId.success) return new Response("Not found", { status: 404 })
 
-  const post = await getPublishedPostRead(createD1Database(context.env.DB), postId.data)
+  const database = createD1Database(context.env.DB)
+  const post = await getPublishedPostRead(database, postId.data)
   if (!post || post.type !== "text") return new Response("Not found", { status: 404 })
+  const owner = await database
+    .select({ id: schema.posts.authorId })
+    .from(schema.posts)
+    .where(eq(schema.posts.id, post.id))
+    .get()
+  if (!owner) return new Response("Not found", { status: 404 })
 
   const response = new ImageResponse(
     <TextPostSocialCard
@@ -43,6 +53,11 @@ async function textPostCard({
           post.visibility === "public"
             ? "public, max-age=31536000, immutable"
             : "private, no-store",
+        ...(post.visibility === "public"
+          ? {
+              "Cache-Tag": cacheTagHeader([postCacheTag(post.id), ownerCacheTag(owner.id)]),
+            }
+          : {}),
         "X-Content-Type-Options": "nosniff",
       },
     },

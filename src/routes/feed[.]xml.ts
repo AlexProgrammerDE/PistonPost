@@ -4,6 +4,7 @@ import { listPublicAtomFeedRecords } from "@/db/atom-feed-read-model"
 import { createD1Database } from "@/db/d1-database"
 import { buildAtomFeedXml } from "@/lib/atom-feed"
 import type { AppRequestContext } from "@/server"
+import { FEED_CACHE_TAG } from "@/server/cache-tags"
 
 async function atomFeed({ request, context }: { request: Request; context: AppRequestContext }) {
   const body =
@@ -15,7 +16,9 @@ async function atomFeed({ request, context }: { request: Request; context: AppRe
         )
   return new Response(body, {
     headers: {
-      "Cache-Control": "public, max-age=0, s-maxage=300, stale-while-revalidate=3600",
+      "Cache-Control": "public, max-age=0",
+      "Cache-Tag": FEED_CACHE_TAG,
+      "Cloudflare-CDN-Cache-Control": "public, max-age=300, stale-while-revalidate=3600",
       "Content-Type": "application/atom+xml; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
     },

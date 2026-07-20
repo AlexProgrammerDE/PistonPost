@@ -1,3 +1,4 @@
+import { cache } from "cloudflare:workers"
 import { and, eq, gt, isNull } from "drizzle-orm"
 import { Effect, Either, Exit, Layer, Predicate, Schema } from "effect"
 
@@ -14,6 +15,7 @@ import {
   type ProductEmailBatchJob,
 } from "@/email"
 
+import { mediaCacheTag } from "./cache-tags"
 import { deadLetterMetadata } from "./dead-letter"
 import { requireEmailBinding } from "./email-binding"
 import { EmailJobResolver, emailJobResolverLayer } from "./email-job-resolver"
@@ -34,6 +36,11 @@ function errorCode(error: unknown) {
   if (typeof error !== "object" || error === null || !("_tag" in error)) return "UnknownError"
   const tag = Reflect.get(error, "_tag")
   return typeof tag === "string" ? tag : "UnknownError"
+}
+
+async function purgeCacheTags(tags: ReadonlyArray<string>) {
+  const result = await cache.purge({ tags: [...new Set(tags)] })
+  if (!result.success) throw new Error("Workers Cache purge failed.")
 }
 
 async function readSecret(secret: string | SecretsStoreSecret, name: string) {
@@ -88,14 +95,11 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
               .where(eq(schema.mediaAssets.id, asset.id)),
           ])
         }
+        await purgeCacheTags([mediaCacheTag(job.mediaId)])
         return
       }
 
-      const origin = new URL(env.PUBLIC_APP_URL).origin
-      const publicCache = await caches.open("pistonpost-public")
-      await Promise.all(
-        job.paths.map((path) => publicCache.delete(new Request(new URL(path, origin).toString()))),
-      )
+      await purgeCacheTags(job.tags)
     },
     catch: queueFailure("internal-job"),
   }).pipe(

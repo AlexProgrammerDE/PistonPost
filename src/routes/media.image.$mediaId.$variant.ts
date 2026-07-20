@@ -8,6 +8,7 @@ import {
   AVATAR_IMAGE_SIZE,
   isMediaImageVariantAllowed,
   isResponsiveMediaImageVariant,
+  mediaImageUrl,
   parseMediaImageAnimation,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/media-image"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
+import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 
 const variants = {
   avatar: {
@@ -56,12 +58,26 @@ async function deliverImage({
   if (requestedWidth === null) return new Response("Not found", { status: 404 })
   const animation = parseMediaImageAnimation(searchParams.get("animation"))
   if (animation === null) return new Response("Not found", { status: 404 })
+  const canonicalUrl = mediaImageUrl(
+    input.data.mediaId,
+    input.data.variant,
+    requestedWidth,
+    animation,
+  )
+  const requestUrl = new URL(request.url)
+  if (`${requestUrl.pathname}${requestUrl.search}` !== canonicalUrl) {
+    return new Response(null, {
+      status: 307,
+      headers: { "Cache-Control": "no-store", Location: canonicalUrl },
+    })
+  }
 
   const database = createD1Database(context.env.DB)
   const rows = await database
     .select({
       asset: schema.mediaAssets,
       postStatus: schema.posts.status,
+      postId: schema.posts.id,
       visibility: schema.posts.visibility,
       avatarOwnerId: schema.profiles.userId,
     })
@@ -118,14 +134,26 @@ async function deliverImage({
   const headers = new Headers(response.headers)
   headers.set("Content-Type", transformed.contentType())
   headers.set("X-Content-Type-Options", "nosniff")
+  const publiclyCacheable =
+    (isPublished && row.visibility === "public") || row.asset.kind === "avatar"
   headers.set(
     "Cache-Control",
-    (isPublished && row.visibility === "public") || row.asset.kind === "avatar"
+    publiclyCacheable
       ? row.asset.kind === "avatar"
         ? "public, max-age=3600"
         : "public, max-age=31536000, immutable"
       : "private, no-store",
   )
+  if (publiclyCacheable) {
+    headers.set(
+      "Cache-Tag",
+      cacheTagHeader([
+        mediaCacheTag(row.asset.id),
+        ...(row.asset.ownerId ? [ownerCacheTag(row.asset.ownerId)] : []),
+        ...(row.postId ? [postCacheTag(row.postId)] : []),
+      ]),
+    )
+  }
   return new Response(response.body, { status: response.status, headers })
 }
 

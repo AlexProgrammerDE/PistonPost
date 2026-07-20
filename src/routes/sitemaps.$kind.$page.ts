@@ -17,6 +17,7 @@ import {
   sitemapPageCount,
 } from "@/lib/sitemap"
 import type { AppRequestContext } from "@/server"
+import { SITEMAP_CACHE_TAG } from "@/server/cache-tags"
 
 const sitemapKindSchema = z.enum(["static", "posts", "profiles", "tags"])
 const sitemapPageSchema = z.coerce.number().int().positive()
@@ -62,7 +63,9 @@ async function sitemapPage({
 
   return new Response(body, {
     headers: {
-      "Cache-Control": "public, max-age=0, s-maxage=600, stale-while-revalidate=3600",
+      "Cache-Control": "public, max-age=0",
+      "Cache-Tag": SITEMAP_CACHE_TAG,
+      "Cloudflare-CDN-Cache-Control": "public, max-age=600, stale-while-revalidate=3600",
       "Content-Type": "application/xml; charset=utf-8",
       "X-Content-Type-Options": "nosniff",
     },

@@ -24,7 +24,7 @@ describe("responsive media motion", () => {
     expect(picture.type).toBe("picture")
     expect(stillSource.props.media).toBe("(prefers-reduced-motion: reduce)")
     expect(stillSource.props.srcSet).toContain("animation=still")
-    expect(image.props.src).toBe("/media/image/image-id/feed")
+    expect(image.props.src).toBe("/media/image/image-id/feed?v=1")
     expect(image.props.srcSet).not.toContain("animation=still")
   })
 

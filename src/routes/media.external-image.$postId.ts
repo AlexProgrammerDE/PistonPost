@@ -4,8 +4,13 @@ import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import { isProxyableExternalImageUrl, markdownContainsImageUrl } from "@/lib/markdown"
+import {
+  externalImageProxyUrl,
+  isProxyableExternalImageUrl,
+  markdownContainsImageUrl,
+} from "@/lib/markdown"
 import type { AppRequestContext } from "@/server"
+import { cacheTagHeader, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 
 const MAX_EXTERNAL_IMAGE_BYTES = 15 * 1024 * 1024
 const allowedImageTypes = new Set([
@@ -71,9 +76,18 @@ async function deliverExternalImage({
   if (!input.success || !isProxyableExternalImageUrl(input.data.source)) {
     return new Response("Not found", { status: 404 })
   }
+  const requestUrl = new URL(request.url)
+  const canonicalUrl = externalImageProxyUrl(input.data.postId, input.data.source)
+  if (`${requestUrl.pathname}${requestUrl.search}` !== canonicalUrl) {
+    return new Response(null, {
+      status: 307,
+      headers: { "Cache-Control": "no-store", Location: canonicalUrl },
+    })
+  }
 
   const post = await createD1Database(context.env.DB)
     .select({
+      authorId: schema.posts.authorId,
       textContent: schema.posts.textContent,
       visibility: schema.posts.visibility,
     })
@@ -111,10 +125,18 @@ async function deliverExternalImage({
   headers.set("X-Content-Type-Options", "nosniff")
   headers.set(
     "Cache-Control",
-    post.visibility === "public"
-      ? "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400"
-      : "private, no-store",
+    post.visibility === "public" ? "public, max-age=86400" : "private, no-store",
   )
+  if (post.visibility === "public") {
+    headers.set(
+      "Cloudflare-CDN-Cache-Control",
+      "public, max-age=604800, stale-while-revalidate=86400",
+    )
+    headers.set(
+      "Cache-Tag",
+      cacheTagHeader([postCacheTag(input.data.postId), ownerCacheTag(post.authorId)]),
+    )
+  }
   return new Response(response.body, { status: response.status, headers })
 }
 

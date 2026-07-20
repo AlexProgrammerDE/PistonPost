@@ -16,6 +16,13 @@ export type MediaImageSource = {
 
 export const AVATAR_IMAGE_SIZE = 256
 export const SOCIAL_MEDIA_IMAGE_MAX_SIZE = 1200
+export const MEDIA_IMAGE_CACHE_VERSIONS: Readonly<Record<MediaImageVariant, number>> = {
+  avatar: 1,
+  feed: 1,
+  detail: 1,
+  thumbnail: 1,
+  og: 2,
+}
 
 export const RESPONSIVE_MEDIA_WIDTHS: ReadonlyArray<number> = [
   32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256, 320, 480, 640, 768, 960, 1280, 1600, 1920, 2400,
@@ -71,14 +78,22 @@ export function mediaImageUrl(
 ) {
   const path = `/media/image/${encodeURIComponent(mediaId)}/${variant}`
   const search = new URLSearchParams()
+  search.set("v", MEDIA_IMAGE_CACHE_VERSIONS[variant].toString())
   if (width !== undefined) search.set("width", width.toString())
   if (animation === "still") search.set("animation", animation)
-  const query = search.toString()
-  return query ? `${path}?${query}` : path
+  return `${path}?${search.toString()}`
 }
 
 export function parseManagedAvatarMediaId(source: string) {
-  return managedAvatarPathPattern.exec(source)?.[1]
+  if (!source.startsWith("/media/image/")) return undefined
+  const url = new URL(source, "https://pistonpost.invalid")
+  const searchKeys = Array.from(url.searchParams.keys())
+  if (searchKeys.some((key) => key !== "v") || searchKeys.filter((key) => key === "v").length > 1) {
+    return undefined
+  }
+  const version = url.searchParams.get("v")
+  if (version !== null && !/^\d+$/u.test(version)) return undefined
+  return managedAvatarPathPattern.exec(url.pathname)?.[1]
 }
 
 export function parseResponsiveMediaWidth(value: string | null) {
@@ -169,12 +184,18 @@ export function createManagedAvatarSrcSet(source: string, animation: MediaImageA
   if (!source.startsWith("/media/image/")) return undefined
 
   const url = new URL(source, "https://pistonpost.invalid")
-  if (!url.pathname.endsWith("/avatar")) return undefined
+  const match = /^\/media\/image\/([^/]+)\/avatar$/u.exec(url.pathname)
+  if (!match?.[1]) return undefined
+  const searchKeys = Array.from(url.searchParams.keys())
+  if (searchKeys.some((key) => key !== "v")) return undefined
+  let mediaId: string
+  try {
+    mediaId = decodeURIComponent(match[1])
+  } catch {
+    return undefined
+  }
 
-  return AVATAR_IMAGE_WIDTHS.map((width) => {
-    const candidate = new URL(url)
-    candidate.searchParams.set("width", width.toString())
-    if (animation === "still") candidate.searchParams.set("animation", animation)
-    return `${candidate.pathname}${candidate.search} ${width.toString()}w`
-  }).join(", ")
+  return AVATAR_IMAGE_WIDTHS.map(
+    (width) => `${mediaImageUrl(mediaId, "avatar", width, animation)} ${width.toString()}w`,
+  ).join(", ")
 }

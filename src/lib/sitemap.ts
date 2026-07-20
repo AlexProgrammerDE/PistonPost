@@ -4,6 +4,9 @@ import type {
   PublicTagSitemapRecord,
 } from "@/db/public-read-model"
 
+import { mediaImageUrl } from "./media-image"
+import { VIDEO_PLAYER_CACHE_VERSION, VIDEO_THUMBNAIL_CACHE_VERSION } from "./video-thumbnail"
+
 export const SITEMAP_PAGE_SIZE = 10_000
 
 export type SitemapKind = "static" | "posts" | "profiles" | "tags"
@@ -69,13 +72,13 @@ export function buildPostSitemapXml(
       const media = post.media
         .map((asset) => {
           if (asset.kind === "image") {
-            return `\n    <image:image>\n      <image:loc>${absoluteXmlUrl(origin, `/media/image/${asset.id}/detail`)}</image:loc>\n    </image:image>`
+            return `\n    <image:image>\n      <image:loc>${absoluteXmlUrl(origin, mediaImageUrl(asset.id, "feed"))}</image:loc>\n    </image:image>`
           }
           if (asset.kind === "video") {
             const duration = asset.duration
               ? `\n      <video:duration>${Math.max(1, Math.round(asset.duration / 1_000)).toString()}</video:duration>`
               : ""
-            return `\n    <video:video>\n      <video:thumbnail_loc>${absoluteXmlUrl(origin, `/media/video/${asset.id}/thumbnail`)}</video:thumbnail_loc>\n      <video:title>${escapeXml(post.title)}</video:title>\n      <video:description>${escapeXml(`${post.title}, a video on PistonPost.`)}</video:description>\n      <video:player_loc allow_embed="yes">${absoluteXmlUrl(origin, `/media/video/${asset.id}/player`)}</video:player_loc>${duration}\n      <video:publication_date>${post.publishedAt.toISOString()}</video:publication_date>\n    </video:video>`
+            return `\n    <video:video>\n      <video:thumbnail_loc>${absoluteXmlUrl(origin, `/media/video/${asset.id}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`)}</video:thumbnail_loc>\n      <video:title>${escapeXml(post.title)}</video:title>\n      <video:description>${escapeXml(`${post.title}, a video on PistonPost.`)}</video:description>\n      <video:player_loc allow_embed="yes">${absoluteXmlUrl(origin, `/media/video/${asset.id}/player?v=${VIDEO_PLAYER_CACHE_VERSION.toString()}`)}</video:player_loc>${duration}\n      <video:publication_date>${post.publishedAt.toISOString()}</video:publication_date>\n    </video:video>`
           }
           return ""
         })

@@ -7,7 +7,7 @@ import * as schema from "@/db/schema"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 
-import { cacheInvalidationPathsJob, mediaCleanupJob } from "./jobs"
+import { mediaCleanupJob } from "./jobs"
 
 const avatarIntentInput = z.object({
   filename: z.string().trim().min(1).max(255),
@@ -93,7 +93,6 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
     const profile = await database
       .select({
         avatarMediaId: schema.profiles.avatarMediaId,
-        username: schema.profiles.username,
       })
       .from(schema.profiles)
       .where(eq(schema.profiles.userId, session.user.id))
@@ -101,10 +100,6 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
     if (!profile) throw new Error("Your profile could not be found.")
 
     const cleanup = profile.avatarMediaId ? mediaCleanupJob(profile.avatarMediaId) : null
-    const invalidate = cacheInvalidationPathsJob(`avatar:${session.user.id}`, [
-      "/",
-      `/user/${encodeURIComponent(profile.username)}`,
-    ])
     await database.batch([
       database
         .update(schema.profiles)
@@ -119,9 +114,6 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
               .onConflictDoNothing(),
           ]
         : []),
-      database
-        .insert(schema.outbox)
-        .values({ id: invalidate.idempotencyKey, kind: invalidate.type, payload: invalidate }),
       database.insert(schema.auditEvents).values({
         id: crypto.randomUUID(),
         actorId: session.user.id,
@@ -132,11 +124,6 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
       }),
     ])
 
-    context.executionContext.waitUntil(
-      Promise.all([
-        ...(cleanup ? [context.env.JOBS.send(cleanup)] : []),
-        context.env.JOBS.send(invalidate),
-      ]).then(() => undefined),
-    )
+    if (cleanup) context.executionContext.waitUntil(context.env.JOBS.send(cleanup))
     return { deleted: profile.avatarMediaId !== null }
   })

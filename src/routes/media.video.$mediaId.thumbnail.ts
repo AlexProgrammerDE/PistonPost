@@ -4,6 +4,7 @@ import { z } from "zod"
 import { fitMediaDimensions, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "@/lib/media-image"
 import { createStreamThumbnailUrl } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
+import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
 const thumbnailSearchSchema = z.object({
@@ -56,6 +57,15 @@ async function videoThumbnail({
       Location: thumbnail.toString(),
       "Access-Control-Allow-Origin": "*",
       "Cache-Control": video.publiclyCacheable ? "public, max-age=3600" : "private, no-store",
+      ...(video.publiclyCacheable
+        ? {
+            "Cache-Tag": cacheTagHeader([
+              mediaCacheTag(mediaId.data),
+              ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
+              ...(video.postId ? [postCacheTag(video.postId)] : []),
+            ]),
+          }
+        : {}),
     },
   })
 }

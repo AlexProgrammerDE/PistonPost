@@ -17,6 +17,7 @@ export async function getDeliverableVideo(
       width: schema.mediaAssets.width,
       height: schema.mediaAssets.height,
       providerMetadata: schema.mediaAssets.providerMetadata,
+      postId: schema.posts.id,
       postStatus: schema.posts.status,
       visibility: schema.posts.visibility,
     })
@@ -44,6 +45,8 @@ export async function getDeliverableVideo(
     width: row.width,
     height: row.height,
     providerMetadata: row.providerMetadata,
+    ownerId: row.ownerId,
+    postId: row.postId,
     publiclyCacheable: row.postStatus === "published" && row.visibility === "public",
   }
 }

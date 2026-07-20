@@ -518,7 +518,7 @@ export const moderateEntity = createServerFn({ method: "POST" })
     const moderationEventId = crypto.randomUUID()
     const jobs: Array<
       ReturnType<typeof moderationEmailJob> | ReturnType<typeof cacheInvalidationJob>
-    > = [cacheInvalidationJob(target.postId, target.authorUsername)]
+    > = [cacheInvalidationJob(target.postId)]
     if (target.authorId !== session.user.id) {
       jobs.push(moderationEmailJob(target.authorId, moderationEventId))
     }

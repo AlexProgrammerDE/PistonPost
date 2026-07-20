@@ -14,7 +14,7 @@ import {
 } from "@/lib/uploads/image-upload-policy"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
-import { cacheInvalidationPathsJob, mediaCleanupJob } from "@/server/jobs"
+import { mediaCleanupJob } from "@/server/jobs"
 
 function jsonError(message: string, status: number) {
   return Response.json(
@@ -137,7 +137,6 @@ async function uploadImage({
       const profile = await database
         .select({
           avatarMediaId: schema.profiles.avatarMediaId,
-          username: schema.profiles.username,
         })
         .from(schema.profiles)
         .where(eq(schema.profiles.userId, session.user.id))
@@ -146,10 +145,6 @@ async function uploadImage({
 
       const image = mediaImageUrl(asset.id, "avatar")
       const cleanup = profile.avatarMediaId ? mediaCleanupJob(profile.avatarMediaId) : null
-      const invalidate = cacheInvalidationPathsJob(`avatar:${session.user.id}`, [
-        "/",
-        `/user/${encodeURIComponent(profile.username)}`,
-      ])
       await database.batch([
         readyAsset,
         database
@@ -169,9 +164,6 @@ async function uploadImage({
                 .onConflictDoNothing(),
             ]
           : []),
-        database
-          .insert(schema.outbox)
-          .values({ id: invalidate.idempotencyKey, kind: invalidate.type, payload: invalidate }),
         database.insert(schema.auditEvents).values({
           id: crypto.randomUUID(),
           actorId: session.user.id,
@@ -181,12 +173,7 @@ async function uploadImage({
           metadata: {},
         }),
       ])
-      context.executionContext.waitUntil(
-        Promise.all([
-          ...(cleanup ? [context.env.JOBS.send(cleanup)] : []),
-          context.env.JOBS.send(invalidate),
-        ]).then(() => undefined),
-      )
+      if (cleanup) context.executionContext.waitUntil(context.env.JOBS.send(cleanup))
     } else {
       const postId = asset.providerMetadata.postId
       const ordinal = asset.providerMetadata.ordinal

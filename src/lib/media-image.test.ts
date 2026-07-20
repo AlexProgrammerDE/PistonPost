@@ -42,23 +42,23 @@ describe("responsive media images", () => {
     )
 
     expect(sources).toEqual([
-      { src: "/media/image/image%20id/feed?width=320", width: 320, height: 640 },
-      { src: "/media/image/image%20id/feed?width=640", width: 640, height: 1280 },
+      { src: "/media/image/image%20id/feed?v=1&width=320", width: 320, height: 640 },
+      { src: "/media/image/image%20id/feed?v=1&width=640", width: 640, height: 1280 },
     ])
   })
 
   it("builds distinct still-image URLs for reduced-motion rendering", () => {
     expect(mediaImageUrl("image id", "feed", undefined, "still")).toBe(
-      "/media/image/image%20id/feed?animation=still",
+      "/media/image/image%20id/feed?v=1&animation=still",
     )
     expect(mediaImageUrl("image id", "feed", 640, "still")).toBe(
-      "/media/image/image%20id/feed?width=640&animation=still",
+      "/media/image/image%20id/feed?v=1&width=640&animation=still",
     )
     expect(
       createMediaImageSources({ id: "image id", width: 640, height: 480 }, "feed", [320], "still"),
     ).toEqual([
       {
-        src: "/media/image/image%20id/feed?width=320&animation=still",
+        src: "/media/image/image%20id/feed?v=1&width=320&animation=still",
         width: 320,
         height: 240,
       },
@@ -97,7 +97,8 @@ describe("responsive media images", () => {
     expect(createManagedAvatarSrcSet("/media/image/avatar-id/avatar")).toBe(
       [32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256]
         .map(
-          (width) => `/media/image/avatar-id/avatar?width=${width.toString()} ${width.toString()}w`,
+          (width) =>
+            `/media/image/avatar-id/avatar?v=1&width=${width.toString()} ${width.toString()}w`,
         )
         .join(", "),
     )
@@ -105,7 +106,7 @@ describe("responsive media images", () => {
       [32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256]
         .map(
           (width) =>
-            `/media/image/avatar-id/avatar?width=${width.toString()}&animation=still ${width.toString()}w`,
+            `/media/image/avatar-id/avatar?v=1&width=${width.toString()}&animation=still ${width.toString()}w`,
         )
         .join(", "),
     )

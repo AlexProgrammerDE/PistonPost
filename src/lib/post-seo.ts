@@ -1,7 +1,7 @@
 import type { PublicPostRead } from "@/db/public-read-model"
 
 import { markdownToPlainText } from "./markdown"
-import { fitMediaDimensions, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "./media-image"
+import { fitMediaDimensions, mediaImageUrl, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "./media-image"
 import {
   SITE_NAME,
   SOCIAL_IMAGE_HEIGHT,
@@ -70,7 +70,7 @@ function postImages(post: PublicPostRead, postTitle: string): ReadonlyArray<SeoI
         SOCIAL_MEDIA_IMAGE_MAX_SIZE,
       )
       return {
-        url: `/media/image/${image.id}/og?v=2`,
+        url: mediaImageUrl(image.id, "og"),
         alt: image.altText ?? postTitle,
         type: "image/jpeg",
         width: dimensions?.width,
@@ -86,7 +86,7 @@ function structuredPostImages(
   return post.media
     .filter((media) => media.kind === "image")
     .map((image) => {
-      const url = absoluteUrl(`/media/image/${image.id}/detail`)
+      const url = absoluteUrl(mediaImageUrl(image.id, "feed"))
       return {
         "@type": "ImageObject",
         url,

@@ -99,7 +99,7 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "og:image:height")).toBe("700")
     expect(metaContent(head.meta, "name", "twitter:card")).toBe("summary_large_image")
     expect(head.scripts[0]?.children).toContain(
-      `"contentUrl":"${SITE_URL}/media/image/first/detail"`,
+      `"contentUrl":"${SITE_URL}/media/image/first/feed?v=1"`,
     )
   })
 
