@@ -21,7 +21,6 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@diceui": "https://diceui.com/r/{style}/{name}.json",
-    "@limeplay": "https://limeplay.winoffrg.dev/r/{name}.json"
+    "@diceui": "https://diceui.com/r/{style}/{name}.json"
   }
 }

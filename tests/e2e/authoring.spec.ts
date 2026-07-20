@@ -179,7 +179,7 @@ test.describe.serial("authenticated authoring", () => {
     const composerResponse = await page.goto("/account/posts/new")
     const policy = await composerResponse?.headerValue("content-security-policy")
     expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
-      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com",
+      "frame-src 'self' https://challenges.cloudflare.com https://iframe.videodelivery.net https://*.cloudflarestream.com https://www.youtube.com https://open.spotify.com",
     )
     await fillPost(page, "a finished post", "testing")
     await page.getByLabel("Text").fill(`## Markdown heading

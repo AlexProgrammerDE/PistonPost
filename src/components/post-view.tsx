@@ -16,7 +16,6 @@ import { DateTime } from "@/components/DateTime"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { MarkdownContent } from "@/components/MarkdownContent"
 import { PostTextPreview } from "@/components/PostTextPreview"
-import { PostVideoPlayer } from "@/components/PostVideoPlayer"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
@@ -36,6 +35,7 @@ import type { PublicPostRead } from "@/db/public-read-model"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
+import { VIDEO_PLAYER_CACHE_VERSION } from "@/lib/video-thumbnail"
 import {
   activateSharedViewTransition,
   activeSharedViewTransitionKind,
@@ -259,7 +259,15 @@ function PostMedia({
         data-view-transition-part="post-media-1"
         className="overflow-hidden bg-black"
       >
-        <PostVideoPlayer detail={detail} mediaId={video.id} title={post.title} />
+        <iframe
+          src={`/media/video/${video.id}/player?v=${VIDEO_PLAYER_CACHE_VERSION.toString()}`}
+          title={`Video: ${post.title}`}
+          className="size-full border-0"
+          sandbox="allow-scripts allow-presentation"
+          allow="accelerometer; autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          loading={detail ? "eager" : "lazy"}
+        />
       </AspectRatio>
     )
   }

@@ -43,7 +43,6 @@ import { Route as AccountSettingsSettingsViewRouteImport } from './routes/accoun
 import { Route as AccountPostsNewRouteImport } from './routes/account.posts.new'
 import { Route as MediaVideoMediaIdThumbnailRouteImport } from './routes/media.video.$mediaId.thumbnail'
 import { Route as MediaVideoMediaIdPlayerRouteImport } from './routes/media.video.$mediaId.player'
-import { Route as MediaVideoMediaIdManifestRouteImport } from './routes/media.video.$mediaId.manifest'
 import { Route as MediaVideoMediaIdDownloadRouteImport } from './routes/media.video.$mediaId.download'
 import { Route as MediaPostPostIdCardRouteImport } from './routes/media.post.$postId.card'
 import { Route as MediaImageMediaIdVariantRouteImport } from './routes/media.image.$mediaId.$variant'
@@ -221,12 +220,6 @@ const MediaVideoMediaIdPlayerRoute = MediaVideoMediaIdPlayerRouteImport.update({
   path: '/media/video/$mediaId/player',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MediaVideoMediaIdManifestRoute =
-  MediaVideoMediaIdManifestRouteImport.update({
-    id: '/media/video/$mediaId/manifest',
-    path: '/media/video/$mediaId/manifest',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const MediaVideoMediaIdDownloadRoute =
   MediaVideoMediaIdDownloadRouteImport.update({
     id: '/media/video/$mediaId/download',
@@ -281,7 +274,6 @@ export interface FileRoutesByFullPath {
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
   '/media/video/$mediaId/download': typeof MediaVideoMediaIdDownloadRoute
-  '/media/video/$mediaId/manifest': typeof MediaVideoMediaIdManifestRoute
   '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
   '/media/video/$mediaId/thumbnail': typeof MediaVideoMediaIdThumbnailRoute
 }
@@ -317,7 +309,6 @@ export interface FileRoutesByTo {
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
   '/media/video/$mediaId/download': typeof MediaVideoMediaIdDownloadRoute
-  '/media/video/$mediaId/manifest': typeof MediaVideoMediaIdManifestRoute
   '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
   '/media/video/$mediaId/thumbnail': typeof MediaVideoMediaIdThumbnailRoute
 }
@@ -358,7 +349,6 @@ export interface FileRoutesById {
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
   '/media/video/$mediaId/download': typeof MediaVideoMediaIdDownloadRoute
-  '/media/video/$mediaId/manifest': typeof MediaVideoMediaIdManifestRoute
   '/media/video/$mediaId/player': typeof MediaVideoMediaIdPlayerRoute
   '/media/video/$mediaId/thumbnail': typeof MediaVideoMediaIdThumbnailRoute
 }
@@ -400,7 +390,6 @@ export interface FileRouteTypes {
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
     | '/media/video/$mediaId/download'
-    | '/media/video/$mediaId/manifest'
     | '/media/video/$mediaId/player'
     | '/media/video/$mediaId/thumbnail'
   fileRoutesByTo: FileRoutesByTo
@@ -436,7 +425,6 @@ export interface FileRouteTypes {
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
     | '/media/video/$mediaId/download'
-    | '/media/video/$mediaId/manifest'
     | '/media/video/$mediaId/player'
     | '/media/video/$mediaId/thumbnail'
   id:
@@ -476,7 +464,6 @@ export interface FileRouteTypes {
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
     | '/media/video/$mediaId/download'
-    | '/media/video/$mediaId/manifest'
     | '/media/video/$mediaId/player'
     | '/media/video/$mediaId/thumbnail'
   fileRoutesById: FileRoutesById
@@ -507,7 +494,6 @@ export interface RootRouteChildren {
   MediaImageMediaIdVariantRoute: typeof MediaImageMediaIdVariantRoute
   MediaPostPostIdCardRoute: typeof MediaPostPostIdCardRoute
   MediaVideoMediaIdDownloadRoute: typeof MediaVideoMediaIdDownloadRoute
-  MediaVideoMediaIdManifestRoute: typeof MediaVideoMediaIdManifestRoute
   MediaVideoMediaIdPlayerRoute: typeof MediaVideoMediaIdPlayerRoute
   MediaVideoMediaIdThumbnailRoute: typeof MediaVideoMediaIdThumbnailRoute
 }
@@ -752,13 +738,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MediaVideoMediaIdPlayerRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/media/video/$mediaId/manifest': {
-      id: '/media/video/$mediaId/manifest'
-      path: '/media/video/$mediaId/manifest'
-      fullPath: '/media/video/$mediaId/manifest'
-      preLoaderRoute: typeof MediaVideoMediaIdManifestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/media/video/$mediaId/download': {
       id: '/media/video/$mediaId/download'
       path: '/media/video/$mediaId/download'
@@ -875,7 +854,6 @@ const rootRouteChildren: RootRouteChildren = {
   MediaImageMediaIdVariantRoute: MediaImageMediaIdVariantRoute,
   MediaPostPostIdCardRoute: MediaPostPostIdCardRoute,
   MediaVideoMediaIdDownloadRoute: MediaVideoMediaIdDownloadRoute,
-  MediaVideoMediaIdManifestRoute: MediaVideoMediaIdManifestRoute,
   MediaVideoMediaIdPlayerRoute: MediaVideoMediaIdPlayerRoute,
   MediaVideoMediaIdThumbnailRoute: MediaVideoMediaIdThumbnailRoute,
 }
