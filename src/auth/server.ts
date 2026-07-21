@@ -136,7 +136,7 @@ export function createAuth(runtime: AuthRuntime) {
             content: authenticationMessage({
               template: "account-deletion",
               url,
-              expiresIn: "in one hour",
+              expiresIn: "in 24 hours",
             }),
             idempotencyKey: `account-deletion:${token}`,
           })
