@@ -16,6 +16,15 @@ describe("server-state query keys", () => {
     expect(discussionKeys.viewer("post-one", "user-one")).not.toEqual(
       discussionKeys.viewer("post-one", "user-two"),
     )
+    expect(discussionKeys.feedViewerBatch("user-one", ["post-one", "post-two"])).toEqual([
+      "discussion",
+      "feed-viewer",
+      "user-one",
+      ["post-one", "post-two"],
+    ])
+    expect(discussionKeys.feedViewerBatch("user-one", ["post-one"])).not.toEqual(
+      discussionKeys.feedViewerBatch("user-two", ["post-one"]),
+    )
   })
 
   test("includes every server-side administration filter", () => {

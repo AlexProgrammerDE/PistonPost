@@ -49,7 +49,17 @@ function FeedItemsPlaceholder() {
               </div>
               <Skeleton className="h-8 w-3/4" />
               <Skeleton className="aspect-[4/3] w-full" />
-              <Skeleton className="h-5 w-40" />
+              <div className="grid gap-3">
+                <div className="flex items-center justify-between gap-3">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-4 w-14" />
+                </div>
+                <div className="grid grid-cols-3 gap-1 border-t pt-2 sm:flex">
+                  <Skeleton className="h-11 w-full sm:h-8 sm:w-20" />
+                  <Skeleton className="h-11 w-full sm:h-8 sm:w-24" />
+                  <Skeleton className="h-11 w-full sm:h-8 sm:w-24" />
+                </div>
+              </div>
             </article>
           </TimelineContent>
         </TimelineItem>

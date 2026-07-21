@@ -108,6 +108,29 @@ export type PublishedPostTrackingContext = {
   readonly visibility: "public" | "unlisted"
 }
 
+export async function listViewerFeedHeartPostIds(
+  database: ReadDatabase,
+  viewerId: string,
+  postIds: readonly string[],
+) {
+  if (postIds.length === 0) return []
+
+  const hearts = await database
+    .select({ postId: reactions.postId })
+    .from(reactions)
+    .innerJoin(posts, eq(posts.id, reactions.postId))
+    .where(
+      and(
+        eq(reactions.userId, viewerId),
+        inArray(reactions.postId, postIds),
+        eq(posts.status, "published"),
+        eq(posts.visibility, "public"),
+      ),
+    )
+
+  return hearts.map((heart) => heart.postId)
+}
+
 type BasePostRow = {
   readonly id: string
   readonly type: "text" | "images" | "video"

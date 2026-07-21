@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { createPostShareLinks } from "@/lib/post-share-links"
+import { cn } from "@/lib/utils"
 
 async function copyToClipboard(value: string, successMessage: string) {
   try {
@@ -66,5 +67,37 @@ export function PostShareActions({
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
+  )
+}
+
+export function CopyPostLinkButton({
+  postId,
+  className,
+  compactOnNarrowScreens = false,
+  variant = "ghost",
+}: {
+  readonly postId: string
+  readonly className?: string
+  readonly compactOnNarrowScreens?: boolean
+  readonly variant?: ComponentProps<typeof Button>["variant"]
+}) {
+  function copyPostLink() {
+    const postUrl = createPostShareLinks(postId, 0, window.location.origin).postUrl
+    void copyToClipboard(postUrl, "Post link copied.")
+  }
+
+  return (
+    <Button
+      type="button"
+      variant={variant}
+      size="sm"
+      className={cn("rounded-md", className)}
+      onClick={copyPostLink}
+    >
+      <Link2 aria-hidden="true" data-icon="inline-start" />
+      <span className={cn(compactOnNarrowScreens ? "max-[359px]:sr-only" : undefined)}>
+        Copy link
+      </span>
+    </Button>
   )
 }

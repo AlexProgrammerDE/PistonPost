@@ -6,6 +6,7 @@ import {
   getPublicTagRead,
   listPublicPostReads,
   listPublicPostSitemapRecords,
+  listViewerFeedHeartPostIds,
 } from "./public-read-model"
 import {
   mediaAssets,
@@ -30,6 +31,60 @@ afterEach(() => {
 })
 
 describe("following feed read model", () => {
+  it("returns heart state only for requested posts visible in a public feed", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => database.$client.close()
+    database
+      .insert(user)
+      .values([
+        createUser({ id: "viewer", email: "viewer@example.com" }),
+        createUser({ id: "author", email: "author@example.com" }),
+      ])
+      .run()
+    database
+      .insert(posts)
+      .values([
+        createPost({
+          id: "public-post",
+          authorId: "author",
+          status: "published",
+          publishedAt: new Date("2026-01-03T00:00:00.000Z"),
+        }),
+        createPost({
+          id: "unlisted-post",
+          authorId: "author",
+          status: "published",
+          visibility: "unlisted",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+        }),
+        createPost({ id: "draft-post", authorId: "author" }),
+        createPost({
+          id: "unrequested-post",
+          authorId: "author",
+          status: "published",
+          publishedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }),
+      ])
+      .run()
+    database
+      .insert(reactions)
+      .values([
+        { postId: "public-post", userId: "viewer" },
+        { postId: "unlisted-post", userId: "viewer" },
+        { postId: "draft-post", userId: "viewer" },
+        { postId: "unrequested-post", userId: "viewer" },
+      ])
+      .run()
+
+    const heartPostIds = await listViewerFeedHeartPostIds(database, "viewer", [
+      "public-post",
+      "unlisted-post",
+      "draft-post",
+    ])
+
+    expect(heartPostIds).toEqual(["public-post"])
+  })
+
   it("combines followed users and tags without duplicate or private posts", async () => {
     const database = createMigratedTestDatabase()
     close = () => database.$client.close()

@@ -312,6 +312,29 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(heart).toHaveAttribute("aria-pressed", "true")
     await expect(heart).toContainText("1")
 
+    await context.grantPermissions(["clipboard-read", "clipboard-write"])
+    await page.goto("/")
+    await page.locator('[data-hydrated="true"]').waitFor()
+    const timelinePost = page.getByRole("article").filter({
+      has: page.getByRole("heading", { name: "motion without the fuss" }),
+    })
+    const timelineActions = timelinePost.getByRole("navigation", {
+      name: "Actions for motion without the fuss",
+    })
+    const timelineHeart = timelineActions.getByRole("button", { name: "Heart", exact: true })
+    await expect(timelineHeart).toHaveAttribute("aria-pressed", "true")
+    await timelineHeart.click()
+    await expect(timelineHeart).toHaveAttribute("aria-pressed", "false")
+
+    await timelineActions.getByRole("button", { name: "Copy link" }).click()
+    await expect(page.getByText("Post link copied.")).toBeVisible()
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toMatch(/\/post\/[a-z0-9]+$/u)
+
+    await timelineActions.getByRole("link", { name: /Comments/u }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+#discussion$/u)
+
     const commentImageRequests: string[] = []
     page.on("request", (request) => {
       if (request.url().startsWith("https://images.example/")) {

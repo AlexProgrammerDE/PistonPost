@@ -4,9 +4,11 @@ import { and, count, desc, eq, lt, or } from "drizzle-orm"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
+import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
 import * as schema from "@/db/schema"
 import { commentInputSchema } from "@/domain"
 import { commentEmailJob, replyEmailJob } from "@/email"
+import { FEED_HEART_BATCH_SIZE } from "@/lib/feed-heart-state"
 import { commentPushJob, replyPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { createRequestAuth } from "@/server/auth"
 import { listActivePushSubscriptionIds } from "@/server/push-subscriptions"
@@ -117,6 +119,22 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
       viewerRole: viewer.user.role ?? null,
       viewerHasHeart: heart !== undefined,
     }
+  })
+
+export const getFeedHeartStates = createServerFn({ method: "GET" })
+  .validator(
+    z.object({
+      postIds: z.array(z.string().min(1).max(64)).min(1).max(FEED_HEART_BATCH_SIZE),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const viewer = await optionalViewer(context)
+    if (!viewer) return { heartPostIds: [] }
+
+    const database = createD1Database(context.env.DB)
+    const heartPostIds = await listViewerFeedHeartPostIds(database, viewer.user.id, data.postIds)
+
+    return { heartPostIds }
   })
 
 export const setHeart = createServerFn({ method: "POST" })

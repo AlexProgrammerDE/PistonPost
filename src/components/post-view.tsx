@@ -13,6 +13,7 @@ import {
 import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
 import { DateTime } from "@/components/DateTime"
+import { FeedPostActions } from "@/components/feed-post-actions"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { MarkdownContent } from "@/components/MarkdownContent"
 import { PostTextPreview } from "@/components/PostTextPreview"
@@ -810,49 +811,46 @@ export function PostView({
       />
 
       {!detail ? (
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          {post.tags.map((tag) => (
-            <Badge
-              key={tag.slug}
-              variant="secondary"
-              render={
-                <Link
-                  to="/tag/$tag"
-                  params={{ tag: tag.slug }}
-                  data-view-transition-active={activeSharedViewTransitionKind({
-                    kind: "tag",
-                    sourcePostId: post.id,
-                    tag: tag.slug,
-                  })}
-                  data-view-transition-part="tag-name"
-                  onClick={(event) => openTag(event, tag.slug)}
-                />
-              }
-            >
-              #{tag.name}
-            </Badge>
-          ))}
-          <div className="ml-auto flex items-center gap-3">
-            <PostViewCount count={post.viewCount} />
-            <Link
-              to="/post/$postId"
-              params={{ postId: post.id }}
-              hash="discussion"
-              onClick={openPost}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
-            >
-              <MessageCircle aria-hidden="true" className="size-3.5" />
-              {post.commentCount + post.heartCount === 0 ? (
-                "Discuss"
-              ) : (
-                <>
-                  {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"} ·{" "}
-                  {post.heartCount} {post.heartCount === 1 ? "heart" : "hearts"}
-                </>
-              )}
-            </Link>
+        <footer className="mt-4">
+          <div className="flex min-h-6 flex-wrap items-center gap-2">
+            {post.tags.map((tag) => (
+              <Badge
+                key={tag.slug}
+                variant="secondary"
+                render={
+                  <Link
+                    to="/tag/$tag"
+                    params={{ tag: tag.slug }}
+                    data-view-transition-active={activeSharedViewTransitionKind({
+                      kind: "tag",
+                      sourcePostId: post.id,
+                      tag: tag.slug,
+                    })}
+                    data-view-transition-part="tag-name"
+                    onClick={(event) => openTag(event, tag.slug)}
+                  />
+                }
+              >
+                #{tag.name}
+              </Badge>
+            ))}
+            <div className="ml-auto px-1">
+              <PostViewCount count={post.viewCount} />
+            </div>
           </div>
-        </div>
+          <nav
+            className="mt-2 grid grid-cols-3 items-center gap-1 border-t pt-2 sm:flex sm:flex-wrap"
+            aria-label={`Actions for ${post.title}`}
+          >
+            <FeedPostActions
+              postId={post.id}
+              postTitle={post.title}
+              heartCount={post.heartCount}
+              commentCount={post.commentCount}
+              onOpenPost={openPost}
+            />
+          </nav>
+        </footer>
       ) : null}
     </article>
   )
