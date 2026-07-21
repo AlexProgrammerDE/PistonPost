@@ -208,6 +208,7 @@ export function createAuth(runtime: AuthRuntime) {
         displayUsernameValidator: usernameIsValid,
       }),
       magicLink({
+        disableSignUp: true,
         expiresIn: 60 * 10,
         storeToken: "hashed",
         sendMagicLink: async ({ email, url, token }) => {
@@ -223,6 +224,7 @@ export function createAuth(runtime: AuthRuntime) {
         },
       }),
       emailOTP({
+        disableSignUp: true,
         expiresIn: 60 * 5,
         storeOTP: "hashed",
         allowedAttempts: 3,
