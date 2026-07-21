@@ -127,6 +127,9 @@
       "lightningcss"
     ]
   },
+  "patchedDependencies": {
+    "@vidstack/react@1.15.6": "patches/@vidstack%2Freact@1.15.6.patch"
+  },
   "trustedDependencies": [
     "wasm-pack"
   ]

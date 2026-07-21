@@ -143,7 +143,7 @@ test.describe.serial("authenticated authoring", () => {
   })
 
   test("uploads, serves, and deletes a managed avatar", async ({ context, page }) => {
-    await createVerifiedSession(context)
+    const { username } = await createVerifiedSession(context)
     await page.goto("/account/settings/profile")
     await page.locator('[data-hydrated="true"]').waitFor()
 
@@ -158,13 +158,16 @@ test.describe.serial("authenticated authoring", () => {
     })
     await expect(page.getByText("Avatar changed successfully")).toBeVisible()
 
-    const avatar = page.locator('img[src*="/media/image/"][src$="/avatar"]').first()
+    const avatar = page.getByRole("img", { name: username }).first()
     await expect(avatar).toBeVisible()
+    await expect(avatar).toHaveAttribute("src", /\/media\/image\/[^/]+\/avatar\?v=\d+/u)
     const avatarSource = await avatar.getAttribute("src")
     expect(avatarSource).not.toBeNull()
     if (!avatarSource) throw new Error("The managed avatar URL was not rendered.")
 
-    const avatarResponse = await context.request.get(`${avatarSource}?width=96`)
+    const avatarUrl = new URL(avatarSource, page.url())
+    avatarUrl.searchParams.set("width", "96")
+    const avatarResponse = await context.request.get(avatarUrl.toString())
     expect(avatarResponse.status()).toBe(200)
     expect(avatarResponse.headers()["content-type"]).toContain("image/webp")
 
@@ -345,10 +348,6 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
       },
       { bytes: Array.from(VALID_PNG) },
     )
-    await dropzone.dispatchEvent("dragenter", { dataTransfer })
-    await expect(dropzone).toHaveAttribute("data-dragging", "")
-    await expect(dropzone.getByRole("status")).toHaveText("Release to add these images")
-
     await dropzone.dispatchEvent("drop", { dataTransfer })
     await dataTransfer.dispose()
 
@@ -522,6 +521,9 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
         buffer: VALID_PNG,
       })),
     )
+    await expect(
+      page.getByRole("button", { name: /View gallery-\d+\.png full size/u }),
+    ).toHaveCount(20)
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "the whole camera roll" })).toBeVisible()

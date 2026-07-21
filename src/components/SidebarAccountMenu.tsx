@@ -9,6 +9,7 @@ import { authClient } from "@/auth/client"
 import { UserButton } from "@/components/auth/user/user-button"
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { SidebarMenu, SidebarMenuItem, useSidebar } from "@/components/ui/sidebar"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export function SidebarAccountMenu() {
   const session = useSession(authClient)
@@ -16,6 +17,26 @@ export function SidebarAccountMenu() {
   const user = session.data?.user
   const collapsed = state === "collapsed" && !isMobile
   const links: ReactElement[] = []
+
+  if (session.isPending) {
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <div
+            role="status"
+            aria-label="Loading account menu"
+            className="flex h-14 items-center gap-2 px-3"
+          >
+            <Skeleton className="size-8 shrink-0 rounded-full" />
+            <div className="grid flex-1 gap-1.5 group-data-[collapsible=icon]:hidden">
+              <Skeleton className="h-3.5 w-24" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+          </div>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    )
+  }
 
   function closeMobileSidebar() {
     if (isMobile) setOpenMobile(false)

@@ -93,6 +93,9 @@
   "trustedDependencies": [
     "wasm-pack",
   ],
+  "patchedDependencies": {
+    "@vidstack/react@1.15.6": "patches/@vidstack%2Freact@1.15.6.patch",
+  },
   "packages": {
     "@axe-core/playwright": ["@axe-core/playwright@4.12.1", "", { "dependencies": { "axe-core": "~4.12.1" }, "peerDependencies": { "playwright-core": ">= 1.0.0" } }, "sha512-rMd7xriptqKpP+w5265i4Hdkv2X5kbu6uiBi/B2I7uf3hieRBM3qDCfaKPtxfiYb2mKXfF+yLODJwIx+Jv1GDw=="],
 

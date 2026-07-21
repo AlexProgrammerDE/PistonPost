@@ -1,0 +1,13 @@
+diff --git a/package.json b/package.json
+index 6c018dd3c38443e9d45b4555e9dfa0c1e85f71c2..8761f115492441ed0d8a6dc74bfa63879f22c77b 100644
+--- a/package.json
++++ b/package.json
+@@ -49,7 +49,7 @@
+     },
+     "./player/layouts/default": {
+       "types": "./player/layouts/default.d.ts",
+-      "worker": "./server/vidstack-default-layout.js",
++      "worker": "./server/player/vidstack-default-layout.js",
+       "development": "./dev/player/vidstack-default-layout.js",
+       "default": "./prod/player/vidstack-default-layout.js"
+     },
