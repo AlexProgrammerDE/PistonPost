@@ -42,7 +42,7 @@ function PrivacyPage() {
             two-factor settings, and active sessions.
           </li>
           <li>
-            <strong>Content and activity:</strong> posts, media, tags, comments, reactions, follows,
+            <strong>Content and activity:</strong> posts, media, tags, comments, hearts, follows,
             visibility choices, stored media properties, captions, and alt text. Uploaded images are
             cleaned in your browser to remove private and descriptive file metadata before
             PistonPost accepts them for storage.
@@ -69,7 +69,7 @@ function PrivacyPage() {
         <ul>
           <li>create and secure accounts and sessions;</li>
           <li>store, transform, display, and deliver posts and media;</li>
-          <li>provide feeds, comments, reactions, follows, search, and notifications;</li>
+          <li>provide feeds, comments, hearts, follows, search, and notifications;</li>
           <li>send account, security, moderation, and other service messages;</li>
           <li>investigate reports, enforce the Terms of Service, and prevent abuse; and</li>
           <li>measure aggregate use, diagnose failures, and keep the service reliable.</li>

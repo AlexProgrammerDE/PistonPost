@@ -168,8 +168,8 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                 <CredenzaHeader>
                   <CredenzaTitle>Delete this post?</CredenzaTitle>
                   <CredenzaDescription>
-                    Public access stops immediately. Images, video, comments, reactions, and tag
-                    links are then removed through the cleanup queue.
+                    Public access stops immediately. Images, video, comments, hearts, and tag links
+                    are then removed through the cleanup queue.
                   </CredenzaDescription>
                 </CredenzaHeader>
                 <CredenzaFooter>

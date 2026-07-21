@@ -14,6 +14,7 @@ import {
   postTags,
   postViewCounts,
   profiles,
+  reactions,
   tagFollows,
   tags,
   user,
@@ -87,6 +88,7 @@ describe("following feed read model", () => {
       ])
       .run()
     database.insert(postViewCounts).values({ postId: "followed", viewCount: 42 }).run()
+    database.insert(reactions).values({ postId: "followed", userId: "viewer" }).run()
     database.insert(tags).values({ id: "art", displayName: "Art", normalizedName: "art" }).run()
     database
       .insert(postTags)
@@ -106,6 +108,7 @@ describe("following feed read model", () => {
 
     expect(page.posts.map((post) => post.id)).toEqual(["followed-and-tagged", "tagged", "followed"])
     expect(page.posts.map((post) => post.viewCount)).toEqual([0, 0, 42])
+    expect(page.posts.map((post) => post.heartCount)).toEqual([0, 0, 1])
     expect(page.nextCursor).toBeNull()
   })
 

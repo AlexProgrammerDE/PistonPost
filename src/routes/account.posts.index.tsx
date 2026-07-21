@@ -110,7 +110,7 @@ function MyPosts() {
                       {post.comments} {post.comments === 1 ? "comment" : "comments"}
                     </span>
                     <span>
-                      {post.reactions} {post.reactions === 1 ? "reaction" : "reactions"}
+                      {post.hearts} {post.hearts === 1 ? "heart" : "hearts"}
                     </span>
                   </div>
                 </div>

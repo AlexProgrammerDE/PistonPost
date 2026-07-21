@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { and, desc, eq, lt, or, sql } from "drizzle-orm"
+import { and, count, desc, eq, lt, or } from "drizzle-orm"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
@@ -12,7 +12,6 @@ import { createRequestAuth } from "@/server/auth"
 import { listActivePushSubscriptionIds } from "@/server/push-subscriptions"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 
-const reactionType = z.enum(["like", "dislike", "heart"])
 const commentCursorSchema = z.object({ createdAt: z.number(), id: z.string() })
 
 function encodeCommentCursor(createdAt: Date, id: string) {
@@ -99,7 +98,7 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
   .handler(async ({ context, data }) => {
     const viewer = await optionalViewer(context)
     if (!viewer) {
-      return { viewerId: null, viewerRole: null, viewerReactions: [] }
+      return { viewerId: null, viewerRole: null, viewerHasHeart: false }
     }
     const database = createD1Database(context.env.DB)
     const post = await database
@@ -108,26 +107,25 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
       .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
       .get()
     if (!post) throw new Error("The post was not found.")
-    const reactions = await database
-      .select({ type: schema.reactions.type })
+    const heart = await database
+      .select({ postId: schema.reactions.postId })
       .from(schema.reactions)
       .where(and(eq(schema.reactions.postId, post.id), eq(schema.reactions.userId, viewer.user.id)))
+      .get()
     return {
       viewerId: viewer.user.id,
       viewerRole: viewer.user.role ?? null,
-      viewerReactions: reactions.map(({ type }) => type),
+      viewerHasHeart: heart !== undefined,
     }
   })
 
-export const setReaction = createServerFn({ method: "POST" })
-  .validator(
-    z.object({ postId: z.string().min(1).max(64), type: reactionType, active: z.boolean() }),
-  )
+export const setHeart = createServerFn({ method: "POST" })
+  .validator(z.object({ postId: z.string().min(1).max(64), active: z.boolean() }))
   .handler(async ({ context, data }) => {
     assertMutationOrigin(context)
     const session = await requireRequestSession(context)
     const limited = await context.env.REACTION_RATE_LIMITER.limit({ key: session.user.id })
-    if (!limited.success) throw new Error("The reaction rate limit was reached.")
+    if (!limited.success) throw new Error("The heart rate limit was reached.")
     const database = createD1Database(context.env.DB)
     const post = await database
       .select({ id: schema.posts.id })
@@ -138,25 +136,21 @@ export const setReaction = createServerFn({ method: "POST" })
     if (data.active) {
       await database
         .insert(schema.reactions)
-        .values({ postId: post.id, userId: session.user.id, type: data.type })
+        .values({ postId: post.id, userId: session.user.id })
         .onConflictDoNothing()
     } else {
       await database
         .delete(schema.reactions)
         .where(
-          and(
-            eq(schema.reactions.postId, post.id),
-            eq(schema.reactions.userId, session.user.id),
-            eq(schema.reactions.type, data.type),
-          ),
+          and(eq(schema.reactions.postId, post.id), eq(schema.reactions.userId, session.user.id)),
         )
     }
-    const counts = await database
-      .select({ type: schema.reactions.type, count: sql<number>`count(*)` })
+    const aggregate = await database
+      .select({ heartCount: count() })
       .from(schema.reactions)
       .where(eq(schema.reactions.postId, post.id))
-      .groupBy(schema.reactions.type)
-    return Object.fromEntries(counts.map(({ type, count }) => [type, count]))
+      .get()
+    return { heartCount: aggregate?.heartCount ?? 0 }
   })
 
 export const createComment = createServerFn({ method: "POST" })

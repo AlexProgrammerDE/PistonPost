@@ -50,11 +50,7 @@ export type PublicPostRead = {
   readonly tags: ReadonlyArray<{ readonly slug: string; readonly name: string }>
   readonly viewCount: number
   readonly commentCount: number
-  readonly reactions: {
-    readonly like: number
-    readonly dislike: number
-    readonly heart: number
-  }
+  readonly heartCount: number
   readonly structuredComments?: ReadonlyArray<{
     readonly id: string
     readonly content: string
@@ -598,10 +594,10 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
       .where(inArray(postTags.postId, postIds))
       .orderBy(postTags.ordinal),
     database
-      .select({ postId: reactions.postId, type: reactions.type, count: sql<number>`count(*)` })
+      .select({ postId: reactions.postId, count: sql<number>`count(*)` })
       .from(reactions)
       .where(inArray(reactions.postId, postIds))
-      .groupBy(reactions.postId, reactions.type),
+      .groupBy(reactions.postId),
     database
       .select({ postId: comments.postId, count: sql<number>`count(*)` })
       .from(comments)
@@ -610,11 +606,6 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
   ])
 
   return postRows.map<PublicPostRead>((post) => {
-    const counts = { like: 0, dislike: 0, heart: 0 }
-    for (const reaction of reactionRows) {
-      if (reaction.postId === post.id) counts[reaction.type] = reaction.count
-    }
-
     return {
       id: post.id,
       type: post.type,
@@ -638,7 +629,7 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
       tags: tagRows.filter((tag) => tag.postId === post.id),
       viewCount: post.viewCount,
       commentCount: commentRows.find((row) => row.postId === post.id)?.count ?? 0,
-      reactions: counts,
+      heartCount: reactionRows.find((row) => row.postId === post.id)?.count ?? 0,
     }
   })
 }

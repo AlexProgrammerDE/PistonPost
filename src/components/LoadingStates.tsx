@@ -103,11 +103,7 @@ function DiscussionPlaceholder() {
     <div className="mx-auto mt-5 max-w-5xl">
       <div className="flex items-center justify-between gap-3 border-y py-3">
         <Skeleton className="h-8 w-28" />
-        <div className="flex gap-2">
-          {generateN(3).map((identity) => (
-            <Skeleton key={identity} className="h-8 w-16" />
-          ))}
-        </div>
+        <Skeleton className="h-8 w-16" />
       </div>
       <div className="mt-10 grid gap-8">
         <Skeleton className="h-8 w-32" />
@@ -162,7 +158,7 @@ export function DiscussionSkeleton() {
 export function DiscussionViewerSkeleton() {
   return (
     <LoadingRegion label="Loading your discussion controls…">
-      <Skeleton className="h-8 w-56" />
+      <Skeleton className="h-8 w-16" />
     </LoadingRegion>
   )
 }

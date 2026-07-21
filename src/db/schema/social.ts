@@ -50,15 +50,10 @@ export const reactions = sqliteTable(
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    type: text("type", { enum: ["like", "dislike", "heart"] }).notNull(),
     createdAt: timestamp("created_at").notNull().default(now),
     updatedAt: timestamp("updated_at").notNull().default(now),
   },
-  (table) => [
-    primaryKey({ columns: [table.postId, table.userId, table.type] }),
-    index("reactions_post_type_idx").on(table.postId, table.type),
-    check("reactions_type_check", sql`${table.type} in ('like', 'dislike', 'heart')`),
-  ],
+  (table) => [primaryKey({ columns: [table.postId, table.userId] })],
 )
 
 export const userFollows = sqliteTable(

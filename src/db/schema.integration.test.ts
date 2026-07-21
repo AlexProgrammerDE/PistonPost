@@ -78,7 +78,7 @@ describe("domain schema", () => {
     ).toThrow()
   })
 
-  it("rejects invalid reactions and orphaned relationships", () => {
+  it("rejects orphaned hearts and relationships", () => {
     const db = database()
     db.insert(user).values(createUser()).run()
     db.insert(posts)
@@ -86,43 +86,25 @@ describe("domain schema", () => {
       .run()
 
     expect(() =>
-      db.$client
-        .query("INSERT INTO reactions (post_id, user_id, type) VALUES (?, ?, ?)")
-        .run("post", "test-user", "applause"),
-    ).toThrow()
-    expect(() =>
-      db.insert(reactions).values({ postId: "missing", userId: "user", type: "like" }).run(),
+      db.insert(reactions).values({ postId: "missing", userId: "test-user" }).run(),
     ).toThrow()
     expect(() =>
       db.insert(postTags).values({ postId: "missing", tagId: "missing", ordinal: 0 }).run(),
     ).toThrow()
   })
 
-  it("preserves independent reaction types for one user and post", () => {
+  it("allows only one heart per user and post", () => {
     const db = database()
     db.insert(user).values(createUser()).run()
     db.insert(posts)
       .values(createPost({ id: "post" }))
       .run()
-    db.insert(reactions)
-      .values(
-        (["like", "dislike", "heart"] as const).map((type) => ({
-          postId: "post",
-          userId: "test-user",
-          type,
-        })),
-      )
-      .run()
+    db.insert(reactions).values({ postId: "post", userId: "test-user" }).run()
 
-    expect(
-      new Set(
-        db
-          .select()
-          .from(reactions)
-          .all()
-          .map(({ type }) => type),
-      ),
-    ).toEqual(new Set(["like", "dislike", "heart"]))
+    expect(() =>
+      db.insert(reactions).values({ postId: "post", userId: "test-user" }).run(),
+    ).toThrow()
+    expect(db.select().from(reactions).all()).toHaveLength(1)
   })
 
   it("enforces stable user and tag follow relationships", () => {
@@ -173,7 +155,7 @@ describe("domain schema", () => {
       .run()
     db.insert(tags).values({ id: "tag", displayName: "cars", normalizedName: "cars" }).run()
     db.insert(postTags).values({ postId: "post", tagId: "tag", ordinal: 0 }).run()
-    db.insert(reactions).values({ postId: "post", userId: "test-user", type: "heart" }).run()
+    db.insert(reactions).values({ postId: "post", userId: "test-user" }).run()
 
     db.delete(posts).run()
 

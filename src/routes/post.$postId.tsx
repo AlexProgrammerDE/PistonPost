@@ -88,7 +88,7 @@ function PostDetail() {
       <Suspense fallback={<DiscussionSkeleton />}>
         <SocialPanel
           postId={post.id}
-          counts={post.reactions}
+          heartCount={post.heartCount}
           commentCount={post.commentCount}
           imageCount={post.media.filter((media) => media.kind === "image").length}
         />

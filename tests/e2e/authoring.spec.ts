@@ -307,10 +307,10 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
     const postActions = page.getByRole("navigation", { name: "Post actions" })
-    const like = postActions.getByRole("button", { name: "Like", exact: true })
-    await like.click()
-    await expect(like).toHaveAttribute("aria-pressed", "true")
-    await expect(like).toContainText("1")
+    const heart = postActions.getByRole("button", { name: "Heart", exact: true })
+    await heart.click()
+    await expect(heart).toHaveAttribute("aria-pressed", "true")
+    await expect(heart).toContainText("1")
 
     const commentImageRequests: string[] = []
     page.on("request", (request) => {

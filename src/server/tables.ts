@@ -26,7 +26,7 @@ export const getMyPosts = createServerFn({ method: "GET" }).handler(async ({ con
       updatedAt: schema.posts.updatedAt,
       version: schema.posts.version,
       comments: sql<number>`(select count(*) from comments where comments.post_id = ${schema.posts.id} and comments.status = 'published')`,
-      reactions: sql<number>`(select count(*) from reactions where reactions.post_id = ${schema.posts.id})`,
+      hearts: sql<number>`(select count(*) from reactions where reactions.post_id = ${schema.posts.id})`,
     })
     .from(schema.posts)
     .where(eq(schema.posts.authorId, session.user.id))

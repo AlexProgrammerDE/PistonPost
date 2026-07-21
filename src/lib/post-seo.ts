@@ -168,12 +168,7 @@ function postInteractionStatistics(post: PublicPostRead): ReadonlyArray<JsonLdOb
     {
       "@type": "InteractionCounter",
       interactionType: "https://schema.org/LikeAction",
-      userInteractionCount: post.reactions.like,
-    },
-    {
-      "@type": "InteractionCounter",
-      interactionType: "https://schema.org/DislikeAction",
-      userInteractionCount: post.reactions.dislike,
+      userInteractionCount: post.heartCount,
     },
     {
       "@type": "InteractionCounter",

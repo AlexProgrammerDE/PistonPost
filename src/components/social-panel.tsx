@@ -8,18 +8,7 @@ import {
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import {
-  Heart,
-  History,
-  type LucideIcon,
-  MessageCircle,
-  Reply,
-  Send,
-  ThumbsDown,
-  ThumbsUp,
-  Trash2,
-  X,
-} from "lucide-react"
+import { Heart, History, MessageCircle, Reply, Send, Trash2, X } from "lucide-react"
 import { AnimatePresence, useReducedMotion, type Transition } from "motion/react"
 import * as m from "motion/react-m"
 import { startTransition, useEffect, useOptimistic, useRef, useState } from "react"
@@ -48,7 +37,7 @@ import {
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { Toggle } from "@/components/ui/toggle"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
   observedVerticalPosition,
@@ -60,29 +49,17 @@ import {
   discussionQueryOptions,
   discussionViewerQueryOptions,
 } from "@/lib/queries/social"
-import {
-  applyOptimisticReaction,
-  optimisticReactionCounts,
-  reactionTypes,
-  type ReactionCounts,
-  type ReactionType,
-} from "@/lib/social-state"
+import { optimisticHeartCount } from "@/lib/social-state"
 import { cn } from "@/lib/utils"
-import { createComment, deleteComment, getDiscussion, setReaction } from "@/server/social"
+import { createComment, deleteComment, getDiscussion, setHeart } from "@/server/social"
 
 type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][number]
 type CommentPage = DiscussionComment & { optimistic?: boolean }
-const reactionTypeSet = new Set<string>(reactionTypes)
-const reactionDetails = [
-  { type: "like", label: "Like", icon: ThumbsUp },
-  { type: "dislike", label: "Dislike", icon: ThumbsDown },
-  { type: "heart", label: "Heart", icon: Heart },
-] satisfies ReadonlyArray<{ type: ReactionType; label: string; icon: LucideIcon }>
 const quickActionTransition = {
   duration: 0.16,
   ease: [0.22, 1, 0.36, 1],
 } satisfies Transition
-const reactionTransition = {
+const heartTransition = {
   duration: 0.2,
   ease: [0.22, 1, 0.36, 1],
 } satisfies Transition
@@ -91,7 +68,7 @@ const commentTransition = {
   ease: [0.22, 1, 0.36, 1],
 } satisfies Transition
 
-function AnimatedReactionCount({ count }: { readonly count: number }) {
+function AnimatedHeartCount({ count }: { readonly count: number }) {
   return (
     <span className="grid min-w-[1ch] overflow-hidden">
       <AnimatePresence initial={false}>
@@ -101,7 +78,7 @@ function AnimatedReactionCount({ count }: { readonly count: number }) {
           initial={{ opacity: 0, y: 3 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -3 }}
-          transition={reactionTransition}
+          transition={heartTransition}
         >
           {count}
         </m.span>
@@ -110,75 +87,42 @@ function AnimatedReactionCount({ count }: { readonly count: number }) {
   )
 }
 
-function ReactionItem({
-  type,
-  label,
-  icon: Icon,
+function HeartControl({
   count,
-  active,
+  hasHeart,
   disabled,
-}: {
-  readonly type: ReactionType
-  readonly label: string
-  readonly icon: LucideIcon
-  readonly count: number
-  readonly active: boolean
-  readonly disabled: boolean
-}) {
-  return (
-    <ToggleGroupItem value={type} aria-label={label} disabled={disabled}>
-      <m.span
-        className={cn("inline-flex", active ? "text-primary" : undefined)}
-        initial={false}
-        animate={active ? { scale: [1, 1.16, 1] } : { scale: 1 }}
-        transition={reactionTransition}
-      >
-        <Icon
-          aria-hidden="true"
-          data-icon="inline-start"
-          className={cn(type === "heart" && active ? "fill-current" : undefined)}
-        />
-      </m.span>
-      <AnimatedReactionCount count={count} />
-    </ToggleGroupItem>
-  )
-}
-
-function ReactionControls({
-  active,
-  counts,
-  disabled,
-  label,
-  onValueChange,
+  onPressedChange,
   variant,
 }: {
-  readonly active: ReactionType[]
-  readonly counts: ReactionCounts
+  readonly count: number
+  readonly hasHeart: boolean
   readonly disabled: boolean
-  readonly label: string
-  readonly onValueChange: (next: unknown[]) => void
+  readonly onPressedChange: (pressed: boolean) => void
   readonly variant: "default" | "outline"
 }) {
   return (
-    <ToggleGroup
-      value={active}
-      onValueChange={onValueChange}
+    <Toggle
+      pressed={hasHeart}
+      onPressedChange={onPressedChange}
       variant={variant}
       size="sm"
-      aria-label={label}
+      aria-label="Heart"
+      disabled={disabled}
     >
-      {reactionDetails.map((reaction) => (
-        <ReactionItem
-          key={reaction.type}
-          type={reaction.type}
-          label={reaction.label}
-          icon={reaction.icon}
-          count={counts[reaction.type]}
-          active={active.includes(reaction.type)}
-          disabled={disabled}
+      <m.span
+        className={cn("inline-flex", hasHeart ? "text-primary" : undefined)}
+        initial={false}
+        animate={hasHeart ? { scale: [1, 1.16, 1] } : { scale: 1 }}
+        transition={heartTransition}
+      >
+        <Heart
+          aria-hidden="true"
+          data-icon="inline-start"
+          className={cn(hasHeart ? "fill-current" : undefined)}
         />
-      ))}
-    </ToggleGroup>
+      </m.span>
+      <AnimatedHeartCount count={count} />
+    </Toggle>
   )
 }
 
@@ -193,12 +137,12 @@ function elementPosition(element: Element): ObservedVerticalPosition {
 
 export function SocialPanel({
   postId,
-  counts,
+  heartCount,
   commentCount,
   imageCount,
 }: {
   postId: string
-  counts: ReactionCounts
+  heartCount: number
   commentCount: number
   imageCount: number
 }) {
@@ -209,7 +153,7 @@ export function SocialPanel({
     useState<ObservedVerticalPosition>("visible")
   const [footerActionsPosition, setFooterActionsPosition] =
     useState<ObservedVerticalPosition>("below")
-  const [confirmedCounts, setConfirmedCounts] = useState(counts)
+  const [confirmedHeartCount, setConfirmedHeartCount] = useState(heartCount)
   const [replyingTo, setReplyingTo] = useState<DiscussionComment | null>(null)
   const discussion = useSuspenseInfiniteQuery(discussionQueryOptions(postId))
   const session = useSession(authClient)
@@ -221,11 +165,10 @@ export function SocialPanel({
   const viewerPending = session.isPending || (sessionUserId !== null && viewer.isPending)
   const viewerId = viewer.data?.viewerId ?? null
   const viewerRole = viewer.data?.viewerRole ?? null
-  const active = viewer.data?.viewerReactions ?? []
-  const [optimisticActive, setOptimisticActive] = useOptimistic(
-    active,
-    (current: ReactionType[], update: { type: ReactionType; active: boolean }) =>
-      applyOptimisticReaction(current, update),
+  const hasHeart = viewer.data?.viewerHasHeart ?? false
+  const [optimisticHasHeart, setOptimisticHasHeart] = useOptimistic(
+    hasHeart,
+    (_current: boolean, next: boolean) => next,
   )
   const comments: CommentPage[] = discussion.data.pages.flatMap((page) =>
     page.comments.map((comment) => ({ ...comment })),
@@ -262,21 +205,16 @@ export function SocialPanel({
     return () => observer.disconnect()
   }, [postId])
 
-  const reactionMutation = useMutation({
-    mutationFn: (input: { type: ReactionType; active: boolean }) =>
-      setReaction({ data: { postId, ...input } }),
-    onSuccess: async (nextCounts) => {
-      setConfirmedCounts({
-        like: nextCounts.like ?? 0,
-        dislike: nextCounts.dislike ?? 0,
-        heart: nextCounts.heart ?? 0,
-      })
+  const heartMutation = useMutation({
+    mutationFn: (active: boolean) => setHeart({ data: { postId, active } }),
+    onSuccess: async ({ heartCount: nextHeartCount }) => {
+      setConfirmedHeartCount(nextHeartCount)
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: discussionKeys.viewerPost(postId) }),
         queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
       ])
     },
-    onError: () => toast.error("The reaction could not be saved."),
+    onError: () => toast.error("The heart could not be saved."),
   })
 
   const commentMutation = useMutation({
@@ -332,28 +270,22 @@ export function SocialPanel({
     },
   })
 
-  const displayedCounts = optimisticReactionCounts(confirmedCounts, active, optimisticActive)
+  const displayedHeartCount = optimisticHeartCount(
+    confirmedHeartCount,
+    hasHeart,
+    optimisticHasHeart,
+  )
   const showActionDock = shouldShowPostActionDock(contentStartPosition, footerActionsPosition)
 
-  function updateReactions(next: unknown[]) {
+  function updateHeart(nextHasHeart: boolean) {
     if (!viewerId) {
-      toast.error("Sign in to react.")
+      toast.error("Sign in to add a heart.")
       return
     }
-    const selected = new Set(
-      next.filter(
-        (value): value is ReactionType => typeof value === "string" && reactionTypeSet.has(value),
-      ),
-    )
-    const type = reactionTypes.find(
-      (candidate) => selected.has(candidate) !== optimisticActive.includes(candidate),
-    )
-    if (!type) return
-    const isActive = selected.has(type)
     startTransition(async () => {
-      setOptimisticActive({ type, active: isActive })
+      setOptimisticHasHeart(nextHasHeart)
       try {
-        await reactionMutation.mutateAsync({ type, active: isActive })
+        await heartMutation.mutateAsync(nextHasHeart)
       } catch {
         // React restores the confirmed state when this transition settles.
       }
@@ -380,12 +312,11 @@ export function SocialPanel({
             >
               <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:px-6">
                 <PostShareActions postId={postId} imageCount={imageCount} variant="ghost" />
-                <ReactionControls
-                  active={optimisticActive}
-                  counts={displayedCounts}
+                <HeartControl
+                  count={displayedHeartCount}
+                  hasHeart={optimisticHasHeart}
                   disabled={viewerPending || !viewerId}
-                  label={viewerId ? "Your quick reactions" : "Quick reaction totals"}
-                  onValueChange={updateReactions}
+                  onPressedChange={updateHeart}
                   variant="default"
                 />
                 <Button
@@ -415,12 +346,11 @@ export function SocialPanel({
           {viewerPending ? (
             <DiscussionViewerSkeleton />
           ) : (
-            <ReactionControls
-              active={optimisticActive}
-              counts={displayedCounts}
+            <HeartControl
+              count={displayedHeartCount}
+              hasHeart={optimisticHasHeart}
               disabled={!viewerId}
-              label={viewerId ? "Your reaction" : "Reaction totals"}
-              onValueChange={updateReactions}
+              onPressedChange={updateHeart}
               variant="outline"
             />
           )}
@@ -486,14 +416,14 @@ export function SocialPanel({
             </form>
           ) : sessionUserId ? (
             <p className="text-sm text-muted-foreground" role="status">
-              Your comment and reaction controls could not be loaded. Try refreshing the page.
+              Your comment and heart controls could not be loaded. Try refreshing the page.
             </p>
           ) : (
             <p className="text-sm text-muted-foreground">
               <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
                 Sign in
               </Link>{" "}
-              to react or comment.
+              to add a heart or comment.
             </p>
           )}
 

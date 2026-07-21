@@ -677,7 +677,6 @@ export function PostView({
   readonly authorAvatar?: ReactNode
   readonly className?: string
 }) {
-  const reactionCount = Object.values(post.reactions).reduce((total, count) => total + count, 0)
   const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
   const activePostTransition = activeSharedViewTransitionKind({
     kind: "post",
@@ -843,12 +842,12 @@ export function PostView({
               className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
             >
               <MessageCircle aria-hidden="true" className="size-3.5" />
-              {post.commentCount + reactionCount === 0 ? (
+              {post.commentCount + post.heartCount === 0 ? (
                 "Discuss"
               ) : (
                 <>
                   {post.commentCount} {post.commentCount === 1 ? "comment" : "comments"} ·{" "}
-                  {reactionCount} {reactionCount === 1 ? "reaction" : "reactions"}
+                  {post.heartCount} {post.heartCount === 1 ? "heart" : "hearts"}
                 </>
               )}
             </Link>

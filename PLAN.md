@@ -44,7 +44,7 @@ The legacy archive makes that identity concrete: most posts are large image coll
 Identity principles:
 
 - Show posts before product explanation. The public feed has no marketing hero.
-- Use direct social language: post, posted, latest, comments, reactions, and visibility.
+- Use direct social language: post, posted, latest, comments, hearts, and visibility.
 - Keep technical terms such as published status inside code, schemas, administration, and operations where precision matters. Do not expose that vocabulary as a brand voice.
 - Use a quiet warm canvas, coral as the main accent, and yellow sparingly. Artwork and video provide most of the color.
 - Use friendly Outfit typography throughout instead of an editorial heading and body split.
@@ -61,7 +61,7 @@ The rewrite must support:
 - Public, unlisted, draft, moderated, and deleted lifecycle states.
 - Up to five normalized tags per post, preserving the old tag contract.
 - Comments with author and moderator deletion.
-- Like, dislike, and heart reactions with one reaction state per user and post.
+- Heart reactions with at most one heart per user and post.
 - A recent-post feed, tag feeds, profile feeds, and account-owned post management.
 - Post creation, editing, deletion, upload progress, and media processing status.
 - User settings, email preferences, theme preference, and account deletion.
@@ -89,7 +89,7 @@ The old product exposed these user-facing routes:
 Historical data semantics that remain supported:
 
 - Post types: TEXT, IMAGES, VIDEO.
-- Reaction types: LIKE, DISLIKE, HEART.
+- Historical LIKE, DISLIKE, and HEART reactions are normalized to hearts in the rewrite.
 - Maximum title length: 100 characters.
 - Maximum text-post content length: 1,000 characters.
 - Maximum comment length: 250 characters.
@@ -150,7 +150,7 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 - Workflows handle long-running, resumable account deletion.
 - Email Service sends Better Auth and product emails.
 - Turnstile protects authentication and abuse-sensitive mutations.
-- Rate Limiting bindings protect broad anonymous, authenticated, auth, comment, reaction, and upload classes.
+- Rate Limiting bindings protect broad anonymous, authenticated, auth, comment, heart, and upload classes.
 - Analytics Engine records privacy-safe product and operational events, including post views.
 - Consent-gated PostHog records anonymous browser page views by stable route class without content,
   identity, or dynamic URL properties.
@@ -356,12 +356,13 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 
 #### reactions
 
-- postId, userId, type.
+- postId and userId.
 - createdAt and updatedAt.
-- primary key on postId and userId so one user has one current reaction per post.
-- type constrained to like, dislike, or heart.
+- primary key on postId and userId so one user has at most one heart per post.
 
-Changing reaction type updates the row. Removing a reaction deletes it. Aggregate counts are queried or projected, never trusted from the client.
+A row represents a heart. Removing a heart deletes it. Existing reaction rows become hearts when
+the heart-only migration runs. Aggregate counts are queried or projected, never trusted from the
+client.
 
 #### userFollows and tagFollows
 
@@ -389,7 +390,7 @@ At minimum:
 - posts by authorId, status, and createdAt.
 - postTags by tagId and postId.
 - comments by postId, status, and createdAt.
-- reactions by postId and type.
+- reactions by postId through the composite primary key.
 - userFollows by followedUserId and followerId.
 - tagFollows by tagId and userId.
 - profiles by normalizedUsername.
@@ -472,7 +473,7 @@ use bounded queue concurrency and delayed outbox retries.
 ### Public
 
 - /: recent public feed with cursor pagination.
-- /post/$postId: post detail with metadata, media, reaction counts, and comments.
+- /post/$postId: post detail with metadata, media, heart counts, and comments.
 - /tag/$tag: public tag feed.
 - /user/$username: profile and public posts.
 - /privacy: privacy policy.
@@ -519,8 +520,7 @@ Create service functions with explicit policy checks:
 - listPostsByAuthor
 - createComment
 - deleteComment
-- setReaction
-- clearReaction
+- setHeart
 - updateProfile
 - updatePreferences
 - requestAccountDeletion
@@ -588,7 +588,7 @@ The visual direction should feel like a clean community scrapbook without decora
 - Multi-image feed previews that reveal several images. Detail views use responsive masonry by
   default and a focused image browser for explicit shared-image links. Gallery options let readers
   switch between both layouts.
-- Detail pages that prioritize the post, then reactions and discussion.
+- Detail pages that prioritize the post, then hearts and discussion.
 - Account and admin tables that are dense, calm, direct, and keyboard-friendly.
 - Responsive behavior designed deliberately for narrow screens.
 
@@ -620,7 +620,7 @@ Do not put every section inside a Card. Use borders, separators, typography, and
 - Centralize query keys by domain.
 - Prefetch critical public route data in loaders.
 - Use mutation defaults and explicit invalidation.
-- Use optimistic updates for reactions and comments with rollback.
+- Use optimistic updates for hearts and comments with rollback.
 - Separate viewer-dependent query keys from public query keys.
 - Never cache unlisted or personalized results under a public key.
 
@@ -651,7 +651,7 @@ Workers Cache is enabled, but code decides what is safe:
 - Static assets use content hashes and immutable caching.
 - Public image variants can use long cache lifetimes.
 - Better Auth, account, admin, following, mutation, preview, draft, unlisted, and viewer-personalized responses use private or no-store.
-- Reaction state for the current viewer must not leak into a public cached response. Return aggregate public counts separately from viewer state or keep the response private.
+- Heart state for the current viewer must not leak into a public cached response. Return aggregate public counts separately from viewer state or keep the response private.
 - Invalidate or version public cached documents after publish, edit, moderation, or delete.
 
 Add tests that assert Cache-Control and Vary behavior for representative public and private routes.
@@ -750,7 +750,7 @@ Exit criteria:
 ### Phase 3: D1, Drizzle, and domain foundation
 
 - [x] Create `src/db` and `src/domain` boundaries.
-- [x] Define schema for profiles, settings, posts, tags, media, comments, reactions, audit, outbox, and migration tracking.
+- [x] Define schema for profiles, settings, posts, tags, media, comments, hearts, audit, outbox, and migration tracking.
 - [x] Generate the first Drizzle migration. Do not hand-edit it.
 - [x] Add D1 database factory and transaction helpers.
 - [x] Add repository interfaces and D1 implementations.
@@ -764,7 +764,7 @@ Exit criteria:
 
 - Fresh local D1 applies every generated migration.
 - Repository integration tests pass against SQLite-compatible storage.
-- Invalid reactions, duplicate usernames, orphan relationships, and illegal post states are rejected.
+- Duplicate hearts, duplicate usernames, orphan relationships, and illegal post states are rejected.
 
 ### Phase 4: Better Auth, Better Auth UI, captcha, and email
 
@@ -815,7 +815,7 @@ Exit criteria:
 - [x] Implement public post detail.
 - [x] Implement tag feed and profile feed.
 - [x] Add public profile header.
-- [x] Add public aggregate reaction counts without viewer leakage.
+- [x] Add public aggregate heart counts without viewer leakage.
 - [x] Add loading, empty, error, and offline-aware states.
 - [x] Add Open Graph metadata, canonical URLs, robots, and sitemap rules.
 - [x] Exclude unlisted and non-published content from discovery and caching.
@@ -855,9 +855,9 @@ Exit criteria:
 
 ### Phase 7: Social actions, profiles, settings, and tables
 
-- [x] Implement optimistic like, dislike, heart, and clear reaction mutations.
+- [x] Implement optimistic heart and clear-heart mutations.
 - [x] Implement comment creation and deletion.
-- [x] Add comment and reaction rate limits.
+- [x] Add comment and heart rate limits.
 - [x] Implement user and tag follows with a private Following feed.
 - [x] Implement profile and preference forms.
 - [x] Implement account deletion Workflow.
@@ -888,7 +888,7 @@ Exit criteria:
 
 ### Phase 9: Security, performance, and operational hardening
 
-- [x] Threat-model auth, uploads, Stream webhooks, comments, reactions, and admin actions.
+- [x] Threat-model auth, uploads, Stream webhooks, comments, hearts, and admin actions.
 - [x] Add security headers and a tested Content Security Policy.
 - [x] Add CSRF, origin, and content-type checks where the framework or Better Auth does not already cover them.
 - [x] Add body and field size limits before parsing.
@@ -900,7 +900,7 @@ Exit criteria:
 - [x] Add backup, restore, and D1 time-travel runbook.
 - [x] Add dashboards or queries for Worker errors, queue lag, media failures, and auth failures.
 - [x] Run warm local load tests for feed, populated post detail, and auth initiation.
-- [ ] Run authenticated preview load tests for reactions and comments.
+- [ ] Run authenticated preview load tests for hearts and comments.
 
 Exit criteria:
 
@@ -929,7 +929,7 @@ Go-live checks:
 - Text, image, and video rendering.
 - New sign-in and existing-user magic link.
 - Profile, tag, and unlisted behavior.
-- Reaction and comment mutation.
+- Heart and comment mutation.
 - New upload and media processing.
 - Admin moderation.
 - Email delivery.
@@ -1023,7 +1023,7 @@ Record future changes here with date, decision, reason, and affected phases.
   preview. A gallery options menu writes an explicit `layout=masonry` or `layout=browser` override
   to the URL. This affects Phase 5.
 - 2026-07-16: Integrate TanStack Query with router SSR dehydration and hydration. Public comments
-  use cache keys that never contain viewer state, while reactions and permissions use a separate
+  use cache keys that never contain viewer state, while hearts and permissions use a separate
   viewer-scoped key. Route loaders prefetch critical public data and localized Suspense boundaries
   preserve the surrounding page while slower content arrives. This affects Phases 5, 7, and 9.
 - 2026-07-17: Keep public pages from new accounts out of search until the account is verified and
@@ -1106,3 +1106,7 @@ Record future changes here with date, decision, reason, and affected phases.
   ID-only job per active subscription, and resolve content, ownership, preferences, and session
   state at delivery time. Offer comment and reply choices separately from email; send moderation
   and security alerts whenever a device has push enabled. This affects Phases 3, 4, 5, 9, and 10.
+- 2026-07-21: Replace like, dislike, and heart choices with one heart toggle. The three choices
+  added clutter without useful ranking semantics in a chronological friends-and-art feed. Existing
+  reaction rows become hearts, and the `(post_id, user_id)` key allows at most one heart per person
+  and post. This affects Phases 3, 5, 7, and 9.

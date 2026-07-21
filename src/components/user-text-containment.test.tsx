@@ -23,7 +23,7 @@ const post: PublicPostRead = {
   tags: [],
   viewCount: 0,
   commentCount: 0,
-  reactions: { like: 0, dislike: 0, heart: 0 },
+  heartCount: 0,
 }
 
 describe("user text containment", () => {

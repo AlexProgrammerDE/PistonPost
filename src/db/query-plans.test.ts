@@ -35,15 +35,15 @@ describe("hot D1 query plans", () => {
     ).toContain("posts_discovery_idx")
   })
 
-  test("uses relationship indexes for comments, reactions, and owner media", () => {
+  test("uses relationship indexes for comments, hearts, and owner media", () => {
     expect(
       plan(`SELECT id FROM comments
         WHERE post_id = 'post' AND status = 'published'
         ORDER BY created_at DESC LIMIT 26`),
     ).toContain("comments_post_status_created_idx")
-    expect(
-      plan("SELECT type, count(*) FROM reactions WHERE post_id = 'post' GROUP BY type"),
-    ).toContain("reactions_post_type_idx")
+    expect(plan("SELECT count(*) FROM reactions WHERE post_id = 'post'")).toContain(
+      "sqlite_autoindex_reactions_1",
+    )
     expect(
       plan(`SELECT id FROM media_assets
         WHERE owner_id = 'user' AND status = 'ready'
