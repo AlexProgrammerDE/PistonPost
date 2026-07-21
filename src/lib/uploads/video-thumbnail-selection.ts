@@ -1,8 +1,14 @@
 import { DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT } from "@/lib/video-thumbnail"
 
+import { MAX_VIDEO_DURATION_SECONDS } from "./video-upload-policy"
+
 const VIDEO_THUMBNAIL_CANDIDATE_PERCENTAGES = [0.1, 0.25, 0.5, 0.7, 0.85] as const
 const VIDEO_THUMBNAIL_SAMPLE_WIDTH = 160
 const VIDEO_THUMBNAIL_ANALYSIS_TIMEOUT_MS = 8_000
+
+export class VideoPreparationError extends Error {
+  override name = "VideoPreparationError"
+}
 
 export type VideoThumbnailFrame = {
   readonly data: Uint8ClampedArray
@@ -95,6 +101,17 @@ export function selectBestVideoThumbnailCandidate(
   return bestTimestampPct
 }
 
+export function validateVideoDuration(durationSeconds: number) {
+  if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+    throw new VideoPreparationError("This video could not be read. Try exporting it again.")
+  }
+  if (durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
+    throw new VideoPreparationError("Choose a video no longer than 10 minutes.")
+  }
+
+  return durationSeconds
+}
+
 function waitForVideoEvent(
   video: HTMLVideoElement,
   eventName: "loadedmetadata" | "seeked",
@@ -131,7 +148,7 @@ async function seekVideo(video: HTMLVideoElement, time: number, timeoutMs: numbe
   await seeked
 }
 
-export async function selectVideoThumbnailTimestamp(file: File) {
+export async function prepareVideoForUpload(file: File) {
   const video = document.createElement("video")
   const objectUrl = URL.createObjectURL(file)
   const deadline = performance.now() + VIDEO_THUMBNAIL_ANALYSIS_TIMEOUT_MS
@@ -145,13 +162,9 @@ export async function selectVideoThumbnailTimestamp(file: File) {
       await waitForVideoEvent(video, "loadedmetadata", VIDEO_THUMBNAIL_ANALYSIS_TIMEOUT_MS)
     }
 
-    if (
-      !Number.isFinite(video.duration) ||
-      video.duration <= 0 ||
-      video.videoWidth <= 0 ||
-      video.videoHeight <= 0
-    ) {
-      return DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT
+    const durationSeconds = validateVideoDuration(video.duration)
+    if (video.videoWidth <= 0 || video.videoHeight <= 0) {
+      throw new VideoPreparationError("This video could not be read. Try exporting it again.")
     }
 
     const scale = Math.min(1, VIDEO_THUMBNAIL_SAMPLE_WIDTH / video.videoWidth)
@@ -159,14 +172,19 @@ export async function selectVideoThumbnailTimestamp(file: File) {
     canvas.width = Math.max(1, Math.round(video.videoWidth * scale))
     canvas.height = Math.max(1, Math.round(video.videoHeight * scale))
     const context = canvas.getContext("2d", { willReadFrequently: true })
-    if (!context) return DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT
+    if (!context) {
+      return {
+        durationSeconds,
+        thumbnailTimestampPct: DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
+      }
+    }
 
     const candidates: VideoThumbnailCandidate[] = []
     for (const timestampPct of VIDEO_THUMBNAIL_CANDIDATE_PERCENTAGES) {
       const remainingTime = deadline - performance.now()
       if (remainingTime <= 0) break
       try {
-        const time = Math.min(video.duration - 0.001, video.duration * timestampPct)
+        const time = Math.min(durationSeconds - 0.001, durationSeconds * timestampPct)
         // Frame sampling stays ordered so browsers can seek through the local file efficiently.
         // eslint-disable-next-line no-await-in-loop
         await seekVideo(video, Math.max(0, time), remainingTime)
@@ -180,9 +198,13 @@ export async function selectVideoThumbnailTimestamp(file: File) {
       }
     }
 
-    return selectBestVideoThumbnailCandidate(candidates)
-  } catch {
-    return DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT
+    return {
+      durationSeconds,
+      thumbnailTimestampPct: selectBestVideoThumbnailCandidate(candidates),
+    }
+  } catch (error) {
+    if (error instanceof VideoPreparationError) throw error
+    throw new VideoPreparationError("This video could not be read. Try exporting it again.")
   } finally {
     video.removeAttribute("src")
     video.load()

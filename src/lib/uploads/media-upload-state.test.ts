@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { mediaUploadReducer, type UploadItem } from "./media-upload-state"
+import { createUploadItem, mediaUploadReducer, type UploadItem } from "./media-upload-state"
 
 function item(clientId: string): UploadItem {
   return {
@@ -13,6 +13,7 @@ function item(clientId: string): UploadItem {
     assetId: null,
     altText: "",
     progress: 0,
+    thumbnailTimestampPct: null,
     status: "queued",
     error: null,
   }
@@ -56,5 +57,19 @@ describe("mediaUploadReducer", () => {
     expect(
       mediaUploadReducer(current, { type: "reorder", activeId: "missing", overId: "one" }),
     ).toBe(current)
+  })
+
+  test("keeps prepared video metadata for the eventual upload", () => {
+    const video = createUploadItem(
+      new File(["video"], "clip.mp4", { type: "video/mp4" }),
+      "video",
+      { thumbnailTimestampPct: 0.7 },
+    )
+
+    expect(video).toMatchObject({
+      filename: "clip.mp4",
+      mimeType: "video/mp4",
+      thumbnailTimestampPct: 0.7,
+    })
   })
 })

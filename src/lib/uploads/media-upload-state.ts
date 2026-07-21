@@ -10,6 +10,7 @@ export type UploadItem = {
   assetId: string | null
   altText: string
   progress: number
+  thumbnailTimestampPct: number | null
   status: "queued" | "uploading" | "processing" | "ready" | "failed"
   error: string | null
 }
@@ -95,21 +96,19 @@ export function mediaUploadReducer(items: UploadItem[], action: UploadAction): U
 export function createUploadItem(
   file: File,
   kind: UploadKind,
-  metadata: { filename: string; mimeType: string } = {
-    filename: file.name,
-    mimeType: file.type,
-  },
+  metadata: { filename?: string; mimeType?: string; thumbnailTimestampPct?: number } = {},
 ): UploadItem {
   return {
     clientId: crypto.randomUUID(),
     file,
-    filename: metadata.filename,
-    mimeType: metadata.mimeType,
+    filename: metadata.filename ?? file.name,
+    mimeType: metadata.mimeType ?? file.type,
     kind,
     previewUrl: kind === "image" ? URL.createObjectURL(file) : null,
     assetId: null,
     altText: "",
     progress: 0,
+    thumbnailTimestampPct: metadata.thumbnailTimestampPct ?? null,
     status: "queued",
     error: null,
   }

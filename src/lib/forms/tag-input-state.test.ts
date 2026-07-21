@@ -19,4 +19,18 @@ describe("tag input state", () => {
       "four",
     ])
   })
+
+  it("normalizes invalid characters before adding tags", () => {
+    expect(addTagInputValues([], "##Furry art & memes!, !!!, valid_tag~2")).toEqual([
+      "Furry-art-memes",
+      "valid_tag~2",
+    ])
+  })
+
+  it("deduplicates and limits tags after normalization", () => {
+    expect(addTagInputValues(["Furry-Art"], `furry art, ${"a".repeat(65)}`)).toEqual([
+      "Furry-Art",
+      "a".repeat(64),
+    ])
+  })
 })

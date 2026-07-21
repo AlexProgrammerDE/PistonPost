@@ -3,8 +3,10 @@ import { describe, expect, test } from "bun:test"
 import {
   scoreVideoThumbnailFrame,
   selectBestVideoThumbnailCandidate,
+  validateVideoDuration,
   type VideoThumbnailFrame,
 } from "./video-thumbnail-selection"
+import { MAX_VIDEO_DURATION_SECONDS } from "./video-upload-policy"
 
 function frame(width: number, height: number, pixel: (x: number, y: number) => readonly number[]) {
   const data = new Uint8ClampedArray(width * height * 4)
@@ -39,5 +41,14 @@ describe("video thumbnail selection", () => {
 
   test("uses the midpoint when no frame can be sampled", () => {
     expect(selectBestVideoThumbnailCandidate([])).toBe(0.5)
+  })
+
+  test("rejects unreadable and overlong videos before upload", () => {
+    expect(validateVideoDuration(MAX_VIDEO_DURATION_SECONDS)).toBe(MAX_VIDEO_DURATION_SECONDS)
+    expect(() => validateVideoDuration(MAX_VIDEO_DURATION_SECONDS + 0.001)).toThrow(
+      "no longer than 10 minutes",
+    )
+    expect(() => validateVideoDuration(Number.POSITIVE_INFINITY)).toThrow("could not be read")
+    expect(() => validateVideoDuration(0)).toThrow("could not be read")
   })
 })

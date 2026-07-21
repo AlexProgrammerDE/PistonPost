@@ -78,7 +78,11 @@ import {
   type UploadItem,
 } from "@/lib/uploads/media-upload-state"
 import { UploadClientError, uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
-import { selectVideoThumbnailTimestamp } from "@/lib/uploads/video-thumbnail-selection"
+import {
+  prepareVideoForUpload,
+  VideoPreparationError,
+} from "@/lib/uploads/video-thumbnail-selection"
+import { MAX_VIDEO_UPLOAD_BYTES } from "@/lib/uploads/video-upload-policy"
 import { cn } from "@/lib/utils"
 import { DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT } from "@/lib/video-thumbnail"
 import {
@@ -105,7 +109,6 @@ const tagsSchema = z
   .max(5, "Use at most five tags.")
 const imageMimeSchema = z.enum(IMAGE_UPLOAD_MIME_TYPES)
 const MAX_POST_IMAGES = 20
-const MAX_VIDEO_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024
 
 const loadImageLightbox = () =>
   import("@/components/ImageLightbox").then((module) => ({
@@ -144,10 +147,11 @@ const composerMessages = new Set([
   "Too many uploads were started at once. Wait a minute and try again.",
   "A new post can contain at most 20 images.",
   "The image upload could not be started.",
-  "Large video uploads are not configured yet. Try a video under 200 MB.",
+  "This video is too large to upload right now. Try a video under 200 MB.",
   "The video upload could not be started. Try again.",
   "Media is still processing.",
   "Images are still being cleaned.",
+  "The video is still being checked.",
   "Video processing is taking longer than expected. The draft is still saved.",
   "The video could not be processed.",
   HUMAN_VERIFICATION_ERROR_MESSAGE,
@@ -170,7 +174,7 @@ function fileRejectionMessage(type: "images" | "video", message: string) {
 
   return type === "images"
     ? "Images must be JPG, PNG, GIF, WebP, or AVIF files no larger than 15 MB."
-    : "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload."
+    : "Choose a video no larger than 2 GB and no longer than 10 minutes."
 }
 
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
@@ -201,11 +205,12 @@ export function PostComposer({
   const [uploads, dispatch] = useReducer(mediaUploadReducer, [])
   const uploadsRef = useRef(uploads)
   const uploadControllers = useRef(new Map<string, AbortController>())
-  const imagePreparationGeneration = useRef(0)
+  const mediaPreparationGeneration = useRef(0)
   const turnstile = useRef<TurnstileChallengeHandle>(null)
   const allowNavigationRef = useRef(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [preparingImageCount, setPreparingImageCount] = useState(0)
+  const [isInspectingVideo, setIsInspectingVideo] = useState(false)
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -245,15 +250,14 @@ export function PostComposer({
         if (value.type === "images" && preparingImageCount > 0) {
           throw new Error("Images are still being cleaned.")
         }
+        if (value.type === "video" && isInspectingVideo) {
+          throw new Error("The video is still being checked.")
+        }
         if (value.type !== "text" && uploads.length === 0) {
           throw new Error(
             value.type === "images" ? "Choose at least one image." : "Choose a video.",
           )
         }
-        const videoThumbnailTimestamp =
-          value.type === "video" && uploads[0]
-            ? selectVideoThumbnailTimestamp(uploads[0].file)
-            : null
         const turnstileToken = await turnstile.current?.execute()
         if (!turnstileToken) throw new Error(HUMAN_VERIFICATION_ERROR_MESSAGE)
         const draft = await createPostDraft({ data: { draft: draftInput, turnstileToken } })
@@ -309,7 +313,7 @@ export function PostComposer({
               mimeType: item.file.type,
               byteSize: item.file.size,
               thumbnailTimestampPct:
-                (await videoThumbnailTimestamp) ?? DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
+                item.thumbnailTimestampPct ?? DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
             },
           })
           form.setFieldValue("mediaId", intent.assetId)
@@ -375,7 +379,8 @@ export function PostComposer({
   }
 
   function changeType(type: ComposerValues["type"]) {
-    imagePreparationGeneration.current += 1
+    mediaPreparationGeneration.current += 1
+    setIsInspectingVideo(false)
     releaseUploadPreviews(uploads)
     dispatch({ type: "reset" })
     form.setFieldValue("type", type)
@@ -398,20 +403,43 @@ export function PostComposer({
       const accepted = selected.filter(
         (file) => file.type.startsWith("video/") && file.size <= MAX_VIDEO_UPLOAD_BYTES,
       )
-      dispatch({
-        type: "add",
-        items: accepted.map((file) => createUploadItem(file, "video")),
-      })
       if (accepted.length !== selected.length) {
-        toast.error(
-          "Choose a video file no larger than 2 GB. Stream checks the 10-minute limit after upload.",
-        )
+        toast.error("Choose a video no larger than 2 GB and no longer than 10 minutes.")
+      }
+      const video = accepted[0]
+      if (!video) return
+
+      const preparationGeneration = ++mediaPreparationGeneration.current
+      setIsInspectingVideo(true)
+      try {
+        const prepared = await prepareVideoForUpload(video)
+        if (mediaPreparationGeneration.current === preparationGeneration) {
+          dispatch({
+            type: "add",
+            items: [
+              createUploadItem(video, "video", {
+                thumbnailTimestampPct: prepared.thumbnailTimestampPct,
+              }),
+            ],
+          })
+        }
+      } catch (error) {
+        toast.error(`Couldn’t add ${video.name}`, {
+          description:
+            error instanceof VideoPreparationError
+              ? error.message
+              : "This video could not be read. Try exporting it again.",
+        })
+      } finally {
+        if (mediaPreparationGeneration.current === preparationGeneration) {
+          setIsInspectingVideo(false)
+        }
       }
       return
     }
 
     setPreparingImageCount((count) => count + selected.length)
-    const preparationGeneration = ++imagePreparationGeneration.current
+    const preparationGeneration = ++mediaPreparationGeneration.current
     const prepared = []
     for (const file of selected) {
       try {
@@ -429,7 +457,7 @@ export function PostComposer({
         setPreparingImageCount((count) => Math.max(0, count - 1))
       }
     }
-    if (imagePreparationGeneration.current === preparationGeneration) {
+    if (mediaPreparationGeneration.current === preparationGeneration) {
       dispatch({
         type: "add",
         items: prepared.map(({ file, metadata }) => createUploadItem(file, "image", metadata)),
@@ -508,6 +536,7 @@ export function PostComposer({
                     type={type}
                     uploads={uploads}
                     preparingImageCount={preparingImageCount}
+                    isInspectingVideo={isInspectingVideo}
                     sensors={sensors}
                     onFiles={selectFiles}
                     onRemove={(item) => cancelUpload(item)}
@@ -596,14 +625,19 @@ function TypeSync({
 function MediaDropzonePrompt({
   type,
   preparingImageCount,
+  isInspectingVideo,
 }: {
   readonly type: "images" | "video"
   readonly preparingImageCount: number
+  readonly isInspectingVideo: boolean
 }) {
   const dragOver = useFileUpload((state) => state.dragOver)
   const mediaLabel = type === "images" ? "images" : "a video"
   const draggedMediaLabel = type === "images" ? "these images" : "this video"
-  const mediaPronoun = type === "images" ? "them" : "it"
+  const pendingCheckMessage =
+    type === "images"
+      ? "They’ll be checked before they’re added."
+      : "It’ll be checked before it’s added."
 
   return (
     <>
@@ -616,18 +650,22 @@ function MediaDropzonePrompt({
       />
       <div className="flex max-w-sm flex-col items-center gap-1 text-center">
         <p role="status" className={cn("font-medium", dragOver ? "text-primary" : undefined)}>
-          {preparingImageCount > 0
-            ? `Cleaning ${preparingImageCount} ${preparingImageCount === 1 ? "image" : "images"}`
-            : dragOver
-              ? `Release to add ${draggedMediaLabel}`
-              : `Drop ${mediaLabel} here`}
+          {isInspectingVideo
+            ? "Checking video"
+            : preparingImageCount > 0
+              ? `Cleaning ${preparingImageCount} ${preparingImageCount === 1 ? "image" : "images"}`
+              : dragOver
+                ? `Release to add ${draggedMediaLabel}`
+                : `Drop ${mediaLabel} here`}
         </p>
         <p className="text-sm text-muted-foreground">
-          {preparingImageCount > 0
-            ? "Removing hidden data and trimming oversized photos before upload."
-            : dragOver
-              ? `Uploading starts as soon as you drop ${mediaPronoun}.`
-              : "You can also paste from your clipboard."}
+          {isInspectingVideo
+            ? "Checking its length and choosing a preview frame."
+            : preparingImageCount > 0
+              ? "Removing hidden data and trimming oversized photos before upload."
+              : dragOver
+                ? pendingCheckMessage
+                : "You can also paste from your clipboard."}
         </p>
       </div>
     </>
@@ -638,6 +676,7 @@ function MediaPicker({
   type,
   uploads,
   preparingImageCount,
+  isInspectingVideo,
   sensors,
   onFiles,
   onRemove,
@@ -647,6 +686,7 @@ function MediaPicker({
   type: "images" | "video"
   uploads: UploadItem[]
   preparingImageCount: number
+  isInspectingVideo: boolean
   sensors: ReturnType<typeof useSensors>
   onFiles: (files: File[], type: ComposerValues["type"]) => Promise<void>
   onRemove: (item: UploadItem) => void
@@ -658,7 +698,7 @@ function MediaPicker({
   const limit =
     type === "images"
       ? `JPG, PNG, GIF, WebP, or AVIF. Up to ${MAX_POST_IMAGES} files, 15 MB and 80 megapixels each.`
-      : "One Stream-supported video, up to 2 GB and 10 minutes. Large files upload in resumable chunks."
+      : "One video, up to 2 GB and 10 minutes."
   const inputLabel = `Choose ${type === "images" ? "images" : "a video"} to upload`
   const imageUploads = uploads.filter(
     (item): item is UploadItem & { previewUrl: string } =>
@@ -687,7 +727,9 @@ function MediaPicker({
         maxSize={type === "images" ? MAX_IMAGE_UPLOAD_BYTES : MAX_VIDEO_UPLOAD_BYTES}
         label={inputLabel}
         multiple={type === "images"}
-        disabled={preparingImageCount > 0 || (type === "video" && uploads.length > 0)}
+        disabled={
+          preparingImageCount > 0 || isInspectingVideo || (type === "video" && uploads.length > 0)
+        }
         onAccept={(files) => void onFiles(files, type)}
         onFileReject={(_, message) =>
           toast.error(fileRejectionMessage(type, message), {
@@ -699,7 +741,11 @@ function MediaPicker({
           aria-label={type === "images" ? "Image dropzone" : "Video dropzone"}
           className="min-h-40 data-dragging:border-primary data-dragging:bg-primary/5 data-dragging:ring-[3px] data-dragging:ring-primary/15"
         >
-          <MediaDropzonePrompt type={type} preparingImageCount={preparingImageCount} />
+          <MediaDropzonePrompt
+            type={type}
+            preparingImageCount={preparingImageCount}
+            isInspectingVideo={isInspectingVideo}
+          />
           <FileUploadTrigger render={<Button type="button" variant="outline" size="sm" />}>
             <Upload aria-hidden="true" data-icon="inline-start" />
             {type === "images" ? "Browse images" : "Browse for a video"}

@@ -1,5 +1,7 @@
 import { Effect, Schema } from "effect"
 
+import { MAX_VIDEO_DURATION_SECONDS } from "@/lib/uploads/video-upload-policy"
+
 const STREAM_API_ORIGIN = "https://api.cloudflare.com"
 const STREAM_UPLOAD_HOSTS = new Set(["upload.cloudflarestream.com", "upload.videodelivery.net"])
 
@@ -46,7 +48,7 @@ export function streamUploadMetadata({
 >) {
   return [
     ["name", filename],
-    ["maxDurationSeconds", "600"],
+    ["maxDurationSeconds", MAX_VIDEO_DURATION_SECONDS.toString()],
     ["expiry", expiresAt.toISOString()],
     ["scheduleddeletion", scheduledDeletion.toISOString()],
     ["thumbnailtimestamppct", thumbnailTimestampPct.toString()],

@@ -9,6 +9,10 @@ import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import {
+  MAX_VIDEO_DURATION_SECONDS,
+  MAX_VIDEO_UPLOAD_BYTES,
+} from "@/lib/uploads/video-upload-policy"
+import {
   DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
   MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
   MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
@@ -19,7 +23,6 @@ import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 
-const MAX_VIDEO_BYTES = 2 * 1024 * 1024 * 1024
 const MAX_IMAGES_PER_POST = 20
 const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
 
@@ -194,7 +197,7 @@ const videoIntentInput = z.object({
     .string()
     .trim()
     .regex(/^video\//),
-  byteSize: z.number().int().min(1).max(MAX_VIDEO_BYTES),
+  byteSize: z.number().int().min(1).max(MAX_VIDEO_UPLOAD_BYTES),
   thumbnailTimestampPct: z
     .number()
     .min(MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT)
@@ -274,10 +277,10 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
       }
     } else {
       if (data.byteSize >= BASIC_STREAM_UPLOAD_MAX_BYTES) {
-        throw new Error("Large video uploads are not configured yet. Try a video under 200 MB.")
+        throw new Error("This video is too large to upload right now. Try a video under 200 MB.")
       }
       const directUpload = await context.env.STREAM.createDirectUpload({
-        maxDurationSeconds: 600,
+        maxDurationSeconds: MAX_VIDEO_DURATION_SECONDS,
         expiry: expiresAt.toISOString(),
         creator: session.user.id,
         allowedOrigins: [],
