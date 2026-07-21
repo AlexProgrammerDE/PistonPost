@@ -76,6 +76,9 @@ export function createAuth(runtime: AuthRuntime) {
     basePath: "/api/auth",
     secret: runtime.secret,
     database: drizzleAdapter(runtime.database, { provider: "sqlite", schema }),
+    verification: {
+      storeIdentifier: "hashed",
+    },
     experimental: { joins: true },
     trustedOrigins: [...runtime.trustedOrigins],
     emailAndPassword: {
@@ -153,6 +156,7 @@ export function createAuth(runtime: AuthRuntime) {
       },
     },
     account: {
+      encryptOAuthTokens: true,
       accountLinking: {
         enabled: true,
       },
