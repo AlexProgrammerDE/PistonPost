@@ -12,6 +12,7 @@ import {
   lastLoginMethod,
   magicLink,
   multiSession,
+  openAPI,
   twoFactor,
   username,
 } from "better-auth/plugins"
@@ -35,7 +36,6 @@ export type AuthRuntime = {
   readonly trustedOrigins: ReadonlyArray<string>
   readonly turnstileSecret: string
   readonly production: boolean
-  readonly captchaEnabled?: boolean
   readonly infraEnabled?: boolean
   readonly sendEmail: (message: AuthenticationEmail) => Promise<void>
   readonly runInBackground?: (promise: Promise<unknown>) => void
@@ -59,13 +59,6 @@ export type AuthRuntime = {
 
 function usernameIsValid(value: string) {
   return value.length >= 1 && value.length <= 32 && /^[A-Za-z0-9._~-]+$/.test(value)
-}
-
-export function turnstileAllowedHostnames(baseURL: string) {
-  const hostname = new URL(baseURL).hostname
-  return hostname === "localhost" || hostname === "127.0.0.1"
-    ? [hostname, "example.com"]
-    : [hostname]
 }
 
 function rejectUnmanagedAvatar(): never {
@@ -137,7 +130,6 @@ export function createAuth(runtime: AuthRuntime) {
       },
       deleteUser: {
         enabled: true,
-        deleteTokenExpiresIn: 60 * 60,
         sendDeleteAccountVerification: async ({ user, url, token }) => {
           await send({
             to: user.email,
@@ -154,32 +146,22 @@ export function createAuth(runtime: AuthRuntime) {
       },
     },
     session: {
-      freshAge: 60 * 15,
       cookieCache: {
         enabled: true,
-        maxAge: 60 * 5,
+        maxAge: 5 * 60,
         strategy: "jwe",
-        refreshCache: false,
       },
     },
     account: {
       accountLinking: {
         enabled: true,
-        disableImplicitLinking: true,
       },
-    },
-    rateLimit: {
-      enabled: true,
-      window: 60,
-      max: 100,
-      storage: "database",
     },
     advanced: {
       cookiePrefix: "pistonpost",
-      useSecureCookies: runtime.production,
       database: { generateId: "uuid" },
       ipAddress: {
-        ipAddressHeaders: ["cf-connecting-ip"],
+        ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
       },
       backgroundTasks: runtime.runInBackground ? { handler: runtime.runInBackground } : undefined,
     },
@@ -254,7 +236,6 @@ export function createAuth(runtime: AuthRuntime) {
       }),
       twoFactor({
         issuer: "PistonPost",
-        allowPasswordless: true,
         otpOptions: {
           period: 3,
           allowedAttempts: 5,
@@ -287,23 +268,15 @@ export function createAuth(runtime: AuthRuntime) {
             }),
             sentinel({ apiKey: runtime.betterAuthApiKey }),
           ]),
-      ...(runtime.captchaEnabled === false
-        ? []
-        : [
+      openAPI(),
+      ...(runtime.production
+        ? [
             captcha({
               provider: "cloudflare-turnstile",
               secretKey: runtime.turnstileSecret,
-              allowedHostnames: turnstileAllowedHostnames(runtime.baseURL),
-              endpoints: [
-                "/sign-up/email",
-                "/sign-in/email",
-                "/sign-in/username",
-                "/sign-in/magic-link",
-                "/email-otp/send-verification-otp",
-                "/request-password-reset",
-              ],
             }),
-          ]),
+          ]
+        : []),
       tanstackStartCookies(),
     ],
   })
