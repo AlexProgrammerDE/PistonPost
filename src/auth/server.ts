@@ -107,6 +107,7 @@ export function createAuth(runtime: AuthRuntime) {
     emailVerification: {
       sendOnSignUp: true,
       sendOnSignIn: true,
+      autoSignInAfterVerification: true,
       sendVerificationEmail: async ({ user, url, token }) => {
         await send({
           to: user.email,

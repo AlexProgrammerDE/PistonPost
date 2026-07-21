@@ -129,6 +129,40 @@ describe("request-scoped Better Auth", () => {
     expect(emails.map((email) => email.content.template)).toEqual(["email-verification"])
   })
 
+  it("automatically signs in a user after email verification", async () => {
+    const { auth, database, emails } = setup()
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Verified User",
+        username: "verified-user",
+        email: "verified@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    const verificationUrl = emails[0]?.content.action?.url
+    if (!verificationUrl) throw new Error("The verification email did not include an action URL.")
+
+    const verificationResponse = await auth.handler(
+      new Request(verificationUrl, {
+        headers: { origin: "http://localhost:3000" },
+      }),
+    )
+    const cookie = verificationResponse.headers
+      .getSetCookie()
+      .map((value) => value.split(";", 1)[0])
+      .join("; ")
+
+    expect(verificationResponse.status).toBe(302)
+    expect(cookie).toContain("pistonpost.session_token=")
+    expect(database.select().from(schema.user).get()?.emailVerified).toBeTrue()
+    expect(database.select().from(schema.session).all()).toHaveLength(1)
+
+    const sessionResponse = await auth.handler(sessionRequest(cookie))
+    expect(await sessionResponse.json()).toMatchObject({
+      user: { email: "verified@example.com", emailVerified: true },
+    })
+  })
+
   it("does not share database state between auth factories", async () => {
     const first = setup()
     const second = setup()

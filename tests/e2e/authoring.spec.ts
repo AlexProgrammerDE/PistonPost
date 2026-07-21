@@ -86,11 +86,11 @@ async function createVerifiedSession(context: BrowserContext) {
   })
   expect(verification.status()).toBeLessThan(400)
 
-  const signIn = await context.request.post("/api/auth/sign-in/email", {
-    headers: authHeaders,
-    data: { email, password: TEST_PASSWORD },
+  const session = await context.request.get("/api/auth/get-session", {
+    headers: { "cf-connecting-ip": clientAddress },
   })
-  expect(signIn.status()).toBe(200)
+  expect(session.status()).toBe(200)
+  expect(await session.json()).toMatchObject({ user: { email, emailVerified: true } })
   return { username }
 }
 
