@@ -312,11 +312,29 @@ https://www.youtube.com/watch?v=M7lc1UVf-VE
     await expect(like).toHaveAttribute("aria-pressed", "true")
     await expect(like).toContainText("1")
 
-    const commentText = "The animated discussion still works."
+    const commentImageRequests: string[] = []
+    page.on("request", (request) => {
+      if (request.url().startsWith("https://images.example/")) {
+        commentImageRequests.push(request.url())
+      }
+    })
+    const commentText = `The **animated discussion** still works.
+
+![A curious cat](https://images.example/cat.png)
+
+https://youtu.be/dQw4w9WgXcQ`
+    await expect(page.getByText("Markdown formatting is supported.")).toBeVisible()
     await page.getByLabel("Add a comment").fill(commentText)
     await page.getByRole("button", { name: "Post comment" }).click()
-    const comment = page.getByRole("article").filter({ hasText: commentText })
+    const comment = page.getByRole("article").filter({
+      has: page.getByText("animated discussion", { exact: true }),
+    })
     await expect(comment).toBeVisible()
+    await expect(comment.getByText("animated discussion")).toHaveCSS("font-weight", "600")
+    await expect(comment.getByRole("link", { name: /Image: A curious cat/u })).toBeVisible()
+    await expect(comment.getByText("YouTube embed")).toHaveCount(0)
+    await expect(comment.locator("iframe")).toHaveCount(0)
+    expect(commentImageRequests).toEqual([])
     await expect(comment.getByText("Sending…")).toHaveCount(0)
 
     await comment.getByRole("button", { name: "Delete comment" }).click()

@@ -24,7 +24,10 @@ import { cn } from "@/lib/utils"
 
 type MarkdownContextValue = {
   readonly postId?: string
+  readonly variant: MarkdownVariant
 }
+
+type MarkdownVariant = "post" | "comment"
 
 const MarkdownContext = createContext<MarkdownContextValue | null>(null)
 const markdownPlugins = [remarkGfm]
@@ -133,6 +136,9 @@ function ExternalLinkCard({ href, label }: { href: string; label: string }) {
 }
 
 function MarkdownParagraph({ node, children, ...props }: ComponentProps<"p"> & ExtraProps) {
+  const { variant } = useMarkdownContext()
+  if (variant === "comment") return <p {...props}>{children}</p>
+
   const standalone = node ? standaloneLink(node) : null
   const href = standalone ? safeUserGeneratedUrl(standalone.href) : null
   if (href) {
@@ -146,8 +152,20 @@ function MarkdownParagraph({ node, children, ...props }: ComponentProps<"p"> & E
 }
 
 function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
-  const { postId } = useMarkdownContext()
+  const { postId, variant } = useMarkdownContext()
   if (!src) return alt ? <span>{alt}</span> : null
+
+  if (variant === "comment") {
+    return (
+      <UserGeneratedLink
+        href={src}
+        className="inline-flex max-w-full items-center gap-1 overflow-hidden align-middle"
+      >
+        <ImageIcon aria-hidden="true" className="size-3.5 shrink-0" />
+        <span className="min-w-0 truncate">{alt ? `Image: ${alt}` : "Image link"}</span>
+      </UserGeneratedLink>
+    )
+  }
 
   const localSource = src.startsWith("/") && !src.startsWith("//")
   const proxySource = postId && isProxyableExternalImageUrl(src)
@@ -172,22 +190,41 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
   )
 }
 
+function MarkdownTable({ node, ...props }: ComponentProps<"table"> & ExtraProps) {
+  const { variant } = useMarkdownContext()
+  void node
+  if (variant === "comment") {
+    return (
+      <div className="typeset-scroll">
+        <table {...props} />
+      </div>
+    )
+  }
+  return <table {...props} />
+}
+
 const markdownComponents: Components = {
   a: MarkdownLink,
   img: MarkdownImage,
   p: MarkdownParagraph,
+  table: MarkdownTable,
 }
 
 export function MarkdownContent({
   children,
   className,
   postId,
+  variant = "post",
 }: {
   readonly children: string
   readonly className?: string
   readonly postId?: string
+  readonly variant?: MarkdownVariant
 }) {
-  const context = useMemo<MarkdownContextValue>(() => (postId ? { postId } : {}), [postId])
+  const context = useMemo<MarkdownContextValue>(
+    () => (postId ? { postId, variant } : { variant }),
+    [postId, variant],
+  )
 
   return (
     <UserGeneratedLinkProvider>
@@ -196,6 +233,7 @@ export function MarkdownContent({
           dir="auto"
           className={cn(
             "typeset min-w-0 overflow-hidden wrap-anywhere [&_blockquote]:overflow-hidden [&_figcaption]:overflow-hidden [&_h1]:overflow-hidden [&_h2]:overflow-hidden [&_h3]:overflow-hidden [&_h4]:overflow-hidden [&_h5]:overflow-hidden [&_h6]:overflow-hidden [&_li]:overflow-hidden [&_p]:overflow-hidden [&_td]:overflow-hidden [&_th]:overflow-hidden",
+            variant === "comment" && "typeset-comment",
             className,
           )}
         >

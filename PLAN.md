@@ -1035,6 +1035,10 @@ Record future changes here with date, decision, reason, and affected phases.
   a click before loading, and external links require confirmation. External Markdown images pass
   through a bounded Cloudflare Images proxy, while uploaded video remains on Cloudflare Stream. The
   text limit increases to 10,000 characters. This affects Phases 3, 5, and 9.
+- 2026-07-21: Render comments and replies as GitHub-flavored Markdown without storing a format flag.
+  Keep the 250-character limit and existing link confirmation. Use compact comment typography,
+  leave standalone links as links instead of embeds or preview cards, and render Markdown images as
+  links so comments never initiate remote image requests. This affects Phases 3, 5, and 9.
 - 2026-07-16: Keep Masonry as the default gallery layout while making long posts easier to navigate.
   Post metadata and gallery options appear before media, the focused browser has direct image
   navigation, and a temporary action dock keeps engagement controls reachable until the canonical

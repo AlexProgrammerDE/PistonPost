@@ -29,6 +29,7 @@ import { authClient } from "@/auth/client"
 import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { DateTime } from "@/components/DateTime"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
+import { MarkdownContent } from "@/components/MarkdownContent"
 import { MotionBoundary } from "@/components/MotionBoundary"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
@@ -469,6 +470,7 @@ export function SocialPanel({
                     <field.TextareaField
                       label={replyingTo ? "Add a reply" : "Add a comment"}
                       placeholder={replyingTo ? "Write a reply…" : "Write a comment…"}
+                      description="Markdown formatting is supported."
                       maxLength={250}
                       rows={3}
                     />
@@ -583,12 +585,9 @@ export function SocialPanel({
                           </span>
                         ) : null}
                       </div>
-                      <p
-                        dir="auto"
-                        className="mt-1 overflow-hidden text-sm leading-6 whitespace-pre-wrap"
-                      >
+                      <MarkdownContent variant="comment" className="mt-1">
                         {comment.content}
-                      </p>
+                      </MarkdownContent>
                       {!comment.optimistic && !comment.parentId && viewerId ? (
                         <Button
                           type="button"

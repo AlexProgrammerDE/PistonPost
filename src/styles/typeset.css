@@ -463,4 +463,31 @@
     --typeset-leading: 1.75;
     --typeset-flow: 1.4em;
   }
+
+  .typeset-comment {
+    --typeset-size: 0.875rem;
+    --typeset-leading: 1.7;
+    --typeset-flow: 0.75em;
+  }
+
+  .typeset.typeset-comment
+    *:not(:where(.not-typeset, [data-not-typeset], .not-typeset *, [data-not-typeset] *)) {
+    &:where(p) {
+      white-space: pre-wrap;
+    }
+
+    &:where(h1, h2, h3, h4, h5, h6) {
+      color: inherit;
+      font-size: 1em;
+      font-weight: 600;
+      letter-spacing: normal;
+      line-height: inherit;
+      margin-block-start: var(--typeset-flow);
+      text-transform: none;
+    }
+
+    &:where(h1 + *, h2 + *, h3 + *, h4 + *, h5 + *, h6 + *) {
+      margin-block-start: var(--typeset-flow);
+    }
+  }
 }

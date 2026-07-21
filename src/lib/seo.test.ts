@@ -147,6 +147,27 @@ describe("SEO metadata", () => {
     )
   })
 
+  it("uses plain comment text in structured data", () => {
+    const head = createPostSeoHead({
+      ...basePost,
+      commentCount: 1,
+      structuredComments: [
+        {
+          id: "comment-one",
+          content: "**Lovely** [photo](https://example.com/photo) ~~today~~",
+          createdAt: new Date("2026-07-16T15:00:00.000Z"),
+          updatedAt: new Date("2026-07-16T15:00:00.000Z"),
+          authorName: "Mira",
+          authorUsername: "Mira",
+          authorNormalizedUsername: "mira",
+        },
+      ],
+    })
+
+    expect(head.scripts[0]?.children).toContain('"text":"Lovely photo today"')
+    expect(head.scripts[0]?.children).not.toContain("**Lovely**")
+  })
+
   it("builds the legacy multi-image share bundle with distinct social-card URLs", () => {
     const links = createPostShareLinks("post one", 8)
 

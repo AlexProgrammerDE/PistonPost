@@ -247,7 +247,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     comment: post.structuredComments?.map((comment) => ({
       "@type": "Comment",
       "@id": `${canonical}#comment-${encodeURIComponent(comment.id)}`,
-      text: comment.content,
+      text: markdownToPlainText(comment.content),
       datePublished: comment.createdAt.toISOString(),
       dateModified:
         comment.updatedAt > comment.createdAt ? comment.updatedAt.toISOString() : undefined,
