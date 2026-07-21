@@ -51,6 +51,8 @@
     "AUTH_EMAIL_FROM": "PistonPost Auth <auth@transactional.pistonmaster.net>",
     "NOTIFICATIONS_EMAIL_FROM": "PistonPost <notifications@transactional.pistonmaster.net>",
     "SUPPORT_EMAIL": "support@pistonmaster.net",
+    "VAPID_PUBLIC_KEY": "",
+    "VAPID_SUBJECT": "mailto:support@pistonmaster.net",
   },
   "d1_databases": [
     {
@@ -137,6 +139,8 @@
         "AUTH_EMAIL_FROM": "PistonPost Staging <auth@transactional.pistonmaster.net>",
         "NOTIFICATIONS_EMAIL_FROM": "PistonPost Staging <notifications@transactional.pistonmaster.net>",
         "SUPPORT_EMAIL": "support@pistonmaster.net",
+        "VAPID_PUBLIC_KEY": "",
+        "VAPID_SUBJECT": "mailto:support@pistonmaster.net",
       },
       "d1_databases": [
         {
@@ -233,6 +237,8 @@
         "AUTH_EMAIL_FROM": "PistonPost Auth <auth@transactional.pistonmaster.net>",
         "NOTIFICATIONS_EMAIL_FROM": "PistonPost <notifications@transactional.pistonmaster.net>",
         "SUPPORT_EMAIL": "support@pistonmaster.net",
+        "VAPID_PUBLIC_KEY": "BKWIQi-fqBMqJPwppNAh1XLTJSGD7tR1S1HzFp5RYBY8NWjOR6eAPKSnSlKQY9z1qBt3SjF_2d-WWUlPb6rTeto",
+        "VAPID_SUBJECT": "mailto:support@pistonmaster.net",
       },
       "observability": {
         "enabled": true,

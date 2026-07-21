@@ -28,7 +28,7 @@ function PrivacyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Privacy Policy</h1>
-        <p>Last updated: July 20, 2026.</p>
+        <p>Last updated: July 21, 2026.</p>
         <p>
           This policy explains what PistonPost currently handles when you use the service, why it is
           handled, which providers are involved, and the choices available to you.
@@ -57,8 +57,10 @@ function PrivacyPage() {
             reliability or performance events.
           </li>
           <li>
-            <strong>Delivery data:</strong> notification settings and records of transactional email
-            attempts and delivery outcomes.
+            <strong>Delivery data:</strong> email and push notification settings, transactional
+            delivery outcomes, and push subscription capabilities supplied by your browser. A push
+            capability includes its provider endpoint and encryption keys. PistonPost does not put
+            those capabilities or message content in queue or analytics events.
           </li>
         </ul>
 
@@ -124,6 +126,21 @@ function PrivacyPage() {
           Cloudflare Analytics Engine receives aggregate view and operational events, including the
           post identifier, type, visibility, and viewing surface, without a viewer identity.
         </p>
+
+        <h2>Push notifications</h2>
+        <p>
+          Push notifications are optional and enabled separately on each device. When enabled,
+          PistonPost stores the browser&apos;s push capability with the signed-in session and sends
+          generic comment, reply, moderation, and account security alerts. The alert can appear on a
+          lock screen, so its text avoids post titles, comment text, usernames, and moderation
+          reasons.
+        </p>
+        <p>
+          Your browser routes encrypted alerts through its push provider. Depending on the browser
+          and device, that provider can be Google, Mozilla, Apple, or Microsoft. PistonPost sends an
+          encrypted payload and the provider learns the delivery endpoint, timing, and technical
+          delivery details. Browser and operating-system notification settings also apply.
+        </p>
         <p>
           Optional PostHog analytics stay disabled until you consent. When enabled, PistonPost sends
           pseudonymous page-view events using broad route categories such as post, tag, or profile.
@@ -158,6 +175,10 @@ function PrivacyPage() {
           <li>
             <strong>Have I Been Pwned</strong> for compromised-password checks in production.
           </li>
+          <li>
+            <strong>Browser push providers</strong> operated by Google, Mozilla, Apple, or Microsoft
+            when you enable push on a compatible device.
+          </li>
         </ul>
         <p>
           Cloudflare handles traffic through its global network. Processing locations for other
@@ -178,6 +199,11 @@ function PrivacyPage() {
             verification data expires sooner.
           </li>
           <li>Incomplete staged media uploads are eligible for cleanup after 24 hours.</li>
+          <li>
+            A push capability is removed when its session is revoked, you disable push on that
+            device, the provider reports that it expired, or the account is deleted. Push providers
+            can retain an encrypted pending alert for up to 24 hours for delivery.
+          </li>
           <li>
             Account deletion removes account data and content through database deletion and an
             asynchronous media cleanup workflow. Deleted information can remain temporarily in
@@ -200,9 +226,10 @@ function PrivacyPage() {
         <h2>Your choices</h2>
         <p>
           Account settings let you update your profile and security settings, manage sessions, and
-          start account deletion. You can edit or delete content through its available controls and
-          can change optional analytics consent at any time. PistonPost does not currently provide a
-          self-service account export.
+          start account deletion. Notification settings let you choose comment and reply alerts by
+          channel and enable or disable push on each device. You can edit or delete content through
+          its available controls and can change optional analytics consent at any time. PistonPost
+          does not currently provide a self-service account export.
         </p>
         <p>
           To ask for access to a copy of your information, correction, deletion, restriction, or

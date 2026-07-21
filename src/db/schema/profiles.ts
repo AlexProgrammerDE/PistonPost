@@ -43,6 +43,12 @@ export const userSettings = sqliteTable(
     productNotifications: integer("product_notifications", { mode: "boolean" })
       .notNull()
       .default(false),
+    commentPushNotifications: integer("comment_push_notifications", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    replyPushNotifications: integer("reply_push_notifications", { mode: "boolean" })
+      .notNull()
+      .default(true),
     theme: text("theme", { enum: ["system", "light", "dark"] })
       .notNull()
       .default("system"),

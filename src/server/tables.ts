@@ -5,9 +5,11 @@ import { z } from "zod"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { moderationEmailJob } from "@/email"
+import { moderationPushJob, type PushDeliveryJob } from "@/push/jobs"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
+import { listActivePushSubscriptionIds } from "./push-subscriptions"
 import { assertMutationOrigin, requireAdministrator, requireRequestSession } from "./session"
 
 export const getMyPosts = createServerFn({ method: "GET" }).handler(async ({ context }) => {
@@ -517,10 +519,21 @@ export const moderateEntity = createServerFn({ method: "POST" })
             .where(and(eq(schema.comments.id, data.id), eq(schema.comments.status, expectedStatus)))
     const moderationEventId = crypto.randomUUID()
     const jobs: Array<
-      ReturnType<typeof moderationEmailJob> | ReturnType<typeof cacheInvalidationJob>
+      | ReturnType<typeof moderationEmailJob>
+      | ReturnType<typeof cacheInvalidationJob>
+      | PushDeliveryJob
     > = [cacheInvalidationJob(target.postId)]
     if (target.authorId !== session.user.id) {
       jobs.push(moderationEmailJob(target.authorId, moderationEventId))
+      const subscriptions = await listActivePushSubscriptionIds(database, target.authorId)
+      jobs.push(
+        ...subscriptions.map(({ subscriptionId }) =>
+          moderationPushJob(
+            { recipientUserId: target.authorId, subscriptionId },
+            moderationEventId,
+          ),
+        ),
+      )
     }
     await database.batch([
       updateTarget,

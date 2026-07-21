@@ -4,7 +4,11 @@ import { sql } from "drizzle-orm"
 
 import { createMigratedTestDatabase, schema } from "@/db"
 
-import { outboxClaimCondition, outboxRetryDelayMs } from "./outbox-repository"
+import {
+  outboxClaimCondition,
+  outboxRetryAfterSeconds,
+  outboxRetryDelayMs,
+} from "./outbox-repository"
 
 const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
 
@@ -86,5 +90,11 @@ describe("outbox claim policy", () => {
     expect(outboxRetryDelayMs(1)).toBe(30_000)
     expect(outboxRetryDelayMs(2)).toBe(60_000)
     expect(outboxRetryDelayMs(20)).toBe(15 * 60 * 1_000)
+  })
+
+  it("delays a queue retry until deferred outbox work is available", () => {
+    const now = new Date("2026-07-21T12:00:00.000Z")
+    expect(outboxRetryAfterSeconds(new Date(now.getTime() + 90_001), now)).toBe(91)
+    expect(outboxRetryAfterSeconds(new Date(now.getTime() - 1), now)).toBe(1)
   })
 })

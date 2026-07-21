@@ -7,7 +7,9 @@ import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { commentInputSchema } from "@/domain"
 import { commentEmailJob, replyEmailJob } from "@/email"
+import { commentPushJob, replyPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { createRequestAuth } from "@/server/auth"
+import { listActivePushSubscriptionIds } from "@/server/push-subscriptions"
 import { assertMutationOrigin, requireRequestSession } from "@/server/session"
 
 const reactionType = z.enum(["like", "dislike", "heart"])
@@ -199,12 +201,26 @@ export const createComment = createServerFn({ method: "POST" })
     }
     if (parent?.parentId) throw new Error("Replies can only be one level deep.")
     const id = crypto.randomUUID()
-    const jobs: Array<ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob>> = []
+    const jobs: Array<
+      ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob> | PushDeliveryJob
+    > = []
     if (parent && parent.authorId !== session.user.id) {
       jobs.push(replyEmailJob(parent.authorId, id))
+      const subscriptions = await listActivePushSubscriptionIds(database, parent.authorId)
+      jobs.push(
+        ...subscriptions.map(({ subscriptionId }) =>
+          replyPushJob({ recipientUserId: parent.authorId, subscriptionId }, id),
+        ),
+      )
     }
     if (post.authorId !== session.user.id && (!parent || parent.authorId !== post.authorId)) {
       jobs.push(commentEmailJob(post.authorId, id))
+      const subscriptions = await listActivePushSubscriptionIds(database, post.authorId)
+      jobs.push(
+        ...subscriptions.map(({ subscriptionId }) =>
+          commentPushJob({ recipientUserId: post.authorId, subscriptionId }, id),
+        ),
+      )
     }
     await database.batch([
       database.insert(schema.comments).values({

@@ -8,12 +8,14 @@ const secretBindings = [
   "STREAM_WEBHOOK_SECRET",
   "STREAM_ACCOUNT_ID",
   "STREAM_API_TOKEN",
+  "VAPID_PRIVATE_KEY",
 ]
 const productionOrigin = "https://post.pistonmaster.net"
 const productionVariables = {
   AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
   NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
   SUPPORT_EMAIL: "support@pistonmaster.net",
+  VAPID_SUBJECT: "mailto:support@pistonmaster.net",
 } as const
 
 type JsonRecord = Record<string, unknown>
@@ -23,6 +25,7 @@ export interface ProductionDeployInput {
   readonly turnstileSiteKey: string
   readonly d1DatabaseId: string
   readonly secretsStoreId: string
+  readonly vapidPublicKey: string
 }
 
 function isRecord(value: unknown): value is JsonRecord {
@@ -75,6 +78,10 @@ export function readProductionDeployInput(
   ) {
     throw new Error("PRODUCTION_TURNSTILE_SITE_KEY must use the production Turnstile widget.")
   }
+  const vapidPublicKey = requiredEnvironmentVariable(environment, "PRODUCTION_VAPID_PUBLIC_KEY")
+  if (!/^[A-Za-z0-9_-]{80,100}$/.test(vapidPublicKey)) {
+    throw new Error("PRODUCTION_VAPID_PUBLIC_KEY must be a URL-safe VAPID public key.")
+  }
 
   return {
     baseUrl: parsedBaseUrl.origin,
@@ -87,6 +94,7 @@ export function readProductionDeployInput(
       requiredEnvironmentVariable(environment, "PRODUCTION_SECRETS_STORE_ID"),
       "PRODUCTION_SECRETS_STORE_ID",
     ),
+    vapidPublicKey,
   }
 }
 
@@ -141,6 +149,7 @@ export function prepareProductionDeployConfig(
       ...variables,
       PUBLIC_APP_URL: input.baseUrl,
       TURNSTILE_SITE_KEY: input.turnstileSiteKey,
+      VAPID_PUBLIC_KEY: input.vapidPublicKey,
     },
     d1_databases: databases,
     secrets_store_secrets: secretBindings.map((secretName) => ({

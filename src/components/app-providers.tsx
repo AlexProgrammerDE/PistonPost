@@ -3,6 +3,7 @@ import { ThemeProvider, useTheme } from "next-themes"
 import { useEffect, type PropsWithChildren } from "react"
 
 import { AuthenticationProvider } from "@/components/providers"
+import { PushSubscriptionSync } from "@/components/push-subscription-sync"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { CookieConsentProvider } from "@/lib/integrations/cookie-consent"
@@ -28,15 +29,18 @@ export function AppProviders({
   children,
   queryClient,
   turnstileSiteKey,
+  vapidPublicKey,
 }: PropsWithChildren<{
   readonly queryClient: QueryClient
   readonly turnstileSiteKey?: string
+  readonly vapidPublicKey: string | null
 }>) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <ThemeColorSync />
         <AuthenticationProvider queryClient={queryClient} turnstileSiteKey={turnstileSiteKey}>
+          <PushSubscriptionSync vapidPublicKey={vapidPublicKey} />
           <CookieConsentProvider>
             <PostHogProvider>
               <TooltipProvider>

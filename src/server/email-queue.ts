@@ -1,6 +1,6 @@
 import { cache } from "cloudflare:workers"
 import { and, eq, gt, isNull } from "drizzle-orm"
-import { Effect, Either, Exit, Layer, Predicate, Schema } from "effect"
+import { Cause, Effect, Either, Exit, Layer, Option, Predicate, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -14,6 +14,8 @@ import {
   type EmailDeliveryJob,
   type ProductEmailBatchJob,
 } from "@/email"
+import { decodePushDeliveryJob, type PushDeliveryJob } from "@/push/jobs"
+import { PushTransport, webPushTransportLayer } from "@/push/transport"
 
 import { mediaCacheTag } from "./cache-tags"
 import { deadLetterMetadata } from "./dead-letter"
@@ -21,21 +23,31 @@ import { requireEmailBinding } from "./email-binding"
 import { EmailJobResolver, emailJobResolverLayer } from "./email-job-resolver"
 import { internalJobSchema, type InternalJob } from "./jobs"
 import { writeOperationalEvent } from "./operational-events"
-import { OutboxRepository, outboxRepositoryLayer } from "./outbox-repository"
+import { OutboxRepository, outboxRepositoryLayer, outboxRetryDelayMs } from "./outbox-repository"
+import { PushJobResolver, pushJobResolverLayer } from "./push-job-resolver"
 
 export class QueueDeliveryError extends Schema.TaggedError<QueueDeliveryError>()(
   "QueueDeliveryError",
-  { operation: Schema.String },
+  { operation: Schema.String, retryAfterSeconds: Schema.Number },
 ) {}
 
-function queueFailure(operation: string) {
-  return () => new QueueDeliveryError({ operation })
+function queueFailure(operation: string, retryAfterSeconds = 30) {
+  return () => new QueueDeliveryError({ operation, retryAfterSeconds })
 }
 
 function errorCode(error: unknown) {
   if (typeof error !== "object" || error === null || !("_tag" in error)) return "UnknownError"
   const tag = Reflect.get(error, "_tag")
   return typeof tag === "string" ? tag : "UnknownError"
+}
+
+function retryableQueueError(error: unknown, attempt: number) {
+  return error instanceof QueueDeliveryError
+    ? error
+    : new QueueDeliveryError({
+        operation: errorCode(error),
+        retryAfterSeconds: Math.ceil(outboxRetryDelayMs(attempt) / 1_000),
+      })
 }
 
 async function purgeCacheTags(tags: ReadonlyArray<string>) {
@@ -57,7 +69,12 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
   yield* outbox.ensure(job.idempotencyKey, job.type, job)
   const claim = yield* outbox.claim(job.idempotencyKey)
   if (Predicate.isTagged(claim, "Deferred")) {
-    yield* Effect.fail(new QueueDeliveryError({ operation: "outbox-deferred" }))
+    yield* Effect.fail(
+      new QueueDeliveryError({
+        operation: "outbox-deferred",
+        retryAfterSeconds: claim.retryAfterSeconds,
+      }),
+    )
   }
   if (!Predicate.isTagged(claim, "Claimed")) return
 
@@ -104,6 +121,7 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
     catch: queueFailure("internal-job"),
   }).pipe(
     Effect.tapError((error) => outbox.release(job.idempotencyKey, claim.attempt, errorCode(error))),
+    Effect.mapError((error) => retryableQueueError(error, claim.attempt)),
   )
 
   yield* operation
@@ -119,7 +137,12 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
   yield* outbox.ensure(job.idempotencyKey, job.type, job)
   const claim = yield* outbox.claim(job.idempotencyKey)
   if (Predicate.isTagged(claim, "Deferred")) {
-    yield* Effect.fail(new QueueDeliveryError({ operation: "outbox-deferred" }))
+    yield* Effect.fail(
+      new QueueDeliveryError({
+        operation: "outbox-deferred",
+        retryAfterSeconds: claim.retryAfterSeconds,
+      }),
+    )
   }
   if (!Predicate.isTagged(claim, "Claimed")) return
 
@@ -148,6 +171,7 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
     }
   }).pipe(
     Effect.tapError((error) => outbox.release(job.idempotencyKey, claim.attempt, errorCode(error))),
+    Effect.mapError((error) => retryableQueueError(error, claim.attempt)),
   )
 
   yield* operation
@@ -161,7 +185,12 @@ const deliverProductBatch = Effect.fn("Queue.deliverProductBatch")(function* (
   yield* outbox.ensure(job.idempotencyKey, job.type, job)
   const claim = yield* outbox.claim(job.idempotencyKey)
   if (Predicate.isTagged(claim, "Deferred")) {
-    yield* Effect.fail(new QueueDeliveryError({ operation: "outbox-deferred" }))
+    yield* Effect.fail(
+      new QueueDeliveryError({
+        operation: "outbox-deferred",
+        retryAfterSeconds: claim.retryAfterSeconds,
+      }),
+    )
   }
   if (!Predicate.isTagged(claim, "Claimed")) return
 
@@ -253,10 +282,109 @@ const deliverProductBatch = Effect.fn("Queue.deliverProductBatch")(function* (
           }),
     ),
     Effect.tapError((error) => outbox.release(job.idempotencyKey, claim.attempt, errorCode(error))),
+    Effect.mapError((error) => retryableQueueError(error, claim.attempt)),
   )
 
   yield* operation
   yield* outbox.complete(job.idempotencyKey, "batch-created")
+})
+
+const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
+  job: PushDeliveryJob,
+  env: Cloudflare.Env,
+) {
+  const outbox = yield* OutboxRepository
+  const resolver = yield* PushJobResolver
+  const transport = yield* PushTransport
+  yield* outbox.ensure(job.idempotencyKey, job.type, job)
+  const claim = yield* outbox.claim(job.idempotencyKey)
+  if (Predicate.isTagged(claim, "Deferred")) {
+    yield* Effect.fail(
+      new QueueDeliveryError({
+        operation: "outbox-deferred",
+        retryAfterSeconds: claim.retryAfterSeconds,
+      }),
+    )
+  }
+  if (!Predicate.isTagged(claim, "Claimed")) return
+
+  const operation = Effect.gen(function* () {
+    const resolved = yield* resolver
+      .resolve(job)
+      .pipe(
+        Effect.mapError(
+          () => new QueueDeliveryError({ operation: "push-resolution", retryAfterSeconds: 30 }),
+        ),
+      )
+    if (Predicate.isTagged(resolved, "Skip")) {
+      yield* outbox.complete(job.idempotencyKey, resolved.reason)
+      yield* Effect.sync(() =>
+        writeOperationalEvent(env, "push.delivery", [job.type, "skipped", resolved.reason]),
+      )
+      return
+    }
+
+    const outcome = yield* transport.send(resolved.target, resolved.payload).pipe(
+      Effect.as("accepted" as const),
+      Effect.catchTag("PushSubscriptionExpired", () => Effect.succeed("expired" as const)),
+      Effect.catchTag("PushRateLimited", (error) =>
+        Effect.fail(
+          new QueueDeliveryError({
+            operation: "push-rate-limited",
+            retryAfterSeconds: error.retryAfterSeconds,
+          }),
+        ),
+      ),
+      Effect.catchTag("PushDeliveryError", (error) =>
+        error.retryable
+          ? Effect.fail(
+              new QueueDeliveryError({
+                operation: `push-${error.code}`,
+                retryAfterSeconds: 30,
+              }),
+            )
+          : Effect.succeed("rejected" as const),
+      ),
+    )
+
+    if (outcome === "accepted") {
+      yield* Effect.tryPromise({
+        try: () =>
+          createD1Database(env.DB)
+            .update(schema.pushSubscriptions)
+            .set({ lastSuccessAt: new Date(), updatedAt: new Date() })
+            .where(eq(schema.pushSubscriptions.id, job.subscriptionId)),
+        catch: queueFailure("push-mark-success"),
+      })
+      yield* outbox.complete(job.idempotencyKey, "provider-accepted")
+    } else if (outcome === "expired") {
+      yield* Effect.tryPromise({
+        try: () =>
+          createD1Database(env.DB)
+            .delete(schema.pushSubscriptions)
+            .where(eq(schema.pushSubscriptions.id, job.subscriptionId)),
+        catch: queueFailure("push-remove-subscription"),
+      })
+      yield* outbox.complete(job.idempotencyKey, "subscription-expired")
+    } else {
+      yield* outbox.complete(job.idempotencyKey, "provider-rejected")
+    }
+    yield* Effect.sync(() => writeOperationalEvent(env, "push.delivery", [job.type, outcome]))
+  }).pipe(
+    Effect.tapError((error) =>
+      outbox.release(
+        job.idempotencyKey,
+        claim.attempt,
+        errorCode(error),
+        Predicate.isTagged(error, "QueueDeliveryError")
+          ? error.retryAfterSeconds * 1_000
+          : undefined,
+      ),
+    ),
+    Effect.mapError((error) => retryableQueueError(error, claim.attempt)),
+  )
+
+  yield* operation
 })
 
 const processQueueBody = Effect.fn("Queue.processBody")(function* (
@@ -267,15 +395,22 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
   if (internal.success) {
     yield* deliverInternalJob(internal.data, env)
   } else {
-    const decoded = decodeEmailQueueJob(body)
-    if (Either.isLeft(decoded)) {
-      yield* Effect.fail(new QueueDeliveryError({ operation: "invalid-job" }))
+    const push = decodePushDeliveryJob(body)
+    if (Either.isRight(push)) {
+      yield* deliverPushJob(push.right, env)
     } else {
-      const job = decoded.right
-      if (job.type === "email.product-batch") {
-        yield* deliverProductBatch(job, env)
+      const decoded = decodeEmailQueueJob(body)
+      if (Either.isLeft(decoded)) {
+        yield* Effect.fail(
+          new QueueDeliveryError({ operation: "invalid-job", retryAfterSeconds: 30 }),
+        )
       } else {
-        yield* deliverEmailJob(job, env)
+        const job = decoded.right
+        if (job.type === "email.product-batch") {
+          yield* deliverProductBatch(job, env)
+        } else {
+          yield* deliverEmailJob(job, env)
+        }
       }
     }
   }
@@ -286,6 +421,8 @@ function originalOutboxId(body: unknown) {
   if (internal.success) return internal.data.idempotencyKey
   const email = decodeEmailQueueJob(body)
   if (Either.isRight(email)) return email.right.idempotencyKey
+  const push = decodePushDeliveryJob(body)
+  if (Either.isRight(push)) return push.right.idempotencyKey
   if (
     typeof body === "object" &&
     body !== null &&
@@ -390,12 +527,19 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
     return
   }
   const database = createD1Database(env.DB)
+  const vapidPrivateKey = readSecret(env.VAPID_PRIVATE_KEY, "VAPID_PRIVATE_KEY")
   const layer = Layer.mergeAll(
     outboxRepositoryLayer(database),
     emailJobResolverLayer(database, {
       baseURL: env.PUBLIC_APP_URL,
       getUnsubscribeSecret: () =>
         readSecret(env.EMAIL_UNSUBSCRIBE_SECRET, "EMAIL_UNSUBSCRIBE_SECRET"),
+    }),
+    pushJobResolverLayer(database),
+    webPushTransportLayer({
+      subject: env.VAPID_SUBJECT,
+      publicKey: env.VAPID_PUBLIC_KEY,
+      getPrivateKey: () => vapidPrivateKey,
     }),
     EmailRenderer.live,
     cloudflareEmailTransportLayer(requireEmailBinding(env)),
@@ -408,12 +552,21 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
           Effect.exit,
           Effect.tap((exit) =>
             Effect.sync(() => {
-              if (Exit.isSuccess(exit)) message.ack()
-              else message.retry()
+              if (Exit.isSuccess(exit)) {
+                message.ack()
+                return
+              }
+              const failure = Cause.failureOption(exit.cause)
+              const delaySeconds = Option.match(failure, {
+                onNone: () => 30,
+                onSome: (error) =>
+                  error instanceof QueueDeliveryError ? error.retryAfterSeconds : 30,
+              })
+              message.retry({ delaySeconds })
             }),
           ),
         ),
-      { concurrency: "unbounded" },
+      { concurrency: 4 },
     ).pipe(Effect.provide(layer)),
   )
 }

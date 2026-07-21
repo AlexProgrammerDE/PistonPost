@@ -14,3 +14,6 @@ STREAM_WEBHOOK_SECRET=
 STREAM_ACCOUNT_ID=
 # Dedicated API token with Stream Write permission. Do not reuse a deployment token.
 STREAM_API_TOKEN=
+# Generate this key pair once with `bunx web-push generate-vapid-keys`.
+# Put the public half in VAPID_PUBLIC_KEY in wrangler.jsonc.
+VAPID_PRIVATE_KEY=

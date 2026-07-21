@@ -9,7 +9,7 @@ type Database = ReturnType<typeof createD1Database>
 export type OutboxClaim =
   | Readonly<{ _tag: "Claimed"; attempt: number }>
   | Readonly<{ _tag: "Complete" }>
-  | Readonly<{ _tag: "Deferred" }>
+  | Readonly<{ _tag: "Deferred"; retryAfterSeconds: number }>
   | Readonly<{ _tag: "Unavailable" }>
 
 export class OutboxRepositoryError extends Schema.TaggedError<OutboxRepositoryError>()(
@@ -36,6 +36,7 @@ export class OutboxRepository extends Context.Tag("@pistonpost/email/OutboxRepos
       id: string,
       attempt: number,
       errorCode: string,
+      minimumDelayMs?: number,
     ) => Effect.Effect<void, OutboxRepositoryError>
   }
 >() {}
@@ -54,6 +55,10 @@ export function outboxClaimCondition(id: string, now: Date) {
 
 export function outboxRetryDelayMs(attempt: number) {
   return Math.min(15 * 60 * 1_000, 30_000 * 2 ** Math.max(0, attempt - 1))
+}
+
+export function outboxRetryAfterSeconds(availableAt: Date, now: Date) {
+  return Math.max(1, Math.ceil((availableAt.getTime() - now.getTime()) / 1_000))
 }
 
 function repositoryError(operation: string) {
@@ -103,7 +108,10 @@ export function outboxRepositoryLayer(database: Database) {
             return { _tag: "Complete" } satisfies OutboxClaim
           }
           return row && row.availableAt.getTime() > now.getTime()
-            ? ({ _tag: "Deferred" } satisfies OutboxClaim)
+            ? ({
+                _tag: "Deferred",
+                retryAfterSeconds: outboxRetryAfterSeconds(row.availableAt, now),
+              } satisfies OutboxClaim)
             : ({ _tag: "Unavailable" } satisfies OutboxClaim)
         },
         catch: repositoryError("claim"),
@@ -149,10 +157,10 @@ export function outboxRepositoryLayer(database: Database) {
         },
         catch: repositoryError("complete-product"),
       }),
-    release: (id, attempt, errorCode) =>
+    release: (id, attempt, errorCode, minimumDelayMs) =>
       Effect.tryPromise({
         try: async () => {
-          const delayMs = outboxRetryDelayMs(attempt)
+          const delayMs = Math.max(outboxRetryDelayMs(attempt), minimumDelayMs ?? 0)
           await database
             .update(schema.outbox)
             .set({

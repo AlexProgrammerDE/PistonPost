@@ -1,11 +1,12 @@
 "use client"
 
 import { useQueryClient } from "@tanstack/react-query"
-import { Bell, Save, TriangleAlert, UserRound } from "lucide-react"
+import { Bell, BellRing, Save, TriangleAlert, UserRound } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
 import { ChangeAvatar } from "@/components/auth/settings/account/change-avatar"
+import { PushDeviceSettings } from "@/components/push-device-settings"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Field,
@@ -130,6 +131,8 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
       commentNotifications: settings.commentNotifications,
       replyNotifications: settings.replyNotifications,
       productNotifications: settings.productNotifications,
+      commentPushNotifications: settings.commentPushNotifications,
+      replyPushNotifications: settings.replyPushNotifications,
     },
     onSubmit: async ({ value }) => {
       setError(null)
@@ -190,6 +193,44 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
                 />
               )}
             </form.AppField>
+          </FieldGroup>
+        </FieldSet>
+        <FieldSet>
+          <FieldLegend className="flex items-center gap-2">
+            <BellRing aria-hidden="true" className="size-4 text-muted-foreground" />
+            Push notifications
+          </FieldLegend>
+          <FieldDescription>
+            Fast alerts from PistonPost on each device you choose to enable.
+          </FieldDescription>
+          <FieldGroup>
+            <PushDeviceSettings vapidPublicKey={settings.vapidPublicKey} />
+            <form.AppField name="commentPushNotifications">
+              {(field) => (
+                <field.SwitchField
+                  label="Comments"
+                  description="A new comment appears on your post."
+                />
+              )}
+            </form.AppField>
+            <form.AppField name="replyPushNotifications">
+              {(field) => (
+                <field.SwitchField
+                  label="Replies"
+                  description="Someone replies to one of your comments."
+                />
+              )}
+            </form.AppField>
+            <RequiredNotificationSwitch
+              id="push-security-notifications"
+              label="Security"
+              description="Important account and sign-in activity. Always on while push is enabled."
+            />
+            <RequiredNotificationSwitch
+              id="push-moderation-notifications"
+              label="Moderation"
+              description="An administrator takes action on your content. Always on while push is enabled."
+            />
           </FieldGroup>
         </FieldSet>
         <ErrorMessage message={error} />

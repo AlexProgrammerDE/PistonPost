@@ -50,6 +50,32 @@ async function redactProcessedLegacyEmailJobs(env: Cloudflare.Env) {
   )
 }
 
+async function cleanExpiredPushSubscriptions(env: Cloudflare.Env) {
+  const database = createD1Database(env.DB)
+  const now = new Date()
+  const expired = await database
+    .select({ id: schema.pushSubscriptions.id })
+    .from(schema.pushSubscriptions)
+    .innerJoin(schema.session, eq(schema.session.id, schema.pushSubscriptions.sessionId))
+    .where(
+      or(
+        lte(schema.session.expiresAt, now),
+        and(
+          isNotNull(schema.pushSubscriptions.expirationTime),
+          lte(schema.pushSubscriptions.expirationTime, now),
+        ),
+      ),
+    )
+    .limit(100)
+  if (expired.length === 0) return
+  await database.delete(schema.pushSubscriptions).where(
+    inArray(
+      schema.pushSubscriptions.id,
+      expired.map(({ id }) => id),
+    ),
+  )
+}
+
 async function queueAbandonedMedia(env: Cloudflare.Env) {
   const database = createD1Database(env.DB)
   const abandoned = await database
@@ -175,6 +201,7 @@ export async function handleScheduled(_controller: ScheduledController, env: Clo
   await Promise.all([
     drainOutbox(env),
     redactProcessedLegacyEmailJobs(env),
+    cleanExpiredPushSubscriptions(env),
     queueAbandonedMedia(env),
     reconcileStream(env),
     reconcileVideoDownloads(env),

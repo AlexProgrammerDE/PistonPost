@@ -117,7 +117,7 @@ function RootError() {
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext()
-  const { turnstileSiteKey } = Route.useLoaderData()
+  const { turnstileSiteKey, vapidPublicKey } = Route.useLoaderData()
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -128,7 +128,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body>
-        <AppProviders queryClient={queryClient} turnstileSiteKey={turnstileSiteKey}>
+        <AppProviders
+          queryClient={queryClient}
+          turnstileSiteKey={turnstileSiteKey}
+          vapidPublicKey={vapidPublicKey}
+        >
           <AppShell>{children}</AppShell>
         </AppProviders>
         <Scripts />

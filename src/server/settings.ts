@@ -21,6 +21,8 @@ export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
         commentNotifications: schema.userSettings.commentNotifications,
         replyNotifications: schema.userSettings.replyNotifications,
         productNotifications: schema.userSettings.productNotifications,
+        commentPushNotifications: schema.userSettings.commentPushNotifications,
+        replyPushNotifications: schema.userSettings.replyPushNotifications,
       })
       .from(schema.user)
       .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.user.id))
@@ -33,6 +35,9 @@ export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
       commentNotifications: row.commentNotifications ?? true,
       replyNotifications: row.replyNotifications ?? true,
       productNotifications: row.productNotifications ?? false,
+      commentPushNotifications: row.commentPushNotifications ?? true,
+      replyPushNotifications: row.replyPushNotifications ?? true,
+      vapidPublicKey: context.env.VAPID_PUBLIC_KEY.trim() || null,
     }
   },
 )
@@ -87,6 +92,8 @@ const preferencesSchema = z.object({
   commentNotifications: z.boolean(),
   replyNotifications: z.boolean(),
   productNotifications: z.boolean(),
+  commentPushNotifications: z.boolean(),
+  replyPushNotifications: z.boolean(),
 })
 
 export const updateNotificationPreferences = createServerFn({ method: "POST" })

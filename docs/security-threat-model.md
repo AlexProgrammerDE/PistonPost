@@ -8,7 +8,7 @@ This threat model covers the initial Cloudflare deployment. It treats D1, privat
 - Draft, deleted, moderated, and unlisted content.
 - Private R2 originals, Stream video identifiers, and upload intents.
 - Administrative actions and audit history.
-- Email sending reputation and notification preferences.
+- Email sending reputation, push subscription capabilities, notification preferences, and VAPID private keys.
 
 ## Trust boundaries and controls
 
@@ -22,6 +22,7 @@ This threat model covers the initial Cloudflare deployment. It treats D1, privat
 | Administration         | Client-side role trust, stale role cache, stale moderation action                                         | Every server function reloads current role and ban state from D1, validates expected entity state, writes an audit event                                                                                                | session and moderation regression tests                               |
 | Public cache           | Personalized response leakage, unlisted caching, cookie confusion                                         | Anonymous-only cache, `Vary` on Cookie and Authorization, no cache on `Set-Cookie`, explicit private header for unlisted routes                                                                                         | `cache-policy.test.ts`                                                |
 | Queue and Workflow     | Duplicate work, poison messages, private data in logs                                                     | ID-only payloads, expiring outbox claims, completion after provider acceptance, terminal dead-letter state, metadata-only dead-letter records, resumable Workflow steps                                                 | queue schema and deletion tests                                       |
+| Web Push               | Endpoint exfiltration, SSRF, cross-account delivery, forged navigation, notification spam                 | Known-provider HTTPS endpoint allowlist, session-bound capabilities, delivery-time recipient and preference checks, same-origin service-worker navigation, explicit per-device opt-in, VAPID key in Secrets Store       | push contract, schema, and session-cascade tests                      |
 
 ## Browser policy
 
@@ -32,6 +33,7 @@ The current TanStack Start renderer emits inline hydration scripts, so CSP tempo
 ## Residual risks
 
 - Cloudflare Email Service and its delivery behavior are beta platform dependencies. Authentication remains usable through supported providers and passkeys if non-blocking notification delivery fails.
+- Web Push availability and delivery timing depend on browser and operating-system providers. Email remains the required service channel, and push payloads avoid content that should not appear on a lock screen.
 - Table v9 is beta but isolated to the shared table adapter and does not own authorization or persistence.
 - D1 has one primary writer. Mutations stay short and indexed, but bursts can still increase latency.
 - Cross-provider deletion can fail between D1, R2, and Stream. Outbox and Workflow state make those operations resumable.

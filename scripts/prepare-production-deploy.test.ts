@@ -10,6 +10,7 @@ const input = {
   turnstileSiteKey: "production-site-key",
   d1DatabaseId: "11111111-1111-1111-1111-111111111111",
   secretsStoreId: "22222222222222222222222222222222",
+  vapidPublicKey: "B".repeat(87),
 }
 
 const productionConfig = {
@@ -22,6 +23,8 @@ const productionConfig = {
     AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
     NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
     SUPPORT_EMAIL: "support@pistonmaster.net",
+    VAPID_PUBLIC_KEY: "",
+    VAPID_SUBJECT: "mailto:support@pistonmaster.net",
   },
   d1_databases: [
     {
@@ -48,6 +51,8 @@ describe("prepareProductionDeployConfig", () => {
       AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
       NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
       SUPPORT_EMAIL: "support@pistonmaster.net",
+      VAPID_PUBLIC_KEY: input.vapidPublicKey,
+      VAPID_SUBJECT: "mailto:support@pistonmaster.net",
     })
     expect(result.d1_databases).toEqual([
       {
@@ -93,6 +98,11 @@ describe("prepareProductionDeployConfig", () => {
         store_id: input.secretsStoreId,
         secret_name: "STREAM_API_TOKEN",
       },
+      {
+        binding: "VAPID_PRIVATE_KEY",
+        store_id: input.secretsStoreId,
+        secret_name: "VAPID_PRIVATE_KEY",
+      },
     ])
   })
 
@@ -126,6 +136,7 @@ describe("readProductionDeployInput", () => {
         PRODUCTION_TURNSTILE_SITE_KEY: input.turnstileSiteKey,
         PRODUCTION_D1_DATABASE_ID: input.d1DatabaseId,
         PRODUCTION_SECRETS_STORE_ID: input.secretsStoreId,
+        PRODUCTION_VAPID_PUBLIC_KEY: input.vapidPublicKey,
       }),
     ).toThrow("HTTPS origin")
   })
@@ -137,6 +148,7 @@ describe("readProductionDeployInput", () => {
         PRODUCTION_TURNSTILE_SITE_KEY: input.turnstileSiteKey,
         PRODUCTION_D1_DATABASE_ID: input.d1DatabaseId,
         PRODUCTION_SECRETS_STORE_ID: input.secretsStoreId,
+        PRODUCTION_VAPID_PUBLIC_KEY: input.vapidPublicKey,
       }),
     ).toThrow("must be https://post.pistonmaster.net")
   })
@@ -148,6 +160,7 @@ describe("readProductionDeployInput", () => {
         PRODUCTION_TURNSTILE_SITE_KEY: "replace-with-production-site-key",
         PRODUCTION_D1_DATABASE_ID: input.d1DatabaseId,
         PRODUCTION_SECRETS_STORE_ID: input.secretsStoreId,
+        PRODUCTION_VAPID_PUBLIC_KEY: input.vapidPublicKey,
       }),
     ).toThrow("production Turnstile widget")
   })

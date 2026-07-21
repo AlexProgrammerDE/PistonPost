@@ -146,7 +146,7 @@ TanStack Form currently uses its own 1.x release line. The v9 requirement applie
 - Cloudflare Images transforms and delivers image variants from trusted originals.
 - Cloudflare Stream ingests, transcodes, and thumbnails video, then Vidstack plays adaptive DASH
   manifests for Google Cast and native HLS manifests for AirPlay-capable browsers.
-- Queues handle durable asynchronous email, cleanup, media finalization, and analytics projection jobs.
+- Queues handle durable asynchronous email, Web Push, cleanup, media finalization, and analytics projection jobs.
 - Workflows handle long-running, resumable account deletion.
 - Email Service sends Better Auth and product emails.
 - Turnstile protects authentication and abuse-sensitive mutations.
@@ -212,6 +212,7 @@ Browser
 
 Queue consumers
   -> email dispatch
+  -> Web Push dispatch
   -> media finalization and orphan cleanup
   -> analytics projection
   -> reconciliation and retry
@@ -240,6 +241,9 @@ Use descriptive binding names and keep actual IDs out of committed documentation
 | UPLOAD_RATE_LIMITER   | RateLimit              | Upload initialization and finalization         |
 | TURNSTILE_SECRET      | Secret                 | Server-side captcha verification               |
 | BETTER_AUTH_SECRET    | Secret                 | Better Auth signing and encryption             |
+| VAPID_PUBLIC_KEY      | config                 | Browser Web Push subscription key              |
+| VAPID_PRIVATE_KEY     | Secret                 | Server Web Push signing key                    |
+| VAPID_SUBJECT         | config                 | Monitored Web Push contact                     |
 
 wrangler.jsonc should follow the useful EnderDash patterns:
 
@@ -288,9 +292,19 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 #### userSettings
 
 - userId, primary key.
-- emailNotifications.
+- Independent comment, reply, and product email preferences.
+- Independent comment and reply push preferences.
 - theme, constrained to system, light, or dark.
 - locale and timeZone only if the UI exposes them.
+
+#### pushSubscriptions
+
+- id, primary key.
+- userId and sessionId, both cascading foreign keys.
+- endpoint and endpointHash, with one owner per endpoint capability.
+- p256dh and auth encryption material.
+- expirationTime, lastSuccessAt, disabledAt, createdAt, and updatedAt.
+- Never copy endpoints or encryption material into Queue, outbox, log, or analytics payloads.
 
 #### posts
 
@@ -446,6 +460,12 @@ Exclude EnderDash organization, API key, subscription, OAuth-provider, Minecraft
 Use Cloudflare Email Service through a transport interface. In development, capture rendered messages without sending. Add snapshot or structural tests for subject, recipient, action URL, expiry wording, plain-text fallback, and branded HTML.
 
 All email jobs must be idempotent. Queue payloads carry a template key and safe template data, not pre-rendered HTML or secrets.
+
+Web Push uses the same outbox and Queue boundary. A comment, reply, moderation, or security event
+creates one ID-only job per active session-bound subscription. The consumer checks the current
+content state, recipient, preference, session, and subscription before delivery. Provider 404 and
+410 responses remove expired capabilities, 429 responses honor `Retry-After`, and transient failures
+use bounded queue concurrency and delayed outbox retries.
 
 ## Route plan
 
@@ -769,6 +789,11 @@ Exit criteria:
   - [x] Add reply notifications, administrator-controlled product campaigns, and signed product
         email unsubscribe links.
   - [x] Declare the Email Service binding in local, preview, and production environments.
+- [x] Add session-bound Web Push for comment, reply, moderation, and security alerts.
+  - [x] Add separate push preferences and per-device opt-in controls without prompting on page load.
+  - [x] Keep push capabilities in D1 and durable jobs ID-only.
+  - [x] Add VAPID delivery, delayed retries, expired-subscription cleanup, and safe service-worker navigation.
+  - [x] Document privacy, retention, browser provider, and production key configuration.
 - [x] Add auth rate limits, no-store policy, trusted origins, and audit hooks.
 - [x] Test session revocation before enabling cookie cache.
 - [x] Add end-to-end sign-up, verification, sign-in, recovery, passkey, 2FA, and sign-out coverage.
@@ -779,6 +804,7 @@ Exit criteria:
 - Captcha and rate-limit failures are clear and safe.
 - No auth response is publicly cached.
 - Email templates render and transport tests pass.
+- Push subscriptions follow session revocation and push delivery contracts pass.
 
 ### Phase 5: Public reading experience
 
@@ -1075,3 +1101,8 @@ Record future changes here with date, decision, reason, and affected phases.
   WebP containers. Keep color profiles that affect rendering, remove private and descriptive
   metadata, transcode AVIF to WebP, and have the upload Worker run the same WASM sanitizer as an
   idempotence gate before storage. This affects Phases 2 and 6.
+- 2026-07-21: Add Web Push on the existing outbox and `JOBS` Queue instead of another Worker or a
+  Durable Object. Store browser capabilities in D1 against the Better Auth session, create one
+  ID-only job per active subscription, and resolve content, ownership, preferences, and session
+  state at delivery time. Offer comment and reply choices separately from email; send moderation
+  and security alerts whenever a device has push enabled. This affects Phases 3, 4, 5, 9, and 10.

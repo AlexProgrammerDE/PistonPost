@@ -10,10 +10,12 @@ import {
   EmailRenderer,
   securityEmailJob,
 } from "@/email"
+import { securityPushJob, type PushDeliveryJob } from "@/push/jobs"
 
 import type { AppRequestContext } from "../server"
 import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
+import { listActivePushSubscriptionIds } from "./push-subscriptions"
 
 async function readSecret(secret: string | SecretsStoreSecret, name: string) {
   const value = (typeof secret === "string" ? secret : await secret.get()).trim()
@@ -156,7 +158,13 @@ export async function enqueueSecurityNotification(
 ) {
   const database = createD1Database(context.env.DB)
   const auditEventId = crypto.randomUUID()
-  const job = securityEmailJob(userId, auditEventId)
+  const subscriptions = await listActivePushSubscriptionIds(database, userId)
+  const jobs: Array<ReturnType<typeof securityEmailJob> | PushDeliveryJob> = [
+    securityEmailJob(userId, auditEventId),
+    ...subscriptions.map(({ subscriptionId }) =>
+      securityPushJob({ recipientUserId: userId, subscriptionId }, auditEventId),
+    ),
+  ]
   await database.batch([
     database.insert(schema.auditEvents).values({
       id: auditEventId,
@@ -166,12 +174,14 @@ export async function enqueueSecurityNotification(
       entityId,
       metadata: {},
     }),
-    database
-      .insert(schema.outbox)
-      .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-      .onConflictDoNothing(),
+    ...jobs.map((job) =>
+      database
+        .insert(schema.outbox)
+        .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+        .onConflictDoNothing(),
+    ),
   ])
-  await context.env.JOBS.send(job)
+  await context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job })))
 }
 
 export function privateAuthResponse(response: Response) {

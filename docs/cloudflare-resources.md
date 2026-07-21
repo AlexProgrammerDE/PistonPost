@@ -60,8 +60,9 @@ Queue names belong in Wrangler environment blocks. Queue payloads must use versi
 
 Authentication links and one-time codes never enter a Queue or D1 outbox row. Better Auth hands those
 messages to the request execution context and the email transport uses a small bounded retry. Comment,
-reply, moderation, security, and product notifications use ID-only outbox jobs. The consumer reloads
-the current recipient, content, and optional preference before sending.
+reply, moderation, security, product email, and Web Push notifications use ID-only outbox jobs. The
+consumer reloads the current recipient, content, subscription, and optional preference before
+sending. Push endpoints and encryption keys stay in D1 and never enter Queue payloads.
 
 ## Configure managed services
 
@@ -102,6 +103,7 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 - `STREAM_WEBHOOK_SECRET`
 - `STREAM_ACCOUNT_ID`
 - `STREAM_API_TOKEN`
+- `VAPID_PRIVATE_KEY`
 
 `STREAM_API_TOKEN` must be a dedicated token with Stream Write permission for the account in
 `STREAM_ACCOUNT_ID`. Do not reuse the broader token that deploys the Worker. The Worker reads these
@@ -119,12 +121,21 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name VAPID_PRIVATE_KEY --scopes workers --remote
 ```
 
 Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
-The deployment workflow binds all seven secrets by name. Its Cloudflare API token needs permission to
+The deployment workflow binds all eight secrets by name. Its Cloudflare API token needs permission to
 deploy Secrets Store bindings in addition to the permissions required by the other configured
 services.
+
+Generate a VAPID pair once for each environment with
+`bunx --bun web-push generate-vapid-keys --json`. Store the private value as
+`VAPID_PRIVATE_KEY`. Put the matching public value in the relevant Wrangler environment as
+`VAPID_PUBLIC_KEY`; for production, set `PRODUCTION_VAPID_PUBLIC_KEY` in `.env.production` so the
+deployment preparation step can validate and inject it. The public key is configuration, but it is
+useless if it does not match the private key. Keep the VAPID subject set to the monitored support
+address.
 
 The Sentinel browser plugin uses Better Auth's global identify endpoint by default. When the Better
 Auth project has a project-scoped ingestion URL, set `VITE_PUBLIC_BETTER_AUTH_IDENTIFY_URL` in the
@@ -162,8 +173,9 @@ Keep non-secret production deployment values in the tracked `.env.production` fi
 - `CLOUDFLARE_ACCOUNT_ID`: the account that owns the Worker and its resources.
 - `PRODUCTION_BASE_URL`: `https://post.pistonmaster.net`.
 - `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
-- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the six Worker secrets.
+- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the eight Worker secrets.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
+- `PRODUCTION_VAPID_PUBLIC_KEY`: the public half of the production VAPID key pair.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
 
 The workflow loads this file into its environment after checkout. Do not put API tokens, Turnstile

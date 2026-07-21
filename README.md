@@ -58,6 +58,23 @@ bun run wasm:build
 
 The Worker exposes a shallow `GET /health` endpoint. Anonymous public documents use `Cache-Control: no-cache` so browsers and Cloudflare revalidate HTML before using it. Authenticated, mutation, auth, admin, draft, preview, and unlisted responses stay private or `no-store`.
 
+## Push notifications
+
+Web Push uses one VAPID key pair per deployed environment. Generate a pair once:
+
+```bash
+bunx --bun web-push generate-vapid-keys --json
+```
+
+Put the public key in `VAPID_PUBLIC_KEY` for the relevant `wrangler.jsonc` environment. Put the
+private key in the ignored `.dev.vars` file as `VAPID_PRIVATE_KEY`; production uses a Secrets Store
+secret with the same name. The two values must come from the same pair. Keep
+`VAPID_SUBJECT=mailto:support@pistonmaster.net` unless the monitored contact address changes.
+
+Push stays unavailable in the interface when the public key is blank. After changing a binding,
+run `bun run cf:typegen`. The existing `JOBS` Queue handles push delivery, retries, and expired
+subscription cleanup without another Worker.
+
 ## Browser analytics
 
 Post views and aggregate operational events use Cloudflare Analytics Engine. PistonPost also supports

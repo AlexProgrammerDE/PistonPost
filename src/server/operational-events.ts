@@ -2,6 +2,7 @@ export type OperationalEvent =
   | "auth.request"
   | "cache.response"
   | "dead-letter.received"
+  | "push.delivery"
   | "request.completed"
   | "request.rejected"
 
