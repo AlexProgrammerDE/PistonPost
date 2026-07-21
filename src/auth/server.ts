@@ -157,6 +157,10 @@ export function createAuth(runtime: AuthRuntime) {
         enabled: true,
       },
     },
+    rateLimit: {
+      enabled: true,
+      storage: "database",
+    },
     advanced: {
       cookiePrefix: "pistonpost",
       database: { generateId: "uuid" },
