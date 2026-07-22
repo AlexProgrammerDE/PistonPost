@@ -1061,13 +1061,17 @@ Record future changes here with date, decision, reason, and affected phases.
   a click before loading, and external links require confirmation. External Markdown images pass
   through a bounded Cloudflare Images proxy, while uploaded video remains on Cloudflare Stream. The
   text limit increases to 10,000 characters. This affects Phases 3, 5, and 9.
-- 2026-07-22: Express custom post blocks as allowlisted remark leaf directives. `embed` accepts only
-  supported YouTube and Spotify URLs, while `card` accepts external HTTP and HTTPS URLs. Ordinary
-  links stay links, standard Markdown images keep their existing proxy flow, and unknown or invalid
-  directives remain visible as source text. Post metadata and image authorization use the same
-  Markdown syntax tree instead of separate regular expressions. Comments remain GitHub-flavored
-  Markdown without directives. No compatibility parser is needed because the former implicit link
-  behavior was not in use. This affects Phases 5, 6, and 9.
+- 2026-07-22: Express custom post content through a small allowlisted remark directive vocabulary.
+  Inline `spoiler` content stays hidden from rendered previews until a reader reveals it. Container
+  `details` and `callout` directives support nested Markdown. The provider-neutral `embed` leaf
+  accepts YouTube, Spotify, SoundCloud, Vimeo, Dailymotion, X or Twitter, and Tumblr URLs, while
+  `card` accepts external HTTP and HTTPS URLs. Provider players and scripts require reader consent,
+  and Tumblr oEmbed responses pass through a typed server boundary that keeps provider HTML out of
+  the page. Ordinary links stay links, standard Markdown images keep their existing proxy flow, and
+  unknown or invalid directives remain visible as source text. Post metadata and image
+  authorization use the same Markdown syntax tree instead of separate regular expressions.
+  Comments remain GitHub-flavored Markdown without directives. No compatibility parser is needed
+  because the former implicit link behavior was not in use. This affects Phases 5, 6, and 9.
 - 2026-07-21: Render comments and replies as GitHub-flavored Markdown without storing a format flag.
   Keep the 250-character limit and existing link confirmation. Use compact comment typography,
   leave standalone links as links instead of embeds or preview cards, and render Markdown images as

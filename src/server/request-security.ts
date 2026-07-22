@@ -76,11 +76,11 @@ const contentSecurityPolicy = [
   "font-src 'self' data: https://*.posthog.com",
   "form-action 'self'",
   "frame-ancestors 'none'",
-  "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com",
+  "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com https://w.soundcloud.com https://player.vimeo.com https://geo.dailymotion.com https://platform.x.com https://platform.twitter.com https://embed.tumblr.com",
   "img-src 'self' data: blob: https://*.videodelivery.net https://*.cloudflarestream.com https://*.posthog.com",
   "media-src 'self' blob: https://*.videodelivery.net https://*.cloudflarestream.com https://*.posthog.com",
   "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://www.gstatic.com https://t.pistonmaster.net https://*.posthog.com",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://challenges.cloudflare.com https://static.cloudflareinsights.com https://www.gstatic.com https://platform.x.com https://assets.tumblr.com https://t.pistonmaster.net https://*.posthog.com",
   "style-src 'self' 'unsafe-inline' https://*.posthog.com",
   "worker-src 'self' blob:",
 ].join("; ")

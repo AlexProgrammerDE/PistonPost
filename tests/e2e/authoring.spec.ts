@@ -182,7 +182,7 @@ test.describe.serial("authenticated authoring", () => {
     const composerResponse = await page.goto("/account/posts/new")
     const policy = await composerResponse?.headerValue("content-security-policy")
     expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
-      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com",
+      "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com https://w.soundcloud.com https://player.vimeo.com https://geo.dailymotion.com https://platform.x.com https://platform.twitter.com https://embed.tumblr.com",
     )
     await fillPost(page, "a finished post", "testing")
     await page.getByLabel("Text").fill(`## Markdown heading
@@ -191,10 +191,23 @@ test.describe.serial("authenticated authoring", () => {
 
 ::embed[Example video]{url="https://www.youtube.com/watch?v=M7lc1UVf-VE"}
 
+:spoiler[The cake is a lie]
+
+:::details[More context]
+This starts collapsed.
+:::
+
+:::callout[Remember]{kind=tip}
+Markdown still works **inside** this callout.
+:::
+
 [Example](https://example.com)`)
     await page.getByRole("tab", { name: "Preview" }).click()
     await expect(page.getByRole("heading", { name: "Markdown heading" }).first()).toBeVisible()
     await expect(page.getByRole("button", { name: "Load" }).first()).toBeVisible()
+    await expect(page.getByRole("button", { name: "Reveal spoiler" })).toBeVisible()
+    await expect(page.getByText("More context")).toBeVisible()
+    await expect(page.getByText("Remember")).toBeVisible()
 
     let publishDialogCount = 0
     const acceptPublishDialog = async (dialog: Dialog) => {

@@ -8,7 +8,9 @@ import remarkRehype from "remark-rehype"
 import { unified } from "unified"
 
 import {
+  parseRenderedPostContainerDirective,
   parseRenderedPostDirective,
+  parseRenderedPostInlineDirective,
   postDirectiveForUrl,
   postMarkdownSanitizeSchema,
   remarkPostDirectives,
@@ -69,6 +71,93 @@ describe("post Markdown directives", () => {
     })
   })
 
+  test("renders spoilers without exposing their text in the fallback children", () => {
+    expect(renderPostMarkdown("Before :spoiler[the answer is 42] after")).toMatchObject({
+      children: [
+        {
+          tagName: "p",
+          children: [
+            { type: "text", value: "Before " },
+            {
+              tagName: "span",
+              properties: {
+                dataPostDirective: "spoiler",
+                dataLabel: "the answer is 42",
+              },
+              children: [{ type: "text", value: "Spoiler" }],
+            },
+            { type: "text", value: " after" },
+          ],
+        },
+      ],
+    })
+  })
+
+  test("renders collapsible details and callouts as sanitized containers", () => {
+    expect(
+      renderPostMarkdown(`:::details[More context]
+Details with **Markdown**.
+:::
+
+:::callout[Watch out]{kind=warning}
+Something needs attention.
+:::`),
+    ).toMatchObject({
+      children: [
+        {
+          tagName: "div",
+          properties: { dataPostDirective: "details", dataLabel: "More context" },
+          children: [
+            {
+              tagName: "p",
+              children: [
+                { type: "text", value: "Details with " },
+                { tagName: "strong", children: [{ type: "text", value: "Markdown" }] },
+                { type: "text", value: "." },
+              ],
+            },
+          ],
+        },
+        { type: "text", value: "\n" },
+        {
+          tagName: "div",
+          properties: {
+            dataPostDirective: "callout",
+            dataLabel: "Watch out",
+            dataKind: "warning",
+          },
+          children: [
+            {
+              tagName: "p",
+              children: [{ type: "text", value: "Something needs attention." }],
+            },
+          ],
+        },
+      ],
+    })
+  })
+
+  test("supports nested allowlisted containers", () => {
+    expect(
+      renderPostMarkdown(`::::details[Open]
+:::callout{kind=tip}
+Nested tip.
+:::
+::::`),
+    ).toMatchObject({
+      children: [
+        {
+          properties: { dataPostDirective: "details" },
+          children: [
+            {
+              properties: { dataPostDirective: "callout", dataKind: "tip" },
+            },
+          ],
+        },
+      ],
+    })
+  })
+
   test("keeps standalone links as ordinary links", () => {
     expect(renderPostMarkdown("https://youtu.be/M7lc1UVf-VE")).toMatchObject({
       children: [
@@ -113,6 +202,25 @@ describe("post Markdown directives", () => {
         dataUrl: "https://example.com",
       }),
     ).toMatchObject({ kind: "card", url: "https://example.com/" })
+    expect(
+      parseRenderedPostInlineDirective({
+        dataPostDirective: "spoiler",
+        dataLabel: "secret",
+      }),
+    ).toEqual({ kind: "spoiler", label: "secret" })
+    expect(
+      parseRenderedPostContainerDirective({
+        dataPostDirective: "callout",
+        dataKind: "tip",
+        dataLabel: "Try this",
+      }),
+    ).toEqual({ kind: "callout", calloutKind: "tip", label: "Try this" })
+    expect(
+      parseRenderedPostContainerDirective({
+        dataPostDirective: "callout",
+        dataKind: "danger",
+      }),
+    ).toBeNull()
   })
 
   test("preserves unsupported inline directives as source text", () => {
@@ -174,5 +282,20 @@ describe("post Markdown directives", () => {
         },
       ],
     })
+  })
+
+  test("preserves malformed spoilers, details, and callouts as source text", () => {
+    const malformed = [
+      ":spoiler[secret]{kind=bad}",
+      "::details[Wrong directive type]",
+      ":::details\nMissing a summary.\n:::",
+      ":::callout{kind=danger}\nUnknown kind.\n:::",
+    ]
+
+    for (const source of malformed) {
+      expect(parsePostMarkdown(source)).toMatchObject({
+        children: [{ type: "paragraph", children: [{ type: "text", value: source }] }],
+      })
+    }
   })
 })

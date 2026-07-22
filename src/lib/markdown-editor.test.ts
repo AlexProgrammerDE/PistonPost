@@ -35,11 +35,37 @@ describe("Markdown editor commands", () => {
     })
   })
 
+  test("adds spoiler, details, and callout directives", () => {
+    expect(applyMarkdownCommand("hello secret", 6, 12, "spoiler")).toEqual({
+      value: "hello :spoiler[secret]",
+      selectionStart: 15,
+      selectionEnd: 21,
+    })
+
+    const details = applyMarkdownCommand("", 0, 0, "details")
+    expect(details.value).toBe(":::details[More details]\nHidden details\n:::")
+    expect(details.value.slice(details.selectionStart, details.selectionEnd)).toBe("Hidden details")
+
+    const callout = applyMarkdownCommand("Useful", 0, 6, "callout")
+    expect(callout.value).toBe(":::callout[Note]{kind=note}\nUseful\n:::")
+    expect(callout.value.slice(callout.selectionStart, callout.selectionEnd)).toBe("Useful")
+  })
+
   test("turns a supported provider URL pasted on an empty line into an embed directive", () => {
     const value = "https://youtu.be/M7lc1UVf-VE?t=30"
     const directive = '::embed{url="https://youtu.be/M7lc1UVf-VE?t=30"}'
 
     expect(applyMarkdownPaste("", 0, 0, value)).toEqual({
+      value: directive,
+      selectionStart: directive.length,
+      selectionEnd: directive.length,
+    })
+  })
+
+  test("uses the same embed directive for social providers", () => {
+    const source = "https://x.com/OpenAI/status/1234567890123456789"
+    const directive = `::embed{url="${source}"}`
+    expect(applyMarkdownPaste("", 0, 0, source)).toEqual({
       value: directive,
       selectionStart: directive.length,
       selectionEnd: directive.length,

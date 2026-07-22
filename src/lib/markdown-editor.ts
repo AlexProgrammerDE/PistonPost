@@ -13,6 +13,9 @@ export type MarkdownCommand =
   | "inline-code"
   | "code-block"
   | "table"
+  | "spoiler"
+  | "details"
+  | "callout"
 
 export type MarkdownEdit = {
   readonly value: string
@@ -76,6 +79,27 @@ function insertBlock(value: string, selectionStart: number, selectionEnd: number
   return replaceSelection(value, selectionStart, selectionEnd, replacement, caret, caret)
 }
 
+function insertDirectiveContainer(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  opening: string,
+  placeholder: string,
+) {
+  const selected = value.slice(selectionStart, selectionEnd) || placeholder
+  const before = selectionStart > 0 && value[selectionStart - 1] !== "\n" ? "\n\n" : ""
+  const after = selectionEnd < value.length && value[selectionEnd] !== "\n" ? "\n\n" : ""
+  const contentStart = before.length + opening.length + 1
+  return replaceSelection(
+    value,
+    selectionStart,
+    selectionEnd,
+    `${before}${opening}\n${selected}\n:::${after}`,
+    contentStart,
+    contentStart + selected.length,
+  )
+}
+
 export function applyMarkdownPaste(
   value: string,
   selectionStart: number,
@@ -114,6 +138,9 @@ export function applyMarkdownCommand(
   if (command === "code-block") {
     return wrapSelection(value, selectionStart, selectionEnd, "```\n", "\n```", "code")
   }
+  if (command === "spoiler") {
+    return wrapSelection(value, selectionStart, selectionEnd, ":spoiler[", "]", "spoiler text")
+  }
   if (command === "link") {
     const selected = value.slice(selectionStart, selectionEnd) || "link text"
     const replacement = `[${selected}](https://)`
@@ -141,6 +168,24 @@ export function applyMarkdownCommand(
   }
   if (command === "task-list") {
     return prefixSelectedLines(value, selectionStart, selectionEnd, () => "- [ ] ")
+  }
+  if (command === "details") {
+    return insertDirectiveContainer(
+      value,
+      selectionStart,
+      selectionEnd,
+      ":::details[More details]",
+      "Hidden details",
+    )
+  }
+  if (command === "callout") {
+    return insertDirectiveContainer(
+      value,
+      selectionStart,
+      selectionEnd,
+      ":::callout[Note]{kind=note}",
+      "Helpful context",
+    )
   }
   return insertBlock(
     value,

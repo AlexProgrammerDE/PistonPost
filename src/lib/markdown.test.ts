@@ -10,7 +10,7 @@ import {
 import { parseMarkdownEmbed } from "./markdown-embeds"
 
 describe("Markdown boundaries", () => {
-  test("recognizes only strict YouTube and Spotify embed destinations", () => {
+  test("recognizes only strict allowlisted embed destinations", () => {
     expect(parseMarkdownEmbed("https://youtu.be/M7lc1UVf-VE?t=30")).toMatchObject({
       provider: "youtube",
       videoId: "M7lc1UVf-VE",
@@ -26,8 +26,39 @@ describe("Markdown boundaries", () => {
       entityType: "track",
       entityId: "4iV5W9uYEdYUVa79Axb7Rh",
     })
+    expect(parseMarkdownEmbed("https://soundcloud.com/artist/track-name#comments")).toEqual({
+      provider: "soundcloud",
+      url: "https://soundcloud.com/artist/track-name",
+    })
+    expect(parseMarkdownEmbed("https://vimeo.com/123456789/unlistedHash")).toEqual({
+      provider: "vimeo",
+      videoId: "123456789",
+      hash: "unlistedHash",
+    })
+    expect(parseMarkdownEmbed("https://www.dailymotion.com/video/x84sh87_demo")).toEqual({
+      provider: "dailymotion",
+      videoId: "x84sh87",
+    })
+    expect(
+      parseMarkdownEmbed("https://twitter.com/OpenAI/status/1234567890123456789?s=20"),
+    ).toEqual({
+      provider: "x",
+      postId: "1234567890123456789",
+      url: "https://x.com/OpenAI/status/1234567890123456789",
+    })
+    expect(
+      parseMarkdownEmbed(
+        "https://staff.tumblr.com/post/699744158019190784/this-is-not-a-drill#notes",
+      ),
+    ).toEqual({
+      provider: "tumblr",
+      postId: "699744158019190784",
+      url: "https://staff.tumblr.com/post/699744158019190784/this-is-not-a-drill",
+    })
 
     expect(parseMarkdownEmbed("http://youtu.be/M7lc1UVf-VE")).toBeNull()
+    expect(parseMarkdownEmbed("https://user@vimeo.com/123456789")).toBeNull()
+    expect(parseMarkdownEmbed("https://soundcloud.com:8443/artist/track")).toBeNull()
     expect(parseMarkdownEmbed("https://youtube.com.example/shorts/M7lc1UVf-VE")).toBeNull()
     expect(
       parseMarkdownEmbed("https://open.spotify.com.example/track/4iV5W9uYEdYUVa79Axb7Rh"),
@@ -75,6 +106,20 @@ describe("Markdown boundaries", () => {
         '::embed[Demo video]{url="https://youtu.be/M7lc1UVf-VE"}\n\n::card{url="https://example.com"}',
       ),
     ).toBe("Demo video https://example.com/")
+  })
+
+  test("keeps spoiler text out of metadata while retaining container context", () => {
+    expect(
+      postMarkdownToPlainText(`Before :spoiler[the secret ending] after.
+
+:::details[More context]
+Supporting details.
+:::
+
+:::callout[Take care]{kind=warning}
+Read this first.
+:::`),
+    ).toBe("Before Spoiler after. More context Supporting details. Take care Read this first.")
   })
 
   test("keeps directive syntax literal in comments", () => {

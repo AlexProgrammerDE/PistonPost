@@ -4,12 +4,15 @@ import {
   Bold,
   Code2,
   Eye,
+  EyeOff,
   Heading2,
+  Info,
   Italic,
   Link2,
   List,
   ListOrdered,
   ListTodo,
+  ListCollapse,
   Quote,
   SquarePen,
   Strikethrough,
@@ -83,6 +86,9 @@ const toolbarActions: ReadonlyArray<ToolbarAction> = [
   { command: "inline-code", icon: Code2, label: "Inline code" },
   { command: "code-block", icon: SquarePen, label: "Code block" },
   { command: "table", icon: Table2, label: "Table" },
+  { command: "spoiler", icon: EyeOff, label: "Spoiler" },
+  { command: "details", icon: ListCollapse, label: "Collapsible details" },
+  { command: "callout", icon: Info, label: "Callout" },
 ]
 
 export function MarkdownEditor({
@@ -228,8 +234,8 @@ export function MarkdownEditor({
         )}
       </TabsContent>
       <p className="text-xs text-muted-foreground">
-        GitHub-flavored Markdown is supported. Paste an external link on an empty line to add an
-        embed or link card.
+        GitHub-flavored Markdown is supported. The toolbar also adds spoilers, details, and
+        callouts. Paste a supported media link on an empty line to add an embed.
       </p>
     </Tabs>
   )

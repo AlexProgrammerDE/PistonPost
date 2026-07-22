@@ -14,6 +14,7 @@ const BLOCK_TEXT_NODES = new Set([
   "blockquote",
   "list",
   "listItem",
+  "containerDirective",
   "table",
   "tableRow",
   "tableCell",
@@ -22,6 +23,12 @@ const BLOCK_TEXT_NODES = new Set([
 type MarkdownTextNode = {
   readonly alt?: unknown
   readonly children?: ReadonlyArray<MarkdownTextNode>
+  readonly data?: {
+    readonly hProperties?: {
+      readonly dataLabel?: unknown
+      readonly dataPostDirective?: unknown
+    }
+  }
   readonly type: string
   readonly value?: unknown
 }
@@ -113,9 +120,17 @@ function markdownNodeToPlainText(node: MarkdownTextNode): string {
   if (node.type === "break") return " "
   if (!node.children) return ""
 
-  return node.children
+  const childText = node.children
     .map((child) => markdownNodeToPlainText(child))
     .join(BLOCK_TEXT_NODES.has(node.type) ? " " : "")
+  const directiveLabel =
+    node.type === "containerDirective" &&
+    (node.data?.hProperties?.dataPostDirective === "details" ||
+      node.data?.hProperties?.dataPostDirective === "callout") &&
+    typeof node.data.hProperties.dataLabel === "string"
+      ? node.data.hProperties.dataLabel
+      : ""
+  return directiveLabel ? `${directiveLabel} ${childText}` : childText
 }
 
 function isDefinition(node: { readonly type: string }): node is Definition {
