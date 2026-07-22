@@ -1,12 +1,27 @@
 const exactRedirects = new Map([
-  ["/account/post", "/account/posts/new"],
-  ["/account/post/", "/account/posts/new"],
+  ["/account/post", "/posts/new"],
+  ["/account/post/", "/posts/new"],
   ["/tos", "/terms"],
   ["/tos/", "/terms"],
 ])
 
+const prefixRedirects = [
+  ["/account/posts", "/posts"],
+  ["/account/settings", "/settings"],
+] as const
+
 function canonicalPath(pathname: string) {
-  return exactRedirects.get(pathname) ?? null
+  const exactPath = exactRedirects.get(pathname)
+  if (exactPath) return exactPath
+
+  for (const [legacyPrefix, canonicalPrefix] of prefixRedirects) {
+    if (pathname === legacyPrefix || pathname === `${legacyPrefix}/`) return canonicalPrefix
+    if (pathname.startsWith(`${legacyPrefix}/`)) {
+      return `${canonicalPrefix}${pathname.slice(legacyPrefix.length)}`
+    }
+  }
+
+  return null
 }
 
 export function permanentRedirect(request: Request) {

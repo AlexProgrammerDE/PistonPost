@@ -42,7 +42,7 @@ function campaignContent(input: EmailCampaignInput, baseURL: string) {
     ...input,
     actionLabel: input.actionLabel || null,
     actionUrl: input.actionUrl || null,
-    unsubscribeUrl: new URL("/account/settings/notifications", baseURL).toString(),
+    unsubscribeUrl: new URL("/settings/notifications", baseURL).toString(),
   })
 }
 

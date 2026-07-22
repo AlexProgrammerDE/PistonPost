@@ -8,7 +8,6 @@ import { toast } from "sonner"
 import { ChangeAvatar } from "@/components/auth/settings/account/change-avatar"
 import { PushDeviceSettings } from "@/components/push-device-settings"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
 import {
   Field,
   FieldDescription,
@@ -36,12 +35,8 @@ import {
 
 type ProductSettings = Awaited<ReturnType<typeof getMyProductSettings>>
 
-function RequiredNotificationStatus({ label }: { label: string }) {
-  return (
-    <Badge variant="secondary" aria-label={`${label} are required`}>
-      Required
-    </Badge>
-  )
+function RequiredNotificationSwitch({ label }: { label: string }) {
+  return <Switch checked disabled aria-label={`${label} are required and always on`} />
 }
 
 function NotificationPreferenceSwitch({
@@ -268,10 +263,10 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
                 description="Important account and sign-in activity."
               />
               <TableCell className="text-center">
-                <RequiredNotificationStatus label="Security emails" />
+                <RequiredNotificationSwitch label="Security emails" />
               </TableCell>
               <TableCell className="text-center">
-                <RequiredNotificationStatus label="Security push notifications" />
+                <RequiredNotificationSwitch label="Security push notifications" />
               </TableCell>
             </TableRow>
             <TableRow>
@@ -280,10 +275,10 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
                 description="Administrator actions on your content."
               />
               <TableCell className="text-center">
-                <RequiredNotificationStatus label="Moderation emails" />
+                <RequiredNotificationSwitch label="Moderation emails" />
               </TableCell>
               <TableCell className="text-center">
-                <RequiredNotificationStatus label="Moderation push notifications" />
+                <RequiredNotificationSwitch label="Moderation push notifications" />
               </TableCell>
             </TableRow>
             <TableRow>

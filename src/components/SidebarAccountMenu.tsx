@@ -65,7 +65,7 @@ export function SidebarAccountMenu() {
     links.push(
       <DropdownMenuItem
         key="my-posts"
-        render={<Link to="/account/posts" viewTransition={isMobile ? false : undefined} />}
+        render={<Link to="/posts" viewTransition={isMobile ? false : undefined} />}
         onClick={closeMobileSidebar}
       >
         <FileText aria-hidden="true" />
@@ -91,7 +91,7 @@ export function SidebarAccountMenu() {
         key="settings"
         render={
           <Link
-            to="/account/settings/$settingsView"
+            to="/settings/$settingsView"
             params={{ settingsView: "profile" }}
             viewTransition={isMobile ? false : undefined}
           />

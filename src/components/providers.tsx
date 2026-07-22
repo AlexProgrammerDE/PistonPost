@@ -98,7 +98,7 @@ export function AuthenticationProvider({
         rememberMe: true,
         requireEmailVerification: true,
       }}
-      basePaths={{ auth: "/auth", settings: "/account/settings" }}
+      basePaths={{ auth: "/auth", settings: "/settings" }}
       viewPaths={{ auth: authViewPaths, settings: authSettingsViewPaths }}
       plugins={createAuthenticationPlugins(turnstileSiteKey)}
     >

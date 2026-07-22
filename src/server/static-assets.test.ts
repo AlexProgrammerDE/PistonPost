@@ -16,7 +16,7 @@ describe("missingStaticAssetResponse", () => {
 
   it("does not intercept application routes", () => {
     expect(
-      missingStaticAssetResponse(new Request("https://post.pistonmaster.net/account/posts/new")),
+      missingStaticAssetResponse(new Request("https://post.pistonmaster.net/posts/new")),
     ).toBeNull()
   })
 

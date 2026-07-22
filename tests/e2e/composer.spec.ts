@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test"
 
 test.describe("composer and media boundaries", () => {
   test("requires an account before exposing the composer", async ({ page }) => {
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
 
     await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
     await expect(

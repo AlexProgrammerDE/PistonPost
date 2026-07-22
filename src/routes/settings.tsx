@@ -19,7 +19,7 @@ const ensureSettingsSession = createIsomorphicFn()
   )
   .client((queryClient) => ensureSession(queryClient, authClient))
 
-export const Route = createFileRoute("/account/settings")({
+export const Route = createFileRoute("/settings")({
   beforeLoad: async ({ context: { queryClient }, location }) => {
     const session = await ensureSettingsSession(queryClient)
     if (!session) {
@@ -62,7 +62,7 @@ function SettingsLayout() {
           return (
             <Link
               key={view.value}
-              to="/account/settings/$settingsView"
+              to="/settings/$settingsView"
               params={{ settingsView: view.value }}
               aria-current={active ? "page" : undefined}
               className="inline-flex items-center justify-center gap-1.5 border-b-2 border-transparent px-3 py-3 text-center text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground sm:shrink-0 sm:justify-start sm:text-left"

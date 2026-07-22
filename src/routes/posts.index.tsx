@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/item"
 import { getMyPosts } from "@/server/tables"
 
-export const Route = createFileRoute("/account/posts/")({
+export const Route = createFileRoute("/posts/")({
   loader: () => getMyPosts(),
   head: () => ({
     meta: [{ title: "My posts · PistonPost" }, { name: "robots", content: "noindex, nofollow" }],
@@ -72,7 +72,7 @@ function MyPosts() {
             <EmptyDescription>Your drafts and published posts will appear here.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
+            <Button nativeButton={false} render={<Link to="/posts/new" />}>
               <Plus aria-hidden="true" data-icon="inline-start" />
               Create a post
             </Button>

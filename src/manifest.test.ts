@@ -57,7 +57,7 @@ describe("web manifest", () => {
         name: "New post",
         short_name: "New post",
         description: "Make a new post.",
-        url: "/account/posts/new",
+        url: "/posts/new",
         icons: [
           {
             src: "/icon-192.png",

@@ -216,7 +216,7 @@ export function pushJobResolverLayer(database: D1DatabaseClient) {
       return ready(target, {
         title: "Account security",
         body,
-        url: "/account/settings/security",
+        url: "/settings/security",
         tag: `security-${event.id}`,
       })
     }),

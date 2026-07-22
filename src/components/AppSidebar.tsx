@@ -28,7 +28,7 @@ const SidebarAccountMenu = lazy(() =>
 const navigationItems = [
   { to: "/", label: "Timeline", icon: Newspaper, exact: true },
   { to: "/following", label: "Following", icon: UsersRound, exact: false },
-  { to: "/account/posts/new", label: "Post", icon: SquarePen, exact: true },
+  { to: "/posts/new", label: "Post", icon: SquarePen, exact: true },
 ] as const
 
 const legalLinks = [
@@ -128,7 +128,7 @@ export function AppSidebar() {
                     <SidebarMenuItem key={item.to}>
                       <SidebarMenuButton
                         tooltip={item.label}
-                        variant={item.to === "/account/posts/new" ? "outline" : "default"}
+                        variant={item.to === "/posts/new" ? "outline" : "default"}
                         isActive={active}
                         aria-current={active ? "page" : undefined}
                         render={<Link to={item.to} viewTransition={isMobile ? false : undefined} />}

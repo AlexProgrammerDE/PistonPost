@@ -265,7 +265,7 @@ export function emailJobResolverLayer(
             ...securityNotificationMessage({ template }),
             action: {
               label: "Review account security",
-              url: new URL("/account/settings/security", baseURL).toString(),
+              url: new URL("/settings/security", baseURL).toString(),
             },
           },
         })

@@ -17,10 +17,9 @@ export function classifyAnalyticsPath(pathname: string) {
   if (pathname === "/terms") return "terms"
   if (pathname === "/cookie-policy") return "cookie-policy"
 
-  if (pathname === "/account/posts/new") return "account-post-new"
-  if (pathname.startsWith("/account/posts")) return "account-posts"
-  if (pathname.startsWith("/account/settings")) return "account-settings"
-  if (pathname.startsWith("/account")) return "account"
+  if (pathname === "/posts/new") return "account-post-new"
+  if (pathname === "/posts" || pathname.startsWith("/posts/")) return "account-posts"
+  if (pathname === "/settings" || pathname.startsWith("/settings/")) return "account-settings"
 
   if (pathname.startsWith("/post/") && pathname.endsWith("/edit")) return "post-edit"
   if (pathname.startsWith("/post/")) return "post"

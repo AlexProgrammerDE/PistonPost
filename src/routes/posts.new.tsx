@@ -5,7 +5,7 @@ import { PostComposer } from "@/components/post-composer"
 import { getComposerViewer } from "@/server/composer-viewer"
 import { getPublicRuntimeConfig } from "@/server/public-config"
 
-export const Route = createFileRoute("/account/posts/new")({
+export const Route = createFileRoute("/posts/new")({
   loader: async () => {
     const [viewer, config] = await Promise.all([getComposerViewer(), getPublicRuntimeConfig()])
     return { viewer, turnstileSiteKey: config.turnstileSiteKey }

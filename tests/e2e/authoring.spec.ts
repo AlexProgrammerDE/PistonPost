@@ -108,12 +108,12 @@ async function fillPost(page: Page, title: string, tag: string) {
 }
 
 test.describe.serial("authenticated authoring", () => {
-  test("autosaves optional notification switches and shows required categories as status", async ({
+  test("autosaves optional notification switches while required categories stay on", async ({
     context,
     page,
   }) => {
     await createVerifiedSession(context)
-    await page.goto("/account/settings/notifications")
+    await page.goto("/settings/notifications")
     await page.locator('[data-hydrated="true"]').waitFor()
 
     const preferences = page.getByRole("table", { name: "Notification preferences" })
@@ -125,15 +125,31 @@ test.describe.serial("authenticated authoring", () => {
     })
     const security = preferences.getByRole("row", { name: /^Security / })
     const moderation = preferences.getByRole("row", { name: /^Moderation / })
+    const securityEmail = security.getByRole("switch", {
+      name: "Security emails are required and always on",
+    })
+    const securityPush = security.getByRole("switch", {
+      name: "Security push notifications are required and always on",
+    })
+    const moderationEmail = moderation.getByRole("switch", {
+      name: "Moderation emails are required and always on",
+    })
+    const moderationPush = moderation.getByRole("switch", {
+      name: "Moderation push notifications are required and always on",
+    })
 
     await expect(comments).toBeChecked()
     await expect(replies).toBeChecked()
     await expect(productUpdates).not.toBeChecked()
     await expect(pushComments).toBeChecked()
-    await expect(security.getByText("Required")).toHaveCount(2)
-    await expect(moderation.getByText("Required")).toHaveCount(2)
-    await expect(security.getByRole("switch")).toHaveCount(0)
-    await expect(moderation.getByRole("switch")).toHaveCount(0)
+    await expect(securityEmail).toBeChecked()
+    await expect(securityEmail).toBeDisabled()
+    await expect(securityPush).toBeChecked()
+    await expect(securityPush).toBeDisabled()
+    await expect(moderationEmail).toBeChecked()
+    await expect(moderationEmail).toBeDisabled()
+    await expect(moderationPush).toBeChecked()
+    await expect(moderationPush).toBeDisabled()
     await expect(page.getByRole("button", { name: "Save preferences" })).toHaveCount(0)
 
     await comments.click()
@@ -155,7 +171,7 @@ test.describe.serial("authenticated authoring", () => {
 
   test("uploads, serves, and deletes a managed avatar", async ({ context, page }) => {
     const { username } = await createVerifiedSession(context)
-    await page.goto("/account/settings/profile")
+    await page.goto("/settings/profile")
     await page.locator('[data-hydrated="true"]').waitFor()
 
     const fileChooserPromise = page.waitForEvent("filechooser")
@@ -190,7 +206,7 @@ test.describe.serial("authenticated authoring", () => {
 
   test("publishes without prompting to discard submitted changes", async ({ context, page }) => {
     await createVerifiedSession(context)
-    const composerResponse = await page.goto("/account/posts/new")
+    const composerResponse = await page.goto("/posts/new")
     const policy = await composerResponse?.headerValue("content-security-policy")
     expect(policy?.split("; ").find((directive) => directive.startsWith("frame-src "))).toBe(
       "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com https://w.soundcloud.com https://player.vimeo.com https://geo.dailymotion.com https://platform.x.com https://platform.twitter.com https://embed.tumblr.com",
@@ -278,7 +294,7 @@ Markdown still works **inside** this callout.
 
   test("guards user-provided profile websites", async ({ context, page }) => {
     const { username } = await createVerifiedSession(context)
-    await page.goto("/account/settings/profile")
+    await page.goto("/settings/profile")
     await page.locator('[data-hydrated="true"]').waitFor()
     await page.getByLabel("Website").fill("https://example.com/profile")
     await page.getByRole("button", { name: "Save profile" }).click()
@@ -302,7 +318,7 @@ Markdown still works **inside** this callout.
 
   test("confirms before discarding unfinished composer changes", async ({ context, page }) => {
     await createVerifiedSession(context)
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await fillPost(page, "an unfinished post", "draft")
 
     await page.getByRole("link", { name: "Timeline" }).click()
@@ -310,7 +326,7 @@ Markdown still works **inside** this callout.
     await expect(confirmation).toBeVisible()
 
     await confirmation.getByRole("button", { name: "Keep editing" }).click()
-    await expect(page).toHaveURL(/\/account\/posts\/new$/u)
+    await expect(page).toHaveURL(/\/posts\/new$/u)
     await expect(page.getByLabel("Title")).toHaveValue("an unfinished post")
 
     await page.getByRole("link", { name: "Timeline" }).click()
@@ -324,7 +340,7 @@ Markdown still works **inside** this callout.
   }) => {
     await createVerifiedSession(context)
     await page.emulateMedia({ reducedMotion: "reduce" })
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await fillPost(page, "motion without the fuss", "testing")
     await page.getByLabel("Text").fill("A small post for checking reactions and comments.")
     await page.getByRole("button", { name: "Post it" }).click()
@@ -398,7 +414,7 @@ https://youtu.be/dQw4w9WgXcQ`
     page,
   }) => {
     await createVerifiedSession(context)
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await selectFormat(page, "Images")
     await fillPost(page, "the extension is lying", "testing")
 
@@ -455,7 +471,7 @@ https://youtu.be/dQw4w9WgXcQ`
     })
     await createVerifiedSession(context)
 
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
     await page.waitForTimeout(1_000)
     expect(pageErrors).toEqual([])
@@ -469,7 +485,7 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "look at this little guy" })).toBeVisible()
 
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await selectFormat(page, "Images")
     await fillPost(page, "two extremely important cats", "cats")
     await page.getByLabel("Choose images to upload").setInputFiles([
@@ -578,7 +594,7 @@ https://youtu.be/dQw4w9WgXcQ`
     ).toBeVisible()
     await expect(page.getByRole("list", { name: /image collection/u })).toHaveCount(0)
 
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await selectFormat(page, "Images")
     await fillPost(page, "the whole camera roll", "gallery")
     await page.getByLabel("Choose images to upload").setInputFiles(
@@ -606,7 +622,7 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(quickActions).toHaveCount(0)
     await expect(page.getByRole("navigation", { name: "Post actions" })).toBeVisible()
 
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await selectFormat(page, "Images")
     await fillPost(page, "this upload should recover", "testing")
     await page.getByLabel("Choose images to upload").setInputFiles({
@@ -616,12 +632,12 @@ https://youtu.be/dQw4w9WgXcQ`
     })
     await expect(page.getByText("Couldn’t prepare broken.png")).toBeVisible()
     await expect(page.getByLabel("Alt text")).toHaveCount(0)
-    await expect(page).toHaveURL(/\/account\/posts\/new$/u)
+    await expect(page).toHaveURL(/\/posts\/new$/u)
 
     await page.route("https://upload.videodelivery.net/**", (route) =>
       route.abort("connectionfailed"),
     )
-    await page.goto("/account/posts/new")
+    await page.goto("/posts/new")
     await selectFormat(page, "Video")
     await fillPost(page, "weekend video", "video")
     await page.getByLabel("Choose a video to upload").setInputFiles({
@@ -633,6 +649,6 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(page.getByRole("alert").getByText("Couldn’t post this")).toBeVisible({
       timeout: 30_000,
     })
-    await expect(page).toHaveURL(/\/account\/posts\/new$/u)
+    await expect(page).toHaveURL(/\/posts\/new$/u)
   })
 })

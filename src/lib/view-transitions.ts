@@ -197,7 +197,7 @@ function galleryTransitionType(fromLocation: TransitionLocation, toLocation: Tra
 }
 
 function settingsViewIndex(pathname: string) {
-  const prefix = "/account/settings/"
+  const prefix = "/settings/"
   const normalized = normalizedPathname(pathname)
   if (!normalized.startsWith(prefix)) return null
   const view = normalized.slice(prefix.length)

@@ -4,16 +4,14 @@ test.describe("authentication", () => {
   test("redirects protected settings before rendering and preserves the return path", async ({
     page,
   }) => {
-    const response = await page.goto("/account/settings/security")
+    const response = await page.goto("/settings/security")
 
     const location = new URL(page.url())
     expect(location.pathname).toBe("/auth/sign-in")
-    expect(location.searchParams.get("redirectTo")).toBe("/account/settings/security")
+    expect(location.searchParams.get("redirectTo")).toBe("/settings/security")
 
     const protectedRequest = response?.request().redirectedFrom()
-    expect(protectedRequest && new URL(protectedRequest.url()).pathname).toBe(
-      "/account/settings/security",
-    )
+    expect(protectedRequest && new URL(protectedRequest.url()).pathname).toBe("/settings/security")
     expect((await protectedRequest?.response())?.status()).toBe(307)
     await expect(page.getByRole("region", { name: "Account access" })).toBeVisible()
   })

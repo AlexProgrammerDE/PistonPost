@@ -11,8 +11,10 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PostsRouteImport } from './routes/posts'
 import { Route as FollowingRouteImport } from './routes/following'
 import { Route as FeedDotxmlRouteImport } from './routes/feed[.]xml'
 import { Route as ExternalRouteImport } from './routes/external'
@@ -20,27 +22,25 @@ import { Route as CookiePolicyRouteImport } from './routes/cookie-policy'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings.index'
+import { Route as PostsIndexRouteImport } from './routes/posts.index'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as UserUsernameRouteImport } from './routes/user.$username'
 import { Route as TagTagRouteImport } from './routes/tag.$tag'
+import { Route as SettingsSettingsViewRouteImport } from './routes/settings.$settingsView'
+import { Route as PostsNewRouteImport } from './routes/posts.new'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email.unsubscribe'
 import { Route as AuthAuthViewRouteImport } from './routes/auth.$authView'
 import { Route as AdminEmailCampaignsRouteImport } from './routes/admin.email-campaigns'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
-import { Route as AccountSettingsRouteImport } from './routes/account.settings'
-import { Route as AccountPostsRouteImport } from './routes/account.posts'
-import { Route as AccountSettingsIndexRouteImport } from './routes/account.settings.index'
-import { Route as AccountPostsIndexRouteImport } from './routes/account.posts.index'
 import { Route as SitemapsKindPageRouteImport } from './routes/sitemaps.$kind.$page'
 import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
 import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
 import { Route as MediaExternalImagePostIdRouteImport } from './routes/media.external-image.$postId'
 import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhook'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
-import { Route as AccountSettingsSettingsViewRouteImport } from './routes/account.settings.$settingsView'
-import { Route as AccountPostsNewRouteImport } from './routes/account.posts.new'
 import { Route as MediaVideoMediaIdThumbnailRouteImport } from './routes/media.video.$mediaId.thumbnail'
 import { Route as MediaVideoMediaIdPlayerRouteImport } from './routes/media.video.$mediaId.player'
 import { Route as MediaVideoMediaIdManifestRouteImport } from './routes/media.video.$mediaId.manifest'
@@ -58,6 +58,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
   id: '/robots.txt',
   path: '/robots.txt',
@@ -66,6 +71,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostsRoute = PostsRouteImport.update({
+  id: '/posts',
+  path: '/posts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const FollowingRoute = FollowingRouteImport.update({
@@ -103,6 +113,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const PostsIndexRoute = PostsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PostsRoute,
+} as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -122,6 +142,16 @@ const TagTagRoute = TagTagRouteImport.update({
   id: '/tag/$tag',
   path: '/tag/$tag',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsSettingsViewRoute = SettingsSettingsViewRouteImport.update({
+  id: '/$settingsView',
+  path: '/$settingsView',
+  getParentRoute: () => SettingsRoute,
+} as any)
+const PostsNewRoute = PostsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => PostsRoute,
 } as any)
 const PostPostIdRoute = PostPostIdRouteImport.update({
   id: '/post/$postId',
@@ -147,26 +177,6 @@ const AdminSectionRoute = AdminSectionRouteImport.update({
   id: '/$section',
   path: '/$section',
   getParentRoute: () => AdminRoute,
-} as any)
-const AccountSettingsRoute = AccountSettingsRouteImport.update({
-  id: '/account/settings',
-  path: '/account/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountPostsRoute = AccountPostsRouteImport.update({
-  id: '/account/posts',
-  path: '/account/posts',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AccountSettingsIndexRoute = AccountSettingsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AccountSettingsRoute,
-} as any)
-const AccountPostsIndexRoute = AccountPostsIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AccountPostsRoute,
 } as any)
 const SitemapsKindPageRoute = SitemapsKindPageRouteImport.update({
   id: '/sitemaps/$kind/$page',
@@ -198,17 +208,6 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AccountSettingsSettingsViewRoute =
-  AccountSettingsSettingsViewRouteImport.update({
-    id: '/$settingsView',
-    path: '/$settingsView',
-    getParentRoute: () => AccountSettingsRoute,
-  } as any)
-const AccountPostsNewRoute = AccountPostsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
-  getParentRoute: () => AccountPostsRoute,
 } as any)
 const MediaVideoMediaIdThumbnailRoute =
   MediaVideoMediaIdThumbnailRouteImport.update({
@@ -253,31 +252,31 @@ export interface FileRoutesByFullPath {
   '/external': typeof ExternalRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/following': typeof FollowingRoute
+  '/posts': typeof PostsRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/account/posts': typeof AccountPostsRouteWithChildren
-  '/account/settings': typeof AccountSettingsRouteWithChildren
   '/admin/$section': typeof AdminSectionRoute
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/posts/new': typeof PostsNewRoute
+  '/settings/$settingsView': typeof SettingsSettingsViewRoute
   '/tag/$tag': typeof TagTagRoute
   '/user/$username': typeof UserUsernameRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
-  '/account/posts/new': typeof AccountPostsNewRoute
-  '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/posts/': typeof PostsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
   '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
-  '/account/posts/': typeof AccountPostsIndexRoute
-  '/account/settings/': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
   '/media/video/$mediaId/download': typeof MediaVideoMediaIdDownloadRoute
@@ -300,20 +299,20 @@ export interface FileRoutesByTo {
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/posts/new': typeof PostsNewRoute
+  '/settings/$settingsView': typeof SettingsSettingsViewRoute
   '/tag/$tag': typeof TagTagRoute
   '/user/$username': typeof UserUsernameRoute
   '/admin': typeof AdminIndexRoute
   '/auth': typeof AuthIndexRoute
-  '/account/posts/new': typeof AccountPostsNewRoute
-  '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/posts': typeof PostsIndexRoute
+  '/settings': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
   '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
-  '/account/posts': typeof AccountPostsIndexRoute
-  '/account/settings': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
   '/media/video/$mediaId/download': typeof MediaVideoMediaIdDownloadRoute
@@ -330,31 +329,31 @@ export interface FileRoutesById {
   '/external': typeof ExternalRoute
   '/feed.xml': typeof FeedDotxmlRoute
   '/following': typeof FollowingRoute
+  '/posts': typeof PostsRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/settings': typeof SettingsRouteWithChildren
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
-  '/account/posts': typeof AccountPostsRouteWithChildren
-  '/account/settings': typeof AccountSettingsRouteWithChildren
   '/admin/$section': typeof AdminSectionRoute
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/posts/new': typeof PostsNewRoute
+  '/settings/$settingsView': typeof SettingsSettingsViewRoute
   '/tag/$tag': typeof TagTagRoute
   '/user/$username': typeof UserUsernameRoute
   '/admin/': typeof AdminIndexRoute
   '/auth/': typeof AuthIndexRoute
-  '/account/posts/new': typeof AccountPostsNewRoute
-  '/account/settings/$settingsView': typeof AccountSettingsSettingsViewRoute
+  '/posts/': typeof PostsIndexRoute
+  '/settings/': typeof SettingsIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
   '/post/$postId/edit': typeof PostPostIdEditRoute
   '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
-  '/account/posts/': typeof AccountPostsIndexRoute
-  '/account/settings/': typeof AccountSettingsIndexRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
   '/media/video/$mediaId/download': typeof MediaVideoMediaIdDownloadRoute
@@ -372,31 +371,31 @@ export interface FileRouteTypes {
     | '/external'
     | '/feed.xml'
     | '/following'
+    | '/posts'
     | '/privacy'
     | '/robots.txt'
+    | '/settings'
     | '/sitemap.xml'
     | '/terms'
-    | '/account/posts'
-    | '/account/settings'
     | '/admin/$section'
     | '/admin/email-campaigns'
     | '/auth/$authView'
     | '/email/unsubscribe'
     | '/post/$postId'
+    | '/posts/new'
+    | '/settings/$settingsView'
     | '/tag/$tag'
     | '/user/$username'
     | '/admin/'
     | '/auth/'
-    | '/account/posts/new'
-    | '/account/settings/$settingsView'
+    | '/posts/'
+    | '/settings/'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
     | '/sitemaps/$kind/$page'
-    | '/account/posts/'
-    | '/account/settings/'
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
     | '/media/video/$mediaId/download'
@@ -419,20 +418,20 @@ export interface FileRouteTypes {
     | '/auth/$authView'
     | '/email/unsubscribe'
     | '/post/$postId'
+    | '/posts/new'
+    | '/settings/$settingsView'
     | '/tag/$tag'
     | '/user/$username'
     | '/admin'
     | '/auth'
-    | '/account/posts/new'
-    | '/account/settings/$settingsView'
+    | '/posts'
+    | '/settings'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
     | '/sitemaps/$kind/$page'
-    | '/account/posts'
-    | '/account/settings'
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
     | '/media/video/$mediaId/download'
@@ -448,31 +447,31 @@ export interface FileRouteTypes {
     | '/external'
     | '/feed.xml'
     | '/following'
+    | '/posts'
     | '/privacy'
     | '/robots.txt'
+    | '/settings'
     | '/sitemap.xml'
     | '/terms'
-    | '/account/posts'
-    | '/account/settings'
     | '/admin/$section'
     | '/admin/email-campaigns'
     | '/auth/$authView'
     | '/email/unsubscribe'
     | '/post/$postId'
+    | '/posts/new'
+    | '/settings/$settingsView'
     | '/tag/$tag'
     | '/user/$username'
     | '/admin/'
     | '/auth/'
-    | '/account/posts/new'
-    | '/account/settings/$settingsView'
+    | '/posts/'
+    | '/settings/'
     | '/api/auth/$'
     | '/api/stream/webhook'
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
     | '/post/$postId/edit'
     | '/sitemaps/$kind/$page'
-    | '/account/posts/'
-    | '/account/settings/'
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
     | '/media/video/$mediaId/download'
@@ -489,12 +488,12 @@ export interface RootRouteChildren {
   ExternalRoute: typeof ExternalRoute
   FeedDotxmlRoute: typeof FeedDotxmlRoute
   FollowingRoute: typeof FollowingRoute
+  PostsRoute: typeof PostsRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SettingsRoute: typeof SettingsRouteWithChildren
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
-  AccountPostsRoute: typeof AccountPostsRouteWithChildren
-  AccountSettingsRoute: typeof AccountSettingsRouteWithChildren
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   PostPostIdRoute: typeof PostPostIdRouteWithChildren
   TagTagRoute: typeof TagTagRoute
@@ -528,6 +527,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/robots.txt': {
       id: '/robots.txt'
       path: '/robots.txt'
@@ -540,6 +546,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/posts': {
+      id: '/posts'
+      path: '/posts'
+      fullPath: '/posts'
+      preLoaderRoute: typeof PostsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/following': {
@@ -591,6 +604,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/': {
+      id: '/settings/'
+      path: '/'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/posts/': {
+      id: '/posts/'
+      path: '/'
+      fullPath: '/posts/'
+      preLoaderRoute: typeof PostsIndexRouteImport
+      parentRoute: typeof PostsRoute
+    }
     '/auth/': {
       id: '/auth/'
       path: '/'
@@ -618,6 +645,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/tag/$tag'
       preLoaderRoute: typeof TagTagRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/settings/$settingsView': {
+      id: '/settings/$settingsView'
+      path: '/$settingsView'
+      fullPath: '/settings/$settingsView'
+      preLoaderRoute: typeof SettingsSettingsViewRouteImport
+      parentRoute: typeof SettingsRoute
+    }
+    '/posts/new': {
+      id: '/posts/new'
+      path: '/new'
+      fullPath: '/posts/new'
+      preLoaderRoute: typeof PostsNewRouteImport
+      parentRoute: typeof PostsRoute
     }
     '/post/$postId': {
       id: '/post/$postId'
@@ -653,34 +694,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/$section'
       preLoaderRoute: typeof AdminSectionRouteImport
       parentRoute: typeof AdminRoute
-    }
-    '/account/settings': {
-      id: '/account/settings'
-      path: '/account/settings'
-      fullPath: '/account/settings'
-      preLoaderRoute: typeof AccountSettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account/posts': {
-      id: '/account/posts'
-      path: '/account/posts'
-      fullPath: '/account/posts'
-      preLoaderRoute: typeof AccountPostsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/account/settings/': {
-      id: '/account/settings/'
-      path: '/'
-      fullPath: '/account/settings/'
-      preLoaderRoute: typeof AccountSettingsIndexRouteImport
-      parentRoute: typeof AccountSettingsRoute
-    }
-    '/account/posts/': {
-      id: '/account/posts/'
-      path: '/'
-      fullPath: '/account/posts/'
-      preLoaderRoute: typeof AccountPostsIndexRouteImport
-      parentRoute: typeof AccountPostsRoute
     }
     '/sitemaps/$kind/$page': {
       id: '/sitemaps/$kind/$page'
@@ -723,20 +736,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/account/settings/$settingsView': {
-      id: '/account/settings/$settingsView'
-      path: '/$settingsView'
-      fullPath: '/account/settings/$settingsView'
-      preLoaderRoute: typeof AccountSettingsSettingsViewRouteImport
-      parentRoute: typeof AccountSettingsRoute
-    }
-    '/account/posts/new': {
-      id: '/account/posts/new'
-      path: '/new'
-      fullPath: '/account/posts/new'
-      preLoaderRoute: typeof AccountPostsNewRouteImport
-      parentRoute: typeof AccountPostsRoute
     }
     '/media/video/$mediaId/thumbnail': {
       id: '/media/video/$mediaId/thumbnail'
@@ -809,32 +808,30 @@ const AuthRouteChildren: AuthRouteChildren = {
 
 const AuthRouteWithChildren = AuthRoute._addFileChildren(AuthRouteChildren)
 
-interface AccountPostsRouteChildren {
-  AccountPostsNewRoute: typeof AccountPostsNewRoute
-  AccountPostsIndexRoute: typeof AccountPostsIndexRoute
+interface PostsRouteChildren {
+  PostsNewRoute: typeof PostsNewRoute
+  PostsIndexRoute: typeof PostsIndexRoute
 }
 
-const AccountPostsRouteChildren: AccountPostsRouteChildren = {
-  AccountPostsNewRoute: AccountPostsNewRoute,
-  AccountPostsIndexRoute: AccountPostsIndexRoute,
+const PostsRouteChildren: PostsRouteChildren = {
+  PostsNewRoute: PostsNewRoute,
+  PostsIndexRoute: PostsIndexRoute,
 }
 
-const AccountPostsRouteWithChildren = AccountPostsRoute._addFileChildren(
-  AccountPostsRouteChildren,
-)
+const PostsRouteWithChildren = PostsRoute._addFileChildren(PostsRouteChildren)
 
-interface AccountSettingsRouteChildren {
-  AccountSettingsSettingsViewRoute: typeof AccountSettingsSettingsViewRoute
-  AccountSettingsIndexRoute: typeof AccountSettingsIndexRoute
+interface SettingsRouteChildren {
+  SettingsSettingsViewRoute: typeof SettingsSettingsViewRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
 }
 
-const AccountSettingsRouteChildren: AccountSettingsRouteChildren = {
-  AccountSettingsSettingsViewRoute: AccountSettingsSettingsViewRoute,
-  AccountSettingsIndexRoute: AccountSettingsIndexRoute,
+const SettingsRouteChildren: SettingsRouteChildren = {
+  SettingsSettingsViewRoute: SettingsSettingsViewRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
 }
 
-const AccountSettingsRouteWithChildren = AccountSettingsRoute._addFileChildren(
-  AccountSettingsRouteChildren,
+const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
+  SettingsRouteChildren,
 )
 
 interface PostPostIdRouteChildren {
@@ -857,12 +854,12 @@ const rootRouteChildren: RootRouteChildren = {
   ExternalRoute: ExternalRoute,
   FeedDotxmlRoute: FeedDotxmlRoute,
   FollowingRoute: FollowingRoute,
+  PostsRoute: PostsRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
+  SettingsRoute: SettingsRouteWithChildren,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
-  AccountPostsRoute: AccountPostsRouteWithChildren,
-  AccountSettingsRoute: AccountSettingsRouteWithChildren,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   PostPostIdRoute: PostPostIdRouteWithChildren,
   TagTagRoute: TagTagRoute,

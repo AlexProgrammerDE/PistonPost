@@ -7,7 +7,7 @@ import { authSettingsViewPaths } from "@/lib/auth-ui-metadata"
 import { isSettingsView } from "@/lib/settings-views"
 import { getMyProductSettings } from "@/server/settings"
 
-export const Route = createFileRoute("/account/settings/$settingsView")({
+export const Route = createFileRoute("/settings/$settingsView")({
   loader: ({ params }) =>
     params.settingsView === "profile" || params.settingsView === "notifications"
       ? getMyProductSettings()

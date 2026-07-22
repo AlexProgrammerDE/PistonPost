@@ -80,9 +80,9 @@ The old product exposed these user-facing routes:
 | /post/[id]/edit   | Owner or admin edit and delete        | /post/$postId/edit |
 | /tag/[id]         | Public posts for a tag                | /tag/$tag          |
 | /user/[name]      | Profile and recent public posts       | /user/$username    |
-| /account/post     | Create text, image, or video post     | /account/posts/new |
-| /account/posts    | Current user post list                | /account/posts     |
-| /account/settings | Profile, preferences, theme, deletion | /account/settings  |
+| /account/post     | Create text, image, or video post     | /posts/new         |
+| /account/posts    | Current user post list                | /posts             |
+| /account/settings | Profile, preferences, theme, deletion | /settings          |
 | /privacy          | Privacy policy                        | /privacy           |
 | /tos              | Terms                                 | /terms             |
 
@@ -484,15 +484,15 @@ use bounded queue concurrency and delayed outbox retries.
 ### Authenticated
 
 - /following: public posts from followed users or followed tags, deduplicated and cursor paginated.
-- /account/posts/new: post composer.
-- /account/posts: responsive owner management list covering draft, processing, published,
+- /posts/new: post composer.
+- /posts: responsive owner management list covering draft, processing, published,
   unlisted, failed, moderated, and deleted states.
 - /post/$postId/edit: owner or admin editor.
-- /account/settings/profile.
-- /account/settings/security.
-- /account/settings/sessions.
-- /account/settings/preferences.
-- /account/settings/danger.
+- /settings/profile.
+- /settings/security.
+- /settings/sessions.
+- /settings/preferences.
+- /settings/danger.
 
 ### Administrator
 
@@ -1030,7 +1030,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-17: Revalidate public HTML on every use and reload once when Vite reports a missing preload. Content-hashed route chunks change between deployments, so stale document caching can otherwise reference assets that no longer exist. This affects Phases 2 and 9.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
 - 2026-07-19: Supersede the scoped Better Auth UI provider decision. Follow the official TanStack Start integration with one root AuthProvider so UserButton and plugin-contributed account switching and theme controls share one configuration and session cache across the application. Keep public bundle size measured through the existing build and bundle checks. This affects Phases 4 and 5.
-- 2026-07-15: Use a responsive management list for `/account/posts` instead of TanStack Table. The
+- 2026-07-15: Use a responsive management list for `/posts` instead of TanStack Table. The
   screen has one primary object and action per row, so a list keeps status and actions readable on
   narrow screens without duplicating desktop and mobile presentations. Admin datasets remain on
   the shared TanStack Table boundary.
@@ -1105,14 +1105,18 @@ Record future changes here with date, decision, reason, and affected phases.
   preview where they directly help edit the selected media or text. This affects Phase 6.
 - 2026-07-17: Store comment, reply, and product email choices independently without a master email
   switch. Security and moderation notices are required service messages, so they are always sent,
-  are not stored as user preferences, and appear as non-interactive required statuses in account
-  settings.
+  are not stored as user preferences, and appear as checked, disabled switches in account settings.
   This affects Phases 3, 4, 5, and 7.
 - 2026-07-22: Save each optional notification switch immediately with a one-setting mutation. Keep
   the switch state responsive while saving, report progress accessibly, and restore its confirmed
   value when the request fails. Present notification topics in a compact channel matrix so email,
   push, required, and unavailable states are easy to compare. This avoids presenting switches as
   fields that require a separate save action. This affects Phase 7.
+- 2026-07-22: Flatten authenticated product routes by moving post management to `/posts` and account
+  settings to `/settings`. Redirect the former `/account/posts`, `/account/settings`, and singular
+  `/account/post` paths permanently while preserving their remaining path and query parameters.
+  This keeps user-facing URLs short without changing authentication or authorization boundaries.
+  This affects Phases 4 through 7 and 9.
 - 2026-07-17: Split email delivery by sensitivity. Better Auth token and code messages run through
   Cloudflare request background tasks with a small bounded transport retry and are never persisted.
   Product and account notifications use ID-only outbox jobs, delivery-time preference checks,

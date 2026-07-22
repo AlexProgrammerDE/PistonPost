@@ -95,7 +95,7 @@ function PublicFeedResults() {
             <EmptyDescription>Create the first post for this feed.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button nativeButton={false} render={<Link to="/account/posts/new" />}>
+            <Button nativeButton={false} render={<Link to="/posts/new" />}>
               <Plus aria-hidden="true" data-icon="inline-start" />
               Create a post
             </Button>

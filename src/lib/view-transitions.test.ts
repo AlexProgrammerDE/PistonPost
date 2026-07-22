@@ -87,10 +87,7 @@ describe("route view transitions", () => {
       ),
     ).toEqual(["shared", "post-close"])
     expect(
-      resolveRouteTransitionTypes(
-        transition("/post/post-1", "/account/settings/profile"),
-        activePost,
-      ),
+      resolveRouteTransitionTypes(transition("/post/post-1", "/settings/profile"), activePost),
     ).toEqual(["page-forward"])
   })
 
@@ -149,14 +146,11 @@ describe("route view transitions", () => {
 
   it("moves settings panels according to their product order", () => {
     expect(
-      resolveRouteTransitionTypes(
-        transition("/account/settings/profile", "/account/settings/security"),
-        null,
-      ),
+      resolveRouteTransitionTypes(transition("/settings/profile", "/settings/security"), null),
     ).toEqual(["settings-forward"])
     expect(
       resolveRouteTransitionTypes(
-        transition("/account/settings/notifications", "/account/settings/account", {
+        transition("/settings/notifications", "/settings/account", {
           fromIndex: 4,
           toIndex: 5,
         }),

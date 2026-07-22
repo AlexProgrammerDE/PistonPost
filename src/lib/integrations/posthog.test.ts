@@ -26,7 +26,7 @@ describe("PostHog privacy boundary", () => {
     expect(classifyAnalyticsPath("/post/post-secret/edit")).toBe("post-edit")
     expect(classifyAnalyticsPath("/tag/private-tag")).toBe("tag")
     expect(classifyAnalyticsPath("/user/alex")).toBe("profile")
-    expect(classifyAnalyticsPath("/account/settings/security")).toBe("account-settings")
+    expect(classifyAnalyticsPath("/settings/security")).toBe("account-settings")
   })
 
   test("removes content, identity, and dynamic URL properties", () => {
