@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it } from "bun:test"
 import { Effect } from "effect"
 
 import { createUser } from "./factories"
-import { user, userSettings } from "./schema"
+import { emailPreferenceChanges, user, userSettings } from "./schema"
 import { createMigratedTestDatabase } from "./test-database"
 import { createUserSettingsRepository } from "./user-settings-repository"
 
@@ -42,5 +42,44 @@ describe("user settings repository", () => {
       commentPushNotifications: true,
       replyPushNotifications: true,
     })
+    expect(database.select().from(emailPreferenceChanges).all()).toEqual([
+      expect.objectContaining({
+        userId: "test-user",
+        preference: "comment-email",
+        enabled: false,
+        source: "settings",
+      }),
+      expect.objectContaining({
+        userId: "test-user",
+        preference: "product-email",
+        enabled: true,
+        source: "settings",
+      }),
+    ])
+  })
+
+  it("records the source for an email-link opt-out but not for push changes", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => database.$client.close()
+    database.insert(user).values(createUser()).run()
+    const repository = createUserSettingsRepository(database)
+
+    await Effect.runPromise(
+      repository.setNotificationPreference("test-user", "reply-email", false, "email-link"),
+    )
+    await Effect.runPromise(
+      repository.setNotificationPreference("test-user", "reply-push", false, "settings"),
+    )
+
+    expect(database.select().from(emailPreferenceChanges).all()).toEqual([
+      expect.objectContaining({
+        preference: "reply-email",
+        enabled: false,
+        source: "email-link",
+      }),
+    ])
+
+    database.delete(user).run()
+    expect(database.select().from(emailPreferenceChanges).all()).toHaveLength(0)
   })
 })

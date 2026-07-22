@@ -86,6 +86,8 @@ without dynamic post IDs, usernames, tag names, page titles, referrers, or query
 `.env` and redeploy when either public value changes.
 
 See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before creating staging or production resources.
+The [email compliance controls](./docs/email-compliance.md) document records message classification,
+unsubscribe behavior, sender configuration, key rotation, and the live mailbox verification runbook.
 
 Production releases use the manually approved `Deploy production` GitHub Actions workflow. The
 workflow loads non-secret deployment configuration from `.env.production`, reads only the Cloudflare

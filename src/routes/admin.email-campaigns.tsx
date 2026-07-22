@@ -2,9 +2,10 @@
 
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
-import { Eye, Mail, Send } from "lucide-react"
+import { CircleAlert, Eye, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -97,6 +98,15 @@ function EmailCampaigns() {
           Only people who have product emails enabled at delivery time receive it.
         </p>
       </header>
+
+      <Alert className="mb-8">
+        <CircleAlert aria-hidden="true" />
+        <AlertTitle>Service updates only</AlertTitle>
+        <AlertDescription>
+          Cloudflare Email Service does not support marketing campaigns. Use this tool only for
+          factual product or service changes, never promotions, sales, or sponsored messages.
+        </AlertDescription>
+      </Alert>
 
       <section aria-labelledby="new-campaign-title" className="border-b pb-10">
         <h2 id="new-campaign-title" className="text-lg font-semibold">

@@ -1,7 +1,11 @@
 import { Effect, Schema } from "effect"
 
+import type { EmailNotificationPreference } from "@/domain"
+
 const claimsSchema = Schema.Struct({
+  version: Schema.Literal(1),
   userId: Schema.String,
+  preference: Schema.Literal("comment-email", "reply-email", "product-email"),
   expiresAt: Schema.Number,
 })
 
@@ -39,10 +43,13 @@ function signingKey(secret: string) {
 
 export const signUnsubscribeToken = Effect.fn("Email.signUnsubscribeToken")(function* (
   userId: string,
+  preference: EmailNotificationPreference,
   secret: string,
-  expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1_000,
+  expiresAt = Date.now() + 180 * 24 * 60 * 60 * 1_000,
 ) {
-  const payload = encodeBase64Url(new TextEncoder().encode(JSON.stringify({ userId, expiresAt })))
+  const payload = encodeBase64Url(
+    new TextEncoder().encode(JSON.stringify({ version: 1, userId, preference, expiresAt })),
+  )
   const key = yield* signingKey(secret)
   const signature = yield* Effect.tryPromise({
     try: () => crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)),

@@ -6,6 +6,7 @@ import { renderEmail } from "./email"
 import { decodeEmailDeliveryJob } from "./jobs"
 import { authenticationMessage, productUpdateMessage } from "./messages"
 import {
+  createCloudflareEmailTransport,
   createCaptureEmailTransport,
   deliverEmail,
   deliverImmediateEmail,
@@ -59,7 +60,13 @@ describe("transactional email", () => {
         Effect.suspend(() => {
           attempts += 1
           return attempts < 3
-            ? Effect.fail(new EmailDeliveryError({ message: "Temporary failure" }))
+            ? Effect.fail(
+                new EmailDeliveryError({
+                  message: "Temporary failure",
+                  code: "E_INTERNAL_SERVER_ERROR",
+                  retryable: true,
+                }),
+              )
             : Effect.void
         }),
     })
@@ -108,7 +115,7 @@ describe("transactional email", () => {
   it("renders a working product unsubscribe link", async () => {
     const secret = "test-only-unsubscribe-secret-at-least-32-characters"
     const token = await Effect.runPromise(
-      signUnsubscribeToken("user-one", secret, Date.now() + 60_000),
+      signUnsubscribeToken("user-one", "product-email", secret, Date.now() + 60_000),
     )
     const claims = await Effect.runPromise(verifyUnsubscribeToken(token, secret))
     const rendered = await renderEmail(
@@ -118,11 +125,12 @@ describe("transactional email", () => {
         heading: "Posting got a little easier",
         message: "You can now keep a draft while media finishes processing.",
         unsubscribeUrl: `https://post.pistonmaster.net/email/unsubscribe?token=${token}`,
+        postalAddress: "123 Test Street, Test City, 00000, Testland",
       }),
     )
 
     expect(claims.userId).toBe("user-one")
-    expect(rendered.html).toContain("stop product update emails")
+    expect(claims.preference).toBe("product-email")
     expect(rendered.text).toContain("email/unsubscribe?token=")
   })
 
@@ -138,6 +146,7 @@ describe("transactional email", () => {
           heading: "Something changed",
           message: "Here is what changed.",
           unsubscribeUrl,
+          postalAddress: "123 Test Street, Test City, 00000, Testland",
         }),
         to: "recipient@example.com",
         from: "notifications@example.com",
@@ -152,15 +161,76 @@ describe("transactional email", () => {
       ),
     )
 
-    expect(captured[0]?.headers).toEqual({ "List-Unsubscribe": `<${unsubscribeUrl}>` })
+    expect(captured[0]?.headers).toEqual({
+      "List-Unsubscribe": `<${unsubscribeUrl}>`,
+      "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+      "List-ID": "PistonPost updates <product-updates.post.pistonmaster.net>",
+    })
+  })
+
+  it("does not add unsubscribe headers to required authentication email", async () => {
+    const captured: Array<Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0]> =
+      []
+    await Effect.runPromise(
+      deliverEmail({
+        content: authenticationMessage({
+          template: "magic-link",
+          url: "https://post.pistonmaster.net/auth/verify?token=redacted",
+          expiresIn: "in 10 minutes",
+        }),
+        to: "recipient@example.com",
+        from: "auth@example.com",
+        idempotencyKey: "authentication:test",
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(
+            EmailRenderer.live,
+            Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
+          ),
+        ),
+      ),
+    )
+
+    expect(captured[0]?.headers).toBeUndefined()
+  })
+
+  it("treats provider-suppressed recipients as a terminal delivery result", async () => {
+    const providerError = Object.assign(new Error("Recipient suppressed"), {
+      code: "E_RECIPIENT_SUPPRESSED",
+    })
+    const transport = createCloudflareEmailTransport({
+      send: () => Promise.reject(providerError),
+    })
+    const rendered = await renderEmail(
+      authenticationMessage({ template: "email-otp", code: "123456", expiresIn: "in 5 minutes" }),
+    )
+
+    const result = await Effect.runPromise(
+      Effect.either(
+        transport.send({
+          ...rendered,
+          to: "recipient@example.com",
+          from: "auth@example.com",
+          idempotencyKey: "suppressed:test",
+        }),
+      ),
+    )
+
+    expect(Either.isLeft(result)).toBeTrue()
+    if (Either.isLeft(result)) {
+      expect(result.left).toMatchObject({
+        code: "E_RECIPIENT_SUPPRESSED",
+        retryable: false,
+      })
+    }
   })
 
   it("rejects expired and modified unsubscribe links", async () => {
     const secret = "test-only-unsubscribe-secret-at-least-32-characters"
     const expired = await Effect.runPromise(
-      signUnsubscribeToken("user-one", secret, Date.now() - 1),
+      signUnsubscribeToken("user-one", "comment-email", secret, Date.now() - 1),
     )
-    const current = await Effect.runPromise(signUnsubscribeToken("user-one", secret))
+    const current = await Effect.runPromise(signUnsubscribeToken("user-one", "reply-email", secret))
 
     const expiredResult = await Effect.runPromiseExit(verifyUnsubscribeToken(expired, secret))
     const modifiedResult = await Effect.runPromiseExit(

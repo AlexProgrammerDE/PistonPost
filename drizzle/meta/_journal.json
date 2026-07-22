@@ -113,6 +113,13 @@
       "when": 1784711505172,
       "tag": "0015_remove-legacy-columns",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1784745746902,
+      "tag": "0016_email-preference-consent-events",
+      "breakpoints": true
     }
   ]
 }

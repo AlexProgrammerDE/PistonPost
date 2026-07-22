@@ -12,6 +12,8 @@ import {
 } from "@react-email/components"
 import { render } from "@react-email/render"
 
+import type { EmailNotificationPreference } from "@/domain"
+
 export const emailTemplateKeys = [
   "email-verification",
   "magic-link",
@@ -31,6 +33,12 @@ export const emailTemplateKeys = [
 
 export type EmailTemplateKey = (typeof emailTemplateKeys)[number]
 
+export type EmailSubscription = Readonly<{
+  preference: EmailNotificationPreference
+  unsubscribeUrl: string
+  listId: string
+}>
+
 export type EmailContent = {
   readonly template: EmailTemplateKey
   readonly subject: string
@@ -40,13 +48,27 @@ export type EmailContent = {
   readonly action?: Readonly<{ label: string; url: string }>
   readonly code?: string
   readonly footnote?: string
-  readonly unsubscribeUrl?: string
+  readonly subscription?: EmailSubscription
+  readonly senderPostalAddress?: string
 }
 
 export type RenderedEmail = {
   readonly subject: string
   readonly html: string
   readonly text: string
+}
+
+function subscriptionLabel(preference: EmailNotificationPreference) {
+  switch (preference) {
+    case "comment-email":
+      return "comment emails"
+    case "reply-email":
+      return "reply emails"
+    case "product-email":
+      return "product update emails"
+  }
+  const exhaustivePreference: never = preference
+  return exhaustivePreference
 }
 
 export function PistonPostEmail({ content }: { readonly content: EmailContent }) {
@@ -72,11 +94,11 @@ export function PistonPostEmail({ content }: { readonly content: EmailContent })
             </Button>
           ) : null}
           {content.footnote ? <Text style={styles.footnote}>{content.footnote}</Text> : null}
-          {content.unsubscribeUrl ? (
+          {content.subscription ? (
             <Text style={styles.footnote}>
               You can{" "}
-              <Link href={content.unsubscribeUrl} style={styles.link}>
-                stop product update emails
+              <Link href={content.subscription.unsubscribeUrl} style={styles.link}>
+                stop {subscriptionLabel(content.subscription.preference)}
               </Link>{" "}
               at any time.
             </Text>
@@ -90,6 +112,11 @@ export function PistonPostEmail({ content }: { readonly content: EmailContent })
             </Link>
             .
           </Text>
+          {content.senderPostalAddress ? (
+            <Text style={styles.postalAddress}>
+              PistonPost mailing address: {content.senderPostalAddress}
+            </Text>
+          ) : null}
         </Container>
       </Body>
     </Html>
@@ -164,6 +191,13 @@ const styles = {
     lineHeight: "18px",
     marginTop: "28px",
     paddingTop: "18px",
+  },
+  postalAddress: {
+    color: "#806a62",
+    fontSize: "12px",
+    lineHeight: "18px",
+    margin: "8px 0 0",
+    whiteSpace: "pre-line" as const,
   },
   link: { color: "#c82d47" },
 } as const

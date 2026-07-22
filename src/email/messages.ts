@@ -1,4 +1,19 @@
-import type { EmailContent, EmailTemplateKey } from "./email"
+import type { EmailNotificationPreference } from "@/domain"
+
+import type { EmailContent, EmailSubscription, EmailTemplateKey } from "./email"
+
+const emailListIds = {
+  "comment-email": "PistonPost comments <comments.post.pistonmaster.net>",
+  "reply-email": "PistonPost replies <replies.post.pistonmaster.net>",
+  "product-email": "PistonPost updates <product-updates.post.pistonmaster.net>",
+} as const satisfies Record<EmailNotificationPreference, string>
+
+export function emailSubscription(
+  preference: EmailNotificationPreference,
+  unsubscribeUrl: string,
+): EmailSubscription {
+  return { preference, unsubscribeUrl, listId: emailListIds[preference] }
+}
 
 type AuthenticationMessageInput = {
   readonly template: Extract<
@@ -91,6 +106,7 @@ export function productUpdateMessage(input: {
   readonly actionLabel?: string | null
   readonly actionUrl?: string | null
   readonly unsubscribeUrl: string
+  readonly postalAddress: string
 }): EmailContent {
   return {
     template: "product-update",
@@ -103,6 +119,7 @@ export function productUpdateMessage(input: {
         ? { label: input.actionLabel, url: input.actionUrl }
         : undefined,
     footnote: "You received this because product update emails are enabled for your account.",
-    unsubscribeUrl: input.unsubscribeUrl,
+    subscription: emailSubscription("product-email", input.unsubscribeUrl),
+    senderPostalAddress: input.postalAddress,
   }
 }

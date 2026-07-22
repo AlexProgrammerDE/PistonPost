@@ -60,6 +60,31 @@ describe("request security", () => {
     expect(validateRequestSecurity(request, origin)).toBeNull()
   })
 
+  test("allows RFC 8058 one-click posts without weakening other mutation origins", () => {
+    const oneClick = mutation("/email/unsubscribe?token=signed", {
+      "content-type": "application/x-www-form-urlencoded",
+      "sec-fetch-site": "cross-site",
+    })
+    oneClick.headers.delete("origin")
+    expect(validateRequestSecurity(oneClick, origin)).toBeNull()
+
+    const otherMutation = mutation("/_serverFn/create", { "sec-fetch-site": "cross-site" })
+    expect(validateRequestSecurity(otherMutation, origin)?.status).toBe(403)
+  })
+
+  test("limits one-click unsubscribe bodies and accepts only form media types", () => {
+    const wrongType = mutation("/email/unsubscribe?token=signed")
+    wrongType.headers.delete("origin")
+    expect(validateRequestSecurity(wrongType, origin)?.status).toBe(415)
+
+    const oversized = mutation("/email/unsubscribe?token=signed", {
+      "content-length": "8193",
+      "content-type": "application/x-www-form-urlencoded",
+    })
+    oversized.headers.delete("origin")
+    expect(validateRequestSecurity(oversized, origin)?.status).toBe(413)
+  })
+
   test("sets CSP and browser hardening headers", () => {
     const request = new Request(origin)
     const response = applySecurityHeaders(request, new Response("ok"), true)

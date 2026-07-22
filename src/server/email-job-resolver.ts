@@ -3,15 +3,17 @@ import { Context, Effect, Layer, Schema } from "effect"
 
 import type { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
+import type { EmailNotificationPreference } from "@/domain"
 import {
+  emailSubscription,
+  productUpdateMessage,
   securityNotificationMessage,
   signUnsubscribeToken,
-  productUpdateMessage,
   type EmailContent,
   type EmailDeliveryJob,
 } from "@/email"
 
-import { notificationEnabled } from "./notification-policy"
+import { notificationEnabled, optInNotificationEnabled } from "./notification-policy"
 
 type Database = ReturnType<typeof createD1Database>
 
@@ -19,7 +21,7 @@ export type ResolvedEmail =
   | Readonly<{
       _tag: "Ready"
       to: string
-      channel: "authentication" | "notification"
+      channel: "authentication" | "notification" | "marketing"
       content: EmailContent
       campaignId?: string
     }>
@@ -53,7 +55,12 @@ function promiseQuery<T>(query: () => Promise<T>) {
   return Effect.tryPromise({ try: query, catch: queryFailure })
 }
 
-function commentContent(actorName: string, postTitle: string, postUrl: string): EmailContent {
+function commentContent(
+  actorName: string,
+  postTitle: string,
+  postUrl: string,
+  unsubscribeUrl: string,
+): EmailContent {
   return {
     template: "comment-notification",
     subject: `${actorName} commented on ${postTitle}`,
@@ -62,10 +69,16 @@ function commentContent(actorName: string, postTitle: string, postUrl: string): 
     message: `${actorName} left a comment on “${postTitle}”.`,
     action: { label: "Read the comment", url: postUrl },
     footnote: "You can change comment email preferences in your account settings.",
+    subscription: emailSubscription("comment-email", unsubscribeUrl),
   }
 }
 
-function replyContent(actorName: string, postTitle: string, postUrl: string): EmailContent {
+function replyContent(
+  actorName: string,
+  postTitle: string,
+  postUrl: string,
+  unsubscribeUrl: string,
+): EmailContent {
   return {
     template: "reply-notification",
     subject: `${actorName} replied to your comment`,
@@ -74,12 +87,21 @@ function replyContent(actorName: string, postTitle: string, postUrl: string): Em
     message: `${actorName} replied to your comment on “${postTitle}”.`,
     action: { label: "Read the reply", url: postUrl },
     footnote: "You can change reply email preferences in your account settings.",
+    subscription: emailSubscription("reply-email", unsubscribeUrl),
   }
+}
+
+function createUnsubscribeUrl(baseURL: URL, token: string) {
+  return new URL(`/email/unsubscribe?token=${encodeURIComponent(token)}`, baseURL).toString()
 }
 
 export function emailJobResolverLayer(
   database: Database,
-  config: Readonly<{ baseURL: string; getUnsubscribeSecret: () => Promise<string> }>,
+  config: Readonly<{
+    baseURL: string
+    getUnsubscribeSecret: () => Promise<string>
+    getMarketingPostalAddress: () => Promise<string>
+  }>,
 ) {
   return Layer.succeed(EmailJobResolver, {
     resolve: Effect.fn("EmailJobResolver.resolve")(function* (job) {
@@ -150,13 +172,25 @@ export function emailJobResolverLayer(
           return skip("preference-disabled")
         }
         const postUrl = new URL(`/post/${comment.postId}#comment-${comment.id}`, baseURL).toString()
+        const emailPreference: EmailNotificationPreference =
+          preference === "reply" ? "reply-email" : "comment-email"
+        const unsubscribeSecret = yield* Effect.tryPromise({
+          try: config.getUnsubscribeSecret,
+          catch: queryFailure,
+        })
+        const token = yield* signUnsubscribeToken(
+          job.recipientUserId,
+          emailPreference,
+          unsubscribeSecret,
+        ).pipe(Effect.catchTag("UnsubscribeTokenError", () => Effect.fail(queryFailure())))
+        const preferenceUrl = createUnsubscribeUrl(baseURL, token)
         return ready({
           to: recipient.email,
           channel: "notification",
           content:
             preference === "reply"
-              ? replyContent(comment.actorName, comment.postTitle, postUrl)
-              : commentContent(comment.actorName, comment.postTitle, postUrl),
+              ? replyContent(comment.actorName, comment.postTitle, postUrl, preferenceUrl)
+              : commentContent(comment.actorName, comment.postTitle, postUrl, preferenceUrl),
         })
       }
 
@@ -289,19 +323,21 @@ export function emailJobResolverLayer(
           .where(eq(schema.user.id, job.recipientUserId))
           .get(),
       )
-      if (!recipient || !notificationEnabled(recipient.enabled)) {
+      if (!recipient || !optInNotificationEnabled(recipient.enabled)) {
         return skip("preference-disabled", campaign.id)
       }
-      const unsubscribeSecret = yield* Effect.tryPromise({
-        try: config.getUnsubscribeSecret,
-        catch: queryFailure,
-      })
-      const token = yield* signUnsubscribeToken(job.recipientUserId, unsubscribeSecret).pipe(
-        Effect.catchTag("UnsubscribeTokenError", () => Effect.fail(queryFailure())),
-      )
+      const [unsubscribeSecret, postalAddress] = yield* Effect.all([
+        Effect.tryPromise({ try: config.getUnsubscribeSecret, catch: queryFailure }),
+        Effect.tryPromise({ try: config.getMarketingPostalAddress, catch: queryFailure }),
+      ])
+      const token = yield* signUnsubscribeToken(
+        job.recipientUserId,
+        "product-email",
+        unsubscribeSecret,
+      ).pipe(Effect.catchTag("UnsubscribeTokenError", () => Effect.fail(queryFailure())))
       return ready({
         to: recipient.email,
-        channel: "notification",
+        channel: "marketing",
         campaignId: campaign.id,
         content: productUpdateMessage({
           subject: campaign.subject,
@@ -310,10 +346,8 @@ export function emailJobResolverLayer(
           message: campaign.message,
           actionLabel: campaign.actionLabel,
           actionUrl: campaign.actionUrl,
-          unsubscribeUrl: new URL(
-            `/email/unsubscribe?token=${encodeURIComponent(token)}`,
-            baseURL,
-          ).toString(),
+          unsubscribeUrl: createUnsubscribeUrl(baseURL, token),
+          postalAddress,
         }),
       })
     }),

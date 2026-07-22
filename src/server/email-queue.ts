@@ -20,6 +20,7 @@ import { PushTransport, webPushTransportLayer } from "@/push/transport"
 import { mediaCacheTag } from "./cache-tags"
 import { deadLetterMetadata } from "./dead-letter"
 import { requireEmailBinding } from "./email-binding"
+import { readRequiredEmailValue, readUnsubscribeKeyring } from "./email-config"
 import { EmailJobResolver, emailJobResolverLayer } from "./email-job-resolver"
 import { internalJobSchema, type InternalJob } from "./jobs"
 import { writeOperationalEvent } from "./operational-events"
@@ -156,14 +157,34 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
       }
       return
     }
-    yield* deliverEmail({
+    const delivery = yield* deliverEmail({
       content: resolved.content,
       to: resolved.to,
       from:
-        resolved.channel === "authentication" ? env.AUTH_EMAIL_FROM : env.NOTIFICATIONS_EMAIL_FROM,
+        resolved.channel === "authentication"
+          ? env.AUTH_EMAIL_FROM
+          : resolved.channel === "marketing"
+            ? env.MARKETING_EMAIL_FROM
+            : env.NOTIFICATIONS_EMAIL_FROM,
       replyTo: env.SUPPORT_EMAIL,
       idempotencyKey: job.idempotencyKey,
-    })
+    }).pipe(
+      Effect.as({ _tag: "Accepted" } as const),
+      Effect.catchTag("EmailDeliveryError", (error) =>
+        error.retryable
+          ? Effect.fail(error)
+          : Effect.succeed({ _tag: "Suppressed", reason: error.code } as const),
+      ),
+    )
+    if (Predicate.isTagged(delivery, "Suppressed")) {
+      const reason = `provider-${delivery.reason.toLowerCase()}`
+      if (job.type === "email.product") {
+        yield* outbox.completeProduct(job.idempotencyKey, reason, "skipped")
+      } else {
+        yield* outbox.complete(job.idempotencyKey, reason)
+      }
+      return
+    }
     if (job.type === "email.product") {
       yield* outbox.completeProduct(job.idempotencyKey, "provider-accepted", "sent")
     } else {
@@ -532,8 +553,10 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
     outboxRepositoryLayer(database),
     emailJobResolverLayer(database, {
       baseURL: env.PUBLIC_APP_URL,
-      getUnsubscribeSecret: () =>
-        readSecret(env.EMAIL_UNSUBSCRIBE_SECRET, "EMAIL_UNSUBSCRIBE_SECRET"),
+      getUnsubscribeSecret: async () =>
+        (await readUnsubscribeKeyring(env.EMAIL_UNSUBSCRIBE_SECRET)).current,
+      getMarketingPostalAddress: () =>
+        readRequiredEmailValue(env.MARKETING_POSTAL_ADDRESS, "MARKETING_POSTAL_ADDRESS"),
     }),
     pushJobResolverLayer(database),
     webPushTransportLayer({

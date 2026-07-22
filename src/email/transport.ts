@@ -16,6 +16,8 @@ export class EmailDeliveryError extends Schema.TaggedError<EmailDeliveryError>()
   "EmailDeliveryError",
   {
     message: Schema.String,
+    code: Schema.String,
+    retryable: Schema.Boolean,
   },
 ) {}
 
@@ -64,6 +66,12 @@ export type CloudflareEmailBinding = {
   }) => Promise<unknown>
 }
 
+function providerErrorCode(cause: unknown) {
+  if (typeof cause !== "object" || cause === null || !("code" in cause)) return "E_UNKNOWN"
+  const code = Reflect.get(cause, "code")
+  return typeof code === "string" ? code : "E_UNKNOWN"
+}
+
 export function createCloudflareEmailTransport(
   binding: CloudflareEmailBinding,
 ): EmailTransportService {
@@ -81,10 +89,14 @@ export function createCloudflareEmailTransport(
             headers: message.headers,
           })
         },
-        catch: (cause) =>
-          new EmailDeliveryError({
+        catch: (cause) => {
+          const code = providerErrorCode(cause)
+          return new EmailDeliveryError({
             message: cause instanceof Error ? cause.message : "Email delivery failed.",
-          }),
+            code,
+            retryable: code !== "E_RECIPIENT_SUPPRESSED",
+          })
+        },
       }),
   }
 }
@@ -97,6 +109,15 @@ export type EmailDelivery = Omit<OutboundEmail, keyof RenderedEmail> & {
   readonly content: EmailContent
 }
 
+function subscriptionHeaders(content: EmailContent) {
+  if (!content.subscription) return undefined
+  return {
+    "List-Unsubscribe": `<${content.subscription.unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    "List-ID": content.subscription.listId,
+  }
+}
+
 export const deliverEmail = Effect.fn("Email.deliver")(function* (message: EmailDelivery) {
   const renderer = yield* EmailRenderer
   const transport = yield* EmailTransport
@@ -107,16 +128,19 @@ export const deliverEmail = Effect.fn("Email.deliver")(function* (message: Email
     from: message.from,
     replyTo: message.replyTo,
     idempotencyKey: message.idempotencyKey,
-    headers: message.content.unsubscribeUrl
-      ? { "List-Unsubscribe": `<${message.content.unsubscribeUrl}>` }
-      : undefined,
+    headers: subscriptionHeaders(message.content),
   })
 })
 
 export const deliverImmediateEmail = Effect.fn("Email.deliverImmediate")(function* (
   message: EmailDelivery,
 ) {
-  yield* deliverEmail(message).pipe(Effect.retry({ times: 2 }))
+  yield* deliverEmail(message).pipe(
+    Effect.retry({
+      times: 2,
+      until: (error) => error instanceof EmailRenderError || !error.retryable,
+    }),
+  )
 })
 
 export function createCaptureEmailTransport(captured: Array<OutboundEmail>): EmailTransportService {

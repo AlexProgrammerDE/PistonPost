@@ -1,12 +1,18 @@
-import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Effect } from "effect"
 
-import { RepositoryError, type NotificationPreference } from "@/domain"
+import type { D1DatabaseClient } from "@/db/d1-database"
+import type { SqliteDatabaseClient } from "@/db/database"
+import {
+  RepositoryError,
+  type EmailNotificationPreference,
+  type NotificationPreference,
+} from "@/domain"
 
 import * as schema from "./schema"
 
-type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
+type Database = D1DatabaseClient | SqliteDatabaseClient
 type UserSettingsInsert = typeof schema.userSettings.$inferInsert
+export type EmailPreferenceChangeSource = "settings" | "email-link" | "one-click"
 type NotificationPreferenceValues = Partial<
   Pick<
     UserSettingsInsert,
@@ -45,20 +51,75 @@ function repositoryError(cause: unknown) {
   })
 }
 
+function isEmailPreference(
+  preference: NotificationPreference,
+): preference is EmailNotificationPreference {
+  return preference.endsWith("-email")
+}
+
+function isD1Database(database: Database): database is D1DatabaseClient {
+  return "batch" in database
+}
+
 export function createUserSettingsRepository(database: Database) {
   return {
     setNotificationPreference: Effect.fn("UserSettingsRepository.setNotificationPreference")(
-      function* (userId: string, preference: NotificationPreference, enabled: boolean) {
+      function* (
+        userId: string,
+        preference: NotificationPreference,
+        enabled: boolean,
+        source: EmailPreferenceChangeSource = "settings",
+      ) {
         const values = preferenceValues(preference, enabled)
         yield* Effect.tryPromise({
           try: async () => {
-            await database
-              .insert(schema.userSettings)
-              .values({ userId, ...values })
-              .onConflictDoUpdate({
-                target: schema.userSettings.userId,
-                set: { ...values, updatedAt: new Date() },
-              })
+            if (isD1Database(database)) {
+              const updatePreference = database
+                .insert(schema.userSettings)
+                .values({ userId, ...values })
+                .onConflictDoUpdate({
+                  target: schema.userSettings.userId,
+                  set: { ...values, updatedAt: new Date() },
+                })
+              if (!isEmailPreference(preference)) {
+                await updatePreference
+                return
+              }
+              await database.batch([
+                updatePreference,
+                database.insert(schema.emailPreferenceChanges).values({
+                  id: crypto.randomUUID(),
+                  userId,
+                  preference,
+                  enabled,
+                  source,
+                }),
+              ])
+              return
+            }
+
+            database.transaction((transaction) => {
+              transaction
+                .insert(schema.userSettings)
+                .values({ userId, ...values })
+                .onConflictDoUpdate({
+                  target: schema.userSettings.userId,
+                  set: { ...values, updatedAt: new Date() },
+                })
+                .run()
+              if (isEmailPreference(preference)) {
+                transaction
+                  .insert(schema.emailPreferenceChanges)
+                  .values({
+                    id: crypto.randomUUID(),
+                    userId,
+                    preference,
+                    enabled,
+                    source,
+                  })
+                  .run()
+              }
+            })
           },
           catch: repositoryError,
         })

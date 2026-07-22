@@ -222,28 +222,30 @@ Queue consumers
 
 Use descriptive binding names and keep actual IDs out of committed documentation.
 
-| Binding               | Type                   | Responsibility                                 |
-| --------------------- | ---------------------- | ---------------------------------------------- |
-| DB                    | D1Database             | Better Auth and product data                   |
-| MEDIA                 | R2Bucket               | Original images and non-video binary objects   |
-| IMAGES                | ImagesBinding          | Image validation, transformation, and variants |
-| STREAM                | StreamBinding          | Video status, playback, and provider cleanup   |
-| STREAM_ACCOUNT_ID     | secret/config          | Account used to create direct TUS uploads      |
-| STREAM_API_TOKEN      | secret                 | Dedicated Stream Write credential              |
-| STREAM_WEBHOOK_SECRET | secret                 | Stream webhook signature verification          |
-| ASSETS                | Fetcher                | Built TanStack Start assets                    |
-| EMAIL                 | SendEmail              | Auth and product email delivery                |
-| JOBS                  | Queue                  | General durable background jobs                |
-| ANALYTICS             | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
-| AUTH_RATE_LIMITER     | RateLimit              | Better Auth requests                           |
-| ANON_RATE_LIMITER     | RateLimit              | Anonymous reads and probes                     |
-| USER_RATE_LIMITER     | RateLimit              | Authenticated mutations                        |
-| UPLOAD_RATE_LIMITER   | RateLimit              | Upload initialization and finalization         |
-| TURNSTILE_SECRET      | Secret                 | Server-side captcha verification               |
-| BETTER_AUTH_SECRET    | Secret                 | Better Auth signing and encryption             |
-| VAPID_PUBLIC_KEY      | config                 | Browser Web Push subscription key              |
-| VAPID_PRIVATE_KEY     | Secret                 | Server Web Push signing key                    |
-| VAPID_SUBJECT         | config                 | Monitored Web Push contact                     |
+| Binding                  | Type                   | Responsibility                                 |
+| ------------------------ | ---------------------- | ---------------------------------------------- |
+| DB                       | D1Database             | Better Auth and product data                   |
+| MEDIA                    | R2Bucket               | Original images and non-video binary objects   |
+| IMAGES                   | ImagesBinding          | Image validation, transformation, and variants |
+| STREAM                   | StreamBinding          | Video status, playback, and provider cleanup   |
+| STREAM_ACCOUNT_ID        | secret/config          | Account used to create direct TUS uploads      |
+| STREAM_API_TOKEN         | secret                 | Dedicated Stream Write credential              |
+| STREAM_WEBHOOK_SECRET    | secret                 | Stream webhook signature verification          |
+| ASSETS                   | Fetcher                | Built TanStack Start assets                    |
+| EMAIL                    | SendEmail              | Authentication, notification, and update email |
+| EMAIL_UNSUBSCRIBE_SECRET | Secret                 | Category-scoped unsubscribe token key ring     |
+| MARKETING_POSTAL_ADDRESS | Secret/config          | Physical address shown in product updates      |
+| JOBS                     | Queue                  | General durable background jobs                |
+| ANALYTICS                | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
+| AUTH_RATE_LIMITER        | RateLimit              | Better Auth requests                           |
+| ANON_RATE_LIMITER        | RateLimit              | Anonymous reads and probes                     |
+| USER_RATE_LIMITER        | RateLimit              | Authenticated mutations                        |
+| UPLOAD_RATE_LIMITER      | RateLimit              | Upload initialization and finalization         |
+| TURNSTILE_SECRET         | Secret                 | Server-side captcha verification               |
+| BETTER_AUTH_SECRET       | Secret                 | Better Auth signing and encryption             |
+| VAPID_PUBLIC_KEY         | config                 | Browser Web Push subscription key              |
+| VAPID_PRIVATE_KEY        | Secret                 | Server Web Push signing key                    |
+| VAPID_SUBJECT            | config                 | Monitored Web Push contact                     |
 
 wrangler.jsonc should follow the useful EnderDash patterns:
 
@@ -296,6 +298,13 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 - Independent comment and reply push preferences.
 - theme, constrained to system, light, or dark.
 - locale and timeZone only if the UI exposes them.
+
+#### emailPreferenceChanges
+
+- id, primary key.
+- userId, cascading foreign key to user.
+- Email category, enabled value, source, and createdAt.
+- No network address, user agent, email address, or token.
 
 #### pushSubscriptions
 
@@ -790,8 +799,8 @@ Exit criteria:
         preferences at delivery time.
   - [x] Claim outbox work with expiring leases, complete it only after provider acceptance, and
         stop automatic retries after dead-letter delivery.
-  - [x] Add reply notifications, administrator-controlled product campaigns, and signed product
-        email unsubscribe links.
+  - [x] Add reply notifications, administrator-controlled product campaigns, category-scoped
+        unsubscribe links, RFC 8058 one-click handling, consent history, and compliant list headers.
   - [x] Declare the Email Service binding in local, preview, and production environments.
 - [x] Add session-bound Web Push for comment, reply, moderation, and security alerts.
   - [x] Add separate push preferences and per-device opt-in controls without prompting on page load.
@@ -1117,6 +1126,20 @@ Record future changes here with date, decision, reason, and affected phases.
   `/account/post` paths permanently while preserving their remaining path and query parameters.
   This keeps user-facing URLs short without changing authentication or authorization boundaries.
   This affects Phases 4 through 7 and 9.
+- 2026-07-22: Classify authentication, security, and moderation email as required service messages;
+  classify comment, reply, and product email as separate optional lists. Give optional messages a
+  visible category link, RFC 8058 one-click headers, delivery-time suppression, and auditable
+  preference changes. Keep product updates off by default, send them from a dedicated update
+  address, and require a physical mailing address before preview or delivery. Retain previous token
+  keys during rotation so links remain usable for their 180-day lifetime. This affects Phases 3, 4,
+  7, 9, and 10.
+- 2026-07-22: Keep the Cloudflare-backed product update tool limited to factual service changes
+  because Cloudflare Email Service does not support marketing campaigns. Treat those updates as
+  commercial for the stricter consent, unsubscribe, sender, and mailing-address controls. Use a
+  marketing-capable provider before expanding the tool to promotions, sales, sponsorships, or
+  advertising. Rely on Cloudflare's account suppression list for hard bounces, repeated soft
+  bounces, and spam complaints, and treat suppressed-recipient responses as terminal Queue skips.
+  This affects Phases 4, 7, 9, and 10.
 - 2026-07-17: Split email delivery by sensitivity. Better Auth token and code messages run through
   Cloudflare request background tasks with a small bounded transport retry and are never persisted.
   Product and account notifications use ID-only outbox jobs, delivery-time preference checks,

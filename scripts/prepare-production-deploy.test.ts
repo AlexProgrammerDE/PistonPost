@@ -22,6 +22,7 @@ const productionConfig = {
     TURNSTILE_SITE_KEY: "replace-with-production-site-key",
     AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
     NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
+    MARKETING_EMAIL_FROM: "PistonPost Updates <updates@transactional.pistonmaster.net>",
     SUPPORT_EMAIL: "support@pistonmaster.net",
     VAPID_PUBLIC_KEY: "",
     VAPID_SUBJECT: "mailto:support@pistonmaster.net",
@@ -50,6 +51,7 @@ describe("prepareProductionDeployConfig", () => {
       TURNSTILE_SITE_KEY: input.turnstileSiteKey,
       AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
       NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
+      MARKETING_EMAIL_FROM: "PistonPost Updates <updates@transactional.pistonmaster.net>",
       SUPPORT_EMAIL: "support@pistonmaster.net",
       VAPID_PUBLIC_KEY: input.vapidPublicKey,
       VAPID_SUBJECT: "mailto:support@pistonmaster.net",
@@ -77,6 +79,11 @@ describe("prepareProductionDeployConfig", () => {
         binding: "EMAIL_UNSUBSCRIBE_SECRET",
         store_id: input.secretsStoreId,
         secret_name: "EMAIL_UNSUBSCRIBE_SECRET",
+      },
+      {
+        binding: "MARKETING_POSTAL_ADDRESS",
+        store_id: input.secretsStoreId,
+        secret_name: "MARKETING_POSTAL_ADDRESS",
       },
       {
         binding: "TURNSTILE_SECRET",

@@ -3,6 +3,7 @@ const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
 const MAX_DEFAULT_BODY_BYTES = 1024 * 1024
 const MAX_IMAGE_BODY_BYTES = 15 * 1024 * 1024
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024
+const MAX_UNSUBSCRIBE_BODY_BYTES = 8 * 1024
 
 const allowedBodyTypes = new Set([
   "application/json",
@@ -16,6 +17,10 @@ const allowedImageTypes = new Set([
   "image/png",
   "image/webp",
 ])
+const allowedOneClickUnsubscribeTypes = new Set([
+  "application/x-www-form-urlencoded",
+  "multipart/form-data",
+])
 
 function errorResponse(message: string, status: number) {
   return Response.json(
@@ -27,6 +32,7 @@ function errorResponse(message: string, status: number) {
 function bodyLimit(pathname: string) {
   if (pathname.startsWith("/media/upload/")) return MAX_IMAGE_BODY_BYTES
   if (pathname === "/api/stream/webhook") return MAX_WEBHOOK_BODY_BYTES
+  if (pathname === "/email/unsubscribe") return MAX_UNSUBSCRIBE_BODY_BYTES
   return MAX_DEFAULT_BODY_BYTES
 }
 
@@ -38,8 +44,9 @@ export function validateRequestSecurity(request: Request, expectedOrigin: string
   if (!MUTATION_METHODS.has(request.method)) return null
   const pathname = new URL(request.url).pathname
   const webhook = pathname === "/api/stream/webhook"
+  const oneClickUnsubscribe = pathname === "/email/unsubscribe" && request.method === "POST"
 
-  if (!webhook) {
+  if (!webhook && !oneClickUnsubscribe) {
     const origin = request.headers.get("origin")
     if (origin !== expectedOrigin) return errorResponse("The request origin was rejected.", 403)
     if (request.headers.get("sec-fetch-site") === "cross-site") {
@@ -60,6 +67,12 @@ export function validateRequestSecurity(request: Request, expectedOrigin: string
   if (pathname.startsWith("/media/upload/")) {
     if (!type || !allowedImageTypes.has(type)) {
       return errorResponse("The upload content type is not supported.", 415)
+    }
+    return null
+  }
+  if (pathname === "/email/unsubscribe") {
+    if (!type || !allowedOneClickUnsubscribeTypes.has(type)) {
+      return errorResponse("The unsubscribe content type is not supported.", 415)
     }
     return null
   }

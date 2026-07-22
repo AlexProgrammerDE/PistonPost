@@ -2,13 +2,22 @@
 
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
+import { createServerOnlyFn } from "@tanstack/react-start"
 import { CheckCircle2, MailX } from "lucide-react"
 import { z } from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { unsubscribeFromProductEmail } from "@/server/email-preferences"
+import type { AppRequestContext } from "@/server"
+import { unsubscribeFromEmail } from "@/server/email-preferences"
+
+const oneClickUnsubscribe = createServerOnlyFn(
+  async ({ request, context }: { request: Request; context: AppRequestContext }) => {
+    const { handleOneClickUnsubscribe } = await import("@/server/email-one-click")
+    return handleOneClickUnsubscribe(request, context)
+  },
+)
 
 export const Route = createFileRoute("/email/unsubscribe")({
   validateSearch: z.object({ token: z.string().max(4096).catch("") }),
@@ -18,27 +27,41 @@ export const Route = createFileRoute("/email/unsubscribe")({
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
-  component: ProductEmailUnsubscribe,
+  server: {
+    handlers: {
+      POST: oneClickUnsubscribe,
+    },
+  },
+  component: EmailUnsubscribe,
 })
 
-function ProductEmailUnsubscribe() {
+const preferenceNames = {
+  "comment-email": "Comment emails",
+  "reply-email": "Reply emails",
+  "product-email": "Product updates",
+} as const
+
+function EmailUnsubscribe() {
   const { token } = Route.useSearch()
   const unsubscribe = useMutation({
-    mutationFn: () => unsubscribeFromProductEmail({ data: { token } }),
+    mutationFn: () => unsubscribeFromEmail({ data: { token } }),
   })
+  const preferenceName = unsubscribe.data
+    ? preferenceNames[unsubscribe.data.preference]
+    : "These emails"
   return (
     <main className="mx-auto flex min-h-[60vh] w-full max-w-xl items-center px-4 py-12 sm:px-6">
       <div className="w-full border-y py-8">
         <MailX aria-hidden="true" className="size-6 text-muted-foreground" />
-        <h1 className="mt-4 font-heading text-2xl font-bold">Stop product update emails?</h1>
+        <h1 className="mt-4 font-heading text-2xl font-bold">Stop these emails?</h1>
         <p className="mt-2 text-sm leading-6 text-muted-foreground">
           Security, account, and moderation messages will still arrive when they are needed. You can
-          turn product updates back on from account settings.
+          turn optional emails back on from notification settings.
         </p>
         {unsubscribe.isSuccess ? (
           <Alert className="mt-6">
             <CheckCircle2 aria-hidden="true" />
-            <AlertTitle>Product updates are off</AlertTitle>
+            <AlertTitle>{preferenceName} are off</AlertTitle>
             <AlertDescription>Your email preference has been saved.</AlertDescription>
           </Alert>
         ) : unsubscribe.isError ? (
@@ -60,7 +83,7 @@ function ProductEmailUnsubscribe() {
                 Saving…
               </>
             ) : (
-              "Stop product update emails"
+              "Stop these emails"
             )}
           </Button>
         )}

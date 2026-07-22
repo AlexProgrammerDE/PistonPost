@@ -38,6 +38,7 @@ jobs:
             'BETTER_AUTH_SECRET=ci-only-better-auth-secret-that-is-never-deployed' \
             'BETTER_AUTH_API_KEY=ci-only-better-auth-api-key' \
             'EMAIL_UNSUBSCRIBE_SECRET=ci-only-email-unsubscribe-secret' \
+            'MARKETING_POSTAL_ADDRESS=123 Test Street, Test City, 00000, Testland' \
             'TURNSTILE_SECRET=1x0000000000000000000000000000000AA' \
             'STREAM_WEBHOOK_SECRET=ci-only-stream-webhook-secret' \
             'STREAM_ACCOUNT_ID=ci-only-stream-account-id' \

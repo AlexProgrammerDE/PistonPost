@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm"
-import { check, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
+import { check, index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 import { user } from "./auth.generated"
 import { now, timestamp } from "./common"
@@ -56,5 +56,36 @@ export const userSettings = sqliteTable(
   },
   (table) => [
     check("user_settings_theme_check", sql`${table.theme} in ('system', 'light', 'dark')`),
+  ],
+)
+
+export const emailPreferenceChanges = sqliteTable(
+  "email_preference_changes",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    preference: text("preference", {
+      enum: ["comment-email", "reply-email", "product-email"],
+    }).notNull(),
+    enabled: integer("enabled", { mode: "boolean" }).notNull(),
+    source: text("source", { enum: ["settings", "email-link", "one-click"] }).notNull(),
+    createdAt: timestamp("created_at").notNull().default(now),
+  },
+  (table) => [
+    index("email_preference_changes_user_preference_created_idx").on(
+      table.userId,
+      table.preference,
+      table.createdAt,
+    ),
+    check(
+      "email_preference_changes_preference_check",
+      sql`${table.preference} in ('comment-email', 'reply-email', 'product-email')`,
+    ),
+    check(
+      "email_preference_changes_source_check",
+      sql`${table.source} in ('settings', 'email-link', 'one-click')`,
+    ),
   ],
 )

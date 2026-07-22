@@ -71,7 +71,8 @@ Some bindings require account-level setup rather than a create command:
 - Enable Cloudflare Images and bind it as `IMAGES`.
 - Enable Stream and bind it as `STREAM` after confirming the current first-party binding shape.
 - Onboard `transactional.pistonmaster.net`, configure SPF, DKIM, and DMARC, then bind Email Service as `EMAIL`.
-- Allow `auth@transactional.pistonmaster.net` and `notifications@transactional.pistonmaster.net` as distinct Worker senders.
+- Allow `auth@transactional.pistonmaster.net`, `notifications@transactional.pistonmaster.net`, and
+  `updates@transactional.pistonmaster.net` as distinct Worker senders.
 - Use `support@pistonmaster.net` for replies and public support links.
 - Bind Analytics Engine as `ANALYTICS`.
 - Bind the account deletion Workflow as `ACCOUNT_DELETION`.
@@ -99,6 +100,7 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 - `BETTER_AUTH_API_KEY`
 - `BETTER_AUTH_SECRET`
 - `EMAIL_UNSUBSCRIBE_SECRET`
+- `MARKETING_POSTAL_ADDRESS`
 - `TURNSTILE_SECRET`
 - `STREAM_WEBHOOK_SECRET`
 - `STREAM_ACCOUNT_ID`
@@ -117,6 +119,7 @@ STORE_ID=replace-with-your-store-id
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_API_KEY --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name EMAIL_UNSUBSCRIBE_SECRET --scopes workers --remote
+bunx wrangler secrets-store secret create "$STORE_ID" --name MARKETING_POSTAL_ADDRESS --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID --scopes workers --remote
@@ -125,7 +128,7 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name VAPID_PRIVATE_KEY -
 ```
 
 Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
-The deployment workflow binds all eight secrets by name. Its Cloudflare API token needs permission to
+The deployment workflow binds all nine values by name. Its Cloudflare API token needs permission to
 deploy Secrets Store bindings in addition to the permissions required by the other configured
 services.
 
@@ -173,7 +176,7 @@ Keep non-secret production deployment values in the tracked `.env.production` fi
 - `CLOUDFLARE_ACCOUNT_ID`: the account that owns the Worker and its resources.
 - `PRODUCTION_BASE_URL`: `https://post.pistonmaster.net`.
 - `PRODUCTION_D1_DATABASE_ID`: the ID returned when the production D1 database was created.
-- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the eight Worker secrets.
+- `PRODUCTION_SECRETS_STORE_ID`: the ID of the store containing the nine Worker values.
 - `PRODUCTION_TURNSTILE_SITE_KEY`: the public site key for the production Turnstile widget.
 - `PRODUCTION_VAPID_PUBLIC_KEY`: the public half of the production VAPID key pair.
 - `PRODUCTION_SMOKE_POST_SLUG`: an optional known public post checked after deployment.
@@ -232,3 +235,8 @@ curl --fail http://127.0.0.1:3000/health
 ```
 
 The expected body is `{"status":"ok"}` and the response must use `Cache-Control: no-store`.
+
+Before sending a product campaign, complete the live mailbox and raw-header checks in
+[Email compliance controls](./email-compliance.md). Product preview and delivery fail when
+`MARKETING_POSTAL_ADDRESS` is empty, which prevents a campaign from leaving without the required
+physical mailing address.

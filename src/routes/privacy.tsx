@@ -28,7 +28,7 @@ function PrivacyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Privacy Policy</h1>
-        <p>Last updated: July 21, 2026.</p>
+        <p>Last updated: July 22, 2026.</p>
         <p>
           This policy explains what PistonPost currently handles when you use the service, why it is
           handled, which providers are involved, and the choices available to you.
@@ -57,10 +57,12 @@ function PrivacyPage() {
             reliability or performance events.
           </li>
           <li>
-            <strong>Delivery data:</strong> email and push notification settings, transactional
-            delivery outcomes, and push subscription capabilities supplied by your browser. A push
-            capability includes its provider endpoint and encryption keys. PistonPost does not put
-            those capabilities or message content in queue or analytics events.
+            <strong>Delivery data:</strong> email and push notification settings, email preference
+            change history, transactional delivery outcomes, and push subscription capabilities
+            supplied by your browser. Email preference history records the category, chosen value,
+            source, and time without a network address or user agent. A push capability includes its
+            provider endpoint and encryption keys. PistonPost does not put those capabilities or
+            message content in queue or analytics events.
           </li>
         </ul>
 
@@ -199,6 +201,7 @@ function PrivacyPage() {
             verification data expires sooner.
           </li>
           <li>Incomplete staged media uploads are eligible for cleanup after 24 hours.</li>
+          <li>Email preference history is removed when its account is deleted.</li>
           <li>
             A push capability is removed when its session is revoked, you disable push on that
             device, the provider reports that it expired, or the account is deleted. Push providers
@@ -227,9 +230,10 @@ function PrivacyPage() {
         <p>
           Account settings let you update your profile and security settings, manage sessions, and
           start account deletion. Notification settings let you choose comment and reply alerts by
-          channel and enable or disable push on each device. You can edit or delete content through
-          its available controls and can change optional analytics consent at any time. PistonPost
-          does not currently provide a self-service account export.
+          channel, opt into or out of product updates, and enable or disable push on each device.
+          Optional emails also include a category-specific unsubscribe link. You can edit or delete
+          content through its available controls and can change optional analytics consent at any
+          time. PistonPost does not currently provide a self-service account export.
         </p>
         <p>
           To ask for access to a copy of your information, correction, deletion, restriction, or

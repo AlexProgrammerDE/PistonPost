@@ -4,6 +4,7 @@ const secretBindings = [
   "BETTER_AUTH_API_KEY",
   "BETTER_AUTH_SECRET",
   "EMAIL_UNSUBSCRIBE_SECRET",
+  "MARKETING_POSTAL_ADDRESS",
   "TURNSTILE_SECRET",
   "STREAM_WEBHOOK_SECRET",
   "STREAM_ACCOUNT_ID",
@@ -14,6 +15,7 @@ const productionOrigin = "https://post.pistonmaster.net"
 const productionVariables = {
   AUTH_EMAIL_FROM: "PistonPost Auth <auth@transactional.pistonmaster.net>",
   NOTIFICATIONS_EMAIL_FROM: "PistonPost <notifications@transactional.pistonmaster.net>",
+  MARKETING_EMAIL_FROM: "PistonPost Updates <updates@transactional.pistonmaster.net>",
   SUPPORT_EMAIL: "support@pistonmaster.net",
   VAPID_SUBJECT: "mailto:support@pistonmaster.net",
 } as const
