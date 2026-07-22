@@ -33,6 +33,10 @@ export function PostShareActions({
   readonly imageCount: number
   readonly variant?: ComponentProps<typeof Button>["variant"]
 }) {
+  if (imageCount <= 1) {
+    return <CopyPostLinkButton postId={postId} variant={variant} />
+  }
+
   function shareLinks() {
     return createPostShareLinks(postId, imageCount, window.location.origin)
   }
@@ -51,19 +55,17 @@ export function PostShareActions({
             <Link2 aria-hidden="true" />
             Copy post link
           </DropdownMenuItem>
-          {imageCount > 1 ? (
-            <DropdownMenuItem
-              onClick={() =>
-                void copyToClipboard(
-                  shareLinks().imageUrls.join("\n"),
-                  "Image links copied. Paste them together to show several previews.",
-                )
-              }
-            >
-              <Copy aria-hidden="true" />
-              Copy image links
-            </DropdownMenuItem>
-          ) : null}
+          <DropdownMenuItem
+            onClick={() =>
+              void copyToClipboard(
+                shareLinks().imageUrls.join("\n"),
+                "Image links copied. Paste them together to show several previews.",
+              )
+            }
+          >
+            <Copy aria-hidden="true" />
+            Copy image links
+          </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>
     </DropdownMenu>
