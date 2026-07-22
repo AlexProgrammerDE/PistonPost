@@ -21,17 +21,22 @@ import {
   CredenzaTitle,
   CredenzaTrigger,
 } from "@/components/ui/credenza"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@/components/ui/input-group"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea"
 import {
   contentReportReasons,
   isContentReportReason,
@@ -41,6 +46,8 @@ import {
 import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { getPublicRuntimeConfig } from "@/server/public-config"
 import { createContentReport } from "@/server/reports"
+
+const MAX_REPORT_DETAILS_LENGTH = 1000
 
 export function ContentReportDialog({
   target,
@@ -108,41 +115,51 @@ export function ContentReportDialog({
         </CredenzaHeader>
         <CredenzaBody className="flex flex-col gap-4">
           <FieldGroup>
-            <Field>
-              <FieldLabel htmlFor={`report-reason-${target.type}-${target.id}`}>Reason</FieldLabel>
-              <Select
-                items={contentReportReasons}
+            <FieldSet>
+              <FieldLegend id={`report-reason-${target.type}-${target.id}`} variant="label">
+                Reason
+              </FieldLegend>
+              <RadioGroup
                 value={reason}
                 onValueChange={(value) => {
                   if (isContentReportReason(value)) setReason(value)
                 }}
+                aria-labelledby={`report-reason-${target.type}-${target.id}`}
               >
-                <SelectTrigger id={`report-reason-${target.type}-${target.id}`} className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    {contentReportReasons.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
+                {contentReportReasons.map((option) => {
+                  const optionId = `report-reason-${target.type}-${target.id}-${option.value}`
+                  return (
+                    <Field key={option.value} orientation="horizontal">
+                      <RadioGroupItem id={optionId} value={option.value} />
+                      <FieldLabel htmlFor={optionId} className="font-normal">
                         {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </Field>
+                      </FieldLabel>
+                    </Field>
+                  )
+                })}
+              </RadioGroup>
+            </FieldSet>
             <Field>
               <FieldLabel htmlFor={`report-details-${target.type}-${target.id}`}>
                 Details
               </FieldLabel>
-              <Textarea
-                id={`report-details-${target.type}-${target.id}`}
-                value={details}
-                maxLength={1000}
-                rows={4}
-                placeholder="Add context that will help a moderator…"
-                onChange={(event) => setDetails(event.currentTarget.value)}
-              />
+              <InputGroup>
+                <InputGroupTextarea
+                  id={`report-details-${target.type}-${target.id}`}
+                  name="details"
+                  value={details}
+                  maxLength={MAX_REPORT_DETAILS_LENGTH}
+                  rows={4}
+                  placeholder="Add context that will help a moderator…"
+                  className="resize-y"
+                  onChange={(event) => setDetails(event.currentTarget.value)}
+                />
+                <InputGroupAddon align="block-end" className="justify-end border-t">
+                  <InputGroupText className="text-xs tabular-nums">
+                    {details.length.toLocaleString()} / {MAX_REPORT_DETAILS_LENGTH.toLocaleString()}
+                  </InputGroupText>
+                </InputGroupAddon>
+              </InputGroup>
               <FieldDescription>
                 Optional. Do not include passwords or private data.
               </FieldDescription>

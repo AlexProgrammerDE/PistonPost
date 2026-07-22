@@ -139,7 +139,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
               </form.AppField>
               <form.AppField name="visibility">
                 {(field) => (
-                  <field.SelectField
+                  <field.ChoiceField
                     label="Visibility"
                     description="Unlisted posts remain accessible to anyone holding the link."
                     options={[

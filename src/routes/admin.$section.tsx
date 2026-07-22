@@ -32,9 +32,14 @@ import {
   CredenzaTrigger,
 } from "@/components/ui/credenza"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea"
 import { adminSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
 import { adminRowsQueryOptions } from "@/lib/queries/admin"
 import {
@@ -55,6 +60,7 @@ import {
 } from "@/server/tables"
 
 const sectionSchema = z.enum(adminSections.map((section) => section.value))
+const MAX_MODERATION_REASON_LENGTH = 500
 const searchSchema = z.object({
   q: z.string().catch(""),
   sort: z.string().catch("createdAt"),
@@ -159,15 +165,23 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
         <CredenzaBody>
           <Field>
             <FieldLabel htmlFor={`moderation-reason-${row.id}`}>Reason</FieldLabel>
-            <Textarea
-              id={`moderation-reason-${row.id}`}
-              name="reason"
-              value={reason}
-              maxLength={500}
-              autoComplete="off"
-              placeholder="Explain the decision…"
-              onChange={(event) => setReason(event.currentTarget.value)}
-            />
+            <InputGroup>
+              <InputGroupTextarea
+                id={`moderation-reason-${row.id}`}
+                name="reason"
+                value={reason}
+                maxLength={MAX_MODERATION_REASON_LENGTH}
+                autoComplete="off"
+                placeholder="Explain the decision…"
+                className="resize-y"
+                onChange={(event) => setReason(event.currentTarget.value)}
+              />
+              <InputGroupAddon align="block-end" className="justify-end border-t">
+                <InputGroupText className="text-xs tabular-nums">
+                  {reason.length.toLocaleString()} / {MAX_MODERATION_REASON_LENGTH.toLocaleString()}
+                </InputGroupText>
+              </InputGroupAddon>
+            </InputGroup>
             <FieldDescription>This reason is saved in the audit log.</FieldDescription>
           </Field>
         </CredenzaBody>
@@ -178,11 +192,16 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
             disabled={reason.trim().length < 3 || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending
-              ? "Saving…"
-              : action === "hide"
-                ? `Hide ${target}`
-                : `Restore ${target}`}
+            {mutation.isPending ? (
+              <>
+                <Spinner data-icon="inline-start" />
+                Saving…
+              </>
+            ) : action === "hide" ? (
+              `Hide ${target}`
+            ) : (
+              `Restore ${target}`
+            )}
           </Button>
         </CredenzaFooter>
       </CredenzaContent>

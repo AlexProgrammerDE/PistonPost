@@ -2,6 +2,7 @@ import { Field, FieldGroup } from "@/components/ui/field"
 import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
+import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
 import {
   Timeline,
   TimelineConnector,
@@ -346,14 +347,19 @@ export function AdminTablePageSkeleton() {
         </div>
         <Skeleton className="mb-5 h-10 w-full max-w-sm" />
         <div className="border-y">
-          {generateN(7).map((identity) => (
-            <div key={identity} className="grid grid-cols-4 gap-4 border-b px-3 py-4">
-              <Skeleton className="h-4" />
-              <Skeleton className="h-4" />
-              <Skeleton className="h-4" />
-              <Skeleton className="h-4" />
-            </div>
-          ))}
+          <Table>
+            <TableBody>
+              {generateN(7).map((rowIdentity) => (
+                <TableRow key={rowIdentity}>
+                  {generateN(4).map((cellIdentity) => (
+                    <TableCell key={cellIdentity}>
+                      <Skeleton className="h-4 w-full" />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         </div>
       </LoadingRegion>
     </main>

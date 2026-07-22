@@ -7,6 +7,7 @@ import { z } from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { Spinner } from "@/components/ui/spinner"
 import { unsubscribeFromProductEmail } from "@/server/email-preferences"
 
 export const Route = createFileRoute("/email/unsubscribe")({
@@ -53,7 +54,14 @@ function ProductEmailUnsubscribe() {
             disabled={!token || unsubscribe.isPending}
             onClick={() => unsubscribe.mutate()}
           >
-            {unsubscribe.isPending ? "Saving…" : "Stop product update emails"}
+            {unsubscribe.isPending ? (
+              <>
+                <Spinner data-icon="inline-start" />
+                Saving…
+              </>
+            ) : (
+              "Stop product update emails"
+            )}
           </Button>
         )}
         <p className="mt-6 text-sm">

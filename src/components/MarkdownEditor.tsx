@@ -28,12 +28,12 @@ import {
 } from "react"
 
 import { MarkdownContent } from "@/components/MarkdownContent"
-import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupText,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
@@ -224,7 +224,7 @@ export function MarkdownEditor({
                       <Tooltip key={command}>
                         <TooltipTrigger
                           render={
-                            <Button
+                            <InputGroupButton
                               type="button"
                               variant="outline"
                               size="icon-sm"

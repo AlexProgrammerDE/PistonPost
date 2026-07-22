@@ -58,7 +58,12 @@ import {
   FileUploadTrigger,
   useFileUpload,
 } from "@/components/ui/file-upload"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupInput,
+  InputGroupText,
+} from "@/components/ui/input-group"
 import {
   Item,
   ItemActions,
@@ -579,7 +584,7 @@ export function PostComposer({
             </form.AppField>
             <form.AppField name="visibility">
               {(field) => (
-                <field.SelectField
+                <field.ChoiceField
                   label="Visibility"
                   description="Unlisted means anyone with the link can view it. It is not private."
                   options={[
@@ -819,6 +824,8 @@ function SortableUpload({
     transform: CSS.Transform.toString(sortable.transform),
     transition: sortable.transition,
   }
+  const altTextId = `alt-text-${item.clientId}`
+  const altTextDescriptionId = `${altTextId}-description`
 
   return (
     <Item
@@ -886,17 +893,25 @@ function SortableUpload({
           <div className="grid min-w-0 flex-1 gap-3">
             {item.kind === "image" ? (
               <Field className="gap-2" data-disabled={item.status !== "queued" || undefined}>
-                <FieldLabel htmlFor={`alt-text-${item.clientId}`}>Alt text</FieldLabel>
-                <Input
-                  id={`alt-text-${item.clientId}`}
-                  value={item.altText}
-                  maxLength={300}
-                  placeholder="Describe this image…"
-                  autoComplete="off"
-                  disabled={item.status !== "queued"}
-                  onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
-                />
-                <FieldDescription>
+                <FieldLabel htmlFor={altTextId}>Alt text</FieldLabel>
+                <InputGroup data-disabled={item.status !== "queued" || undefined}>
+                  <InputGroupInput
+                    id={altTextId}
+                    value={item.altText}
+                    maxLength={300}
+                    placeholder="Describe this image…"
+                    autoComplete="off"
+                    disabled={item.status !== "queued"}
+                    aria-describedby={altTextDescriptionId}
+                    onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
+                  />
+                  <InputGroupAddon align="inline-end">
+                    <InputGroupText className="text-xs tabular-nums">
+                      {item.altText.length.toLocaleString()} / 300
+                    </InputGroupText>
+                  </InputGroupAddon>
+                </InputGroup>
+                <FieldDescription id={altTextDescriptionId}>
                   Optional. Describe what matters in the image, or leave this empty for a decorative
                   image.
                 </FieldDescription>

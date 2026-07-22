@@ -1,12 +1,13 @@
 "use client"
 
-import { BellOff, BellRing, LoaderCircle, TriangleAlert } from "lucide-react"
+import { BellOff, BellRing, TriangleAlert } from "lucide-react"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldDescription, FieldTitle } from "@/components/ui/field"
+import { Spinner } from "@/components/ui/spinner"
 import {
   createPushSubscription,
   getExistingPushSubscription,
@@ -124,11 +125,11 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
         onClick={() => void (enabled ? disable() : enable())}
       >
         {isUpdating || state === "checking" ? (
-          <LoaderCircle aria-hidden="true" className="animate-spin motion-reduce:animate-none" />
+          <Spinner data-icon="inline-start" />
         ) : enabled ? (
-          <BellOff aria-hidden="true" />
+          <BellOff aria-hidden="true" data-icon="inline-start" />
         ) : (
-          <BellRing aria-hidden="true" />
+          <BellRing aria-hidden="true" data-icon="inline-start" />
         )}
         {state === "checking"
           ? "Checking device"

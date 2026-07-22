@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { FieldGroup } from "@/components/ui/field"
+import { Field, FieldGroup } from "@/components/ui/field"
 import {
   Item,
   ItemActions,
@@ -29,6 +29,8 @@ import {
   ItemGroup,
   ItemTitle,
 } from "@/components/ui/item"
+import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
   createEmailCampaign,
@@ -129,7 +131,7 @@ function EmailCampaigns() {
               </form.AppField>
               <form.AppField name="message">
                 {(field) => (
-                  <field.TextareaField label="Message" maxLength={2000} rows={7} required />
+                  <field.BoundedTextareaField label="Message" maxLength={2000} rows={7} required />
                 )}
               </form.AppField>
               <FieldGroup className="grid gap-5 sm:grid-cols-2">
@@ -146,26 +148,33 @@ function EmailCampaigns() {
                   {(field) => <field.TextField label="Action URL" type="url" inputMode="url" />}
                 </form.AppField>
               </FieldGroup>
-              <ButtonGroup className="ml-auto" aria-label="Email campaign draft actions">
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={preview.isPending}
-                  onClick={() => preview.mutate(form.state.values)}
-                >
-                  <Eye aria-hidden="true" data-icon="inline-start" />
-                  {preview.isPending ? "Rendering…" : "Preview"}
-                </Button>
-                <form.SubmitButton>
-                  <Mail aria-hidden="true" data-icon="inline-start" />
-                  Save draft
-                </form.SubmitButton>
-              </ButtonGroup>
+              <Field orientation="horizontal" className="justify-end">
+                <ButtonGroup aria-label="Email campaign draft actions">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={preview.isPending}
+                    onClick={() => preview.mutate(form.state.values)}
+                  >
+                    {preview.isPending ? (
+                      <Spinner data-icon="inline-start" />
+                    ) : (
+                      <Eye aria-hidden="true" data-icon="inline-start" />
+                    )}
+                    {preview.isPending ? "Rendering…" : "Preview"}
+                  </Button>
+                  <form.SubmitButton>
+                    <Mail aria-hidden="true" data-icon="inline-start" />
+                    Save draft
+                  </form.SubmitButton>
+                </ButtonGroup>
+              </Field>
             </FieldGroup>
           </form.AppForm>
         </form>
         {preview.data ? (
-          <div className="mt-8 border-t pt-6">
+          <div className="mt-8">
+            <Separator className="mb-6" />
             <h3 className="font-medium">Rendered preview</h3>
             <p className="mt-1 text-sm text-muted-foreground">Subject: {preview.data.subject}</p>
             <iframe
@@ -238,7 +247,11 @@ function EmailCampaigns() {
                             disabled={send.isPending}
                             onClick={() => send.mutate(campaign.id)}
                           >
-                            <Send aria-hidden="true" data-icon="inline-start" />
+                            {send.isPending ? (
+                              <Spinner data-icon="inline-start" />
+                            ) : (
+                              <Send aria-hidden="true" data-icon="inline-start" />
+                            )}
                             {send.isPending ? "Queueing…" : "Queue update"}
                           </AlertDialogAction>
                         </AlertDialogFooter>

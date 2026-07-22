@@ -103,7 +103,7 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
               {(field) => <field.TextField label="Username" maxLength={32} />}
             </form.AppField>
             <form.AppField name="bio">
-              {(field) => <field.TextareaField label="Bio" maxLength={500} rows={5} />}
+              {(field) => <field.BoundedTextareaField label="Bio" maxLength={500} rows={5} />}
             </form.AppField>
             <form.AppField name="website">
               {(field) => <field.TextField label="Website" type="url" />}

@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import {
   Item,
@@ -351,10 +352,10 @@ export function SocialPanel({
           className="flex flex-wrap items-center justify-between gap-3 border-y py-3"
           aria-label="Post actions"
         >
-          <div className="flex items-center gap-1">
+          <ButtonGroup aria-label="Share and report actions">
             <PostShareActions postId={postId} imageCount={imageCount} />
-            <ContentReportDialog target={{ type: "post", id: postId }} />
-          </div>
+            <ContentReportDialog target={{ type: "post", id: postId }} variant="outline" />
+          </ButtonGroup>
           {viewerPending ? (
             <DiscussionViewerSkeleton />
           ) : (
@@ -418,10 +419,10 @@ export function SocialPanel({
                       maxLength={250}
                       rows={3}
                       actions={
-                        <form.SubmitButton size="sm">
+                        <form.SubmitInputGroupButton size="sm" variant="default">
                           <Send aria-hidden="true" data-icon="inline-start" />
                           {replyingTo ? "Post reply" : "Post comment"}
-                        </form.SubmitButton>
+                        </form.SubmitInputGroupButton>
                       }
                     />
                   )}

@@ -25,16 +25,8 @@ import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { PublicPostRead } from "@/db/public-read-model"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
@@ -116,7 +108,7 @@ function PostCommentCount({
   )
 }
 
-function GalleryLayoutMenu({
+function GalleryLayoutToggle({
   postId,
   layout,
   selectedImageIndex,
@@ -126,10 +118,8 @@ function GalleryLayoutMenu({
   readonly selectedImageIndex: number | undefined
 }) {
   const navigate = useNavigate()
-  const [menuOpen, setMenuOpen] = useState(false)
 
   function selectLayout(value: string) {
-    setMenuOpen(false)
     if (!isGalleryLayout(value) || value === layout) return
 
     void navigate({
@@ -145,27 +135,26 @@ function GalleryLayoutMenu({
   }
 
   return (
-    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-      <DropdownMenuTrigger render={<Button type="button" variant="outline" size="sm" />}>
+    <ToggleGroup
+      value={[layout]}
+      onValueChange={(values) => {
+        const value = values[0]
+        if (value) selectLayout(value)
+      }}
+      variant="outline"
+      size="sm"
+      spacing={0}
+      aria-label="Gallery layout"
+    >
+      <ToggleGroupItem value="masonry" aria-label="Masonry layout">
         <LayoutGrid aria-hidden="true" data-icon="inline-start" />
-        Gallery options
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Layout</DropdownMenuLabel>
-          <DropdownMenuRadioGroup value={layout} onValueChange={selectLayout}>
-            <DropdownMenuRadioItem value="masonry">
-              <LayoutGrid aria-hidden="true" />
-              Masonry
-            </DropdownMenuRadioItem>
-            <DropdownMenuRadioItem value="browser">
-              <GalleryHorizontal aria-hidden="true" />
-              Image browser
-            </DropdownMenuRadioItem>
-          </DropdownMenuRadioGroup>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        Masonry
+      </ToggleGroupItem>
+      <ToggleGroupItem value="browser" aria-label="Image browser layout">
+        <GalleryHorizontal aria-hidden="true" data-icon="inline-start" />
+        Image browser
+      </ToggleGroupItem>
+    </ToggleGroup>
   )
 }
 
@@ -215,7 +204,7 @@ function PostDetailMetadata({
         <PostViewCount count={post.viewCount} />
         <PostCommentCount postId={post.id} count={post.commentCount} onOpen={onOpenPost} />
         {post.type === "images" && post.media.length > 1 ? (
-          <GalleryLayoutMenu
+          <GalleryLayoutToggle
             postId={post.id}
             layout={galleryLayout}
             selectedImageIndex={selectedImageIndex}
@@ -536,32 +525,33 @@ function ImageBrowser({
 
   return (
     <div className="grid gap-3" aria-label={`${post.title} image collection`}>
-      <div className="flex items-center justify-between gap-3 border-y py-2">
+      <ButtonGroup className="w-full" aria-label="Browse images">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
+          className="flex-1 sm:flex-none"
           disabled={selectedIndex === 0}
           onClick={() => selectImage(selectedIndex - 1)}
         >
           <ArrowLeft aria-hidden="true" data-icon="inline-start" />
           Previous
         </Button>
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          Image <span className="font-medium text-foreground">{selectedIndex + 1}</span> of{" "}
-          {post.media.length}
-        </p>
+        <ButtonGroupText className="flex-1 justify-center tabular-nums" aria-live="polite">
+          Image {selectedIndex + 1} of {post.media.length}
+        </ButtonGroupText>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
+          className="flex-1 sm:flex-none"
           disabled={selectedIndex === post.media.length - 1}
           onClick={() => selectImage(selectedIndex + 1)}
         >
           Next
           <ArrowRight aria-hidden="true" data-icon="inline-end" />
         </Button>
-      </div>
+      </ButtonGroup>
       <button
         type="button"
         data-view-transition-gallery="focus"

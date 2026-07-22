@@ -9,6 +9,7 @@ import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, ProfilePageSkeleton } from "@/components/LoadingStates"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import { feedPageHref } from "@/lib/feed-pagination"
@@ -190,7 +191,7 @@ function ProfileFeed() {
               )}
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-1 sm:mt-1">
+          <ButtonGroup className="mt-4 sm:mt-1" aria-label="Profile actions">
             <Suspense fallback={<Skeleton className="h-9 w-20" />}>
               <FollowButton target={{ kind: "user", username: profile.normalizedUsername }} />
             </Suspense>
@@ -198,7 +199,7 @@ function ProfileFeed() {
               target={{ type: "profile", id: profile.normalizedUsername }}
               variant="outline"
             />
-          </div>
+          </ButtonGroup>
         </div>
       </header>
       <Suspense fallback={<FeedItemsSkeleton />}>

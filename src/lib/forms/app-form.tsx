@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
+  InputGroupButton,
   InputGroupText,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
@@ -106,6 +107,50 @@ function TextareaField({
         {...props}
       />
       {description ? <FieldDescription>{description}</FieldDescription> : null}
+      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+    </Field>
+  )
+}
+
+function BoundedTextareaField({
+  label,
+  description,
+  className,
+  disabled,
+  maxLength,
+  ...props
+}: FieldChromeProps &
+  Omit<ComponentProps<typeof InputGroupTextarea>, "value" | "onChange" | "onBlur" | "maxLength"> & {
+    maxLength: number
+  }) {
+  const field = useFieldContext<string>()
+  const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const descriptionId = description ? `${field.name}-description` : undefined
+
+  return (
+    <Field data-invalid={invalid} data-disabled={disabled || undefined}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <InputGroup data-disabled={disabled || undefined}>
+        <InputGroupTextarea
+          id={field.name}
+          name={field.name}
+          value={field.state.value}
+          maxLength={maxLength}
+          disabled={disabled}
+          onBlur={field.handleBlur}
+          onChange={(event) => field.handleChange(event.currentTarget.value)}
+          aria-describedby={descriptionId}
+          aria-invalid={invalid}
+          className={cn("resize-y", className)}
+          {...props}
+        />
+        <InputGroupAddon align="block-end" className="justify-end border-t">
+          <InputGroupText className="text-xs tabular-nums">
+            {field.state.value.length.toLocaleString()} / {maxLength.toLocaleString()}
+          </InputGroupText>
+        </InputGroupAddon>
+      </InputGroup>
+      {description ? <FieldDescription id={descriptionId}>{description}</FieldDescription> : null}
       {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
     </Field>
   )
@@ -257,7 +302,7 @@ function ChoiceField({ label, description, options }: SelectFieldProps) {
           if (value) field.handleChange(value)
         }}
         variant="outline"
-        className="grid w-full grid-cols-3"
+        className={cn("grid w-full", options.length === 2 ? "grid-cols-2" : "grid-cols-3")}
         aria-labelledby={`${field.name}-label`}
       >
         {options.map((option) => {
@@ -364,13 +409,13 @@ function SwitchField({
   )
 }
 
-function SubmitButton({ children, ...props }: ComponentProps<typeof Button>) {
+function SubmitButton({ children, disabled, ...props }: ComponentProps<typeof Button>) {
   const form = useFormContext()
 
   return (
     <form.Subscribe selector={(state) => state.isSubmitting}>
       {(isSubmitting) => (
-        <Button type="submit" disabled={isSubmitting} {...props}>
+        <Button type="submit" disabled={isSubmitting || disabled} {...props}>
           {isSubmitting ? (
             <>
               <Spinner data-icon="inline-start" />
@@ -385,12 +430,38 @@ function SubmitButton({ children, ...props }: ComponentProps<typeof Button>) {
   )
 }
 
+function SubmitInputGroupButton({
+  children,
+  disabled,
+  ...props
+}: ComponentProps<typeof InputGroupButton>) {
+  const form = useFormContext()
+
+  return (
+    <form.Subscribe selector={(state) => state.isSubmitting}>
+      {(isSubmitting) => (
+        <InputGroupButton type="submit" disabled={isSubmitting || disabled} {...props}>
+          {isSubmitting ? (
+            <>
+              <Spinner data-icon="inline-start" />
+              Working…
+            </>
+          ) : (
+            children
+          )}
+        </InputGroupButton>
+      )}
+    </form.Subscribe>
+  )
+}
+
 export const { useAppForm, withFieldGroup, withForm } = createFormHook({
   fieldContext,
   formContext,
   fieldComponents: {
     TextField,
     TextareaField,
+    BoundedTextareaField,
     ComposerTextareaField,
     MarkdownField,
     SelectField,
@@ -398,5 +469,5 @@ export const { useAppForm, withFieldGroup, withForm } = createFormHook({
     TagsField,
     SwitchField,
   },
-  formComponents: { SubmitButton },
+  formComponents: { SubmitButton, SubmitInputGroupButton },
 })
