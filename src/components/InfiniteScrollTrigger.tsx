@@ -1,17 +1,16 @@
 "use client"
 
 import { History, RotateCcw, WifiOff } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { AUTOMATIC_PAGE_LIMIT, shouldAutomaticallyLoadNextPage } from "@/lib/infinite-scroll"
+import { shouldAutomaticallyLoadNextPage } from "@/lib/infinite-scroll"
 
 const PRELOAD_MARGIN = "0px 0px 2000px 0px"
 
 export function InfiniteScrollTrigger({
   hasNextPage,
-  loadedPageCount,
   isFetching,
   isFetchingNextPage,
   isFetchNextPageError,
@@ -20,7 +19,6 @@ export function InfiniteScrollTrigger({
   onLoadMore,
 }: {
   readonly hasNextPage: boolean
-  readonly loadedPageCount: number
   readonly isFetching: boolean
   readonly isFetchingNextPage: boolean
   readonly isFetchNextPageError: boolean
@@ -29,13 +27,8 @@ export function InfiniteScrollTrigger({
   readonly onLoadMore: () => Promise<unknown>
 }) {
   const triggerRef = useRef<HTMLDivElement>(null)
-  const [isContinuousLoadingEnabled, setIsContinuousLoadingEnabled] = useState(false)
-  const isAtAutomaticLoadingBarrier =
-    loadedPageCount >= AUTOMATIC_PAGE_LIMIT && !isContinuousLoadingEnabled
   const canAutomaticallyLoad = shouldAutomaticallyLoadNextPage({
     hasNextPage,
-    loadedPageCount,
-    isContinuousLoadingEnabled,
     isFetching,
     isFetchNextPageError,
     isPaused,
@@ -63,11 +56,6 @@ export function InfiniteScrollTrigger({
   if (!hasNextPage) return null
 
   const handleLoadMore = () => {
-    if (isAtAutomaticLoadingBarrier) {
-      setIsContinuousLoadingEnabled(true)
-      if (!isFetchNextPageError && typeof IntersectionObserver !== "undefined") return
-    }
-
     void onLoadMore()
   }
 
@@ -77,9 +65,7 @@ export function InfiniteScrollTrigger({
       ? "Try loading older posts again"
       : isFetchingNextPage
         ? "Loading posts…"
-        : isAtAutomaticLoadingBarrier
-          ? "Keep loading as I scroll"
-          : "Load older posts"
+        : "Load older posts"
   const ActionIcon = isPaused ? WifiOff : isFetchNextPageError ? RotateCcw : History
 
   const content = (

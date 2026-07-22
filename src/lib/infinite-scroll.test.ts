@@ -4,35 +4,18 @@ import { shouldAutomaticallyLoadNextPage } from "./infinite-scroll"
 
 const readyFeed = {
   hasNextPage: true,
-  loadedPageCount: 1,
-  isContinuousLoadingEnabled: false,
   isFetching: false,
   isFetchNextPageError: false,
   isPaused: false,
 }
 
 describe("infinite scroll", () => {
-  test("automatically loads one page after the initial page", () => {
+  test("automatically loads while another page is available", () => {
     expect(shouldAutomaticallyLoadNextPage(readyFeed)).toBe(true)
   })
 
-  test("stops automatic loading after two pages so the footer stays reachable", () => {
-    expect(
-      shouldAutomaticallyLoadNextPage({
-        ...readyFeed,
-        loadedPageCount: 2,
-      }),
-    ).toBe(false)
-  })
-
-  test("resumes continuous loading after the barrier is accepted", () => {
-    expect(
-      shouldAutomaticallyLoadNextPage({
-        ...readyFeed,
-        loadedPageCount: 20,
-        isContinuousLoadingEnabled: true,
-      }),
-    ).toBe(true)
+  test("stops when there are no more pages", () => {
+    expect(shouldAutomaticallyLoadNextPage({ ...readyFeed, hasNextPage: false })).toBe(false)
   })
 
   test("waits while loading is unavailable", () => {

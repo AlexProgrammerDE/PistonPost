@@ -108,7 +108,6 @@ function PublicFeedResults() {
       <InfiniteScrollTrigger
         key="public-feed"
         hasNextPage={feed.hasNextPage}
-        loadedPageCount={feed.data.pages.length}
         isFetching={feed.isFetching}
         isFetchingNextPage={feed.isFetchingNextPage}
         isFetchNextPageError={feed.isFetchNextPageError}

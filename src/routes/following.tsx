@@ -103,7 +103,6 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
       <InfiniteScrollTrigger
         key={`following:${viewerId}`}
         hasNextPage={feed.hasNextPage}
-        loadedPageCount={feed.data.pages.length}
         isFetching={feed.isFetching}
         isFetchingNextPage={feed.isFetchingNextPage}
         isFetchNextPageError={feed.isFetchNextPageError}
