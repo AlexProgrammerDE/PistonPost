@@ -24,7 +24,6 @@ export type Actor = Schema.Schema.Type<typeof actorSchema>
 
 export const postSchema = Schema.Struct({
   id: Schema.String,
-  legacyId: Schema.NullOr(Schema.String),
   authorId: Schema.String,
   type: postTypeSchema,
   status: postStatusSchema,

@@ -103,7 +103,7 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
     await database.batch([
       database
         .update(schema.profiles)
-        .set({ avatarMediaId: null, legacyAvatarUrl: null, updatedAt: new Date() })
+        .set({ avatarMediaId: null, updatedAt: new Date() })
         .where(eq(schema.profiles.userId, session.user.id)),
       database.update(schema.user).set({ image: null }).where(eq(schema.user.id, session.user.id)),
       ...(cleanup

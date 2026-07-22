@@ -12,7 +12,6 @@ function post(overrides: Partial<Post> = {}): Post {
   const createdAt = new Date("2026-01-01T00:00:00.000Z")
   return {
     id: "post",
-    legacyId: null,
     authorId: "owner",
     type: "text",
     status: "published",

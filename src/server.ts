@@ -5,6 +5,7 @@ import { applyResponseCachePolicy } from "./server/cache-policy"
 import { handleQueue } from "./server/email-queue"
 import { handleScheduled } from "./server/maintenance"
 import { writeOperationalEvent } from "./server/operational-events"
+import { permanentRedirect } from "./server/permanent-redirects"
 import { applySecurityHeaders, validateRequestSecurity } from "./server/request-security"
 import { resolveRuntimeEnv, type RuntimeEnv } from "./server/runtime-env"
 import { missingStaticAssetResponse } from "./server/static-assets"
@@ -88,6 +89,9 @@ export function createWorkerFetch(handlerFetch: typeof handler.fetch) {
     if (request.method === "GET" && url.pathname === "/health") {
       return secure(healthResponse())
     }
+
+    const redirect = permanentRedirect(request)
+    if (redirect) return secure(redirect)
 
     const rejected = validateRequestSecurity(request, new URL(runtime.config.PUBLIC_APP_URL).origin)
     if (rejected) {

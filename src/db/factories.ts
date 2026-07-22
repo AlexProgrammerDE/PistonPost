@@ -10,7 +10,6 @@ export function createPost(overrides: Partial<Post> = {}): Post {
   const now = new Date("2026-01-01T00:00:00.000Z")
   return {
     id: ulid(now.getTime()),
-    legacyId: null,
     authorId: "test-user",
     type: "text",
     status: "draft",

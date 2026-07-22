@@ -51,7 +51,6 @@ export class PostService extends Context.Tag("@pistonpost/domain/PostService")<
           const now = new Date()
           const post: Post = {
             id: ids.next(),
-            legacyId: null,
             authorId: authenticated.userId,
             type: input.type,
             status: "draft",

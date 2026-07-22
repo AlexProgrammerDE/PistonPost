@@ -151,7 +151,6 @@ async function uploadImage({
           .update(schema.profiles)
           .set({
             avatarMediaId: asset.id,
-            legacyAvatarUrl: null,
             updatedAt: new Date(),
           })
           .where(eq(schema.profiles.userId, session.user.id)),
