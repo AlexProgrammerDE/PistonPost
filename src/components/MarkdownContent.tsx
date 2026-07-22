@@ -4,6 +4,7 @@ import { ExternalLink, ImageIcon, Music2, Play, Video } from "lucide-react"
 import { createContext, useContext, useMemo, useState, type ComponentProps } from "react"
 import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
+import remarkDirective from "remark-directive"
 import remarkGfm from "remark-gfm"
 
 import { AspectRatio } from "@/components/ui/aspect-ratio"
@@ -15,6 +16,7 @@ import {
   parseMarkdownEmbed,
   type MarkdownEmbed,
 } from "@/lib/markdown"
+import { remarkPostDirectives } from "@/lib/markdown-directives"
 import {
   externalLinkDestination,
   isExternalUserGeneratedUrl,
@@ -30,7 +32,8 @@ type MarkdownContextValue = {
 type MarkdownVariant = "post" | "comment"
 
 const MarkdownContext = createContext<MarkdownContextValue | null>(null)
-const markdownPlugins = [remarkGfm]
+const postMarkdownPlugins = [remarkGfm, remarkDirective, remarkPostDirectives]
+const commentMarkdownPlugins = [remarkGfm]
 const htmlPlugins = [rehypeSanitize]
 
 function useMarkdownContext() {
@@ -238,7 +241,7 @@ export function MarkdownContent({
           )}
         >
           <ReactMarkdown
-            remarkPlugins={markdownPlugins}
+            remarkPlugins={variant === "post" ? postMarkdownPlugins : commentMarkdownPlugins}
             rehypePlugins={htmlPlugins}
             components={markdownComponents}
             skipHtml
