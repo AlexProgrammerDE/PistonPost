@@ -1,6 +1,6 @@
 import type { PublicPostRead } from "@/db/public-read-model"
 
-import { markdownToPlainText } from "./markdown"
+import { commentMarkdownToPlainText, postMarkdownToPlainText } from "./markdown"
 import { fitMediaDimensions, mediaImageUrl, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "./media-image"
 import {
   SITE_NAME,
@@ -35,7 +35,7 @@ function postDescription(post: PublicPostRead, authorName: string) {
     )
     return truncateDescription(`Video by ${authorName}${duration ? ` · ${duration}` : ""}${suffix}`)
   }
-  const text = post.textContent ? markdownToPlainText(post.textContent) : null
+  const text = post.textContent ? postMarkdownToPlainText(post.textContent) : null
   const content = text ? ` · ${text}` : ""
   return truncateDescription(`By ${authorName}${content}${suffix}`)
 }
@@ -205,7 +205,9 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     headline: postTitle,
     description,
     text:
-      post.type === "text" && post.textContent ? markdownToPlainText(post.textContent) : undefined,
+      post.type === "text" && post.textContent
+        ? postMarkdownToPlainText(post.textContent)
+        : undefined,
     datePublished: publishedAt,
     dateModified: modifiedAt,
     author: {
@@ -242,7 +244,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
     comment: post.structuredComments?.map((comment) => ({
       "@type": "Comment",
       "@id": `${canonical}#comment-${encodeURIComponent(comment.id)}`,
-      text: markdownToPlainText(comment.content),
+      text: commentMarkdownToPlainText(comment.content),
       datePublished: comment.createdAt.toISOString(),
       dateModified:
         comment.updatedAt > comment.createdAt ? comment.updatedAt.toISOString() : undefined,

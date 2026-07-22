@@ -6,22 +6,19 @@ import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown"
 import rehypeSanitize from "rehype-sanitize"
 import remarkDirective from "remark-directive"
 import remarkGfm from "remark-gfm"
+import type { PluggableList } from "unified"
 
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Button } from "@/components/ui/button"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
+import { externalImageProxyUrl, isProxyableExternalImageUrl } from "@/lib/markdown"
 import {
-  externalImageProxyUrl,
-  isProxyableExternalImageUrl,
-  parseMarkdownEmbed,
-  type MarkdownEmbed,
-} from "@/lib/markdown"
-import { remarkPostDirectives } from "@/lib/markdown-directives"
-import {
-  externalLinkDestination,
-  isExternalUserGeneratedUrl,
-  safeUserGeneratedUrl,
-} from "@/lib/user-generated-link"
+  parseRenderedPostDirective,
+  postMarkdownSanitizeSchema,
+  remarkPostDirectives,
+} from "@/lib/markdown-directives"
+import type { MarkdownEmbed } from "@/lib/markdown-embeds"
+import { externalLinkDestination, safeUserGeneratedUrl } from "@/lib/user-generated-link"
 import { cn } from "@/lib/utils"
 
 type MarkdownContextValue = {
@@ -34,7 +31,8 @@ type MarkdownVariant = "post" | "comment"
 const MarkdownContext = createContext<MarkdownContextValue | null>(null)
 const postMarkdownPlugins = [remarkGfm, remarkDirective, remarkPostDirectives]
 const commentMarkdownPlugins = [remarkGfm]
-const htmlPlugins = [rehypeSanitize]
+const postHtmlPlugins: PluggableList = [[rehypeSanitize, postMarkdownSanitizeSchema]]
+const commentHtmlPlugins: PluggableList = [rehypeSanitize]
 
 function useMarkdownContext() {
   const context = useContext(MarkdownContext)
@@ -52,20 +50,7 @@ function MarkdownLink({ href, children, node, ...props }: ComponentProps<"a"> & 
   )
 }
 
-function standaloneLink(node: NonNullable<ExtraProps["node"]>) {
-  if (node.children.length !== 1) return null
-  const child = node.children[0]
-  if (child?.type !== "element" || child.tagName !== "a") return null
-  const href = child.properties.href
-  if (typeof href !== "string") return null
-  const label = child.children
-    .map((linkChild) => (linkChild.type === "text" ? linkChild.value : ""))
-    .join("")
-    .trim()
-  return { href, label }
-}
-
-function EmbedConsent({ embed }: { embed: MarkdownEmbed }) {
+function EmbedConsent({ embed, label }: { embed: MarkdownEmbed; label: string | null }) {
   const [loaded, setLoaded] = useState(false)
   const providerName = embed.provider === "youtube" ? "YouTube" : "Spotify"
   const ProviderIcon = embed.provider === "youtube" ? Video : Music2
@@ -76,7 +61,7 @@ function EmbedConsent({ embed }: { embed: MarkdownEmbed }) {
         <div className="flex min-w-0 items-center gap-3">
           <ProviderIcon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <p className="font-medium">{providerName} embed</p>
+            <p className="font-medium">{label || `${providerName} embed`}</p>
             <p className="text-sm text-muted-foreground">
               Load the player to share data with {providerName}.
             </p>
@@ -140,16 +125,12 @@ function ExternalLinkCard({ href, label }: { href: string; label: string }) {
 
 function MarkdownParagraph({ node, children, ...props }: ComponentProps<"p"> & ExtraProps) {
   const { variant } = useMarkdownContext()
-  if (variant === "comment") return <p {...props}>{children}</p>
-
-  const standalone = node ? standaloneLink(node) : null
-  const href = standalone ? safeUserGeneratedUrl(standalone.href) : null
-  if (href) {
-    const embed = parseMarkdownEmbed(href)
-    if (embed) return <EmbedConsent embed={embed} />
-    if (isExternalUserGeneratedUrl(href)) {
-      return <ExternalLinkCard href={href} label={standalone?.label ?? ""} />
-    }
+  const directive = variant === "post" && node ? parseRenderedPostDirective(node.properties) : null
+  if (directive?.kind === "embed") {
+    return <EmbedConsent embed={directive.embed} label={directive.label} />
+  }
+  if (directive?.kind === "card") {
+    return <ExternalLinkCard href={directive.url} label={directive.label ?? ""} />
   }
   return <p {...props}>{children}</p>
 }
@@ -242,7 +223,7 @@ export function MarkdownContent({
         >
           <ReactMarkdown
             remarkPlugins={variant === "post" ? postMarkdownPlugins : commentMarkdownPlugins}
-            rehypePlugins={htmlPlugins}
+            rehypePlugins={variant === "post" ? postHtmlPlugins : commentHtmlPlugins}
             components={markdownComponents}
             skipHtml
             urlTransform={safeUserGeneratedUrl}

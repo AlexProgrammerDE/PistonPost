@@ -8,7 +8,7 @@ import { TextPostSocialCard } from "@/components/TextPostSocialCard"
 import { createD1Database } from "@/db/d1-database"
 import { getPublishedPostRead } from "@/db/public-read-model"
 import * as schema from "@/db/schema"
-import { markdownToPlainText } from "@/lib/markdown"
+import { postMarkdownToPlainText } from "@/lib/markdown"
 import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
 import type { AppRequestContext } from "@/server"
 import { cacheTagHeader, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
@@ -38,7 +38,7 @@ async function textPostCard({
   const response = new ImageResponse(
     <TextPostSocialCard
       title={post.title}
-      excerpt={post.textContent ? markdownToPlainText(post.textContent) : ""}
+      excerpt={post.textContent ? postMarkdownToPlainText(post.textContent) : ""}
       authorName={post.author.name}
       authorUsername={post.author.username}
       publishedAt={post.publishedAt}

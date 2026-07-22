@@ -1,4 +1,4 @@
-import { markdownToPlainText } from "@/lib/markdown"
+import { postMarkdownToPlainText } from "@/lib/markdown"
 
 export const POST_TEXT_PREVIEW_GRAPHEME_LIMIT = 800
 
@@ -12,7 +12,7 @@ interface PostTextPreviewResult {
 }
 
 export function createPostTextPreview(markdown: string): PostTextPreviewResult {
-  const plainText = markdownToPlainText(markdown)
+  const plainText = postMarkdownToPlainText(markdown)
   let preview = ""
   let graphemeCount = 0
 

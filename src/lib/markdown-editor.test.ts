@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { applyMarkdownCommand } from "./markdown-editor"
+import { applyMarkdownCommand, applyMarkdownPaste } from "./markdown-editor"
 
 describe("Markdown editor commands", () => {
   test("wraps a selection and keeps the selected text active", () => {
@@ -33,5 +33,32 @@ describe("Markdown editor commands", () => {
       selectionStart: 61,
       selectionEnd: 61,
     })
+  })
+
+  test("turns a supported provider URL pasted on an empty line into an embed directive", () => {
+    const value = "https://youtu.be/M7lc1UVf-VE?t=30"
+    const directive = '::embed{url="https://youtu.be/M7lc1UVf-VE?t=30"}'
+
+    expect(applyMarkdownPaste("", 0, 0, value)).toEqual({
+      value: directive,
+      selectionStart: directive.length,
+      selectionEnd: directive.length,
+    })
+  })
+
+  test("turns an external URL pasted on a blank line into a link card directive", () => {
+    const directive = '::card{url="https://example.com/"}'
+
+    expect(applyMarkdownPaste("before\n   \nafter", 9, 9, " https://example.com \n")).toEqual({
+      value: `before\n${directive}\nafter`,
+      selectionStart: 7 + directive.length,
+      selectionEnd: 7 + directive.length,
+    })
+  })
+
+  test("leaves ordinary and inline pastes to the textarea", () => {
+    expect(applyMarkdownPaste("before", 6, 6, "https://example.com")).toBeNull()
+    expect(applyMarkdownPaste("", 0, 0, "/post/one")).toBeNull()
+    expect(applyMarkdownPaste("replace", 0, 7, "https://example.com")).toBeNull()
   })
 })

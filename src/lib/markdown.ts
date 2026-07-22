@@ -1,21 +1,38 @@
-const YOUTUBE_VIDEO_ID = /^[A-Za-z0-9_-]{11}$/u
-const SPOTIFY_ENTITY_ID = /^[A-Za-z0-9]{22}$/u
-const SPOTIFY_ENTITY_TYPES = ["album", "artist", "episode", "playlist", "show", "track"] as const
+import type { Definition, Image, ImageReference } from "mdast"
+import remarkDirective from "remark-directive"
+import remarkGfm from "remark-gfm"
+import remarkParse from "remark-parse"
+import { unified } from "unified"
+import { visit } from "unist-util-visit"
+
+import { remarkPostDirectives } from "./markdown-directives"
+
 const BLOCKED_IMAGE_HOSTNAMES = ["home.arpa", "internal", "local", "localhost"]
 const IPV4_HOST = /^(?:\d{1,3}\.){3}\d{1,3}$/u
+const BLOCK_TEXT_NODES = new Set([
+  "root",
+  "blockquote",
+  "list",
+  "listItem",
+  "table",
+  "tableRow",
+  "tableCell",
+])
 
-type SpotifyEntityType = (typeof SPOTIFY_ENTITY_TYPES)[number]
+type MarkdownTextNode = {
+  readonly alt?: unknown
+  readonly children?: ReadonlyArray<MarkdownTextNode>
+  readonly type: string
+  readonly value?: unknown
+}
 
-export type MarkdownEmbed =
-  | {
-      readonly provider: "youtube"
-      readonly videoId: string
-    }
-  | {
-      readonly provider: "spotify"
-      readonly entityType: SpotifyEntityType
-      readonly entityId: string
-    }
+const gfmMarkdownProcessor = unified().use(remarkParse).use(remarkGfm).freeze()
+const postMarkdownProcessor = unified()
+  .use(remarkParse)
+  .use(remarkGfm)
+  .use(remarkDirective)
+  .use(remarkPostDirectives)
+  .freeze()
 
 function parseHttpUrl(value: string) {
   try {
@@ -24,45 +41,6 @@ function parseHttpUrl(value: string) {
   } catch {
     return null
   }
-}
-
-export function parseMarkdownEmbed(value: string): MarkdownEmbed | null {
-  const url = parseHttpUrl(value)
-  if (!url || url.protocol !== "https:") return null
-
-  const hostname = url.hostname.toLocaleLowerCase("en-US")
-  let youtubeVideoId: string | null = null
-  if (hostname === "youtu.be") {
-    youtubeVideoId = url.pathname.split("/").find(Boolean) ?? null
-  } else if (
-    hostname === "youtube.com" ||
-    hostname === "www.youtube.com" ||
-    hostname === "m.youtube.com" ||
-    hostname === "music.youtube.com"
-  ) {
-    const segments = url.pathname.split("/").filter(Boolean)
-    youtubeVideoId =
-      url.pathname === "/watch"
-        ? url.searchParams.get("v")
-        : ["embed", "live", "shorts"].includes(segments[0] ?? "")
-          ? (segments[1] ?? null)
-          : null
-  }
-  if (youtubeVideoId && YOUTUBE_VIDEO_ID.test(youtubeVideoId)) {
-    return { provider: "youtube", videoId: youtubeVideoId }
-  }
-
-  if (hostname !== "open.spotify.com") return null
-  const segments = url.pathname.split("/").filter(Boolean)
-  const firstEntitySegment = segments[0]?.startsWith("intl-") ? 1 : 0
-  const entityType = SPOTIFY_ENTITY_TYPES.find(
-    (candidate) => candidate === segments[firstEntitySegment],
-  )
-  const entityId = segments[firstEntitySegment + 1]
-  if (!entityType || !entityId || !SPOTIFY_ENTITY_ID.test(entityId)) {
-    return null
-  }
-  return { provider: "spotify", entityType, entityId }
 }
 
 export function isProxyableExternalImageUrl(value: string) {
@@ -90,18 +68,64 @@ export function externalImageProxyUrl(postId: string, sourceUrl: string) {
 }
 
 export function markdownContainsImageUrl(markdown: string, sourceUrl: string) {
-  const escaped = sourceUrl.replaceAll(/[.*+?^${}()|[\]\\]/gu, "\\$&")
-  return new RegExp(`!\\[[^\\]]*\\]\\(\\s*<?${escaped}(?:>|\\s|\\))`, "u").test(markdown)
+  const tree = gfmMarkdownProcessor.parse(markdown)
+  const definitions = new Map<string, string>()
+  const imageUrls: string[] = []
+  const imageReferences: string[] = []
+
+  visit(tree, (node) => {
+    if (isDefinition(node)) {
+      if (!definitions.has(node.identifier)) definitions.set(node.identifier, node.url)
+    } else if (isImage(node)) {
+      imageUrls.push(node.url)
+    } else if (isImageReference(node)) {
+      imageReferences.push(node.identifier)
+    }
+  })
+
+  return (
+    imageUrls.includes(sourceUrl) ||
+    imageReferences.some((identifier) => definitions.get(identifier) === sourceUrl)
+  )
 }
 
-export function markdownToPlainText(markdown: string) {
-  return markdown
-    .replaceAll(/!\[([^\]]*)\]\([^)]*\)/gu, "$1")
-    .replaceAll(/\[([^\]]+)\]\([^)]*\)/gu, "$1")
-    .replaceAll(/^\s{0,3}#{1,6}\s+/gmu, "")
-    .replaceAll(/^\s{0,3}(?:>|[-+*]|\d+[.)])\s+/gmu, "")
-    .replaceAll(/^\s{0,3}\[[ xX]\]\s+/gmu, "")
-    .replaceAll(/[*_~`|]/gu, " ")
-    .replaceAll(/\s+/gu, " ")
-    .trim()
+export function postMarkdownToPlainText(markdown: string) {
+  const tree = postMarkdownProcessor.runSync(postMarkdownProcessor.parse(markdown), markdown)
+  return markdownNodeToPlainText(tree).replaceAll(/\s+/gu, " ").trim()
+}
+
+export function commentMarkdownToPlainText(markdown: string) {
+  const tree = gfmMarkdownProcessor.runSync(gfmMarkdownProcessor.parse(markdown), markdown)
+  return markdownNodeToPlainText(tree).replaceAll(/\s+/gu, " ").trim()
+}
+
+function markdownNodeToPlainText(node: MarkdownTextNode): string {
+  if (node.type === "html") return ""
+  if (node.type === "image" || node.type === "imageReference") {
+    return typeof node.alt === "string" ? node.alt : ""
+  }
+  if (
+    (node.type === "text" || node.type === "inlineCode" || node.type === "code") &&
+    typeof node.value === "string"
+  ) {
+    return node.value
+  }
+  if (node.type === "break") return " "
+  if (!node.children) return ""
+
+  return node.children
+    .map((child) => markdownNodeToPlainText(child))
+    .join(BLOCK_TEXT_NODES.has(node.type) ? " " : "")
+}
+
+function isDefinition(node: { readonly type: string }): node is Definition {
+  return node.type === "definition"
+}
+
+function isImage(node: { readonly type: string }): node is Image {
+  return node.type === "image"
+}
+
+function isImageReference(node: { readonly type: string }): node is ImageReference {
+  return node.type === "imageReference"
 }

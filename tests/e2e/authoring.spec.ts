@@ -189,7 +189,7 @@ test.describe.serial("authenticated authoring", () => {
 
 - [x] Ready to share
 
-https://www.youtube.com/watch?v=M7lc1UVf-VE
+::embed[Example video]{url="https://www.youtube.com/watch?v=M7lc1UVf-VE"}
 
 [Example](https://example.com)`)
     await page.getByRole("tab", { name: "Preview" }).click()

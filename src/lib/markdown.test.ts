@@ -1,12 +1,13 @@
 import { describe, expect, test } from "bun:test"
 
 import {
+  commentMarkdownToPlainText,
   externalImageProxyUrl,
   isProxyableExternalImageUrl,
   markdownContainsImageUrl,
-  markdownToPlainText,
-  parseMarkdownEmbed,
+  postMarkdownToPlainText,
 } from "./markdown"
+import { parseMarkdownEmbed } from "./markdown-embeds"
 
 describe("Markdown boundaries", () => {
   test("recognizes only strict YouTube and Spotify embed destinations", () => {
@@ -55,15 +56,30 @@ describe("Markdown boundaries", () => {
     const source = "https://cdn.example.com/image.png?size=large"
     expect(markdownContainsImageUrl(`![A picture](${source})`, source)).toBe(true)
     expect(markdownContainsImageUrl(`![A picture](<${source}> "Caption")`, source)).toBe(true)
+    expect(markdownContainsImageUrl(`![A picture][photo]\n\n[photo]: ${source}`, source)).toBe(true)
     expect(markdownContainsImageUrl(`[Not an image](${source})`, source)).toBe(false)
     expect(markdownContainsImageUrl(`![Another image](${source}-different)`, source)).toBe(false)
   })
 
   test("derives readable plain text for metadata", () => {
     expect(
-      markdownToPlainText(
+      postMarkdownToPlainText(
         "## Release notes\n\n- [x] **Safe Markdown**\n- [ ] [Embeds](https://example.com)",
       ),
     ).toBe("Release notes Safe Markdown Embeds")
+  })
+
+  test("uses directive labels and destinations in post metadata", () => {
+    expect(
+      postMarkdownToPlainText(
+        '::embed[Demo video]{url="https://youtu.be/M7lc1UVf-VE"}\n\n::card{url="https://example.com"}',
+      ),
+    ).toBe("Demo video https://example.com/")
+  })
+
+  test("keeps directive syntax literal in comments", () => {
+    expect(commentMarkdownToPlainText('Try ::card{url="https://example.com"}')).toBe(
+      'Try ::card{url="https://example.com"}',
+    )
   })
 })

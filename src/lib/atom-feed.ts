@@ -1,6 +1,6 @@
 import type { PublicAtomFeedRecord } from "@/db/atom-feed-read-model"
 
-import { markdownToPlainText } from "./markdown"
+import { postMarkdownToPlainText } from "./markdown"
 import { SITE_DESCRIPTION, SITE_NAME, truncateDescription } from "./seo"
 
 const EMPTY_FEED_UPDATED_AT = new Date(0)
@@ -45,7 +45,7 @@ function feedUpdatedAt(records: ReadonlyArray<PublicAtomFeedRecord>) {
 }
 
 function feedSummary(record: PublicAtomFeedRecord) {
-  const text = record.textContent ? markdownToPlainText(record.textContent) : ""
+  const text = record.textContent ? postMarkdownToPlainText(record.textContent) : ""
   if (text) return truncateDescription(text, 400)
   const kind = record.type === "images" ? "Image post" : record.type === "video" ? "Video" : "Post"
   return `${kind} by ${record.author.name}.`

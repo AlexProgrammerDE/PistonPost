@@ -1,3 +1,5 @@
+import { postDirectiveForUrl } from "./markdown-directives"
+
 export type MarkdownCommand =
   | "bold"
   | "italic"
@@ -72,6 +74,23 @@ function insertBlock(value: string, selectionStart: number, selectionEnd: number
   const replacement = `${before}${block}${after}`
   const caret = before.length + block.length
   return replaceSelection(value, selectionStart, selectionEnd, replacement, caret, caret)
+}
+
+export function applyMarkdownPaste(
+  value: string,
+  selectionStart: number,
+  selectionEnd: number,
+  pastedText: string,
+): MarkdownEdit | null {
+  if (selectionStart !== selectionEnd) return null
+
+  const lineStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1
+  const nextLine = value.indexOf("\n", selectionStart)
+  const lineEnd = nextLine === -1 ? value.length : nextLine
+  if (value.slice(lineStart, lineEnd).trim()) return null
+
+  const directive = postDirectiveForUrl(pastedText.trim())
+  return directive ? insertBlock(value, lineStart, lineEnd, directive) : null
 }
 
 export function applyMarkdownCommand(

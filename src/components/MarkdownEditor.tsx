@@ -16,7 +16,13 @@ import {
   Table2,
   type LucideIcon,
 } from "lucide-react"
-import { useRef, useState, type ComponentProps, type KeyboardEvent } from "react"
+import {
+  useRef,
+  useState,
+  type ClipboardEvent,
+  type ComponentProps,
+  type KeyboardEvent,
+} from "react"
 
 import { MarkdownContent } from "@/components/MarkdownContent"
 import { Button } from "@/components/ui/button"
@@ -24,7 +30,12 @@ import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { applyMarkdownCommand, type MarkdownCommand } from "@/lib/markdown-editor"
+import {
+  applyMarkdownCommand,
+  applyMarkdownPaste,
+  type MarkdownCommand,
+  type MarkdownEdit,
+} from "@/lib/markdown-editor"
 
 type MarkdownEditorProps = Omit<
   ComponentProps<typeof Textarea>,
@@ -78,12 +89,25 @@ export function MarkdownEditor({
   value,
   onValueChange,
   onBlur,
+  onPaste,
   maxLength,
   disabled,
   ...props
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const [mode, setMode] = useState("write")
+
+  function applyEdit(edit: MarkdownEdit) {
+    if (typeof maxLength === "number" && edit.value.length > maxLength) return false
+    onValueChange(edit.value)
+    requestAnimationFrame(() => {
+      const textarea = textareaRef.current
+      if (!textarea) return
+      textarea.focus()
+      textarea.setSelectionRange(edit.selectionStart, edit.selectionEnd)
+    })
+    return true
+  }
 
   function runCommand(command: MarkdownCommand) {
     const textarea = textareaRef.current
@@ -94,12 +118,7 @@ export function MarkdownEditor({
       textarea.selectionEnd,
       command,
     )
-    if (typeof maxLength === "number" && edit.value.length > maxLength) return
-    onValueChange(edit.value)
-    requestAnimationFrame(() => {
-      textarea.focus()
-      textarea.setSelectionRange(edit.selectionStart, edit.selectionEnd)
-    })
+    applyEdit(edit)
   }
 
   function handleShortcut(event: KeyboardEvent<HTMLTextAreaElement>) {
@@ -115,6 +134,21 @@ export function MarkdownEditor({
     if (!command) return
     event.preventDefault()
     runCommand(command)
+  }
+
+  function handlePaste(event: ClipboardEvent<HTMLTextAreaElement>) {
+    onPaste?.(event)
+    if (event.defaultPrevented || disabled) return
+
+    const textarea = event.currentTarget
+    const edit = applyMarkdownPaste(
+      value,
+      textarea.selectionStart,
+      textarea.selectionEnd,
+      event.clipboardData.getData("text/plain"),
+    )
+    if (!edit || !applyEdit(edit)) return
+    event.preventDefault()
   }
 
   return (
@@ -177,6 +211,7 @@ export function MarkdownEditor({
           onBlur={onBlur}
           onChange={(event) => onValueChange(event.currentTarget.value)}
           onKeyDown={handleShortcut}
+          onPaste={handlePaste}
         />
       </TabsContent>
 
@@ -193,8 +228,8 @@ export function MarkdownEditor({
         )}
       </TabsContent>
       <p className="text-xs text-muted-foreground">
-        GitHub-flavored Markdown is supported. Paste a YouTube or Spotify link on its own line to
-        embed it.
+        GitHub-flavored Markdown is supported. Paste an external link on an empty line to add an
+        embed or link card.
       </p>
     </Tabs>
   )
