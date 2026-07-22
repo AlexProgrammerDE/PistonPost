@@ -37,6 +37,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
+import { Spinner } from "@/components/ui/spinner"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import { externalImageProxyUrl, isProxyableExternalImageUrl } from "@/lib/markdown"
 import {
@@ -134,9 +135,21 @@ function loadXScript() {
 
 function ExternalEmbedLoading({ providerName }: { providerName: string }) {
   return (
-    <div className="not-typeset my-4 border bg-muted/20 p-4 text-sm text-muted-foreground">
-      Loading {providerName} embed…
-    </div>
+    <Item
+      className="not-typeset my-4 min-h-28 bg-muted/25"
+      variant="outline"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+    >
+      <ItemMedia variant="icon">
+        <Spinner aria-hidden="true" />
+      </ItemMedia>
+      <ItemContent className="min-w-0">
+        <ItemTitle>Loading {providerName} embed…</ItemTitle>
+        <ItemDescription>Preparing the external preview.</ItemDescription>
+      </ItemContent>
+    </Item>
   )
 }
 

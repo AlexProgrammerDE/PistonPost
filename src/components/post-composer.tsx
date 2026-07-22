@@ -59,6 +59,15 @@ import {
   useFileUpload,
 } from "@/components/ui/file-upload"
 import { Input } from "@/components/ui/input"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
@@ -812,31 +821,36 @@ function SortableUpload({
   }
 
   return (
-    <div
+    <Item
       ref={sortable.setNodeRef}
       style={style}
       role="listitem"
-      className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 border bg-background p-3"
+      variant="outline"
+      className="items-start rounded-none bg-background p-3"
     >
       {item.previewUrl ? (
-        <button
-          type="button"
-          className="relative size-14 shrink-0 cursor-zoom-in overflow-hidden bg-muted outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-          aria-label={`View ${item.filename} full size`}
-          onPointerEnter={preloadImageLightbox}
-          onFocus={preloadImageLightbox}
-          onClick={() => onView(item.clientId)}
-        >
-          <img src={item.previewUrl} alt="" className="size-full object-cover" />
-          <span className="absolute right-1 bottom-1 grid size-5 place-items-center bg-background/90 text-foreground">
-            <ZoomIn aria-hidden="true" className="size-3.5" />
-          </span>
-        </button>
+        <ItemMedia variant="image" className="size-14 rounded-none">
+          <button
+            type="button"
+            className="relative size-full cursor-zoom-in outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+            aria-label={`View ${item.filename} full size`}
+            onPointerEnter={preloadImageLightbox}
+            onFocus={preloadImageLightbox}
+            onClick={() => onView(item.clientId)}
+          >
+            <img src={item.previewUrl} alt="" className="size-full object-cover" />
+            <span className="absolute right-1 bottom-1 grid size-5 place-items-center bg-background/90 text-foreground">
+              <ZoomIn aria-hidden="true" className="size-3.5" />
+            </span>
+          </button>
+        </ItemMedia>
       ) : (
-        <div className="grid size-14 place-items-center bg-muted text-xs font-medium">VIDEO</div>
+        <ItemMedia variant="icon" className="size-14 bg-muted">
+          <Video aria-hidden="true" />
+        </ItemMedia>
       )}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
+      <ItemContent className="min-w-0">
+        <ItemTitle className="line-clamp-none w-full min-w-0">
           <Button
             type="button"
             variant="ghost"
@@ -849,49 +863,63 @@ function SortableUpload({
           >
             <GripVertical aria-hidden="true" />
           </Button>
-          <p className="truncate text-sm font-medium">{item.filename}</p>
-        </div>
-        <p className="mt-1 text-xs text-muted-foreground">
+          <span className="min-w-0 truncate">{item.filename}</span>
+        </ItemTitle>
+        <ItemDescription className="line-clamp-none text-xs">
           {(item.file.size / 1024 / 1024).toFixed(1)} MB · {item.status}
-        </p>
-        {item.kind === "image" ? (
-          <Field className="mt-3 gap-2" data-disabled={item.status !== "queued" || undefined}>
-            <FieldLabel htmlFor={`alt-text-${item.clientId}`}>Alt text</FieldLabel>
-            <Input
-              id={`alt-text-${item.clientId}`}
-              value={item.altText}
-              maxLength={300}
-              placeholder="Describe this image…"
-              autoComplete="off"
-              disabled={item.status !== "queued"}
-              onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
-            />
-            <FieldDescription>
-              Optional. Describe what matters in the image, or leave this empty for a decorative
-              image.
-            </FieldDescription>
-          </Field>
-        ) : null}
-        {item.status !== "queued" ? (
-          <Progress value={item.progress} className="mt-2 gap-1">
-            <ProgressLabel className="sr-only">Upload progress</ProgressLabel>
-            <ProgressValue />
-          </Progress>
-        ) : null}
-        {item.error ? (
-          <p className="mt-2 overflow-hidden text-xs text-destructive">{item.error}</p>
-        ) : null}
-      </div>
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        aria-label={`Remove ${item.filename}`}
-        disabled={item.status === "ready"}
-        onClick={() => onRemove(item)}
-      >
-        <Trash2 aria-hidden="true" />
-      </Button>
-    </div>
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label={`Remove ${item.filename}`}
+          disabled={item.status === "ready"}
+          onClick={() => onRemove(item)}
+        >
+          <Trash2 aria-hidden="true" />
+        </Button>
+      </ItemActions>
+      {item.kind === "image" || item.status !== "queued" || item.error ? (
+        <ItemFooter className="items-start">
+          <div className="grid min-w-0 flex-1 gap-3">
+            {item.kind === "image" ? (
+              <Field className="gap-2" data-disabled={item.status !== "queued" || undefined}>
+                <FieldLabel htmlFor={`alt-text-${item.clientId}`}>Alt text</FieldLabel>
+                <Input
+                  id={`alt-text-${item.clientId}`}
+                  value={item.altText}
+                  maxLength={300}
+                  placeholder="Describe this image…"
+                  autoComplete="off"
+                  disabled={item.status !== "queued"}
+                  onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
+                />
+                <FieldDescription>
+                  Optional. Describe what matters in the image, or leave this empty for a decorative
+                  image.
+                </FieldDescription>
+              </Field>
+            ) : null}
+            {item.status !== "queued" ? (
+              <Progress value={item.progress} className="gap-1">
+                <ProgressLabel className="sr-only">Upload progress</ProgressLabel>
+                <ProgressValue />
+              </Progress>
+            ) : null}
+            {item.error ? (
+              <Alert variant="destructive" className="py-2">
+                <TriangleAlert aria-hidden="true" />
+                <AlertTitle>Upload failed</AlertTitle>
+                <AlertDescription className="overflow-hidden text-xs">
+                  {item.error}
+                </AlertDescription>
+              </Alert>
+            ) : null}
+          </div>
+        </ItemFooter>
+      ) : null}
+    </Item>
   )
 }

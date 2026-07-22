@@ -20,10 +20,12 @@ import { PostTextPreview } from "@/components/PostTextPreview"
 import { PostVideoPlayer } from "@/components/PostVideoPlayer"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "@/components/ResponsiveMediaImage"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -242,12 +244,11 @@ function PostMedia({
   if (post.media.length === 0) {
     if (post.type === "text") return null
     return (
-      <div className="grid aspect-[16/9] place-items-center border bg-muted/40 text-muted-foreground">
-        <div className="flex max-w-xs flex-col items-center gap-2 px-6 text-center">
-          <TriangleAlert aria-hidden="true" />
-          <p className="text-sm font-medium">This post has missing or unavailable media.</p>
-        </div>
-      </div>
+      <Alert variant="destructive">
+        <TriangleAlert aria-hidden="true" />
+        <AlertTitle>Media unavailable</AlertTitle>
+        <AlertDescription>This post has missing or unavailable media.</AlertDescription>
+      </Alert>
     )
   }
 
@@ -838,8 +839,8 @@ export function PostView({
               <PostViewCount count={post.viewCount} />
             </div>
           </div>
-          <nav
-            className="mt-2 grid grid-cols-3 items-center gap-1 border-t pt-2 sm:flex sm:flex-wrap"
+          <ButtonGroup
+            className="mt-2 grid w-full grid-cols-3 items-center border-t pt-2 sm:flex sm:w-fit sm:flex-wrap"
             aria-label={`Actions for ${post.title}`}
           >
             <FeedPostActions
@@ -849,7 +850,7 @@ export function PostView({
               commentCount={post.commentCount}
               onOpenPost={openPost}
             />
-          </nav>
+          </ButtonGroup>
         </footer>
       ) : null}
     </article>

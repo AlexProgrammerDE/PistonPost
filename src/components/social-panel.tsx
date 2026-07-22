@@ -8,7 +8,7 @@ import {
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Heart, History, MessageCircle, Reply, Send, Trash2, X } from "lucide-react"
+import { Heart, History, MessageCircle, Reply, Send, Trash2, TriangleAlert, X } from "lucide-react"
 import { AnimatePresence, useReducedMotion, type Transition } from "motion/react"
 import * as m from "motion/react-m"
 import { startTransition, useEffect, useOptimistic, useRef, useState } from "react"
@@ -22,7 +22,7 @@ import { MarkdownContent } from "@/components/MarkdownContent"
 import { MotionBoundary } from "@/components/MotionBoundary"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
-import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,7 +37,17 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
-import { Separator } from "@/components/ui/separator"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemFooter,
+  ItemGroup,
+  ItemHeader,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { Toggle } from "@/components/ui/toggle"
 import { useAppForm } from "@/lib/forms/app-form"
@@ -401,27 +411,31 @@ export function SocialPanel({
                 ) : null}
                 <form.AppField name="content">
                   {(field) => (
-                    <field.TextareaField
+                    <field.ComposerTextareaField
                       label={replyingTo ? "Add a reply" : "Add a comment"}
                       placeholder={replyingTo ? "Write a reply…" : "Write a comment…"}
                       description="Markdown formatting is supported."
                       maxLength={250}
                       rows={3}
+                      actions={
+                        <form.SubmitButton size="sm">
+                          <Send aria-hidden="true" data-icon="inline-start" />
+                          {replyingTo ? "Post reply" : "Post comment"}
+                        </form.SubmitButton>
+                      }
                     />
                   )}
                 </form.AppField>
-                <div className="flex justify-end">
-                  <form.SubmitButton>
-                    <Send aria-hidden="true" data-icon="inline-start" />
-                    {replyingTo ? "Post reply" : "Post comment"}
-                  </form.SubmitButton>
-                </div>
               </form.AppForm>
             </form>
           ) : sessionUserId ? (
-            <p className="text-sm text-muted-foreground" role="status">
-              Your comment and heart controls could not be loaded. Try refreshing the page.
-            </p>
+            <Alert variant="destructive">
+              <TriangleAlert aria-hidden="true" />
+              <AlertTitle>Discussion controls unavailable</AlertTitle>
+              <AlertDescription>
+                Your comment and heart controls could not be loaded. Try refreshing the page.
+              </AlertDescription>
+            </Alert>
           ) : (
             <p className="text-sm text-muted-foreground">
               <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
@@ -431,124 +445,143 @@ export function SocialPanel({
             </p>
           )}
 
-          <div className="grid gap-0">
-            <AnimatePresence initial={false}>
-              {optimisticComments.map((comment) => {
-                const canDelete =
-                  !comment.optimistic && (comment.authorId === viewerId || viewerRole === "admin")
-                return (
-                  <m.article
-                    key={comment.id}
-                    id={`comment-${comment.id}`}
-                    className={cn(
-                      "grid min-w-0 grid-cols-[auto_minmax(0,1fr)] gap-3 overflow-hidden py-5 wrap-anywhere",
-                      comment.parentId && "ml-8 border-l pl-4 sm:ml-12",
-                    )}
-                    initial={
-                      comment.optimistic ? { height: reduceMotion ? "auto" : 0, opacity: 0 } : false
-                    }
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: reduceMotion ? "auto" : 0, opacity: 0 }}
-                    transition={commentTransition}
-                  >
-                    <Avatar>
-                      {comment.authorImage ? (
-                        <ResponsiveAvatarImage src={comment.authorImage} sizes="2rem" alt="" />
-                      ) : null}
-                      <AvatarFallback className="text-foreground">
-                        {comment.authorName.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="min-w-0">
-                      <div className="flex min-w-0 items-center gap-2 text-sm">
-                        <bdi className="min-w-0 truncate font-semibold">{comment.authorName}</bdi>
-                        <span className="min-w-0 truncate text-xs text-muted-foreground">
-                          @{comment.authorUsername}
-                        </span>
-                        {comment.optimistic ? (
-                          <span className="text-xs text-muted-foreground">Sending…</span>
-                        ) : (
-                          <DateTime
-                            value={comment.createdAt}
-                            className="shrink-0 text-xs text-muted-foreground"
-                          />
-                        )}
-                        {!comment.optimistic ? (
-                          <span className="ml-auto flex items-center gap-1">
-                            <ContentReportDialog
-                              target={{ type: "comment", id: comment.id }}
-                              size="xs"
-                            />
-                            {canDelete ? (
-                              <AlertDialog>
-                                <AlertDialogTrigger
-                                  render={
-                                    <Button
-                                      className="ml-auto"
-                                      variant="ghost"
-                                      size="icon-xs"
-                                      aria-label="Delete comment"
-                                    />
-                                  }
-                                >
-                                  <Trash2 aria-hidden="true" />
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                      The comment text will be removed from the discussion.
-                                    </AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel disabled={deleteMutation.isPending}>
-                                      Keep comment
-                                    </AlertDialogCancel>
-                                    <AlertDialogAction
-                                      variant="destructive"
-                                      disabled={deleteMutation.isPending}
-                                      onClick={() => deleteMutation.mutate(comment.id)}
-                                    >
-                                      {deleteMutation.isPending ? (
-                                        <Spinner aria-hidden="true" data-icon="inline-start" />
-                                      ) : (
-                                        <Trash2 aria-hidden="true" data-icon="inline-start" />
-                                      )}
-                                      Delete comment
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
+          {optimisticComments.length > 0 ? (
+            <ItemGroup className="gap-0 border-y">
+              <AnimatePresence initial={false}>
+                {optimisticComments.map((comment) => {
+                  const canDelete =
+                    !comment.optimistic && (comment.authorId === viewerId || viewerRole === "admin")
+                  return (
+                    <m.div
+                      key={comment.id}
+                      id={`comment-${comment.id}`}
+                      className={cn(
+                        "min-w-0 overflow-hidden wrap-anywhere [&:last-child>[data-slot=item]]:border-b-0",
+                        comment.parentId && "ml-8 border-l pl-4 sm:ml-12",
+                      )}
+                      role="listitem"
+                      initial={
+                        comment.optimistic
+                          ? { height: reduceMotion ? "auto" : 0, opacity: 0 }
+                          : false
+                      }
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: reduceMotion ? "auto" : 0, opacity: 0 }}
+                      transition={commentTransition}
+                    >
+                      <Item
+                        render={<article />}
+                        variant="outline"
+                        className="grid grid-cols-[auto_minmax(0,1fr)] items-start rounded-none border-x-0 border-t-0 px-0 py-5"
+                      >
+                        <ItemMedia className="row-span-3">
+                          <Avatar>
+                            {comment.authorImage ? (
+                              <ResponsiveAvatarImage
+                                src={comment.authorImage}
+                                sizes="2rem"
+                                alt=""
+                              />
                             ) : null}
-                          </span>
+                            <AvatarFallback className="text-foreground">
+                              {comment.authorName.slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                        </ItemMedia>
+                        <ItemHeader className="col-start-2 min-w-0 basis-auto items-start">
+                          <div className="min-w-0">
+                            <ItemTitle className="line-clamp-none min-w-0 flex-wrap">
+                              <bdi className="min-w-0 truncate">{comment.authorName}</bdi>
+                              <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
+                                @{comment.authorUsername}
+                              </span>
+                            </ItemTitle>
+                            <ItemDescription className="line-clamp-none text-xs">
+                              {comment.optimistic ? (
+                                "Sending…"
+                              ) : (
+                                <DateTime value={comment.createdAt} />
+                              )}
+                            </ItemDescription>
+                          </div>
+                          {!comment.optimistic ? (
+                            <ItemActions>
+                              <ContentReportDialog
+                                target={{ type: "comment", id: comment.id }}
+                                size="xs"
+                              />
+                              {canDelete ? (
+                                <AlertDialog>
+                                  <AlertDialogTrigger
+                                    render={
+                                      <Button
+                                        variant="ghost"
+                                        size="icon-xs"
+                                        aria-label="Delete comment"
+                                      />
+                                    }
+                                  >
+                                    <Trash2 aria-hidden="true" />
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        The comment text will be removed from the discussion.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel disabled={deleteMutation.isPending}>
+                                        Keep comment
+                                      </AlertDialogCancel>
+                                      <AlertDialogAction
+                                        variant="destructive"
+                                        disabled={deleteMutation.isPending}
+                                        onClick={() => deleteMutation.mutate(comment.id)}
+                                      >
+                                        {deleteMutation.isPending ? (
+                                          <Spinner aria-hidden="true" data-icon="inline-start" />
+                                        ) : (
+                                          <Trash2 aria-hidden="true" data-icon="inline-start" />
+                                        )}
+                                        Delete comment
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              ) : null}
+                            </ItemActions>
+                          ) : null}
+                        </ItemHeader>
+                        <ItemContent className="col-start-2 min-w-0">
+                          <MarkdownContent variant="comment">{comment.content}</MarkdownContent>
+                        </ItemContent>
+                        {!comment.optimistic && !comment.parentId && viewerId ? (
+                          <ItemFooter className="col-start-2 basis-auto justify-start">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="xs"
+                              onClick={() => {
+                                setReplyingTo(comment)
+                                document
+                                  .getElementById("comment-composer")
+                                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                              }}
+                            >
+                              <Reply aria-hidden="true" data-icon="inline-start" />
+                              Reply
+                            </Button>
+                          </ItemFooter>
                         ) : null}
-                      </div>
-                      <MarkdownContent variant="comment" className="mt-1">
-                        {comment.content}
-                      </MarkdownContent>
-                      {!comment.optimistic && !comment.parentId && viewerId ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="xs"
-                          className="mt-2"
-                          onClick={() => {
-                            setReplyingTo(comment)
-                            document
-                              .getElementById("comment-composer")
-                              ?.scrollIntoView({ behavior: "smooth", block: "center" })
-                          }}
-                        >
-                          <Reply aria-hidden="true" data-icon="inline-start" />
-                          Reply
-                        </Button>
-                      ) : null}
-                    </div>
-                    <Separator className="col-span-2" />
-                  </m.article>
-                )
-              })}
-            </AnimatePresence>
+                      </Item>
+                    </m.div>
+                  )
+                })}
+              </AnimatePresence>
+            </ItemGroup>
+          ) : null}
+          <div>
             <AnimatePresence initial={false}>
               {optimisticComments.length === 0 ? (
                 <m.div

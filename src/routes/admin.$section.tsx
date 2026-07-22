@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import {
   Credenza,
   CredenzaBody,
@@ -213,7 +214,7 @@ function UserActions({ row }: { row: AdminRow }) {
   }
   const roleAction = row.status === "admin" ? "demote" : "promote"
   return (
-    <div className="flex gap-2">
+    <ButtonGroup aria-label="Account access actions">
       <ConfirmationAction
         label={roleAction === "promote" ? "Make admin" : "Make member"}
         title={
@@ -235,7 +236,7 @@ function UserActions({ row }: { row: AdminRow }) {
         disabled={mutation.isPending}
         onConfirm={() => mutation.mutate("ban")}
       />
-    </div>
+    </ButtonGroup>
   )
 }
 
@@ -299,7 +300,7 @@ function ReportAction({ row }: { row: AdminRow }) {
   })
   if (row.status !== "open") return null
   return (
-    <div className="flex gap-2">
+    <ButtonGroup aria-label="Report actions">
       <ConfirmationAction
         label="Resolve"
         title="Mark this report resolved?"
@@ -314,7 +315,7 @@ function ReportAction({ row }: { row: AdminRow }) {
         disabled={mutation.isPending}
         onConfirm={() => mutation.mutate("dismissed")}
       />
-    </div>
+    </ButtonGroup>
   )
 }
 

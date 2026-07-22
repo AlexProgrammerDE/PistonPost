@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { FieldGroup } from "@/components/ui/field"
 import {
   Item,
   ItemActions,
@@ -98,65 +101,67 @@ function EmailCampaigns() {
           New draft
         </h2>
         <form
-          className="mt-5 grid gap-5"
+          className="mt-5"
           onSubmit={(event) => {
             event.preventDefault()
             void form.handleSubmit()
           }}
         >
           <form.AppForm>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <form.AppField name="subject">
-                {(field) => <field.TextField label="Subject" maxLength={160} required />}
+            <FieldGroup className="gap-5">
+              <FieldGroup className="grid gap-5 sm:grid-cols-2">
+                <form.AppField name="subject">
+                  {(field) => <field.TextField label="Subject" maxLength={160} required />}
+                </form.AppField>
+                <form.AppField name="preview">
+                  {(field) => (
+                    <field.TextField
+                      label="Inbox preview"
+                      description="Keep this useful when the subject is truncated."
+                      maxLength={200}
+                      required
+                    />
+                  )}
+                </form.AppField>
+              </FieldGroup>
+              <form.AppField name="heading">
+                {(field) => <field.TextField label="Heading" maxLength={120} required />}
               </form.AppField>
-              <form.AppField name="preview">
+              <form.AppField name="message">
                 {(field) => (
-                  <field.TextField
-                    label="Inbox preview"
-                    description="Keep this useful when the subject is truncated."
-                    maxLength={200}
-                    required
-                  />
+                  <field.TextareaField label="Message" maxLength={2000} rows={7} required />
                 )}
               </form.AppField>
-            </div>
-            <form.AppField name="heading">
-              {(field) => <field.TextField label="Heading" maxLength={120} required />}
-            </form.AppField>
-            <form.AppField name="message">
-              {(field) => (
-                <field.TextareaField label="Message" maxLength={2000} rows={7} required />
-              )}
-            </form.AppField>
-            <div className="grid gap-5 sm:grid-cols-2">
-              <form.AppField name="actionLabel">
-                {(field) => (
-                  <field.TextField
-                    label="Action label"
-                    description="Optional. Add both action fields or leave both empty."
-                    maxLength={80}
-                  />
-                )}
-              </form.AppField>
-              <form.AppField name="actionUrl">
-                {(field) => <field.TextField label="Action URL" type="url" inputMode="url" />}
-              </form.AppField>
-            </div>
-            <div className="flex flex-wrap justify-end gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                disabled={preview.isPending}
-                onClick={() => preview.mutate(form.state.values)}
-              >
-                <Eye aria-hidden="true" data-icon="inline-start" />
-                {preview.isPending ? "Rendering…" : "Preview"}
-              </Button>
-              <form.SubmitButton>
-                <Mail aria-hidden="true" data-icon="inline-start" />
-                Save draft
-              </form.SubmitButton>
-            </div>
+              <FieldGroup className="grid gap-5 sm:grid-cols-2">
+                <form.AppField name="actionLabel">
+                  {(field) => (
+                    <field.TextField
+                      label="Action label"
+                      description="Optional. Add both action fields or leave both empty."
+                      maxLength={80}
+                    />
+                  )}
+                </form.AppField>
+                <form.AppField name="actionUrl">
+                  {(field) => <field.TextField label="Action URL" type="url" inputMode="url" />}
+                </form.AppField>
+              </FieldGroup>
+              <ButtonGroup className="ml-auto" aria-label="Email campaign draft actions">
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={preview.isPending}
+                  onClick={() => preview.mutate(form.state.values)}
+                >
+                  <Eye aria-hidden="true" data-icon="inline-start" />
+                  {preview.isPending ? "Rendering…" : "Preview"}
+                </Button>
+                <form.SubmitButton>
+                  <Mail aria-hidden="true" data-icon="inline-start" />
+                  Save draft
+                </form.SubmitButton>
+              </ButtonGroup>
+            </FieldGroup>
           </form.AppForm>
         </form>
         {preview.data ? (
@@ -178,9 +183,15 @@ function EmailCampaigns() {
           Saved campaigns
         </h2>
         {campaigns.length === 0 ? (
-          <p className="mt-4 border-y py-8 text-sm text-muted-foreground">
-            No product email drafts have been saved.
-          </p>
+          <Empty className="mt-4 min-h-40 rounded-none border-y p-6">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Mail aria-hidden="true" />
+              </EmptyMedia>
+              <EmptyTitle>No saved campaigns</EmptyTitle>
+              <EmptyDescription>No product email drafts have been saved.</EmptyDescription>
+            </EmptyHeader>
+          </Empty>
         ) : (
           <ItemGroup className="mt-4 gap-0 border-y">
             {campaigns.map((campaign) => (

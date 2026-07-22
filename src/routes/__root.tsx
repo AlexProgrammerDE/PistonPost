@@ -6,12 +6,22 @@ import {
   createRootRouteWithContext,
   useRouter,
 } from "@tanstack/react-router"
-import { ArrowLeft, House, RotateCcw } from "lucide-react"
+import { ArrowLeft, FileQuestion, House, RotateCcw, TriangleAlert } from "lucide-react"
 import { useEffect } from "react"
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { SITE_DESCRIPTION, createSeoHead } from "@/lib/seo"
 import { getPublicRuntimeConfig } from "@/server/public-config"
 
@@ -66,15 +76,21 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   }),
   notFoundComponent: () => (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
-      <div className="typeset typeset-post text-center">
-        <p className="text-sm font-medium text-muted-foreground">404</p>
-        <h1>Page not found</h1>
-        <p>The address may be wrong, or the page may have moved.</p>
-        <Button data-not-typeset className="mt-4" nativeButton={false} render={<Link to="/" />}>
-          <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-          Back to latest posts
-        </Button>
-      </div>
+      <Empty className="w-full max-w-xl border">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <FileQuestion aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>Page not found</EmptyTitle>
+          <EmptyDescription>The address may be wrong, or the page may have moved.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <Button nativeButton={false} render={<Link to="/" />}>
+            <ArrowLeft aria-hidden="true" data-icon="inline-start" />
+            Back to latest posts
+          </Button>
+        </EmptyContent>
+      </Empty>
     </main>
   ),
   errorComponent: RootError,
@@ -96,21 +112,23 @@ function RootError() {
 
   return (
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
-      <div className="typeset typeset-post text-center">
-        <p className="text-sm font-medium text-destructive">Something went wrong</p>
-        <h1>We couldn’t load this page.</h1>
-        <p>Try again. If the problem continues, return to the latest posts.</p>
-        <div className="not-typeset mt-4 flex justify-center gap-2">
-          <Button onClick={retry}>
-            <RotateCcw aria-hidden="true" data-icon="inline-start" />
-            Try again
-          </Button>
-          <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
-            <House aria-hidden="true" data-icon="inline-start" />
-            Go home
-          </Button>
-        </div>
-      </div>
+      <Alert variant="destructive" className="w-full max-w-xl">
+        <TriangleAlert aria-hidden="true" />
+        <AlertTitle>We couldn’t load this page</AlertTitle>
+        <AlertDescription className="grid gap-4">
+          <span>Try again. If the problem continues, return to the latest posts.</span>
+          <ButtonGroup aria-label="Page recovery actions">
+            <Button onClick={retry}>
+              <RotateCcw aria-hidden="true" data-icon="inline-start" />
+              Try again
+            </Button>
+            <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+              <House aria-hidden="true" data-icon="inline-start" />
+              Go home
+            </Button>
+          </ButtonGroup>
+        </AlertDescription>
+      </Alert>
     </main>
   )
 }

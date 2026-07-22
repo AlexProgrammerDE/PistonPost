@@ -2,7 +2,7 @@
 
 import { createFormHook, createFormHookContexts } from "@tanstack/react-form"
 import { Plus, Tag, type LucideIcon } from "lucide-react"
-import { lazy, Suspense, useState, type ComponentProps } from "react"
+import { lazy, Suspense, useState, type ComponentProps, type ReactNode } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput } from "@/components/ui/combobox"
@@ -14,6 +14,12 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
@@ -27,6 +33,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { cn } from "@/lib/utils"
 
 import { addTagInputValues } from "./tag-input-state"
 
@@ -99,6 +106,56 @@ function TextareaField({
         {...props}
       />
       {description ? <FieldDescription>{description}</FieldDescription> : null}
+      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+    </Field>
+  )
+}
+
+function ComposerTextareaField({
+  label,
+  description,
+  actions,
+  className,
+  maxLength,
+  ...props
+}: FieldChromeProps &
+  Omit<ComponentProps<typeof InputGroupTextarea>, "value" | "onChange" | "onBlur"> & {
+    actions: ReactNode
+  }) {
+  const field = useFieldContext<string>()
+  const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const descriptionId = description ? `${field.name}-description` : undefined
+
+  return (
+    <Field data-invalid={invalid}>
+      <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
+      <InputGroup>
+        <InputGroupTextarea
+          id={field.name}
+          name={field.name}
+          value={field.state.value}
+          maxLength={maxLength}
+          onBlur={field.handleBlur}
+          onChange={(event) => field.handleChange(event.currentTarget.value)}
+          aria-describedby={descriptionId}
+          aria-invalid={invalid}
+          className={cn("min-h-24 resize-y", className)}
+          {...props}
+        />
+        <InputGroupAddon align="block-end" className="flex-wrap justify-end border-t">
+          {description ? (
+            <InputGroupText id={descriptionId} className="mr-auto text-xs whitespace-normal">
+              {description}
+            </InputGroupText>
+          ) : null}
+          {typeof maxLength === "number" ? (
+            <InputGroupText className="text-xs tabular-nums">
+              {field.state.value.length.toLocaleString()} / {maxLength.toLocaleString()}
+            </InputGroupText>
+          ) : null}
+          {actions}
+        </InputGroupAddon>
+      </InputGroup>
       {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
     </Field>
   )
@@ -334,6 +391,7 @@ export const { useAppForm, withFieldGroup, withForm } = createFormHook({
   fieldComponents: {
     TextField,
     TextareaField,
+    ComposerTextareaField,
     MarkdownField,
     SelectField,
     ChoiceField,

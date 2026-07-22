@@ -31,9 +31,14 @@ import { MarkdownContent } from "@/components/MarkdownContent"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupText,
+  InputGroupTextarea,
+} from "@/components/ui/input-group"
 import { Kbd } from "@/components/ui/kbd"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import {
   applyMarkdownCommand,
@@ -41,9 +46,10 @@ import {
   type MarkdownCommand,
   type MarkdownEdit,
 } from "@/lib/markdown-editor"
+import { cn } from "@/lib/utils"
 
 type MarkdownEditorProps = Omit<
-  ComponentProps<typeof Textarea>,
+  ComponentProps<typeof InputGroupTextarea>,
   "onChange" | "value" | "defaultValue"
 > & {
   readonly value: string
@@ -118,6 +124,7 @@ export function MarkdownEditor({
   onPaste,
   maxLength,
   disabled,
+  className,
   ...props
 }: MarkdownEditorProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -179,70 +186,78 @@ export function MarkdownEditor({
 
   return (
     <Tabs value={mode} onValueChange={setMode} className="gap-3">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <TabsList variant="line" aria-label="Markdown editor view">
-          <TabsTrigger value="write">
-            <SquarePen aria-hidden="true" data-icon="inline-start" />
-            Write
-          </TabsTrigger>
-          <TabsTrigger value="preview">
-            <Eye aria-hidden="true" data-icon="inline-start" />
-            Preview
-          </TabsTrigger>
-        </TabsList>
-        <p className="text-xs text-muted-foreground">
-          {value.length.toLocaleString()} / {maxLength?.toLocaleString() ?? "∞"}
-        </p>
-      </div>
+      <TabsList variant="line" aria-label="Markdown editor view">
+        <TabsTrigger value="write">
+          <SquarePen aria-hidden="true" data-icon="inline-start" />
+          Write
+        </TabsTrigger>
+        <TabsTrigger value="preview">
+          <Eye aria-hidden="true" data-icon="inline-start" />
+          Preview
+        </TabsTrigger>
+      </TabsList>
 
-      <TabsContent value="write" className="grid gap-2">
-        <TooltipProvider>
-          <div
-            role="toolbar"
-            aria-label="Markdown formatting"
-            className="flex flex-wrap items-center gap-2"
-          >
-            {toolbarGroups.map((group) => (
-              <ButtonGroup key={group.label} aria-label={group.label}>
-                {group.actions.map(({ command, icon: Icon, label, shortcut }) => (
-                  <Tooltip key={command}>
-                    <TooltipTrigger
-                      render={
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="icon-sm"
-                          aria-label={label}
-                          aria-keyshortcuts={shortcut?.accessible}
-                          disabled={disabled}
-                          onClick={() => runCommand(command)}
-                        />
-                      }
-                    >
-                      <Icon aria-hidden="true" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {label}
-                      {shortcut ? <Kbd>{shortcut.display}</Kbd> : null}
-                    </TooltipContent>
-                  </Tooltip>
+      <TabsContent value="write">
+        <InputGroup>
+          <InputGroupTextarea
+            {...props}
+            ref={textareaRef}
+            value={value}
+            maxLength={maxLength}
+            disabled={disabled}
+            className={cn("min-h-72 resize-y", className)}
+            onBlur={onBlur}
+            onChange={(event) => onValueChange(event.currentTarget.value)}
+            onKeyDown={handleShortcut}
+            onPaste={handlePaste}
+          />
+          <InputGroupAddon align="block-start" className="border-b">
+            <TooltipProvider>
+              <div
+                role="toolbar"
+                aria-label="Markdown formatting"
+                className="flex flex-wrap items-center gap-2"
+              >
+                {toolbarGroups.map((group) => (
+                  <ButtonGroup key={group.label} aria-label={group.label}>
+                    {group.actions.map(({ command, icon: Icon, label, shortcut }) => (
+                      <Tooltip key={command}>
+                        <TooltipTrigger
+                          render={
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="icon-sm"
+                              aria-label={label}
+                              aria-keyshortcuts={shortcut?.accessible}
+                              disabled={disabled}
+                              onClick={() => runCommand(command)}
+                            />
+                          }
+                        >
+                          <Icon aria-hidden="true" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          {label}
+                          {shortcut ? <Kbd>{shortcut.display}</Kbd> : null}
+                        </TooltipContent>
+                      </Tooltip>
+                    ))}
+                  </ButtonGroup>
                 ))}
-              </ButtonGroup>
-            ))}
-          </div>
-        </TooltipProvider>
-        <Textarea
-          {...props}
-          ref={textareaRef}
-          value={value}
-          maxLength={maxLength}
-          disabled={disabled}
-          className="min-h-72 resize-y"
-          onBlur={onBlur}
-          onChange={(event) => onValueChange(event.currentTarget.value)}
-          onKeyDown={handleShortcut}
-          onPaste={handlePaste}
-        />
+              </div>
+            </TooltipProvider>
+          </InputGroupAddon>
+          <InputGroupAddon align="block-end" className="flex-wrap justify-between border-t">
+            <InputGroupText className="min-w-0 flex-1 text-xs whitespace-normal">
+              GitHub-flavored Markdown is supported. The toolbar also adds spoilers, details, and
+              callouts. Paste a supported media link on an empty line to add an embed.
+            </InputGroupText>
+            <InputGroupText className="text-xs tabular-nums">
+              {value.length.toLocaleString()} / {maxLength?.toLocaleString() ?? "∞"}
+            </InputGroupText>
+          </InputGroupAddon>
+        </InputGroup>
       </TabsContent>
 
       <TabsContent value="preview" className="min-h-72 border bg-background p-4">
@@ -257,10 +272,6 @@ export function MarkdownEditor({
           </Empty>
         )}
       </TabsContent>
-      <p className="text-xs text-muted-foreground">
-        GitHub-flavored Markdown is supported. The toolbar also adds spoilers, details, and
-        callouts. Paste a supported media link on an empty line to add an embed.
-      </p>
     </Tabs>
   )
 }

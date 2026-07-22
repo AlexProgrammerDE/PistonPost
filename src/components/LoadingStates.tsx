@@ -1,3 +1,5 @@
+import { Field, FieldGroup } from "@/components/ui/field"
+import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import {
@@ -117,16 +119,30 @@ function DiscussionPlaceholder() {
       </div>
       <div className="mt-10 grid gap-8">
         <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-24 w-full" />
-        {generateN(2).map((identity) => (
-          <div key={identity} className="grid grid-cols-[auto_1fr] gap-3 border-b py-5">
-            <Skeleton className="size-10 rounded-full" />
-            <div className="grid gap-2">
-              <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-4 w-full" />
-            </div>
-          </div>
-        ))}
+        <FieldGroup className="gap-3">
+          <Field>
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-32 w-full" />
+          </Field>
+        </FieldGroup>
+        <ItemGroup className="gap-0 border-y">
+          {generateN(2).map((identity) => (
+            <Item
+              key={identity}
+              role="listitem"
+              variant="outline"
+              className="items-start rounded-none border-x-0 border-t-0 px-0 py-5 last:border-b-0"
+            >
+              <ItemMedia>
+                <Skeleton className="size-10 rounded-full" />
+              </ItemMedia>
+              <ItemContent className="min-w-0 gap-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-4 w-full" />
+              </ItemContent>
+            </Item>
+          ))}
+        </ItemGroup>
       </div>
     </div>
   )
@@ -175,10 +191,13 @@ export function DiscussionViewerSkeleton() {
 
 export function CommentComposerSkeleton() {
   return (
-    <LoadingRegion label="Loading comment controls…" className="grid gap-3">
-      <Skeleton className="h-4 w-28" />
-      <Skeleton className="h-24 w-full" />
-      <Skeleton className="ml-auto h-9 w-32" />
+    <LoadingRegion label="Loading comment controls…">
+      <FieldGroup>
+        <Field>
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-32 w-full" />
+        </Field>
+      </FieldGroup>
     </LoadingRegion>
   )
 }
@@ -191,20 +210,24 @@ export function ManagementPageSkeleton() {
           <Skeleton className="h-9 w-40" />
           <Skeleton className="h-4 w-72 max-w-full" />
         </header>
-        <div className="border-y">
+        <ItemGroup className="gap-0 border-y">
           {generateN(5).map((identity) => (
-            <div
+            <Item
               key={identity}
-              className="grid gap-4 border-b py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+              role="listitem"
+              variant="outline"
+              className="rounded-none border-x-0 border-t-0 px-0 py-5 last:border-b-0"
             >
-              <div className="grid gap-3">
+              <ItemContent className="min-w-0 gap-3">
                 <Skeleton className="h-5 w-2/3" />
                 <Skeleton className="h-5 w-80 max-w-full" />
-              </div>
-              <Skeleton className="h-8 w-20" />
-            </div>
+              </ItemContent>
+              <ItemActions>
+                <Skeleton className="h-8 w-20" />
+              </ItemActions>
+            </Item>
           ))}
-        </div>
+        </ItemGroup>
       </LoadingRegion>
     </main>
   )
@@ -218,15 +241,17 @@ export function FormPageSkeleton() {
           <Skeleton className="h-9 w-48" />
           <Skeleton className="h-4 w-full max-w-xl" />
         </header>
-        <div className="grid gap-7">
+        <FieldGroup>
           {generateN(4).map((identity) => (
-            <div key={identity} className="grid gap-2">
+            <Field key={identity}>
               <Skeleton className="h-4 w-24" />
               <Skeleton className={identity === 2 ? "h-28 w-full" : "h-10 w-full"} />
-            </div>
+            </Field>
           ))}
-          <Skeleton className="ml-auto h-9 w-28" />
-        </div>
+          <Field orientation="horizontal" className="justify-end">
+            <Skeleton className="h-9 w-28" />
+          </Field>
+        </FieldGroup>
       </LoadingRegion>
     </main>
   )
@@ -253,14 +278,16 @@ export function SettingsLayoutSkeleton() {
 
 function SettingsPanelPlaceholder() {
   return (
-    <div className="grid max-w-3xl gap-6">
+    <div className="flex max-w-3xl flex-col gap-6">
       <Skeleton className="h-7 w-40" />
-      {generateN(3).map((identity) => (
-        <div key={identity} className="grid gap-2">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      ))}
+      <FieldGroup className="gap-6">
+        {generateN(3).map((identity) => (
+          <Field key={identity}>
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="h-10 w-full" />
+          </Field>
+        ))}
+      </FieldGroup>
     </div>
   )
 }
@@ -281,20 +308,24 @@ export function AdminOverviewSkeleton() {
           <Skeleton className="h-9 w-56" />
           <Skeleton className="h-4 w-96 max-w-full" />
         </header>
-        <div className="border-y">
+        <ItemGroup className="gap-0 border-y">
           {generateN(6).map((identity) => (
-            <div
+            <Item
               key={identity}
-              className="grid gap-3 border-b px-1 py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-3"
+              role="listitem"
+              variant="outline"
+              className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
             >
-              <div className="grid gap-2">
+              <ItemContent className="min-w-0 gap-2">
                 <Skeleton className="h-5 w-36" />
                 <Skeleton className="h-4 w-80 max-w-full" />
-              </div>
-              <Skeleton className="h-5 w-10" />
-            </div>
+              </ItemContent>
+              <ItemActions>
+                <Skeleton className="h-5 w-10" />
+              </ItemActions>
+            </Item>
           ))}
-        </div>
+        </ItemGroup>
       </LoadingRegion>
     </main>
   )
@@ -334,15 +365,17 @@ export function AuthPageSkeleton() {
     <main className="mx-auto flex min-h-[calc(100svh-8rem)] w-full max-w-md items-center px-5 py-12 sm:px-0">
       <LoadingRegion label="Loading account access…" className="grid w-full gap-6">
         <Skeleton className="mx-auto h-9 w-44" />
-        <div className="grid gap-5">
+        <FieldGroup className="gap-5">
           {generateN(3).map((identity) => (
-            <div key={identity} className="grid gap-2">
+            <Field key={identity}>
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-10 w-full" />
-            </div>
+            </Field>
           ))}
-          <Skeleton className="h-10 w-full" />
-        </div>
+          <Field>
+            <Skeleton className="h-10 w-full" />
+          </Field>
+        </FieldGroup>
       </LoadingRegion>
     </main>
   )
