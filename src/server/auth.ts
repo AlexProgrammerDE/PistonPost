@@ -3,6 +3,7 @@ import { Effect, Layer } from "effect"
 
 import { createAuth } from "@/auth/server"
 import { createD1Database } from "@/db/d1-database"
+import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import {
   cloudflareEmailTransportLayer,
@@ -15,7 +16,6 @@ import { securityPushJob, type PushDeliveryJob } from "@/push/jobs"
 import type { AppRequestContext } from "../server"
 import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
-import { listActivePushSubscriptionIds } from "./push-subscriptions"
 
 async function readSecret(secret: string | SecretsStoreSecret, name: string) {
   const value = (typeof secret === "string" ? secret : await secret.get()).trim()

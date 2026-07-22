@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, asc, count, desc, eq, gt, isNull, like, lt, or, sql, type SQL } from "drizzle-orm"
 import { z } from "zod"
 
+import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { moderationEmailJob } from "@/email"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -19,7 +20,6 @@ import {
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
-import { listActivePushSubscriptionIds } from "./push-subscriptions"
 
 export const getMyPosts = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])

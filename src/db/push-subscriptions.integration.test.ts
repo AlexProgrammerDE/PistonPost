@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test"
 
 import { createMigratedTestDatabase, createUser, schema } from "@/db"
 
+import { listActivePushSubscriptionIds } from "./push-subscription-queries"
+
 const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
 
 afterEach(() => {
@@ -40,6 +42,44 @@ function createSubscription(id: string, userId: string, sessionId: string, endpo
 }
 
 describe("push subscription storage", () => {
+  it("lists only subscriptions backed by an active session", async () => {
+    const database = createDatabase()
+    const now = Date.now()
+    database.insert(schema.user).values(createUser()).run()
+    database
+      .insert(schema.session)
+      .values([
+        {
+          ...createSession("active-session", "test-user"),
+          expiresAt: new Date(now + 60_000),
+        },
+        {
+          ...createSession("expired-session", "test-user"),
+          expiresAt: new Date(now - 60_000),
+        },
+      ])
+      .run()
+    database
+      .insert(schema.pushSubscriptions)
+      .values([
+        createSubscription("active", "test-user", "active-session", "a".repeat(64)),
+        {
+          ...createSubscription("disabled", "test-user", "active-session", "b".repeat(64)),
+          disabledAt: new Date(now),
+        },
+        {
+          ...createSubscription("expired", "test-user", "active-session", "c".repeat(64)),
+          expirationTime: new Date(now - 60_000),
+        },
+        createSubscription("revoked", "test-user", "expired-session", "d".repeat(64)),
+      ])
+      .run()
+
+    expect(await listActivePushSubscriptionIds(database, "test-user")).toEqual([
+      { subscriptionId: "active" },
+    ])
+  })
+
   it("removes a browser capability when its auth session is revoked", () => {
     const database = createDatabase()
     database.insert(schema.user).values(createUser()).run()

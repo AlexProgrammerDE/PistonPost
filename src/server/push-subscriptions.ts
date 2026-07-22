@@ -1,8 +1,9 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, eq, gt, isNull, or } from "drizzle-orm"
+import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 
 import type { D1DatabaseClient } from "@/db"
+import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import {
@@ -14,28 +15,6 @@ import { conflictFailure, invalidInputFailure } from "@/server/server-function-f
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const maxSubscriptionsPerUser = 10
-
-export async function listActivePushSubscriptionIds(
-  database: D1DatabaseClient,
-  recipientUserId: string,
-) {
-  const now = new Date()
-  return database
-    .select({ subscriptionId: schema.pushSubscriptions.id })
-    .from(schema.pushSubscriptions)
-    .innerJoin(schema.session, eq(schema.session.id, schema.pushSubscriptions.sessionId))
-    .where(
-      and(
-        eq(schema.pushSubscriptions.userId, recipientUserId),
-        isNull(schema.pushSubscriptions.disabledAt),
-        gt(schema.session.expiresAt, now),
-        or(
-          isNull(schema.pushSubscriptions.expirationTime),
-          gt(schema.pushSubscriptions.expirationTime, now),
-        ),
-      ),
-    )
-}
 
 async function activeSubscriptionCount(database: D1DatabaseClient, userId: string) {
   return (await listActivePushSubscriptionIds(database, userId)).length

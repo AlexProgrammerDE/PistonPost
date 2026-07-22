@@ -5,6 +5,7 @@ import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
 import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
+import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { commentInputSchema } from "@/domain"
 import { commentEmailJob, replyEmailJob } from "@/email"
@@ -12,7 +13,6 @@ import { FEED_HEART_BATCH_SIZE } from "@/lib/feed-heart-state"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { commentPushJob, replyPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { createRequestAuth } from "@/server/auth"
-import { listActivePushSubscriptionIds } from "@/server/push-subscriptions"
 import {
   forbiddenFailure,
   invalidInputFailure,
