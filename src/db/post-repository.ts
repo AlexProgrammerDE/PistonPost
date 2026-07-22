@@ -1,31 +1,28 @@
 import { and, desc, eq, lt, or } from "drizzle-orm"
-import type { BunSQLiteDatabase } from "drizzle-orm/bun-sqlite"
-import type { DrizzleD1Database } from "drizzle-orm/d1"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Effect } from "effect"
 
-import { type Post, RepositoryError, type PostRepositoryService } from "@/domain"
+import { RepositoryError, type PostRepositoryService } from "@/domain"
 
 import * as schema from "./schema"
 import { posts } from "./schema"
 
-type Database = BunSQLiteDatabase<typeof schema> | DrizzleD1Database<typeof schema>
+type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
 
-function toPost(row: typeof posts.$inferSelect): Post {
-  return {
-    id: row.id,
-    authorId: row.authorId,
-    type: row.type,
-    status: row.status,
-    visibility: row.visibility,
-    title: row.title,
-    textContent: row.textContent,
-    createdAt: row.createdAt,
-    updatedAt: row.updatedAt,
-    publishedAt: row.publishedAt,
-    deletedAt: row.deletedAt,
-    moderationReason: row.moderationReason,
-    version: row.version,
-  }
+const postColumns = {
+  id: posts.id,
+  authorId: posts.authorId,
+  type: posts.type,
+  status: posts.status,
+  visibility: posts.visibility,
+  title: posts.title,
+  textContent: posts.textContent,
+  createdAt: posts.createdAt,
+  updatedAt: posts.updatedAt,
+  publishedAt: posts.publishedAt,
+  deletedAt: posts.deletedAt,
+  moderationReason: posts.moderationReason,
+  version: posts.version,
 }
 
 function repositoryError(operation: string, cause: unknown) {
@@ -40,9 +37,12 @@ export function createPostRepository(database: Database): PostRepositoryService 
     findById: (id) =>
       Effect.tryPromise({
         try: async () => {
-          const rows = await database.select().from(posts).where(eq(posts.id, id)).limit(1)
-          const row = rows[0]
-          return row ? toPost(row) : null
+          const rows = await database
+            .select(postColumns)
+            .from(posts)
+            .where(eq(posts.id, id))
+            .limit(1)
+          return rows[0] ?? null
         },
         catch: (cause) => repositoryError("post.findById", cause),
       }),
@@ -64,12 +64,12 @@ export function createPostRepository(database: Database): PostRepositoryService 
             : undefined
 
           const rows = await database
-            .select()
+            .select(postColumns)
             .from(posts)
             .where(and(eq(posts.status, "published"), eq(posts.visibility, "public"), cursorFilter))
             .orderBy(desc(posts.publishedAt), desc(posts.id))
             .limit(Math.min(Math.max(limit, 1), 100))
-          return rows.map(toPost)
+          return rows
         },
         catch: (cause) => repositoryError("post.listPublic", cause),
       }),

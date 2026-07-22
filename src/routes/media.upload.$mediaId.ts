@@ -56,7 +56,15 @@ async function uploadImage({
 
   const database = createD1Database(context.env.DB)
   const asset = await database
-    .select()
+    .select({
+      id: schema.mediaAssets.id,
+      kind: schema.mediaAssets.kind,
+      status: schema.mediaAssets.status,
+      originalFilename: schema.mediaAssets.originalFilename,
+      mimeType: schema.mediaAssets.mimeType,
+      byteSize: schema.mediaAssets.byteSize,
+      providerMetadata: schema.mediaAssets.providerMetadata,
+    })
     .from(schema.mediaAssets)
     .where(
       and(eq(schema.mediaAssets.id, mediaId.data), eq(schema.mediaAssets.ownerId, session.user.id)),

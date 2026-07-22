@@ -26,6 +26,22 @@ import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 const MAX_IMAGES_PER_POST = 20
 const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
 
+const postColumns = {
+  id: schema.posts.id,
+  authorId: schema.posts.authorId,
+  type: schema.posts.type,
+  status: schema.posts.status,
+  visibility: schema.posts.visibility,
+  title: schema.posts.title,
+  textContent: schema.posts.textContent,
+  createdAt: schema.posts.createdAt,
+  updatedAt: schema.posts.updatedAt,
+  publishedAt: schema.posts.publishedAt,
+  deletedAt: schema.posts.deletedAt,
+  moderationReason: schema.posts.moderationReason,
+  version: schema.posts.version,
+}
+
 function nextPublicId() {
   return crypto.randomUUID().replaceAll("-", "").slice(0, 16)
 }
@@ -396,7 +412,7 @@ export const publishPost = createServerFn({ method: "POST" })
       throw new Error("You can publish up to 10 posts every 10 minutes.")
     }
     const post = await database
-      .select()
+      .select(postColumns)
       .from(schema.posts)
       .where(and(eq(schema.posts.id, data.id), eq(schema.posts.authorId, session.user.id)))
       .get()
@@ -462,7 +478,7 @@ export const getOwnedPostForEditing = createServerFn({ method: "GET" })
     const session = await requireRequestSession(context)
     const database = createD1Database(context.env.DB)
     const post = await database
-      .select()
+      .select(postColumns)
       .from(schema.posts)
       .where(eq(schema.posts.id, data.id))
       .get()
