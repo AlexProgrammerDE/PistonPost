@@ -1,9 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { Effect } from "effect"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
 import { createFollowRepository } from "@/db/follow-repository"
 import { listPublicPostReads } from "@/db/public-read-model"
 import {
@@ -13,8 +11,15 @@ import {
   tagSchema,
   usernameSchema,
 } from "@/domain"
+import { serverFunctionValidator } from "@/lib/server-function-error"
 import { createRequestAuth } from "@/server/auth"
-import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import {
+  forbiddenFailure,
+  notFoundFailure,
+  rateLimitedFailure,
+  runServerEffect,
+} from "@/server/server-function-failure"
+import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const followTargetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("user"), username: usernameSchema }),
@@ -43,11 +48,12 @@ export const getFollowingViewer = createServerFn({ method: "GET" }).handler(asyn
 })
 
 export const getFollowingFeed = createServerFn({ method: "GET" })
-  .validator(followingFeedInput)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(followingFeedInput))
   .handler(async ({ context, data }) => {
-    const session = await requireRequestSession(context)
-    const cursor = data.cursor ? await Effect.runPromise(decodePublicPostCursor(data.cursor)) : null
-    const page = await listPublicPostReads(createD1Database(context.env.DB), {
+    const { database, session } = context
+    const cursor = data.cursor ? await runServerEffect(decodePublicPostCursor(data.cursor)) : null
+    const page = await listPublicPostReads(database, {
       cursor,
       limit: data.limit,
       followingUserId: session.user.id,
@@ -60,13 +66,14 @@ export const getFollowingFeed = createServerFn({ method: "GET" })
   })
 
 export const getFollowState = createServerFn({ method: "GET" })
-  .validator(followTargetSchema)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(followTargetSchema))
   .handler(async ({ context, data }) => {
-    const session = await requireRequestSession(context)
-    const repository = createFollowRepository(createD1Database(context.env.DB))
+    const { database, session } = context
+    const repository = createFollowRepository(database)
 
     if (data.kind === "user") {
-      const state = await Effect.runPromise(
+      const state = await runServerEffect(
         repository.findUserFollow(session.user.id, normalize(data.username)),
       )
       return {
@@ -75,38 +82,38 @@ export const getFollowState = createServerFn({ method: "GET" })
       }
     }
 
-    const state = await Effect.runPromise(
+    const state = await runServerEffect(
       repository.findTagFollow(session.user.id, normalize(data.tag)),
     )
     return { canFollow: state !== null, following: state?.following ?? false }
   })
 
 export const setFollow = createServerFn({ method: "POST" })
-  .validator(setFollowSchema)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(setFollowSchema))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const rateLimit = await context.env.USER_RATE_LIMITER.limit({ key: session.user.id })
-    if (!rateLimit.success) throw new Error("The follow rate limit was reached.")
-    const repository = createFollowRepository(createD1Database(context.env.DB))
+    if (!rateLimit.success) throw rateLimitedFailure("The follow rate limit was reached.")
+    const repository = createFollowRepository(database)
 
     if (data.kind === "user") {
-      const state = await Effect.runPromise(
+      const state = await runServerEffect(
         repository.findUserFollow(session.user.id, normalize(data.username)),
       )
-      if (!state) throw new Error("The user was not found.")
+      if (!state) throw notFoundFailure("The user was not found.")
       if (!canFollowUser(session.user.id, state.targetId)) {
-        throw new Error("You cannot follow yourself.")
+        throw forbiddenFailure("You cannot follow yourself.")
       }
-      await Effect.runPromise(
+      await runServerEffect(
         repository.setUserFollow(session.user.id, state.targetId, data.following),
       )
     } else {
-      const state = await Effect.runPromise(
+      const state = await runServerEffect(
         repository.findTagFollow(session.user.id, normalize(data.tag)),
       )
-      if (!state) throw new Error("The tag was not found.")
-      await Effect.runPromise(
+      if (!state) throw notFoundFailure("The tag was not found.")
+      await runServerEffect(
         repository.setTagFollow(session.user.id, state.targetId, data.following),
       )
     }

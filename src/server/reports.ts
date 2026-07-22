@@ -1,14 +1,21 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { Effect } from "effect"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
+import { serverFunctionValidator } from "@/lib/server-function-error"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
+import {
+  conflictFailure,
+  notFoundFailure,
+  rateLimitedFailure,
+  runServerEffect,
+} from "@/server/server-function-failure"
+import {
+  administratorServerFunctionMiddleware,
+  authenticatedServerFunctionMiddleware,
+} from "@/server/server-function-middleware"
 import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
-
-import { assertMutationOrigin, requireAdministrator, requireRequestSession } from "./session"
 
 const reportReasonSchema = z.enum(["spam", "harassment", "illegal", "copyright", "other"])
 const reportTargetSchema = z.discriminatedUnion("type", [
@@ -18,23 +25,24 @@ const reportTargetSchema = z.discriminatedUnion("type", [
 ])
 
 export const createContentReport = createServerFn({ method: "POST" })
+  .middleware([authenticatedServerFunctionMiddleware])
   .validator(
-    z.object({
-      target: reportTargetSchema,
-      reason: reportReasonSchema,
-      details: z.string().trim().max(1000).default(""),
-      turnstileToken: turnstileTokenSchema,
-    }),
+    serverFunctionValidator(
+      z.object({
+        target: reportTargetSchema,
+        reason: reportReasonSchema,
+        details: z.string().trim().max(1000).default(""),
+        turnstileToken: turnstileTokenSchema,
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const limited = await context.env.USER_RATE_LIMITER.limit({ key: session.user.id })
-    if (!limited.success) throw new Error("The report rate limit was reached.")
-    await Effect.runPromise(
+    if (!limited.success) throw rateLimitedFailure("The report rate limit was reached.")
+    await runServerEffect(
       verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createReport),
     )
-    const database = createD1Database(context.env.DB)
 
     const targetExists =
       data.target.type === "post"
@@ -63,7 +71,7 @@ export const createContentReport = createServerFn({ method: "POST" })
                 eq(schema.profiles.normalizedUsername, data.target.id.toLocaleLowerCase("en-US")),
               )
               .get()
-    if (!targetExists) throw new Error("The content could not be found.")
+    if (!targetExists) throw notFoundFailure("The content could not be found.")
 
     const targetId =
       data.target.type === "profile" ? data.target.id.toLocaleLowerCase("en-US") : data.target.id
@@ -79,7 +87,7 @@ export const createContentReport = createServerFn({ method: "POST" })
         ),
       )
       .get()
-    if (existing) throw new Error("You already reported this content.")
+    if (existing) throw conflictFailure("You already reported this content.")
 
     const id = crypto.randomUUID()
     await database.insert(schema.contentReports).values({
@@ -94,23 +102,26 @@ export const createContentReport = createServerFn({ method: "POST" })
   })
 
 export const resolveContentReport = createServerFn({ method: "POST" })
+  .middleware([administratorServerFunctionMiddleware])
   .validator(
-    z.object({
-      id: z.string().uuid(),
-      resolution: z.enum(["resolved", "dismissed"]),
-    }),
+    serverFunctionValidator(
+      z.object({
+        id: z.string().uuid(),
+        resolution: z.enum(["resolved", "dismissed"]),
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireAdministrator(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const report = await database
       .select({ id: schema.contentReports.id, status: schema.contentReports.status })
       .from(schema.contentReports)
       .where(eq(schema.contentReports.id, data.id))
       .get()
-    if (!report) throw new Error("The report was not found.")
-    if (report.status !== "open") throw new Error("This report has already been reviewed.")
+    if (!report) throw notFoundFailure("The report was not found.")
+    if (report.status !== "open") {
+      throw conflictFailure("This report has already been reviewed.")
+    }
 
     const now = new Date()
     await database.batch([

@@ -2,14 +2,16 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, eq, gt, isNull, or } from "drizzle-orm"
 import { z } from "zod"
 
-import { createD1Database, type D1DatabaseClient } from "@/db"
+import type { D1DatabaseClient } from "@/db"
 import * as schema from "@/db/schema"
+import { serverFunctionValidator } from "@/lib/server-function-error"
 import {
   hashPushEndpoint,
   pushSubscriptionInputSchema,
   type PushSubscriptionInput,
 } from "@/push/subscription"
-import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import { conflictFailure, invalidInputFailure } from "@/server/server-function-failure"
+import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const maxSubscriptionsPerUser = 10
 
@@ -46,7 +48,7 @@ async function saveSubscription(
   input: PushSubscriptionInput,
 ) {
   if (input.expirationTime !== null && input.expirationTime <= Date.now()) {
-    throw new Error("This push subscription has already expired.")
+    throw invalidInputFailure("This push subscription has already expired.")
   }
   const endpointHash = await hashPushEndpoint(input.endpoint)
   const existing = await database
@@ -58,7 +60,7 @@ async function saveSubscription(
     (!existing || existing.userId !== userId) &&
     (await activeSubscriptionCount(database, userId)) >= maxSubscriptionsPerUser
   ) {
-    throw new Error("Remove another push-enabled device before adding this one.")
+    throw conflictFailure("Remove another push-enabled device before adding this one.")
   }
 
   const now = new Date()
@@ -93,29 +95,24 @@ async function saveSubscription(
 }
 
 export const upsertPushSubscription = createServerFn({ method: "POST" })
-  .validator(pushSubscriptionInputSchema)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(pushSubscriptionInputSchema))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const current = await requireRequestSession(context)
-    return saveSubscription(
-      createD1Database(context.env.DB),
-      current.user.id,
-      current.session.id,
-      data,
-    )
+    const { database, session } = context
+    return saveSubscription(database, session.user.id, session.session.id, data)
   })
 
 export const removePushSubscription = createServerFn({ method: "POST" })
-  .validator(z.object({ endpoint: z.string().trim().min(1).max(2048) }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({ endpoint: z.string().trim().min(1).max(2048) })))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const current = await requireRequestSession(context)
+    const { database, session } = context
     const endpointHash = await hashPushEndpoint(data.endpoint)
-    await createD1Database(context.env.DB)
+    await database
       .delete(schema.pushSubscriptions)
       .where(
         and(
-          eq(schema.pushSubscriptions.userId, current.user.id),
+          eq(schema.pushSubscriptions.userId, session.user.id),
           eq(schema.pushSubscriptions.endpointHash, endpointHash),
         ),
       )

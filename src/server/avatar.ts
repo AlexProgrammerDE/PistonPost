@@ -2,10 +2,11 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
+import { serverFunctionValidator } from "@/lib/server-function-error"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
-import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import { notFoundFailure, rateLimitedFailure } from "@/server/server-function-failure"
+import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 import { mediaCleanupJob } from "./jobs"
 
@@ -16,24 +17,25 @@ const avatarIntentInput = z.object({
 })
 
 export const createAvatarUploadIntent = createServerFn({ method: "POST" })
-  .validator(avatarIntentInput)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(avatarIntentInput))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
       key: `avatar-intent:${session.user.id}`,
     })
     if (!rateLimit.success) {
-      throw new Error("Too many uploads were started at once. Wait a minute and try again.")
+      throw rateLimitedFailure(
+        "Too many uploads were started at once. Wait a minute and try again.",
+      )
     }
 
-    const database = createD1Database(context.env.DB)
     const profile = await database
       .select({ userId: schema.profiles.userId })
       .from(schema.profiles)
       .where(eq(schema.profiles.userId, session.user.id))
       .get()
-    if (!profile) throw new Error("Your profile could not be found.")
+    if (!profile) throw notFoundFailure("Your profile could not be found.")
 
     const assetId = crypto.randomUUID()
     await database.insert(schema.mediaAssets).values({
@@ -56,11 +58,10 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
   })
 
 export const cancelAvatarUpload = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().uuid() }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const asset = await database
       .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
       .from(schema.mediaAssets)
@@ -72,7 +73,7 @@ export const cancelAvatarUpload = createServerFn({ method: "POST" })
         ),
       )
       .get()
-    if (!asset) throw new Error("The avatar upload was not found.")
+    if (!asset) throw notFoundFailure("The avatar upload was not found.")
     if (asset.status === "ready" || asset.status === "deleted") return { cancelled: false }
 
     const cleanup = mediaCleanupJob(asset.id)
@@ -85,11 +86,10 @@ export const cancelAvatarUpload = createServerFn({ method: "POST" })
   })
 
 export const deleteManagedAvatar = createServerFn({ method: "POST" })
-  .validator(z.object({}))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({})))
   .handler(async ({ context }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const profile = await database
       .select({
         avatarMediaId: schema.profiles.avatarMediaId,
@@ -97,7 +97,7 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
       .from(schema.profiles)
       .where(eq(schema.profiles.userId, session.user.id))
       .get()
-    if (!profile) throw new Error("Your profile could not be found.")
+    if (!profile) throw notFoundFailure("Your profile could not be found.")
 
     const cleanup = profile.avatarMediaId ? mediaCleanupJob(profile.avatarMediaId) : null
     await database.batch([

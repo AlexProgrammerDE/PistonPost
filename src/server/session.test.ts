@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { isActiveAdministrator } from "./session"
+import { isActiveAdministrator } from "./request-session"
 
 describe("administrator authorization", () => {
   test("uses fresh database role state instead of cached client state", () => {

@@ -2,11 +2,11 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, desc, eq, sql } from "drizzle-orm"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { productEmailBatchJob, productUpdateMessage, renderEmail } from "@/email"
-
-import { assertMutationOrigin, requireAdministrator } from "./session"
+import { serverFunctionValidator } from "@/lib/server-function-error"
+import { conflictFailure, notFoundFailure } from "@/server/server-function-failure"
+import { administratorServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const campaignInput = z
   .object({
@@ -46,43 +46,42 @@ function campaignContent(input: EmailCampaignInput, baseURL: string) {
   })
 }
 
-export const getEmailCampaigns = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  await requireAdministrator(context)
-  const database = createD1Database(context.env.DB)
-  return database
-    .select({
-      id: schema.emailCampaigns.id,
-      subject: schema.emailCampaigns.subject,
-      preview: schema.emailCampaigns.preview,
-      heading: schema.emailCampaigns.heading,
-      message: schema.emailCampaigns.message,
-      actionLabel: schema.emailCampaigns.actionLabel,
-      actionUrl: schema.emailCampaigns.actionUrl,
-      status: schema.emailCampaigns.status,
-      createdAt: schema.emailCampaigns.createdAt,
-      sentAt: schema.emailCampaigns.sentAt,
-      queued: sql<number>`(select count(*) from email_campaign_deliveries where email_campaign_deliveries.campaign_id = ${schema.emailCampaigns.id})`,
-      sent: sql<number>`(select count(*) from email_campaign_deliveries where email_campaign_deliveries.campaign_id = ${schema.emailCampaigns.id} and email_campaign_deliveries.status = 'sent')`,
-      skipped: sql<number>`(select count(*) from email_campaign_deliveries where email_campaign_deliveries.campaign_id = ${schema.emailCampaigns.id} and email_campaign_deliveries.status = 'skipped')`,
-    })
-    .from(schema.emailCampaigns)
-    .orderBy(desc(schema.emailCampaigns.createdAt))
-    .limit(100)
-})
+export const getEmailCampaigns = createServerFn({ method: "GET" })
+  .middleware([administratorServerFunctionMiddleware])
+  .handler(async ({ context }) =>
+    context.database
+      .select({
+        id: schema.emailCampaigns.id,
+        subject: schema.emailCampaigns.subject,
+        preview: schema.emailCampaigns.preview,
+        heading: schema.emailCampaigns.heading,
+        message: schema.emailCampaigns.message,
+        actionLabel: schema.emailCampaigns.actionLabel,
+        actionUrl: schema.emailCampaigns.actionUrl,
+        status: schema.emailCampaigns.status,
+        createdAt: schema.emailCampaigns.createdAt,
+        sentAt: schema.emailCampaigns.sentAt,
+        queued: sql<number>`(select count(*) from email_campaign_deliveries where email_campaign_deliveries.campaign_id = ${schema.emailCampaigns.id})`,
+        sent: sql<number>`(select count(*) from email_campaign_deliveries where email_campaign_deliveries.campaign_id = ${schema.emailCampaigns.id} and email_campaign_deliveries.status = 'sent')`,
+        skipped: sql<number>`(select count(*) from email_campaign_deliveries where email_campaign_deliveries.campaign_id = ${schema.emailCampaigns.id} and email_campaign_deliveries.status = 'skipped')`,
+      })
+      .from(schema.emailCampaigns)
+      .orderBy(desc(schema.emailCampaigns.createdAt))
+      .limit(100),
+  )
 
 export const previewEmailCampaign = createServerFn({ method: "POST" })
-  .validator(campaignInput)
+  .middleware([administratorServerFunctionMiddleware])
+  .validator(serverFunctionValidator(campaignInput))
   .handler(async ({ context, data }) => {
-    await requireAdministrator(context)
     return renderEmail(campaignContent(data, context.runtime.config.PUBLIC_APP_URL.toString()))
   })
 
 export const createEmailCampaign = createServerFn({ method: "POST" })
-  .validator(campaignInput)
+  .middleware([administratorServerFunctionMiddleware])
+  .validator(serverFunctionValidator(campaignInput))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireAdministrator(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const id = crypto.randomUUID()
     await database.batch([
       database.insert(schema.emailCampaigns).values({
@@ -108,18 +107,19 @@ export const createEmailCampaign = createServerFn({ method: "POST" })
   })
 
 export const sendEmailCampaign = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().uuid() }))
+  .middleware([administratorServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireAdministrator(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const campaign = await database
       .select({ status: schema.emailCampaigns.status })
       .from(schema.emailCampaigns)
       .where(eq(schema.emailCampaigns.id, data.id))
       .get()
-    if (!campaign) throw new Error("The email campaign was not found.")
-    if (campaign.status !== "draft") throw new Error("This campaign has already been sent.")
+    if (!campaign) throw notFoundFailure("The email campaign was not found.")
+    if (campaign.status !== "draft") {
+      throw conflictFailure("This campaign has already been sent.")
+    }
     const job = productEmailBatchJob(data.id, null)
     await database.batch([
       database

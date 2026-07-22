@@ -9,10 +9,17 @@ import * as schema from "@/db/schema"
 import { commentInputSchema } from "@/domain"
 import { commentEmailJob, replyEmailJob } from "@/email"
 import { FEED_HEART_BATCH_SIZE } from "@/lib/feed-heart-state"
+import { serverFunctionValidator } from "@/lib/server-function-error"
 import { commentPushJob, replyPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { createRequestAuth } from "@/server/auth"
 import { listActivePushSubscriptionIds } from "@/server/push-subscriptions"
-import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import {
+  forbiddenFailure,
+  invalidInputFailure,
+  notFoundFailure,
+  rateLimitedFailure,
+} from "@/server/server-function-failure"
+import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const commentCursorSchema = z.object({ createdAt: z.number(), id: z.string() })
 
@@ -37,11 +44,13 @@ async function optionalViewer(context: Parameters<typeof createRequestAuth>[0]) 
 
 export const getDiscussion = createServerFn({ method: "GET" })
   .validator(
-    z.object({
-      postId: z.string().min(1).max(64),
-      cursor: z.string().max(512).optional(),
-      limit: z.number().int().min(1).max(50).default(25),
-    }),
+    serverFunctionValidator(
+      z.object({
+        postId: z.string().min(1).max(64),
+        cursor: z.string().max(512).optional(),
+        limit: z.number().int().min(1).max(50).default(25),
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
     const database = createD1Database(context.env.DB)
@@ -50,7 +59,9 @@ export const getDiscussion = createServerFn({ method: "GET" })
       .from(schema.posts)
       .where(eq(schema.posts.id, data.postId))
       .get()
-    if (!post || post.status !== "published") throw new Error("The post was not found.")
+    if (!post || post.status !== "published") {
+      throw notFoundFailure("The post was not found.")
+    }
     const cursor = decodeCommentCursor(data.cursor)
     const rows = await database
       .select({
@@ -96,7 +107,7 @@ export const getDiscussion = createServerFn({ method: "GET" })
   })
 
 export const getDiscussionViewer = createServerFn({ method: "GET" })
-  .validator(z.object({ postId: z.string().min(1).max(64) }))
+  .validator(serverFunctionValidator(z.object({ postId: z.string().min(1).max(64) })))
   .handler(async ({ context, data }) => {
     const viewer = await optionalViewer(context)
     if (!viewer) {
@@ -108,7 +119,7 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
       .from(schema.posts)
       .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
       .get()
-    if (!post) throw new Error("The post was not found.")
+    if (!post) throw notFoundFailure("The post was not found.")
     const heart = await database
       .select({ postId: schema.reactions.postId })
       .from(schema.reactions)
@@ -123,9 +134,11 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
 
 export const getFeedHeartStates = createServerFn({ method: "GET" })
   .validator(
-    z.object({
-      postIds: z.array(z.string().min(1).max(64)).min(1).max(FEED_HEART_BATCH_SIZE),
-    }),
+    serverFunctionValidator(
+      z.object({
+        postIds: z.array(z.string().min(1).max(64)).min(1).max(FEED_HEART_BATCH_SIZE),
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
     const viewer = await optionalViewer(context)
@@ -138,19 +151,20 @@ export const getFeedHeartStates = createServerFn({ method: "GET" })
   })
 
 export const setHeart = createServerFn({ method: "POST" })
-  .validator(z.object({ postId: z.string().min(1).max(64), active: z.boolean() }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(
+    serverFunctionValidator(z.object({ postId: z.string().min(1).max(64), active: z.boolean() })),
+  )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const limited = await context.env.REACTION_RATE_LIMITER.limit({ key: session.user.id })
-    if (!limited.success) throw new Error("The heart rate limit was reached.")
-    const database = createD1Database(context.env.DB)
+    if (!limited.success) throw rateLimitedFailure("The heart rate limit was reached.")
     const post = await database
       .select({ id: schema.posts.id })
       .from(schema.posts)
       .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
       .get()
-    if (!post) throw new Error("The post was not found.")
+    if (!post) throw notFoundFailure("The post was not found.")
     if (data.active) {
       await database
         .insert(schema.reactions)
@@ -172,25 +186,26 @@ export const setHeart = createServerFn({ method: "POST" })
   })
 
 export const createComment = createServerFn({ method: "POST" })
+  .middleware([authenticatedServerFunctionMiddleware])
   .validator(
-    z.object({
-      postId: z.string().min(1).max(64),
-      content: commentInputSchema,
-      parentCommentId: z.string().uuid().optional(),
-    }),
+    serverFunctionValidator(
+      z.object({
+        postId: z.string().min(1).max(64),
+        content: commentInputSchema,
+        parentCommentId: z.string().uuid().optional(),
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const limited = await context.env.COMMENT_RATE_LIMITER.limit({ key: session.user.id })
-    if (!limited.success) throw new Error("The comment rate limit was reached.")
-    const database = createD1Database(context.env.DB)
+    if (!limited.success) throw rateLimitedFailure("The comment rate limit was reached.")
     const post = await database
       .select({ id: schema.posts.id, authorId: schema.posts.authorId })
       .from(schema.posts)
       .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
       .get()
-    if (!post) throw new Error("The post was not found.")
+    if (!post) throw notFoundFailure("The post was not found.")
     const parent = data.parentCommentId
       ? await database
           .select({
@@ -209,9 +224,9 @@ export const createComment = createServerFn({ method: "POST" })
           .get()
       : null
     if (data.parentCommentId && (!parent || parent.postId !== post.id)) {
-      throw new Error("The comment you are replying to was not found.")
+      throw notFoundFailure("The comment you are replying to was not found.")
     }
-    if (parent?.parentId) throw new Error("Replies can only be one level deep.")
+    if (parent?.parentId) throw invalidInputFailure("Replies can only be one level deep.")
     const id = crypto.randomUUID()
     const jobs: Array<
       ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob> | PushDeliveryJob
@@ -258,19 +273,18 @@ export const createComment = createServerFn({ method: "POST" })
   })
 
 export const deleteComment = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().uuid() }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const comment = await database
       .select({ id: schema.comments.id, authorId: schema.comments.authorId })
       .from(schema.comments)
       .where(eq(schema.comments.id, data.id))
       .get()
-    if (!comment) throw new Error("The comment was not found.")
+    if (!comment) throw notFoundFailure("The comment was not found.")
     if (comment.authorId !== session.user.id && session.user.role !== "admin") {
-      throw new Error("You cannot delete this comment.")
+      throw forbiddenFailure("You cannot delete this comment.")
     }
     await database
       .update(schema.comments)

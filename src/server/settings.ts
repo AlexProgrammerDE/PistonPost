@@ -2,15 +2,16 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, eq, ne } from "drizzle-orm"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { usernameSchema } from "@/domain"
-import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import { serverFunctionValidator } from "@/lib/server-function-error"
+import { conflictFailure, notFoundFailure } from "@/server/server-function-failure"
+import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
-export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
-  async ({ context }) => {
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+export const getMyProductSettings = createServerFn({ method: "GET" })
+  .middleware([authenticatedServerFunctionMiddleware])
+  .handler(async ({ context }) => {
+    const { database, session } = context
     const row = await database
       .select({
         name: schema.user.name,
@@ -29,7 +30,7 @@ export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
       .leftJoin(schema.userSettings, eq(schema.userSettings.userId, schema.user.id))
       .where(eq(schema.user.id, session.user.id))
       .get()
-    if (!row) throw new Error("Profile settings were not found.")
+    if (!row) throw notFoundFailure("Profile settings were not found.")
     return {
       ...row,
       commentNotifications: row.commentNotifications ?? true,
@@ -39,23 +40,23 @@ export const getMyProductSettings = createServerFn({ method: "GET" }).handler(
       replyPushNotifications: row.replyPushNotifications ?? true,
       vapidPublicKey: context.env.VAPID_PUBLIC_KEY.trim() || null,
     }
-  },
-)
+  })
 
 export const updateProfile = createServerFn({ method: "POST" })
+  .middleware([authenticatedServerFunctionMiddleware])
   .validator(
-    z.object({
-      name: z.string().trim().min(1).max(80),
-      username: usernameSchema,
-      bio: z.string().trim().max(500),
-      website: z.union([z.literal(""), z.url().max(500)]),
-      location: z.string().trim().max(100),
-    }),
+    serverFunctionValidator(
+      z.object({
+        name: z.string().trim().min(1).max(80),
+        username: usernameSchema,
+        bio: z.string().trim().max(500),
+        website: z.union([z.literal(""), z.url().max(500)]),
+        location: z.string().trim().max(100),
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const normalizedUsername = data.username.toLocaleLowerCase("en-US")
     const collision = await database
       .select({ userId: schema.profiles.userId })
@@ -67,7 +68,7 @@ export const updateProfile = createServerFn({ method: "POST" })
         ),
       )
       .get()
-    if (collision) throw new Error("That username is already in use.")
+    if (collision) throw conflictFailure("That username is already in use.")
     await database.batch([
       database
         .update(schema.user)
@@ -97,11 +98,10 @@ const preferencesSchema = z.object({
 })
 
 export const updateNotificationPreferences = createServerFn({ method: "POST" })
-  .validator(preferencesSchema)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(preferencesSchema))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     await database
       .insert(schema.userSettings)
       .values({ userId: session.user.id, ...data })

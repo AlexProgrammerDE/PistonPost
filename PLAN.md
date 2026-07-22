@@ -1003,6 +1003,11 @@ Record future changes here with date, decision, reason, and affected phases.
   sitemap tags so publish, edit, moderation, deletion, and account deletion can purge cached public
   responses globally. This affects Phases 5, 6, 9, and 10.
 - 2026-07-14: Use Effect for domain services, repository and provider adapters, queues, Workflows, retries, configuration, and typed operational errors. Keep TanStack, React, Better Auth, and Drizzle composition native at their public boundaries.
+- 2026-07-22: Standardize TanStack Start server functions on global error middleware and explicit
+  authenticated and administrator middleware. Validate server-function input with Zod before each
+  handler, map expected Effect and domain failures to a stable discriminated wire contract, and
+  return unexpected defects as generic errors with request IDs while logging only safe diagnostic
+  metadata. This affects Phases 4, 5, 6, 7, and 9.
 - 2026-07-14: Use shadcn Typeset for long-form post rendering and use Base UI-backed shadcn components whenever they own a real product interaction. Do not add components without a concrete use.
 - 2026-07-14: Generate Better Auth-owned tables before adding product-to-user foreign keys. Phase 3 enforces every product-only relationship immediately; Phase 4 adds the user relationships from the generated auth schema so the auth tables are never hand-authored from memory.
 - 2026-07-14: New posts may contain up to 20 images at 15 MB each, or one video up to 2 GB and 10 minutes. Existing migrated galleries remain viewable even when they exceed the new-authoring limits.

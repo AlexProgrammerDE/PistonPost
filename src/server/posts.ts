@@ -13,6 +13,8 @@ import {
   listPublicPostReads,
 } from "@/db/public-read-model"
 import { POST_VIEW_SURFACES, decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
+import { serverFunctionValidator } from "@/lib/server-function-error"
+import { runServerEffect } from "@/server/server-function-failure"
 
 import { recordPostView } from "./post-view-tracking"
 
@@ -29,9 +31,9 @@ const postViewInput = z.object({
 })
 
 export const getPublicFeed = createServerFn({ method: "GET" })
-  .validator(feedInput)
+  .validator(serverFunctionValidator(feedInput))
   .handler(async ({ context, data }) => {
-    const cursor = data.cursor ? await Effect.runPromise(decodePublicPostCursor(data.cursor)) : null
+    const cursor = data.cursor ? await runServerEffect(decodePublicPostCursor(data.cursor)) : null
     const page = await listPublicPostReads(createD1Database(context.env.DB), {
       cursor,
       limit: data.limit,
@@ -46,13 +48,13 @@ export const getPublicFeed = createServerFn({ method: "GET" })
   })
 
 export const getPublishedPost = createServerFn({ method: "GET" })
-  .validator(z.object({ id: z.string().trim().min(1).max(64) }))
+  .validator(serverFunctionValidator(z.object({ id: z.string().trim().min(1).max(64) })))
   .handler(async ({ context, data }) =>
     getPublishedPostRead(createD1Database(context.env.DB), data.id),
   )
 
 export const trackPostViews = createServerFn({ method: "POST" })
-  .validator(postViewInput)
+  .validator(serverFunctionValidator(postViewInput))
   .handler(async ({ context, data }) => {
     const headers = getRequestHeaders()
     const database = createD1Database(context.env.DB)
@@ -64,7 +66,7 @@ export const trackPostViews = createServerFn({ method: "POST" })
       limiter: context.env.POST_VIEW_RATE_LIMITER,
     }
     const postIds = Array.from(new Set(data.postIds))
-    const results = await Effect.runPromise(
+    const results = await runServerEffect(
       Effect.all(
         postIds.map((postId) =>
           recordPostView(dependencies, {
@@ -85,13 +87,13 @@ export const trackPostViews = createServerFn({ method: "POST" })
   })
 
 export const getPublicProfile = createServerFn({ method: "GET" })
-  .validator(z.object({ username: z.string().trim().min(1).max(32) }))
+  .validator(serverFunctionValidator(z.object({ username: z.string().trim().min(1).max(32) })))
   .handler(async ({ context, data }) =>
     getPublicProfileRead(createD1Database(context.env.DB), data.username),
   )
 
 export const getPublicTag = createServerFn({ method: "GET" })
-  .validator(z.object({ tag: z.string().trim().min(1).max(64) }))
+  .validator(serverFunctionValidator(z.object({ tag: z.string().trim().min(1).max(64) })))
   .handler(async ({ context, data }) =>
     getPublicTagRead(createD1Database(context.env.DB), data.tag.toLocaleLowerCase("en-US")),
   )

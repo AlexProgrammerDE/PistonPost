@@ -1,11 +1,10 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, count, eq, gte, inArray, ne } from "drizzle-orm"
-import { Effect } from "effect"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import { serverFunctionValidator } from "@/lib/server-function-error"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import {
@@ -17,7 +16,15 @@ import {
   MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
   MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
 } from "@/lib/video-thumbnail"
-import { assertMutationOrigin, requireRequestSession } from "@/server/session"
+import {
+  conflictFailure,
+  forbiddenFailure,
+  invalidInputFailure,
+  notFoundFailure,
+  rateLimitedFailure,
+  runServerEffect,
+} from "@/server/server-function-failure"
+import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 import { createStreamDirectUpload } from "@/server/stream-direct-upload"
 import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
 
@@ -54,15 +61,19 @@ async function tagId(normalized: string) {
 }
 
 export const createPostDraft = createServerFn({ method: "POST" })
-  .validator(z.object({ draft: postDraftInputSchema, turnstileToken: turnstileTokenSchema }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(
+    serverFunctionValidator(
+      z.object({ draft: postDraftInputSchema, turnstileToken: turnstileTokenSchema }),
+    ),
+  )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { session } = context
     const limited = await context.env.USER_RATE_LIMITER.limit({
       key: `draft:${session.user.id}`,
     })
-    if (!limited.success) throw new Error("Too many posts were started at once.")
-    await Effect.runPromise(
+    if (!limited.success) throw rateLimitedFailure("Too many posts were started at once.")
+    await runServerEffect(
       verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createPost),
     )
     const input = data.draft
@@ -121,26 +132,29 @@ const imageIntentInput = z.object({
 })
 
 export const createImageUploadIntents = createServerFn({ method: "POST" })
+  .middleware([authenticatedServerFunctionMiddleware])
   .validator(
-    z.object({
-      postId: z.string().min(1).max(64),
-      files: z
-        .array(imageIntentInput.omit({ postId: true }))
-        .min(1)
-        .max(MAX_IMAGES_PER_POST),
-    }),
+    serverFunctionValidator(
+      z.object({
+        postId: z.string().min(1).max(64),
+        files: z
+          .array(imageIntentInput.omit({ postId: true }))
+          .min(1)
+          .max(MAX_IMAGES_PER_POST),
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
       key: `intent:${session.user.id}`,
     })
     if (!rateLimit.success) {
-      throw new Error("Too many uploads were started at once. Wait a minute and try again.")
+      throw rateLimitedFailure(
+        "Too many uploads were started at once. Wait a minute and try again.",
+      )
     }
 
-    const database = createD1Database(context.env.DB)
     const draft = await database
       .select({ id: schema.posts.id, type: schema.posts.type })
       .from(schema.posts)
@@ -152,7 +166,9 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
         ),
       )
       .get()
-    if (!draft || draft.type !== "images") throw new Error("The image draft was not found.")
+    if (!draft || draft.type !== "images") {
+      throw notFoundFailure("The image draft was not found.")
+    }
 
     const postAssetCount = await context.env.DB.prepare(
       `select count(*) as count from media_assets
@@ -163,7 +179,9 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
       .first<{ count: number }>()
     const firstOrdinal = postAssetCount?.count ?? 0
     if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST) {
-      throw new Error(`A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`)
+      throw invalidInputFailure(
+        `A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`,
+      )
     }
 
     const expiresAt = Date.now() + 15 * 60 * 1000
@@ -192,7 +210,7 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
       }
     })
     const [firstIntent, ...remainingIntents] = intents
-    if (!firstIntent) throw new Error("Choose at least one image.")
+    if (!firstIntent) throw invalidInputFailure("Choose at least one image.")
     await database.batch([
       database.insert(schema.mediaAssets).values(firstIntent.values),
       ...remainingIntents.map((intent) =>
@@ -227,18 +245,19 @@ async function readOptionalSecret(secret: string | SecretsStoreSecret | undefine
 }
 
 export const createVideoUploadIntent = createServerFn({ method: "POST" })
-  .validator(videoIntentInput)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(videoIntentInput))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
       key: `intent:${session.user.id}`,
     })
     if (!rateLimit.success) {
-      throw new Error("Too many uploads were started at once. Wait a minute and try again.")
+      throw rateLimitedFailure(
+        "Too many uploads were started at once. Wait a minute and try again.",
+      )
     }
 
-    const database = createD1Database(context.env.DB)
     const draft = await database
       .select({ id: schema.posts.id })
       .from(schema.posts)
@@ -251,14 +270,14 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
         ),
       )
       .get()
-    if (!draft) throw new Error("The video draft was not found.")
+    if (!draft) throw notFoundFailure("The video draft was not found.")
 
     const existing = await database
       .select({ id: schema.postMedia.mediaId })
       .from(schema.postMedia)
       .where(eq(schema.postMedia.postId, data.postId))
       .get()
-    if (existing) throw new Error("A video draft can contain one video.")
+    if (existing) throw conflictFailure("A video draft can contain one video.")
 
     const assetId = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
@@ -270,30 +289,28 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
     let upload: { id: string; uploadURL: string; protocol: "multipart" | "tus" }
 
     if (accountId && apiToken) {
-      try {
-        const directUpload = await Effect.runPromise(
-          createStreamDirectUpload({
-            accountId,
-            apiToken,
-            byteSize: data.byteSize,
-            creator: session.user.id,
-            filename: data.filename,
-            expiresAt,
-            scheduledDeletion,
-            thumbnailTimestampPct: data.thumbnailTimestampPct,
-          }),
-        )
-        upload = {
-          id: directUpload.streamUid,
-          uploadURL: directUpload.uploadUrl,
-          protocol: "tus",
-        }
-      } catch {
-        throw new Error("The video upload could not be started. Try again.")
+      const directUpload = await runServerEffect(
+        createStreamDirectUpload({
+          accountId,
+          apiToken,
+          byteSize: data.byteSize,
+          creator: session.user.id,
+          filename: data.filename,
+          expiresAt,
+          scheduledDeletion,
+          thumbnailTimestampPct: data.thumbnailTimestampPct,
+        }),
+      )
+      upload = {
+        id: directUpload.streamUid,
+        uploadURL: directUpload.uploadUrl,
+        protocol: "tus",
       }
     } else {
       if (data.byteSize >= BASIC_STREAM_UPLOAD_MAX_BYTES) {
-        throw new Error("This video is too large to upload right now. Try a video under 200 MB.")
+        throw invalidInputFailure(
+          "This video is too large to upload right now. Try a video under 200 MB.",
+        )
       }
       const directUpload = await context.env.STREAM.createDirectUpload({
         maxDurationSeconds: MAX_VIDEO_DURATION_SECONDS,
@@ -346,10 +363,15 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
   })
 
 export const getOwnedMediaStatus = createServerFn({ method: "GET" })
-  .validator(z.object({ ids: z.array(z.string().uuid()).min(1).max(MAX_IMAGES_PER_POST) }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(
+    serverFunctionValidator(
+      z.object({ ids: z.array(z.string().uuid()).min(1).max(MAX_IMAGES_PER_POST) }),
+    ),
+  )
   .handler(async ({ context, data }) => {
-    const session = await requireRequestSession(context)
-    return createD1Database(context.env.DB)
+    const { database, session } = context
+    return database
       .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
       .from(schema.mediaAssets)
       .where(
@@ -361,11 +383,10 @@ export const getOwnedMediaStatus = createServerFn({ method: "GET" })
   })
 
 export const abortMediaUpload = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().uuid() }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const asset = await database
       .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
       .from(schema.mediaAssets)
@@ -373,9 +394,9 @@ export const abortMediaUpload = createServerFn({ method: "POST" })
         and(eq(schema.mediaAssets.id, data.id), eq(schema.mediaAssets.ownerId, session.user.id)),
       )
       .get()
-    if (!asset) throw new Error("The upload was not found.")
+    if (!asset) throw notFoundFailure("The upload was not found.")
     if (asset.status === "ready" || asset.status === "deleted") {
-      throw new Error("A finalized upload cannot be aborted.")
+      throw conflictFailure("A finalized upload cannot be aborted.")
     }
     const job = mediaCleanupJob(asset.id)
     await database
@@ -387,15 +408,18 @@ export const abortMediaUpload = createServerFn({ method: "POST" })
   })
 
 export const publishPost = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(
+    serverFunctionValidator(
+      z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }),
+    ),
+  )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
+    const { database, session } = context
     const limited = await context.env.USER_RATE_LIMITER.limit({
       key: `publish:${session.user.id}`,
     })
-    if (!limited.success) throw new Error("Too many posts were published at once.")
-    const database = createD1Database(context.env.DB)
+    if (!limited.success) throw rateLimitedFailure("Too many posts were published at once.")
     const recentWindow = new Date(Date.now() - 10 * 60 * 1_000)
     const recentPublishes = await database
       .select({ value: count() })
@@ -409,15 +433,17 @@ export const publishPost = createServerFn({ method: "POST" })
       )
       .get()
     if ((recentPublishes?.value ?? 0) >= 10) {
-      throw new Error("You can publish up to 10 posts every 10 minutes.")
+      throw rateLimitedFailure("You can publish up to 10 posts every 10 minutes.", 600)
     }
     const post = await database
       .select(postColumns)
       .from(schema.posts)
       .where(and(eq(schema.posts.id, data.id), eq(schema.posts.authorId, session.user.id)))
       .get()
-    if (!post || post.status !== "draft") throw new Error("The draft was not found.")
-    if (post.version !== data.version) throw new Error("The draft changed in another session.")
+    if (!post || post.status !== "draft") throw notFoundFailure("The draft was not found.")
+    if (post.version !== data.version) {
+      throw conflictFailure("The draft changed in another session.")
+    }
 
     const media = await database
       .select({
@@ -431,13 +457,13 @@ export const publishPost = createServerFn({ method: "POST" })
         and(eq(schema.postMedia.postId, post.id), eq(schema.mediaAssets.ownerId, session.user.id)),
       )
     if (post.type === "images" && (media.length < 1 || media.length > MAX_IMAGES_PER_POST)) {
-      throw new Error("An image post needs between 1 and 20 ready images.")
+      throw invalidInputFailure("An image post needs between 1 and 20 ready images.")
     }
     if (post.type === "video" && media.length !== 1) {
-      throw new Error("A video post needs one ready video.")
+      throw invalidInputFailure("A video post needs one ready video.")
     }
     if (media.some((asset) => asset.status !== "ready")) {
-      throw new Error("Media is still processing.")
+      throw conflictFailure("Media is still processing.")
     }
     const video = media.find((asset) => asset.kind === "video")
     if (video?.streamUid) {
@@ -460,7 +486,9 @@ export const publishPost = createServerFn({ method: "POST" })
         ),
       )
       .run()
-    if (result.meta.changes !== 1) throw new Error("The draft changed in another session.")
+    if (result.meta.changes !== 1) {
+      throw conflictFailure("The draft changed in another session.")
+    }
 
     const invalidate = cacheInvalidationJob(post.id)
     await database.insert(schema.outbox).values({
@@ -473,18 +501,18 @@ export const publishPost = createServerFn({ method: "POST" })
   })
 
 export const getOwnedPostForEditing = createServerFn({ method: "GET" })
-  .validator(z.object({ id: z.string().min(1).max(64) }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(z.object({ id: z.string().min(1).max(64) })))
   .handler(async ({ context, data }) => {
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const post = await database
       .select(postColumns)
       .from(schema.posts)
       .where(eq(schema.posts.id, data.id))
       .get()
-    if (!post || post.status === "deleted") throw new Error("The post was not found.")
+    if (!post || post.status === "deleted") throw notFoundFailure("The post was not found.")
     if (post.authorId !== session.user.id && session.user.role !== "admin") {
-      throw new Error("The post was not found.")
+      throw notFoundFailure("The post was not found.")
     }
     const tags = await database
       .select({ name: schema.tags.displayName })
@@ -505,11 +533,10 @@ const updatePostInput = z.object({
 })
 
 export const updatePost = createServerFn({ method: "POST" })
-  .validator(updatePostInput)
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(serverFunctionValidator(updatePostInput))
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const post = await database
       .select({
         id: schema.posts.id,
@@ -520,11 +547,13 @@ export const updatePost = createServerFn({ method: "POST" })
       .from(schema.posts)
       .where(eq(schema.posts.id, data.id))
       .get()
-    if (!post || post.status === "deleted") throw new Error("The post was not found.")
+    if (!post || post.status === "deleted") throw notFoundFailure("The post was not found.")
     if (post.authorId !== session.user.id && session.user.role !== "admin") {
-      throw new Error("You cannot edit this post.")
+      throw forbiddenFailure("You cannot edit this post.")
     }
-    if (post.type === "text" && !data.textContent) throw new Error("Text posts need text content.")
+    if (post.type === "text" && !data.textContent) {
+      throw invalidInputFailure("Text posts need text content.")
+    }
 
     const update = await database
       .update(schema.posts)
@@ -537,7 +566,9 @@ export const updatePost = createServerFn({ method: "POST" })
       })
       .where(and(eq(schema.posts.id, post.id), eq(schema.posts.version, data.version)))
       .run()
-    if (update.meta.changes !== 1) throw new Error("The post changed in another session.")
+    if (update.meta.changes !== 1) {
+      throw conflictFailure("The post changed in another session.")
+    }
 
     const normalizedTags = [...new Set(data.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
     const tagsWithIds = await Promise.all(
@@ -580,19 +611,22 @@ export const updatePost = createServerFn({ method: "POST" })
   })
 
 export const deletePost = createServerFn({ method: "POST" })
-  .validator(z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }))
+  .middleware([authenticatedServerFunctionMiddleware])
+  .validator(
+    serverFunctionValidator(
+      z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }),
+    ),
+  )
   .handler(async ({ context, data }) => {
-    assertMutationOrigin(context)
-    const session = await requireRequestSession(context)
-    const database = createD1Database(context.env.DB)
+    const { database, session } = context
     const post = await database
       .select({ authorId: schema.posts.authorId, status: schema.posts.status })
       .from(schema.posts)
       .where(eq(schema.posts.id, data.id))
       .get()
-    if (!post || post.status === "deleted") throw new Error("The post was not found.")
+    if (!post || post.status === "deleted") throw notFoundFailure("The post was not found.")
     if (post.authorId !== session.user.id && session.user.role !== "admin") {
-      throw new Error("You cannot delete this post.")
+      throw forbiddenFailure("You cannot delete this post.")
     }
     const media = await database
       .select({ id: schema.mediaAssets.id })
@@ -617,7 +651,9 @@ export const deletePost = createServerFn({ method: "POST" })
         ),
       )
       .run()
-    if (deleted.meta.changes !== 1) throw new Error("The post changed in another session.")
+    if (deleted.meta.changes !== 1) {
+      throw conflictFailure("The post changed in another session.")
+    }
 
     const statements: D1PreparedStatement[] = [
       context.env.DB.prepare("delete from comments where post_id = ?").bind(data.id),
