@@ -625,7 +625,8 @@ Do not put every section inside a Card. Use borders, separators, typography, and
 
 ### Form
 
-- Use TanStack Form for composer, profile, preferences, and admin mutation forms.
+- Use TanStack Form for composer, profile, structured settings, and admin mutation forms.
+- Save independent binary preferences immediately through one-setting mutations.
 - Share Zod schemas with server boundaries.
 - Validate files separately because browser File objects and server streams differ.
 - Use field metadata for accessible errors.
@@ -1104,8 +1105,14 @@ Record future changes here with date, decision, reason, and affected phases.
   preview where they directly help edit the selected media or text. This affects Phase 6.
 - 2026-07-17: Store comment, reply, and product email choices independently without a master email
   switch. Security and moderation notices are required service messages, so they are always sent,
-  are not stored as user preferences, and appear as disabled, enabled controls in account settings.
+  are not stored as user preferences, and appear as non-interactive required statuses in account
+  settings.
   This affects Phases 3, 4, 5, and 7.
+- 2026-07-22: Save each optional notification switch immediately with a one-setting mutation. Keep
+  the switch state responsive while saving, report progress accessibly, and restore its confirmed
+  value when the request fails. Present notification topics in a compact channel matrix so email,
+  push, required, and unavailable states are easy to compare. This avoids presenting switches as
+  fields that require a separate save action. This affects Phase 7.
 - 2026-07-17: Split email delivery by sensitivity. Better Auth token and code messages run through
   Cloudflare request background tasks with a small bounded transport retry and are never persisted.
   Product and account notifications use ID-only outbox jobs, delivery-time preference checks,

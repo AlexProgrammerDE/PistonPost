@@ -3,9 +3,10 @@ import { and, eq, ne } from "drizzle-orm"
 import { z } from "zod"
 
 import * as schema from "@/db/schema"
-import { usernameSchema } from "@/domain"
+import { createUserSettingsRepository } from "@/db/user-settings-repository"
+import { notificationPreferenceSchema, usernameSchema } from "@/domain"
 import { serverFunctionValidator } from "@/lib/server-function-error"
-import { conflictFailure, notFoundFailure } from "@/server/server-function-failure"
+import { conflictFailure, notFoundFailure, runServerEffect } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 export const getMyProductSettings = createServerFn({ method: "GET" })
@@ -89,25 +90,19 @@ export const updateProfile = createServerFn({ method: "POST" })
     return { username: data.username }
   })
 
-const preferencesSchema = z.object({
-  commentNotifications: z.boolean(),
-  replyNotifications: z.boolean(),
-  productNotifications: z.boolean(),
-  commentPushNotifications: z.boolean(),
-  replyPushNotifications: z.boolean(),
+const notificationPreferenceInputSchema = z.object({
+  preference: notificationPreferenceSchema,
+  enabled: z.boolean(),
 })
 
-export const updateNotificationPreferences = createServerFn({ method: "POST" })
+export const updateNotificationPreference = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(preferencesSchema))
+  .validator(serverFunctionValidator(notificationPreferenceInputSchema))
   .handler(async ({ context, data }) => {
     const { database, session } = context
-    await database
-      .insert(schema.userSettings)
-      .values({ userId: session.user.id, ...data })
-      .onConflictDoUpdate({
-        target: schema.userSettings.userId,
-        set: { ...data, updatedAt: new Date() },
-      })
+    const repository = createUserSettingsRepository(database)
+    await runServerEffect(
+      repository.setNotificationPreference(session.user.id, data.preference, data.enabled),
+    )
     return data
   })

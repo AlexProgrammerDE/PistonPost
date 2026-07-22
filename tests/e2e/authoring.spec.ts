@@ -108,7 +108,7 @@ async function fillPost(page: Page, title: string, tag: string) {
 }
 
 test.describe.serial("authenticated authoring", () => {
-  test("saves optional email choices while required notifications stay on", async ({
+  test("autosaves optional notification switches and shows required categories as status", async ({
     context,
     page,
   }) => {
@@ -116,36 +116,41 @@ test.describe.serial("authenticated authoring", () => {
     await page.goto("/account/settings/notifications")
     await page.locator('[data-hydrated="true"]').waitFor()
 
-    const emailNotifications = page.getByRole("group", { name: "Email notifications" })
-    const comments = emailNotifications.getByRole("switch", { name: "Comments" })
-    const replies = emailNotifications.getByRole("switch", { name: "Replies" })
-    const security = emailNotifications.getByRole("switch", { name: "Security" })
-    const moderation = emailNotifications.getByRole("switch", { name: "Moderation" })
-    const productUpdates = emailNotifications.getByRole("switch", { name: "Product updates" })
+    const preferences = page.getByRole("table", { name: "Notification preferences" })
+    const comments = preferences.getByRole("switch", { name: "Comments by email" })
+    const replies = preferences.getByRole("switch", { name: "Replies by email" })
+    const productUpdates = preferences.getByRole("switch", { name: "Product updates by email" })
+    const pushComments = preferences.getByRole("switch", {
+      name: "Comments by push notification",
+    })
+    const security = preferences.getByRole("row", { name: /^Security / })
+    const moderation = preferences.getByRole("row", { name: /^Moderation / })
 
     await expect(comments).toBeChecked()
     await expect(replies).toBeChecked()
     await expect(productUpdates).not.toBeChecked()
-    await expect(security).toBeChecked()
-    await expect(security).toBeDisabled()
-    await expect(moderation).toBeChecked()
-    await expect(moderation).toBeDisabled()
+    await expect(pushComments).toBeChecked()
+    await expect(security.getByText("Required")).toHaveCount(2)
+    await expect(moderation.getByText("Required")).toHaveCount(2)
+    await expect(security.getByRole("switch")).toHaveCount(0)
+    await expect(moderation.getByRole("switch")).toHaveCount(0)
+    await expect(page.getByRole("button", { name: "Save preferences" })).toHaveCount(0)
 
     await comments.click()
+    await expect(comments.locator("xpath=..").getByRole("status")).toHaveText("Saved")
     await productUpdates.click()
-    await page.getByRole("button", { name: "Save preferences" }).click()
-    await expect(page.getByText("Notification preferences updated")).toBeVisible()
+    await expect(productUpdates.locator("xpath=..").getByRole("status")).toHaveText("Saved")
+    await pushComments.click()
+    await expect(pushComments.locator("xpath=..").getByRole("status")).toHaveText("Saved")
 
     await page.reload()
     await page.locator('[data-hydrated="true"]').waitFor()
-    const reloadedEmailNotifications = page.getByRole("group", { name: "Email notifications" })
+    await expect(page.getByRole("switch", { name: "Comments by email" })).not.toBeChecked()
+    await expect(page.getByRole("switch", { name: "Replies by email" })).toBeChecked()
+    await expect(page.getByRole("switch", { name: "Product updates by email" })).toBeChecked()
     await expect(
-      reloadedEmailNotifications.getByRole("switch", { name: "Comments" }),
+      page.getByRole("switch", { name: "Comments by push notification" }),
     ).not.toBeChecked()
-    await expect(reloadedEmailNotifications.getByRole("switch", { name: "Replies" })).toBeChecked()
-    await expect(
-      reloadedEmailNotifications.getByRole("switch", { name: "Product updates" }),
-    ).toBeChecked()
   })
 
   test("uploads, serves, and deletes a managed avatar", async ({ context, page }) => {

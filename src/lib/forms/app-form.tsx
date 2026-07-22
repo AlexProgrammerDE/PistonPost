@@ -6,13 +6,7 @@ import { lazy, Suspense, useState, type ComponentProps, type ReactNode } from "r
 
 import { Button } from "@/components/ui/button"
 import { Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput } from "@/components/ui/combobox"
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   InputGroup,
@@ -31,7 +25,6 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
-import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
@@ -387,28 +380,6 @@ function TagsField({ label, description }: FieldChromeProps) {
   )
 }
 
-function SwitchField({
-  label,
-  description,
-  disabled = false,
-}: FieldChromeProps & { disabled?: boolean }) {
-  const field = useFieldContext<boolean>()
-  return (
-    <Field orientation="horizontal" data-disabled={disabled} className="max-w-2xl">
-      <FieldContent>
-        <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-        {description ? <FieldDescription>{description}</FieldDescription> : null}
-      </FieldContent>
-      <Switch
-        id={field.name}
-        checked={field.state.value}
-        onCheckedChange={(checked) => field.handleChange(checked)}
-        disabled={disabled}
-      />
-    </Field>
-  )
-}
-
 function SubmitButton({ children, disabled, ...props }: ComponentProps<typeof Button>) {
   const form = useFormContext()
 
@@ -467,7 +438,6 @@ export const { useAppForm, withFieldGroup, withForm } = createFormHook({
     SelectField,
     ChoiceField,
     TagsField,
-    SwitchField,
   },
   formComponents: { SubmitButton, SubmitInputGroupButton },
 })

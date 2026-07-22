@@ -33,6 +33,13 @@ export const postDraftInputSchema = z.discriminatedUnion("type", [
 ])
 
 export const commentInputSchema = z.string().trim().min(1).max(250)
+export const notificationPreferenceSchema = z.enum([
+  "comment-email",
+  "reply-email",
+  "product-email",
+  "comment-push",
+  "reply-push",
+])
 export const usernameSchema = z
   .string()
   .trim()
@@ -41,3 +48,4 @@ export const usernameSchema = z
   .regex(/^[A-Za-z0-9._~-]+$/, "Use letters, numbers, hyphen, dot, underscore, or tilde")
 
 export type PostDraftInput = z.infer<typeof postDraftInputSchema>
+export type NotificationPreference = z.infer<typeof notificationPreferenceSchema>
