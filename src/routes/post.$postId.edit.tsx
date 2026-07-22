@@ -6,19 +6,21 @@ import { z } from "zod"
 
 import { FormPageSkeleton } from "@/components/LoadingStates"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
-  Credenza,
-  CredenzaClose,
-  CredenzaContent,
-  CredenzaDescription,
-  CredenzaFooter,
-  CredenzaHeader,
-  CredenzaTitle,
-  CredenzaTrigger,
-} from "@/components/ui/credenza"
-import { FieldGroup, FieldLegend, FieldSet } from "@/components/ui/field"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+import { Button } from "@/components/ui/button"
+import { Field, FieldGroup, FieldLegend, FieldSeparator, FieldSet } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
+import { Spinner } from "@/components/ui/spinner"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_POST_MARKDOWN_LENGTH, postMarkdownSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
@@ -158,38 +160,46 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
             </Alert>
           ) : null}
 
-          <div className="flex flex-col gap-3 border-t pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <Credenza>
-              <CredenzaTrigger render={<Button type="button" variant="destructive" />}>
+          <FieldSeparator />
+          <Field
+            orientation="horizontal"
+            className="flex-col items-stretch sm:flex-row sm:justify-between"
+          >
+            <AlertDialog>
+              <AlertDialogTrigger render={<Button type="button" variant="destructive" />}>
                 <Trash2 aria-hidden="true" data-icon="inline-start" />
                 Delete post
-              </CredenzaTrigger>
-              <CredenzaContent>
-                <CredenzaHeader>
-                  <CredenzaTitle>Delete this post?</CredenzaTitle>
-                  <CredenzaDescription>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete this post?</AlertDialogTitle>
+                  <AlertDialogDescription>
                     Public access stops immediately. Images, video, comments, hearts, and tag links
                     are then removed through the cleanup queue.
-                  </CredenzaDescription>
-                </CredenzaHeader>
-                <CredenzaFooter>
-                  <CredenzaClose render={<Button variant="outline" />}>Keep post</CredenzaClose>
-                  <Button
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={deleting}>Keep post</AlertDialogCancel>
+                  <AlertDialogAction
                     variant="destructive"
                     disabled={deleting}
                     onClick={() => void removePost()}
                   >
-                    {deleting ? null : <Trash2 aria-hidden="true" data-icon="inline-start" />}
+                    {deleting ? (
+                      <Spinner aria-hidden="true" data-icon="inline-start" />
+                    ) : (
+                      <Trash2 aria-hidden="true" data-icon="inline-start" />
+                    )}
                     {deleting ? "Deleting…" : "Delete post"}
-                  </Button>
-                </CredenzaFooter>
-              </CredenzaContent>
-            </Credenza>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <form.SubmitButton>
               <Save aria-hidden="true" data-icon="inline-start" />
               Save changes
             </form.SubmitButton>
-          </div>
+          </Field>
         </form.AppForm>
       </form>
       <Separator className="mt-10" />

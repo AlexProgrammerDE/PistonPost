@@ -88,8 +88,8 @@ function PublicFeedResults() {
       {posts.length === 0 ? (
         <Empty className="min-h-80">
           <EmptyHeader>
-            <EmptyMedia>
-              <Newspaper aria-hidden="true" className="size-8 text-muted-foreground" />
+            <EmptyMedia variant="icon">
+              <Newspaper aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>No public posts yet</EmptyTitle>
             <EmptyDescription>Create the first post for this feed.</EmptyDescription>

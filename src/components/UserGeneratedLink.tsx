@@ -2,16 +2,16 @@
 
 import { createContext, useContext, useState, type ComponentProps, type ReactNode } from "react"
 
-import { Button } from "@/components/ui/button"
 import {
-  Credenza,
-  CredenzaClose,
-  CredenzaContent,
-  CredenzaDescription,
-  CredenzaFooter,
-  CredenzaHeader,
-  CredenzaTitle,
-} from "@/components/ui/credenza"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import {
   externalLinkDestination,
   externalLinkWarningPath,
@@ -53,27 +53,27 @@ export function UserGeneratedLinkProvider({ children }: { readonly children: Rea
   return (
     <UserGeneratedLinkContext value={setPendingLink}>
       {children}
-      <Credenza
+      <AlertDialog
         open={pendingLink !== null}
         onOpenChange={(open) => {
           if (!open) setPendingLink(null)
         }}
       >
-        <CredenzaContent>
-          <CredenzaHeader>
-            <CredenzaTitle>Open an external link?</CredenzaTitle>
-            <CredenzaDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Open an external link?</AlertDialogTitle>
+            <AlertDialogDescription>
               This link goes to{" "}
               {pendingLink ? externalLinkDestination(pendingLink) : "another site"}. External sites
               have their own privacy and security policies. The link will open in a new tab.
-            </CredenzaDescription>
-          </CredenzaHeader>
-          <CredenzaFooter>
-            <CredenzaClose render={<Button variant="outline" />}>Stay here</CredenzaClose>
-            <Button onClick={openPendingLink}>Open link</Button>
-          </CredenzaFooter>
-        </CredenzaContent>
-      </Credenza>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Stay here</AlertDialogCancel>
+            <AlertDialogAction onClick={openPendingLink}>Open link</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </UserGeneratedLinkContext>
   )
 }

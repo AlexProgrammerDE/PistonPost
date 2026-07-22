@@ -6,6 +6,17 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { AdminTablePageSkeleton } from "@/components/LoadingStates"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -77,32 +88,37 @@ function ConfirmationAction({
   disabled?: boolean
   onConfirm: () => void
 }) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <Credenza>
-      <CredenzaTrigger
+    <AlertDialog open={open} onOpenChange={setOpen}>
+      <AlertDialogTrigger
         render={
           <Button variant={destructive ? "destructive" : "outline"} size="sm" disabled={disabled} />
         }
       >
         {label}
-      </CredenzaTrigger>
-      <CredenzaContent>
-        <CredenzaHeader>
-          <CredenzaTitle>{title}</CredenzaTitle>
-          <CredenzaDescription>{description}</CredenzaDescription>
-        </CredenzaHeader>
-        <CredenzaFooter>
-          <CredenzaClose render={<Button variant="outline" />}>Cancel</CredenzaClose>
-          <Button
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
             variant={destructive ? "destructive" : "default"}
             disabled={disabled}
-            onClick={onConfirm}
+            onClick={() => {
+              setOpen(false)
+              onConfirm()
+            }}
           >
             {label}
-          </Button>
-        </CredenzaFooter>
-      </CredenzaContent>
-    </Credenza>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
@@ -371,6 +387,7 @@ function AdminTableView({
   if (!details) throw notFound()
   const navigate = useNavigate()
   const trail = parseCursorTrail(search.trail)
+  const previousPage = popCursorTrail(trail)
   const [query, setQuery] = useState(search.q)
   const deferredQuery = useDeferredValue(query)
 
@@ -507,28 +524,29 @@ function AdminTableView({
           }
           cursorPagination={{
             page: trail.length + 1,
-            hasPrevious: trail.length > 0,
-            hasNext: result.nextCursor !== null,
-            onPrevious: () => {
-              const previous = popCursorTrail(trail)
-              void navigate({
-                to: "/admin/$section",
-                params: { section },
-                search: { ...search, cursor: previous.cursor, trail: previous.trail.join(",") },
-              })
-            },
-            onNext: () => {
-              if (!result.nextCursor) return
-              void navigate({
-                to: "/admin/$section",
-                params: { section },
-                search: {
+            previousLink:
+              trail.length > 0 ? (
+                <Link
+                  to="/admin/$section"
+                  params={{ section }}
+                  search={{
+                    ...search,
+                    cursor: previousPage.cursor,
+                    trail: previousPage.trail.join(","),
+                  }}
+                />
+              ) : null,
+            nextLink: result.nextCursor ? (
+              <Link
+                to="/admin/$section"
+                params={{ section }}
+                search={{
                   ...search,
                   cursor: result.nextCursor,
                   trail: pushCursorTrail(trail, search.cursor).join(","),
-                },
-              })
-            },
+                }}
+              />
+            ) : null,
           }}
         />
       </div>

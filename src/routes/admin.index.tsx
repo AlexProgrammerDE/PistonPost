@@ -2,6 +2,15 @@ import { Link, createFileRoute } from "@tanstack/react-router"
 import { ChevronRight, Mail } from "lucide-react"
 
 import { AdminOverviewSkeleton } from "@/components/LoadingStates"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { adminSections } from "@/lib/admin-sections"
 import { getAdminOverview } from "@/server/tables"
 
@@ -22,49 +31,56 @@ function AdminOverview() {
           Moderate content, manage access, and inspect operational problems.
         </p>
       </header>
-      <Link
-        to="/admin/email-campaigns"
-        className="mb-6 flex items-center justify-between gap-3 border-y px-1 py-5 hover:bg-muted/40 sm:px-3"
-      >
-        <span>
-          <span className="block font-semibold">Email campaigns</span>
-          <span className="mt-1 block text-sm text-muted-foreground">
-            Draft, preview, and queue optional product updates.
-          </span>
-        </span>
-        <span className="inline-flex items-center gap-2 text-muted-foreground">
-          <Mail aria-hidden="true" className="size-4" />
-          <ChevronRight aria-hidden="true" className="size-4" />
-        </span>
-      </Link>
-      <nav className="border-y" aria-label="Administration sections">
-        {adminSections.map((section) => (
-          <Link
-            key={section.value}
-            to="/admin/$section"
-            params={{ section: section.value }}
-            search={{
-              q: "",
-              sort: "createdAt",
-              direction: "desc",
-              cursor: "",
-              trail: "",
-              hidden: "",
-            }}
-            className="grid gap-2 border-b px-1 py-5 last:border-b-0 hover:bg-muted/40 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:px-3"
-          >
-            <span className="min-w-0">
-              <span className="block font-semibold">{section.label}</span>
-              <span className="mt-1 block text-sm text-muted-foreground">
-                {section.description}
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground tabular-nums">
-              {counts[section.value]}
-              <ChevronRight aria-hidden="true" className="size-4" />
-            </span>
-          </Link>
-        ))}
+      <ItemGroup role="presentation" className="mb-6 gap-0 border-y">
+        <Item
+          render={<Link to="/admin/email-campaigns" />}
+          className="rounded-none px-1 py-5 sm:px-3"
+        >
+          <ItemMedia variant="icon">
+            <Mail aria-hidden="true" />
+          </ItemMedia>
+          <ItemContent>
+            <ItemTitle>Email campaigns</ItemTitle>
+            <ItemDescription>Draft, preview, and queue optional product updates.</ItemDescription>
+          </ItemContent>
+          <ItemActions className="text-muted-foreground">
+            <ChevronRight aria-hidden="true" />
+          </ItemActions>
+        </Item>
+      </ItemGroup>
+      <nav aria-label="Administration sections">
+        <ItemGroup role="presentation" className="gap-0 border-y">
+          {adminSections.map((section) => (
+            <Item
+              key={section.value}
+              render={
+                <Link
+                  to="/admin/$section"
+                  params={{ section: section.value }}
+                  search={{
+                    q: "",
+                    sort: "createdAt",
+                    direction: "desc",
+                    cursor: "",
+                    trail: "",
+                    hidden: "",
+                  }}
+                />
+              }
+              className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
+              variant="outline"
+            >
+              <ItemContent className="min-w-0">
+                <ItemTitle>{section.label}</ItemTitle>
+                <ItemDescription>{section.description}</ItemDescription>
+              </ItemContent>
+              <ItemActions className="text-sm text-muted-foreground tabular-nums">
+                {counts[section.value]}
+                <ChevronRight aria-hidden="true" />
+              </ItemActions>
+            </Item>
+          ))}
+        </ItemGroup>
       </nav>
     </main>
   )

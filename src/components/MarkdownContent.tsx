@@ -29,6 +29,14 @@ import type { PluggableList } from "unified"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Button } from "@/components/ui/button"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import { externalImageProxyUrl, isProxyableExternalImageUrl } from "@/lib/markdown"
 import {
@@ -325,21 +333,21 @@ function EmbedConsent({ embed, label }: { embed: MarkdownEmbed; label: string | 
 
   if (!loaded) {
     return (
-      <div className="not-typeset my-4 flex min-h-28 items-center justify-between gap-4 border bg-muted/25 p-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <ProviderIcon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-          <div className="min-w-0">
-            <p className="font-medium">{label || `${providerName} embed`}</p>
-            <p className="text-sm text-muted-foreground">
-              Load this embed to share data with {providerName}.
-            </p>
-          </div>
-        </div>
-        <Button type="button" variant="outline" onClick={() => setLoaded(true)}>
-          <Play aria-hidden="true" data-icon="inline-start" />
-          Load
-        </Button>
-      </div>
+      <Item className="not-typeset my-4 min-h-28 bg-muted/25" variant="outline">
+        <ItemMedia variant="icon">
+          <ProviderIcon aria-hidden="true" className="text-muted-foreground" />
+        </ItemMedia>
+        <ItemContent className="min-w-0">
+          <ItemTitle className="line-clamp-2">{label || `${providerName} embed`}</ItemTitle>
+          <ItemDescription>Load this embed to share data with {providerName}.</ItemDescription>
+        </ItemContent>
+        <ItemActions>
+          <Button type="button" variant="outline" onClick={() => setLoaded(true)}>
+            <Play aria-hidden="true" data-icon="inline-start" />
+            Load
+          </Button>
+        </ItemActions>
+      </Item>
     )
   }
   return <LoadedEmbed embed={embed} />
@@ -347,18 +355,21 @@ function EmbedConsent({ embed, label }: { embed: MarkdownEmbed; label: string | 
 
 function ExternalLinkCard({ href, label }: { href: string; label: string }) {
   return (
-    <UserGeneratedLink
-      href={href}
-      className="not-typeset my-4 flex items-center gap-3 overflow-hidden border bg-muted/15 p-4 no-underline transition-colors hover:bg-muted/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+    <Item
+      render={<UserGeneratedLink href={href} />}
+      className="not-typeset my-4 overflow-hidden bg-muted/15 no-underline"
+      variant="outline"
     >
-      <ExternalLink aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-      <span className="min-w-0">
-        <span className="block overflow-hidden text-sm font-medium">
+      <ItemMedia variant="icon">
+        <ExternalLink aria-hidden="true" className="text-muted-foreground" />
+      </ItemMedia>
+      <ItemContent className="min-w-0">
+        <ItemTitle className="line-clamp-2 wrap-anywhere">
           {label || externalLinkDestination(href)}
-        </span>
-        <span className="block truncate text-xs text-muted-foreground">{href}</span>
-      </span>
-    </UserGeneratedLink>
+        </ItemTitle>
+        <ItemDescription className="truncate text-xs">{href}</ItemDescription>
+      </ItemContent>
+    </Item>
   )
 }
 
@@ -466,18 +477,22 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
   }
 
   return (
-    <UserGeneratedLink
-      href={src}
-      className="not-typeset my-2 inline-flex items-center gap-2 overflow-hidden border bg-muted/15 px-3 py-2 no-underline"
+    <Item
+      render={<UserGeneratedLink href={src} />}
+      className="not-typeset my-2 inline-flex bg-muted/15 no-underline"
+      size="sm"
+      variant="outline"
     >
-      <ImageIcon aria-hidden="true" className="size-5 shrink-0 text-muted-foreground" />
-      <span className="min-w-0">
-        <span className="block overflow-hidden text-sm font-medium">{alt || "External image"}</span>
-        <span className="block overflow-hidden text-xs text-muted-foreground">
+      <ItemMedia variant="icon">
+        <ImageIcon aria-hidden="true" className="text-muted-foreground" />
+      </ItemMedia>
+      <ItemContent className="min-w-0">
+        <ItemTitle className="line-clamp-2 wrap-anywhere">{alt || "External image"}</ItemTitle>
+        <ItemDescription className="text-xs">
           The image will be proxied after this post is saved.
-        </span>
-      </span>
-    </UserGeneratedLink>
+        </ItemDescription>
+      </ItemContent>
+    </Item>
   )
 }
 

@@ -5,18 +5,27 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { Eye, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
-  Credenza,
-  CredenzaClose,
-  CredenzaContent,
-  CredenzaDescription,
-  CredenzaFooter,
-  CredenzaHeader,
-  CredenzaTitle,
-  CredenzaTrigger,
-} from "@/components/ui/credenza"
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
   createEmailCampaign,
@@ -173,55 +182,62 @@ function EmailCampaigns() {
             No product email drafts have been saved.
           </p>
         ) : (
-          <div className="mt-4 border-y">
+          <ItemGroup className="mt-4 gap-0 border-y">
             {campaigns.map((campaign) => (
-              <article
+              <Item
                 key={campaign.id}
-                className="grid gap-4 border-b py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                render={<article />}
+                role="listitem"
+                className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
+                variant="outline"
               >
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="truncate font-medium">{campaign.subject}</h3>
+                <ItemContent className="min-w-0">
+                  <ItemTitle className="line-clamp-none w-full flex-wrap">
+                    <span className="min-w-0 flex-1 truncate">{campaign.subject}</span>
                     <Badge variant="outline">{campaign.status}</Badge>
-                  </div>
-                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                    {campaign.message}
-                  </p>
-                  <p className="mt-2 text-xs text-muted-foreground tabular-nums">
+                  </ItemTitle>
+                  <ItemDescription>{campaign.message}</ItemDescription>
+                  <p className="text-xs text-muted-foreground tabular-nums">
                     {campaign.status === "draft"
                       ? `Saved ${campaign.createdAt.toLocaleDateString("en")}`
                       : `${campaign.sent} sent, ${campaign.skipped} skipped, ${campaign.queued} queued`}
                   </p>
-                </div>
+                </ItemContent>
                 {campaign.status === "draft" ? (
-                  <Credenza>
-                    <CredenzaTrigger render={<Button size="sm" />}>
-                      <Send aria-hidden="true" data-icon="inline-start" />
-                      Queue update
-                    </CredenzaTrigger>
-                    <CredenzaContent>
-                      <CredenzaHeader>
-                        <CredenzaTitle>Queue this product update?</CredenzaTitle>
-                        <CredenzaDescription>
-                          This cannot be recalled after delivery begins. Recipients are selected in
-                          small batches and their current preference is checked again before send.
-                        </CredenzaDescription>
-                      </CredenzaHeader>
-                      <CredenzaFooter>
-                        <CredenzaClose render={<Button variant="outline" />}>
-                          Keep draft
-                        </CredenzaClose>
-                        <Button disabled={send.isPending} onClick={() => send.mutate(campaign.id)}>
-                          <Send aria-hidden="true" data-icon="inline-start" />
-                          {send.isPending ? "Queueing…" : "Queue update"}
-                        </Button>
-                      </CredenzaFooter>
-                    </CredenzaContent>
-                  </Credenza>
+                  <ItemActions className="basis-full sm:basis-auto">
+                    <AlertDialog>
+                      <AlertDialogTrigger render={<Button size="sm" />}>
+                        <Send aria-hidden="true" data-icon="inline-start" />
+                        Queue update
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Queue this product update?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This cannot be recalled after delivery begins. Recipients are selected
+                            in small batches and their current preference is checked again before
+                            send.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel disabled={send.isPending}>
+                            Keep draft
+                          </AlertDialogCancel>
+                          <AlertDialogAction
+                            disabled={send.isPending}
+                            onClick={() => send.mutate(campaign.id)}
+                          >
+                            <Send aria-hidden="true" data-icon="inline-start" />
+                            {send.isPending ? "Queueing…" : "Queue update"}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </ItemActions>
                 ) : null}
-              </article>
+              </Item>
             ))}
-          </div>
+          </ItemGroup>
         )}
       </section>
     </main>

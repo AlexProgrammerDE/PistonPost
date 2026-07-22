@@ -23,6 +23,14 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from "@/components/ui/item"
 import { getMyPosts } from "@/server/tables"
 
 export const Route = createFileRoute("/account/posts/")({
@@ -57,8 +65,8 @@ function MyPosts() {
       {posts.length === 0 ? (
         <Empty className="min-h-64 border-y">
           <EmptyHeader>
-            <EmptyMedia>
-              <FileText aria-hidden="true" className="size-8 text-muted-foreground" />
+            <EmptyMedia variant="icon">
+              <FileText aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>No posts yet</EmptyTitle>
             <EmptyDescription>Your drafts and published posts will appear here.</EmptyDescription>
@@ -71,32 +79,35 @@ function MyPosts() {
           </EmptyContent>
         </Empty>
       ) : (
-        <div className="border-y">
+        <ItemGroup className="gap-0 border-y">
           {posts.map((post) => {
             const destination = post.status === "published" ? "/post/$postId" : "/post/$postId/edit"
             const status = statusDetails[post.status]
             const StatusIcon = status.icon
             return (
-              <article
+              <Item
                 key={post.id}
-                className="grid gap-4 border-b py-5 last:border-b-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
+                render={<article />}
+                role="listitem"
+                className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
+                variant="outline"
               >
-                <div className="min-w-0">
-                  {post.status === "deleted" ? (
-                    <p dir="auto" className="overflow-hidden font-semibold wrap-anywhere">
-                      {post.title}
-                    </p>
-                  ) : (
-                    <Link
-                      to={destination}
-                      params={{ postId: post.id }}
-                      dir="auto"
-                      className="block overflow-hidden font-semibold wrap-anywhere hover:underline"
-                    >
-                      {post.title}
-                    </Link>
-                  )}
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <ItemContent className="min-w-0">
+                  <ItemTitle className="line-clamp-none w-full wrap-anywhere">
+                    {post.status === "deleted" ? (
+                      <span dir="auto">{post.title}</span>
+                    ) : (
+                      <Link
+                        to={destination}
+                        params={{ postId: post.id }}
+                        dir="auto"
+                        className="hover:underline"
+                      >
+                        {post.title}
+                      </Link>
+                    )}
+                  </ItemTitle>
+                  <ItemDescription className="mt-1 line-clamp-none flex flex-wrap items-center gap-2 text-xs">
                     <Badge variant={post.status === "failed" ? "destructive" : "outline"}>
                       <StatusIcon aria-hidden="true" data-icon="inline-start" />
                       {status.label}
@@ -112,23 +123,25 @@ function MyPosts() {
                     <span>
                       {post.hearts} {post.hearts === 1 ? "heart" : "hearts"}
                     </span>
-                  </div>
-                </div>
+                  </ItemDescription>
+                </ItemContent>
                 {post.status === "deleted" ? null : (
-                  <Button
-                    nativeButton={false}
-                    variant="outline"
-                    size="sm"
-                    render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
-                  >
-                    <Pencil aria-hidden="true" data-icon="inline-start" />
-                    {post.status === "published" ? "Edit" : "Edit details"}
-                  </Button>
+                  <ItemActions className="basis-full sm:basis-auto">
+                    <Button
+                      nativeButton={false}
+                      variant="outline"
+                      size="sm"
+                      render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
+                    >
+                      <Pencil aria-hidden="true" data-icon="inline-start" />
+                      {post.status === "published" ? "Edit" : "Edit details"}
+                    </Button>
+                  </ItemActions>
                 )}
-              </article>
+              </Item>
             )
           })}
-        </div>
+        </ItemGroup>
       )}
     </main>
   )

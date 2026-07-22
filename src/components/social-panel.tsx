@@ -22,18 +22,20 @@ import { MarkdownContent } from "@/components/MarkdownContent"
 import { MotionBoundary } from "@/components/MotionBoundary"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
+import { Alert, AlertAction, AlertDescription } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import {
-  Credenza,
-  CredenzaClose,
-  CredenzaContent,
-  CredenzaDescription,
-  CredenzaFooter,
-  CredenzaHeader,
-  CredenzaTitle,
-  CredenzaTrigger,
-} from "@/components/ui/credenza"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
@@ -377,23 +379,25 @@ export function SocialPanel({
             >
               <form.AppForm>
                 {replyingTo ? (
-                  <div className="flex items-center justify-between gap-3 border-l-2 border-primary px-3 py-2 text-sm">
-                    <span className="min-w-0 truncate text-muted-foreground">
+                  <Alert role="status">
+                    <AlertDescription className="min-w-0 truncate">
                       Replying to{" "}
                       <bdi className="font-medium text-foreground">
                         @{replyingTo.authorUsername}
                       </bdi>
-                    </span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-xs"
-                      aria-label="Cancel reply"
-                      onClick={() => setReplyingTo(null)}
-                    >
-                      <X aria-hidden="true" />
-                    </Button>
-                  </div>
+                    </AlertDescription>
+                    <AlertAction>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon-xs"
+                        aria-label="Cancel reply"
+                        onClick={() => setReplyingTo(null)}
+                      >
+                        <X aria-hidden="true" />
+                      </Button>
+                    </AlertAction>
+                  </Alert>
                 ) : null}
                 <form.AppField name="content">
                   {(field) => (
@@ -476,8 +480,8 @@ export function SocialPanel({
                               size="xs"
                             />
                             {canDelete ? (
-                              <Credenza>
-                                <CredenzaTrigger
+                              <AlertDialog>
+                                <AlertDialogTrigger
                                   render={
                                     <Button
                                       className="ml-auto"
@@ -488,29 +492,33 @@ export function SocialPanel({
                                   }
                                 >
                                   <Trash2 aria-hidden="true" />
-                                </CredenzaTrigger>
-                                <CredenzaContent>
-                                  <CredenzaHeader>
-                                    <CredenzaTitle>Delete this comment?</CredenzaTitle>
-                                    <CredenzaDescription>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
+                                    <AlertDialogDescription>
                                       The comment text will be removed from the discussion.
-                                    </CredenzaDescription>
-                                  </CredenzaHeader>
-                                  <CredenzaFooter>
-                                    <CredenzaClose render={<Button variant="outline" />}>
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel disabled={deleteMutation.isPending}>
                                       Keep comment
-                                    </CredenzaClose>
-                                    <Button
+                                    </AlertDialogCancel>
+                                    <AlertDialogAction
                                       variant="destructive"
                                       disabled={deleteMutation.isPending}
                                       onClick={() => deleteMutation.mutate(comment.id)}
                                     >
-                                      <Trash2 aria-hidden="true" data-icon="inline-start" />
+                                      {deleteMutation.isPending ? (
+                                        <Spinner aria-hidden="true" data-icon="inline-start" />
+                                      ) : (
+                                        <Trash2 aria-hidden="true" data-icon="inline-start" />
+                                      )}
                                       Delete comment
-                                    </Button>
-                                  </CredenzaFooter>
-                                </CredenzaContent>
-                              </Credenza>
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
                             ) : null}
                           </span>
                         ) : null}

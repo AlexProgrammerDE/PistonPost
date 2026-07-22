@@ -29,7 +29,9 @@ import {
 
 import { MarkdownContent } from "@/components/MarkdownContent"
 import { Button } from "@/components/ui/button"
+import { ButtonGroup } from "@/components/ui/button-group"
 import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty"
+import { Kbd } from "@/components/ui/kbd"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -58,37 +60,55 @@ type ToolbarAction = {
   }
 }
 
-const toolbarActions: ReadonlyArray<ToolbarAction> = [
-  { command: "heading", icon: Heading2, label: "Heading" },
+const toolbarGroups: ReadonlyArray<{
+  readonly label: string
+  readonly actions: ReadonlyArray<ToolbarAction>
+}> = [
   {
-    command: "bold",
-    icon: Bold,
-    label: "Bold",
-    shortcut: { accessible: "Control+B", display: "Ctrl+B" },
+    label: "Text formatting",
+    actions: [
+      { command: "heading", icon: Heading2, label: "Heading" },
+      {
+        command: "bold",
+        icon: Bold,
+        label: "Bold",
+        shortcut: { accessible: "Control+B", display: "Ctrl+B" },
+      },
+      {
+        command: "italic",
+        icon: Italic,
+        label: "Italic",
+        shortcut: { accessible: "Control+I", display: "Ctrl+I" },
+      },
+      { command: "strikethrough", icon: Strikethrough, label: "Strikethrough" },
+      {
+        command: "link",
+        icon: Link2,
+        label: "Link",
+        shortcut: { accessible: "Control+K", display: "Ctrl+K" },
+      },
+      { command: "inline-code", icon: Code2, label: "Inline code" },
+    ],
   },
   {
-    command: "italic",
-    icon: Italic,
-    label: "Italic",
-    shortcut: { accessible: "Control+I", display: "Ctrl+I" },
+    label: "Blocks and lists",
+    actions: [
+      { command: "quote", icon: Quote, label: "Quote" },
+      { command: "bullet-list", icon: List, label: "Bulleted list" },
+      { command: "ordered-list", icon: ListOrdered, label: "Numbered list" },
+      { command: "task-list", icon: ListTodo, label: "Task list" },
+      { command: "code-block", icon: SquarePen, label: "Code block" },
+      { command: "table", icon: Table2, label: "Table" },
+    ],
   },
-  { command: "strikethrough", icon: Strikethrough, label: "Strikethrough" },
   {
-    command: "link",
-    icon: Link2,
-    label: "Link",
-    shortcut: { accessible: "Control+K", display: "Ctrl+K" },
+    label: "Post extras",
+    actions: [
+      { command: "spoiler", icon: EyeOff, label: "Spoiler" },
+      { command: "details", icon: ListCollapse, label: "Collapsible details" },
+      { command: "callout", icon: Info, label: "Callout" },
+    ],
   },
-  { command: "quote", icon: Quote, label: "Quote" },
-  { command: "bullet-list", icon: List, label: "Bulleted list" },
-  { command: "ordered-list", icon: ListOrdered, label: "Numbered list" },
-  { command: "task-list", icon: ListTodo, label: "Task list" },
-  { command: "inline-code", icon: Code2, label: "Inline code" },
-  { command: "code-block", icon: SquarePen, label: "Code block" },
-  { command: "table", icon: Table2, label: "Table" },
-  { command: "spoiler", icon: EyeOff, label: "Spoiler" },
-  { command: "details", icon: ListCollapse, label: "Collapsible details" },
-  { command: "callout", icon: Info, label: "Callout" },
 ]
 
 export function MarkdownEditor({
@@ -180,30 +200,34 @@ export function MarkdownEditor({
           <div
             role="toolbar"
             aria-label="Markdown formatting"
-            className="flex flex-wrap items-center gap-1 border bg-muted/20 p-1"
+            className="flex flex-wrap items-center gap-2"
           >
-            {toolbarActions.map(({ command, icon: Icon, label, shortcut }) => (
-              <Tooltip key={command}>
-                <TooltipTrigger
-                  render={
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon-sm"
-                      aria-label={label}
-                      aria-keyshortcuts={shortcut?.accessible}
-                      disabled={disabled}
-                      onClick={() => runCommand(command)}
-                    />
-                  }
-                >
-                  <Icon aria-hidden="true" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  {label}
-                  {shortcut ? <span className="text-background/70">{shortcut.display}</span> : null}
-                </TooltipContent>
-              </Tooltip>
+            {toolbarGroups.map((group) => (
+              <ButtonGroup key={group.label} aria-label={group.label}>
+                {group.actions.map(({ command, icon: Icon, label, shortcut }) => (
+                  <Tooltip key={command}>
+                    <TooltipTrigger
+                      render={
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon-sm"
+                          aria-label={label}
+                          aria-keyshortcuts={shortcut?.accessible}
+                          disabled={disabled}
+                          onClick={() => runCommand(command)}
+                        />
+                      }
+                    >
+                      <Icon aria-hidden="true" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {label}
+                      {shortcut ? <Kbd>{shortcut.display}</Kbd> : null}
+                    </TooltipContent>
+                  </Tooltip>
+                ))}
+              </ButtonGroup>
             ))}
           </div>
         </TooltipProvider>

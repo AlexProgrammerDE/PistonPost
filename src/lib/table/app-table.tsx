@@ -23,6 +23,7 @@ import {
   type SortingState,
 } from "@tanstack/react-table"
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Columns3, SearchX } from "lucide-react"
+import type { ReactElement } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -34,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import { Pagination, PaginationContent, PaginationItem } from "@/components/ui/pagination"
 import {
   Table,
   TableBody,
@@ -75,10 +77,8 @@ export type DataTableUrlState = {
 
 export type DataTableCursorPagination = {
   page: number
-  hasPrevious: boolean
-  hasNext: boolean
-  onPrevious: () => void
-  onNext: () => void
+  previousLink: ReactElement | null
+  nextLink: ReactElement | null
 }
 
 export function hiddenColumnIds(state: ColumnVisibilityState) {
@@ -173,7 +173,7 @@ export function DataTable<TData extends RowData>({
   )
   const hideableColumns = table.getAllLeafColumns().filter((column) => column.getCanHide())
   const hasPagination = cursorPagination
-    ? cursorPagination.hasPrevious || cursorPagination.hasNext
+    ? cursorPagination.previousLink !== null || cursorPagination.nextLink !== null
     : table.getPageCount() > 1
 
   return (
@@ -259,8 +259,8 @@ export function DataTable<TData extends RowData>({
         {table.getRowModel().rows.length === 0 ? (
           <Empty className="min-h-56">
             <EmptyHeader>
-              <EmptyMedia>
-                <SearchX aria-hidden="true" className="size-8 text-muted-foreground" />
+              <EmptyMedia variant="icon">
+                <SearchX aria-hidden="true" />
               </EmptyMedia>
               <EmptyTitle>No results</EmptyTitle>
               <EmptyDescription>{emptyMessage}</EmptyDescription>
@@ -275,30 +275,58 @@ export function DataTable<TData extends RowData>({
               <p className="text-muted-foreground">
                 Page {cursorPagination?.page ?? paginationState.pageIndex + 1}
               </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={
-                    cursorPagination ? !cursorPagination.hasPrevious : !table.getCanPreviousPage()
-                  }
-                  onClick={() =>
-                    cursorPagination ? cursorPagination.onPrevious() : table.previousPage()
-                  }
-                >
-                  <ChevronLeft aria-hidden="true" data-icon="inline-start" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={cursorPagination ? !cursorPagination.hasNext : !table.getCanNextPage()}
-                  onClick={() => (cursorPagination ? cursorPagination.onNext() : table.nextPage())}
-                >
-                  Next
-                  <ChevronRight aria-hidden="true" data-icon="inline-end" />
-                </Button>
-              </div>
+              <Pagination className="mx-0 w-auto">
+                <PaginationContent>
+                  <PaginationItem>
+                    {cursorPagination?.previousLink ? (
+                      <Button
+                        nativeButton={false}
+                        render={cursorPagination.previousLink}
+                        variant="outline"
+                        size="sm"
+                        aria-label="Go to previous page"
+                      >
+                        <ChevronLeft aria-hidden="true" data-icon="inline-start" />
+                        Previous
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={cursorPagination !== undefined || !table.getCanPreviousPage()}
+                        onClick={() => table.previousPage()}
+                      >
+                        <ChevronLeft aria-hidden="true" data-icon="inline-start" />
+                        Previous
+                      </Button>
+                    )}
+                  </PaginationItem>
+                  <PaginationItem>
+                    {cursorPagination?.nextLink ? (
+                      <Button
+                        nativeButton={false}
+                        render={cursorPagination.nextLink}
+                        variant="outline"
+                        size="sm"
+                        aria-label="Go to next page"
+                      >
+                        Next
+                        <ChevronRight aria-hidden="true" data-icon="inline-end" />
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={cursorPagination !== undefined || !table.getCanNextPage()}
+                        onClick={() => table.nextPage()}
+                      >
+                        Next
+                        <ChevronRight aria-hidden="true" data-icon="inline-end" />
+                      </Button>
+                    )}
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
             </div>
           )}
         </table.Subscribe>

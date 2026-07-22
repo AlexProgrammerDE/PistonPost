@@ -15,6 +15,7 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
+  FieldSeparator,
   FieldSet,
 } from "@/components/ui/field"
 import { Switch } from "@/components/ui/switch"
@@ -113,12 +114,13 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
           </FieldGroup>
         </FieldSet>
         <ErrorMessage message={error} />
-        <div className="flex justify-end border-t pt-5">
+        <FieldSeparator />
+        <Field orientation="horizontal" className="justify-end">
           <form.SubmitButton>
             <Save aria-hidden="true" data-icon="inline-start" />
             Save profile
           </form.SubmitButton>
-        </div>
+        </Field>
       </form.AppForm>
     </form>
   )
@@ -234,12 +236,13 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
           </FieldGroup>
         </FieldSet>
         <ErrorMessage message={error} />
-        <div className="flex justify-end border-t pt-5">
+        <FieldSeparator />
+        <Field orientation="horizontal" className="justify-end">
           <form.SubmitButton>
             <Save aria-hidden="true" data-icon="inline-start" />
             Save preferences
           </form.SubmitButton>
-        </div>
+        </Field>
       </form.AppForm>
     </form>
   )

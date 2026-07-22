@@ -48,6 +48,7 @@ import {
   FieldGroup,
   FieldLabel,
   FieldLegend,
+  FieldSeparator,
   FieldSet,
 } from "@/components/ui/field"
 import {
@@ -590,7 +591,8 @@ export function PostComposer({
           </Alert>
         ) : null}
 
-        <div className="flex flex-col items-end gap-3 border-t pt-6">
+        <FieldSeparator />
+        <Field orientation="horizontal" className="flex-wrap justify-end">
           <TurnstileChallenge
             ref={turnstile}
             action={TURNSTILE_ACTIONS.createPost}
@@ -600,7 +602,7 @@ export function PostComposer({
             <Send aria-hidden="true" data-icon="inline-start" />
             Post it
           </form.SubmitButton>
-        </div>
+        </Field>
       </form.AppForm>
     </form>
   )

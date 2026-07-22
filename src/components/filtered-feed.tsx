@@ -26,8 +26,8 @@ export function FilteredFeed({
     return (
       <Empty className="min-h-64">
         <EmptyHeader>
-          <EmptyMedia>
-            <SearchX aria-hidden="true" className="size-8 text-muted-foreground" />
+          <EmptyMedia variant="icon">
+            <SearchX aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle className="overflow-hidden">{emptyMessage}</EmptyTitle>
         </EmptyHeader>

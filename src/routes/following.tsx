@@ -48,8 +48,8 @@ function FollowingFeed() {
       ) : (
         <Empty className="min-h-80">
           <EmptyHeader>
-            <EmptyMedia>
-              <UsersRound aria-hidden="true" className="size-8 text-muted-foreground" />
+            <EmptyMedia variant="icon">
+              <UsersRound aria-hidden="true" />
             </EmptyMedia>
             <EmptyTitle>Sign in to see your Following feed</EmptyTitle>
             <EmptyDescription>
@@ -79,8 +79,8 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
     return (
       <Empty className="min-h-80">
         <EmptyHeader>
-          <EmptyMedia>
-            <UsersRound aria-hidden="true" className="size-8 text-muted-foreground" />
+          <EmptyMedia variant="icon">
+            <UsersRound aria-hidden="true" />
           </EmptyMedia>
           <EmptyTitle>Your Following feed is empty</EmptyTitle>
           <EmptyDescription>

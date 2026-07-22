@@ -3,16 +3,16 @@
 import { useBlocker } from "@tanstack/react-router"
 import type { RefObject } from "react"
 
-import { Button } from "@/components/ui/button"
 import {
-  Credenza,
-  CredenzaClose,
-  CredenzaContent,
-  CredenzaDescription,
-  CredenzaFooter,
-  CredenzaHeader,
-  CredenzaTitle,
-} from "@/components/ui/credenza"
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 type UnsavedChangesGuardProps = {
   readonly allowNavigationRef?: RefObject<boolean>
@@ -30,26 +30,26 @@ export function UnsavedChangesGuard({ allowNavigationRef, enabled }: UnsavedChan
   })
 
   return (
-    <Credenza
+    <AlertDialog
       open={blocker.status === "blocked"}
       onOpenChange={(open) => {
         if (!open && blocker.status === "blocked") blocker.reset()
       }}
     >
-      <CredenzaContent>
-        <CredenzaHeader>
-          <CredenzaTitle>Discard your unsaved changes?</CredenzaTitle>
-          <CredenzaDescription>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Discard your unsaved changes?</AlertDialogTitle>
+          <AlertDialogDescription>
             Your changes will be lost if you leave this page.
-          </CredenzaDescription>
-        </CredenzaHeader>
-        <CredenzaFooter>
-          <CredenzaClose render={<Button variant="outline" />}>Keep editing</CredenzaClose>
-          <Button variant="destructive" onClick={blocker.proceed}>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Keep editing</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" onClick={blocker.proceed}>
             Discard changes
-          </Button>
-        </CredenzaFooter>
-      </CredenzaContent>
-    </Credenza>
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
