@@ -339,8 +339,10 @@ Markdown still works **inside** this callout.
     await timelineHeart.click()
     await expect(timelineHeart).toHaveAttribute("aria-pressed", "false")
 
-    await timelineActions.getByRole("button", { name: "Copy link" }).click()
-    await expect(page.getByText("Post link copied.")).toBeVisible()
+    const copyLinkButton = timelineActions.getByRole("button", { name: "Copy link" })
+    await copyLinkButton.click()
+    await expect(copyLinkButton).toHaveAttribute("data-copied", "true")
+    await expect(timelineActions.getByRole("status")).toHaveText("Link copied.")
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
       .toMatch(/\/post\/[a-z0-9]+$/u)
