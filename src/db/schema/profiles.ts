@@ -16,7 +16,6 @@ export const profiles = sqliteTable(
     website: text("website"),
     location: text("location"),
     avatarMediaId: text("avatar_media_id"),
-    legacyAvatarUrl: text("legacy_avatar_url"),
     createdAt: timestamp("created_at").notNull().default(now),
     updatedAt: timestamp("updated_at").notNull().default(now),
   },

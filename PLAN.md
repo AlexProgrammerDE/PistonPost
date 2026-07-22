@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-19
+Last updated: 2026-07-22
 
 ## How to execute this plan
 
@@ -263,7 +263,8 @@ Do not copy EnderDash account IDs, namespace IDs, routes, hostnames, Hyperdrive,
 
 ## Data model
 
-All primary keys use text IDs that are URL-safe and sortable for new records. Legacy Mongo ObjectId strings remain valid IDs where preserving them reduces mapping risk.
+All primary keys use text IDs that are URL-safe and sortable for new records. Existing imported
+records keep their established public IDs as canonical identifiers so old links continue to work.
 
 ### Better Auth tables
 
@@ -286,7 +287,6 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 - username and normalizedUsername, unique.
 - bio, website, location.
 - avatarMediaId, nullable.
-- legacyAvatarUrl, nullable during migration.
 - createdAt and updatedAt.
 
 #### userSettings
@@ -309,7 +309,6 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 #### posts
 
 - id, primary key.
-- legacyId, unique and nullable after migration.
 - authorId.
 - type: text, images, or video.
 - status: draft, processing, published, moderated, deleted, or failed.
@@ -348,7 +347,7 @@ Do not hand-author these from memory. Generate, inspect, and then add required i
 
 #### comments
 
-- id, legacyId, postId, authorId.
+- id, postId, authorId.
 - content.
 - status: published, moderated, or deleted.
 - createdAt, updatedAt, and deletedAt.
@@ -681,7 +680,11 @@ requires in the Content Security Policy.
 
 ## Retired legacy migration
 
-The legacy importer is no longer part of the repository or release process. Its final bookkeeping tables, `migration_runs` and `migration_mappings`, were removed after the migration tooling and operator surfaces were retired.
+The legacy importer is no longer part of the repository or release process. Its final bookkeeping
+tables, `migration_runs` and `migration_mappings`, were removed after the migration tooling and
+operator surfaces were retired. Import-only IDs, the temporary profile avatar URL, and the unused
+legacy media provider were also removed after a production audit. Existing post IDs remain the
+canonical public identifiers, so historical post links do not need an alias table.
 
 ## Delivery phases
 
@@ -880,11 +883,13 @@ Exit criteria:
 
 - [x] Remove the retired legacy migration CLI, fixtures, configuration, UI, and runbooks.
 - [x] Remove `migrationRuns` and `migrationMappings` through a generated D1 migration.
+- [x] Remove import-only legacy columns and the unused legacy media provider without changing public IDs.
 
 Exit criteria:
 
 - The application has no migration route, administration view, or operator CLI.
 - D1 contains no legacy migration bookkeeping tables.
+- Historical post URLs resolve through the unchanged canonical post IDs.
 
 ### Phase 9: Security, performance, and operational hardening
 
@@ -1011,6 +1016,11 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-14: Administration tables use server-side `(created_at, id)` cursors. Cursor history, sort direction, filters, and column visibility live in URL search parameters so large datasets never rely on offset pagination.
 - 2026-07-16: Retire the legacy migration CLI, fixtures, configuration, public and administrator routes, transactional email variant, and operator runbooks. Preserve `migrationRuns`, `migrationMappings`, and generated D1 artifacts until a separate schema change deliberately removes the historical state. This affects Phases 7 through 10.
 - 2026-07-17: Remove `migrationRuns` and `migrationMappings` through a generated Drizzle migration. The importer and every application or operator surface that used the tables had already been retired, so keeping their historical state no longer justified the schema surface.
+- 2026-07-22: Remove the remaining import-only `legacyId` and `legacyAvatarUrl` columns and the
+  unused legacy media provider after auditing production. Keep imported public post IDs unchanged
+  as their permanent canonical IDs, preserve archived media provenance in provider metadata, and
+  redirect superseded account and terms paths to their canonical routes. This affects Phases 3, 5,
+  8, and 10.
 - 2026-07-17: Revalidate public HTML on every use and reload once when Vite reports a missing preload. Content-hashed route chunks change between deployments, so stale document caching can otherwise reference assets that no longer exist. This affects Phases 2 and 9.
 - 2026-07-14: Keep the full Better Auth UI provider scoped to authentication, settings, and other account routes. Public navigation uses a small session-aware account menu so passkey, two-factor, CAPTCHA, and account-management code do not enter the public root bundle.
 - 2026-07-19: Supersede the scoped Better Auth UI provider decision. Follow the official TanStack Start integration with one root AuthProvider so UserButton and plugin-contributed account switching and theme controls share one configuration and session cache across the application. Keep public bundle size measured through the existing build and bundle checks. This affects Phases 4 and 5.

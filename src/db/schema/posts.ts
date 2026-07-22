@@ -16,7 +16,6 @@ export const posts = sqliteTable(
   "posts",
   {
     id: text("id").primaryKey(),
-    legacyId: text("legacy_id"),
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -39,7 +38,6 @@ export const posts = sqliteTable(
     version: integer("version").notNull().default(1),
   },
   (table) => [
-    uniqueIndex("posts_legacy_id_idx").on(table.legacyId),
     index("posts_discovery_idx").on(table.status, table.visibility, table.publishedAt, table.id),
     index("posts_author_status_created_idx").on(table.authorId, table.status, table.createdAt),
     check("posts_type_check", sql`${table.type} in ('text', 'images', 'video')`),

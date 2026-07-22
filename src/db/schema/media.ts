@@ -19,10 +19,9 @@ export const mediaAssets = sqliteTable(
   "media_assets",
   {
     id: text("id").primaryKey(),
-    legacyId: text("legacy_id"),
     ownerId: text("owner_id").references(() => user.id, { onDelete: "set null" }),
     kind: text("kind", { enum: ["image", "video", "avatar"] }).notNull(),
-    provider: text("provider", { enum: ["r2", "images", "stream", "legacy"] }).notNull(),
+    provider: text("provider", { enum: ["r2", "images", "stream"] }).notNull(),
     status: text("status", {
       enum: ["pending", "uploading", "processing", "ready", "failed", "deleted"],
     })
@@ -48,12 +47,8 @@ export const mediaAssets = sqliteTable(
   },
   (table) => [
     index("media_assets_owner_status_created_idx").on(table.ownerId, table.status, table.createdAt),
-    uniqueIndex("media_assets_legacy_id_idx").on(table.legacyId),
     check("media_assets_kind_check", sql`${table.kind} in ('image', 'video', 'avatar')`),
-    check(
-      "media_assets_provider_check",
-      sql`${table.provider} in ('r2', 'images', 'stream', 'legacy')`,
-    ),
+    check("media_assets_provider_check", sql`${table.provider} in ('r2', 'images', 'stream')`),
     check(
       "media_assets_status_check",
       sql`${table.status} in ('pending', 'uploading', 'processing', 'ready', 'failed', 'deleted')`,

@@ -16,7 +16,6 @@ export const comments = sqliteTable(
   "comments",
   {
     id: text("id").primaryKey(),
-    legacyId: text("legacy_id").unique(),
     postId: text("post_id")
       .notNull()
       .references(() => posts.id, { onDelete: "cascade" }),
