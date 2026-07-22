@@ -116,11 +116,12 @@ test.describe.serial("authenticated authoring", () => {
     await page.goto("/account/settings/notifications")
     await page.locator('[data-hydrated="true"]').waitFor()
 
-    const comments = page.getByRole("switch", { name: "Comments" })
-    const replies = page.getByRole("switch", { name: "Replies" })
-    const security = page.getByRole("switch", { name: "Security" })
-    const moderation = page.getByRole("switch", { name: "Moderation" })
-    const productUpdates = page.getByRole("switch", { name: "Product updates" })
+    const emailNotifications = page.getByRole("group", { name: "Email notifications" })
+    const comments = emailNotifications.getByRole("switch", { name: "Comments" })
+    const replies = emailNotifications.getByRole("switch", { name: "Replies" })
+    const security = emailNotifications.getByRole("switch", { name: "Security" })
+    const moderation = emailNotifications.getByRole("switch", { name: "Moderation" })
+    const productUpdates = emailNotifications.getByRole("switch", { name: "Product updates" })
 
     await expect(comments).toBeChecked()
     await expect(replies).toBeChecked()
@@ -137,9 +138,14 @@ test.describe.serial("authenticated authoring", () => {
 
     await page.reload()
     await page.locator('[data-hydrated="true"]').waitFor()
-    await expect(page.getByRole("switch", { name: "Comments" })).not.toBeChecked()
-    await expect(page.getByRole("switch", { name: "Replies" })).toBeChecked()
-    await expect(page.getByRole("switch", { name: "Product updates" })).toBeChecked()
+    const reloadedEmailNotifications = page.getByRole("group", { name: "Email notifications" })
+    await expect(
+      reloadedEmailNotifications.getByRole("switch", { name: "Comments" }),
+    ).not.toBeChecked()
+    await expect(reloadedEmailNotifications.getByRole("switch", { name: "Replies" })).toBeChecked()
+    await expect(
+      reloadedEmailNotifications.getByRole("switch", { name: "Product updates" }),
+    ).toBeChecked()
   })
 
   test("uploads, serves, and deletes a managed avatar", async ({ context, page }) => {
