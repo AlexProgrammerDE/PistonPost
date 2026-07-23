@@ -1,6 +1,0 @@
-/assets/*
-  Cache-Control: public, max-age=31556952, immutable
-
-/push-sw.js
-  Cache-Control: no-cache
-  Service-Worker-Allowed: /
