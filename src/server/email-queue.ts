@@ -20,7 +20,7 @@ import { PushTransport, webPushTransportLayer } from "@/push/transport"
 import { mediaCacheTag } from "./cache-tags"
 import { deadLetterMetadata } from "./dead-letter"
 import { requireEmailBinding } from "./email-binding"
-import { readRequiredEmailValue, readUnsubscribeKeyring } from "./email-config"
+import { readUnsubscribeKeyring } from "./email-config"
 import { EmailJobResolver, emailJobResolverLayer } from "./email-job-resolver"
 import { internalJobSchema, type InternalJob } from "./jobs"
 import { writeOperationalEvent } from "./operational-events"
@@ -555,8 +555,6 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
       baseURL: env.PUBLIC_APP_URL,
       getUnsubscribeSecret: async () =>
         (await readUnsubscribeKeyring(env.EMAIL_UNSUBSCRIBE_SECRET)).current,
-      getMarketingPostalAddress: () =>
-        readRequiredEmailValue(env.MARKETING_POSTAL_ADDRESS, "MARKETING_POSTAL_ADDRESS"),
     }),
     pushJobResolverLayer(database),
     webPushTransportLayer({

@@ -81,11 +81,6 @@ describe("prepareProductionDeployConfig", () => {
         secret_name: "EMAIL_UNSUBSCRIBE_SECRET",
       },
       {
-        binding: "MARKETING_POSTAL_ADDRESS",
-        store_id: input.secretsStoreId,
-        secret_name: "MARKETING_POSTAL_ADDRESS",
-      },
-      {
         binding: "TURNSTILE_SECRET",
         store_id: input.secretsStoreId,
         secret_name: "TURNSTILE_SECRET",

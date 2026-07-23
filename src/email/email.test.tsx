@@ -125,7 +125,6 @@ describe("transactional email", () => {
         heading: "Posting got a little easier",
         message: "You can now keep a draft while media finishes processing.",
         unsubscribeUrl: `https://post.pistonmaster.net/email/unsubscribe?token=${token}`,
-        postalAddress: "123 Test Street, Test City, 00000, Testland",
       }),
     )
 
@@ -146,7 +145,6 @@ describe("transactional email", () => {
           heading: "Something changed",
           message: "Here is what changed.",
           unsubscribeUrl,
-          postalAddress: "123 Test Street, Test City, 00000, Testland",
         }),
         to: "recipient@example.com",
         from: "notifications@example.com",

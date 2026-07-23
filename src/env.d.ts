@@ -3,7 +3,6 @@ declare namespace Cloudflare {
     readonly BETTER_AUTH_API_KEY: string | SecretsStoreSecret
     readonly BETTER_AUTH_SECRET: string | SecretsStoreSecret
     readonly EMAIL_UNSUBSCRIBE_SECRET: string | SecretsStoreSecret
-    readonly MARKETING_POSTAL_ADDRESS: string | SecretsStoreSecret
     readonly TURNSTILE_SECRET: string | SecretsStoreSecret
     readonly STREAM_WEBHOOK_SECRET: string | SecretsStoreSecret
     readonly STREAM_ACCOUNT_ID: string | SecretsStoreSecret

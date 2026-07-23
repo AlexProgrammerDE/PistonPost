@@ -5,7 +5,6 @@ import { z } from "zod"
 import * as schema from "@/db/schema"
 import { productEmailBatchJob, productUpdateMessage, renderEmail } from "@/email"
 import { serverFunctionValidator } from "@/lib/server-function-error"
-import { readRequiredEmailValue } from "@/server/email-config"
 import { conflictFailure, notFoundFailure } from "@/server/server-function-failure"
 import { administratorServerFunctionMiddleware } from "@/server/server-function-middleware"
 
@@ -38,13 +37,12 @@ const campaignInput = z
 
 export type EmailCampaignInput = z.infer<typeof campaignInput>
 
-function campaignContent(input: EmailCampaignInput, baseURL: string, postalAddress: string) {
+function campaignContent(input: EmailCampaignInput, baseURL: string) {
   return productUpdateMessage({
     ...input,
     actionLabel: input.actionLabel || null,
     actionUrl: input.actionUrl || null,
     unsubscribeUrl: new URL("/settings/notifications", baseURL).toString(),
-    postalAddress,
   })
 }
 
@@ -75,15 +73,9 @@ export const getEmailCampaigns = createServerFn({ method: "GET" })
 export const previewEmailCampaign = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
   .validator(serverFunctionValidator(campaignInput))
-  .handler(async ({ context, data }) => {
-    const postalAddress = await readRequiredEmailValue(
-      context.env.MARKETING_POSTAL_ADDRESS,
-      "MARKETING_POSTAL_ADDRESS",
-    )
-    return renderEmail(
-      campaignContent(data, context.runtime.config.PUBLIC_APP_URL.toString(), postalAddress),
-    )
-  })
+  .handler(({ context, data }) =>
+    renderEmail(campaignContent(data, context.runtime.config.PUBLIC_APP_URL.toString())),
+  )
 
 export const createEmailCampaign = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
@@ -119,7 +111,6 @@ export const sendEmailCampaign = createServerFn({ method: "POST" })
   .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
   .handler(async ({ context, data }) => {
     const { database, session } = context
-    await readRequiredEmailValue(context.env.MARKETING_POSTAL_ADDRESS, "MARKETING_POSTAL_ADDRESS")
     const campaign = await database
       .select({ status: schema.emailCampaigns.status })
       .from(schema.emailCampaigns)

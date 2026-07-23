@@ -12,20 +12,18 @@ about a particular campaign or jurisdiction.
 | Moderation action                                                   | Required service message             | Required                      | None                                       | `notifications@transactional.pistonmaster.net` |
 | Comment notification                                                | Optional service notification        | On                            | Comment category link and one-click header | `notifications@transactional.pistonmaster.net` |
 | Reply notification                                                  | Optional service notification        | On                            | Reply category link and one-click header   | `notifications@transactional.pistonmaster.net` |
-| Product update                                                      | Optional commercial update           | Off until the user enables it | Product category link and one-click header | `updates@transactional.pistonmaster.net`       |
+| Product update                                                      | Optional service update              | Off until the user enables it | Product category link and one-click header | `updates@transactional.pistonmaster.net`       |
 
 Required messages must not contain `List-Unsubscribe`, `List-Unsubscribe-Post`, or `List-ID`.
-Optional messages must contain all three headers and a visible body link. Product updates must also
-show the configured physical mailing address.
+Optional messages must contain all three headers and a visible body link.
 
 ## Provider boundary
 
 [Cloudflare Email Service currently supports transactional email, not marketing campaigns](https://developers.cloudflare.com/email-service/reference/faq/).
 The product update tool may send factual changes to PistonPost only. Do not use it for promotions,
 sales, sponsorships, or third-party advertising. Move commercial campaigns to a provider that
-explicitly supports marketing email before sending that kind of content. The application still
-treats product updates as commercial for consent, unsubscribe, sender separation, and postal-address
-controls because that is the safer compliance boundary.
+explicitly supports marketing email before sending that kind of content. Product updates remain
+opt-in and keep separate sender and unsubscribe controls.
 
 ## Application controls
 
@@ -61,7 +59,6 @@ Set these values before testing email:
 - `NOTIFICATIONS_EMAIL_FROM`: service notification and moderation sender.
 - `MARKETING_EMAIL_FROM`: product update sender.
 - `SUPPORT_EMAIL`: monitored reply address.
-- `MARKETING_POSTAL_ADDRESS`: real physical postal address shown in product updates.
 - `EMAIL_UNSUBSCRIBE_SECRET`: signing key or JSON key ring.
 
 A single signing key is valid:
@@ -90,11 +87,9 @@ sender, DNS, template, header, token, or delivery-provider change.
 
 1. Confirm SPF, DKIM, and DMARC pass for `transactional.pistonmaster.net`, and confirm Cloudflare
    allows all three configured sender addresses.
-2. Confirm `MARKETING_POSTAL_ADDRESS` contains the current physical mailing address. Do not send a
-   product campaign with a placeholder.
-3. Send one required authentication message and one message from each optional category to the test
+2. Send one required authentication message and one message from each optional category to the test
    accounts.
-4. Inspect the raw source of each optional message. Confirm it contains:
+3. Inspect the raw source of each optional message. Confirm it contains:
 
    ```text
    List-Unsubscribe: <https://post.pistonmaster.net/email/unsubscribe?token=...>
@@ -105,9 +100,9 @@ sender, DNS, template, header, token, or delivery-provider change.
    Confirm the DKIM signature covers the list headers. Confirm the required authentication message
    contains none of them.
 
-5. Open each body link. Confirm the page does not change a preference on load, the button disables
+4. Open each body link. Confirm the page does not change a preference on load, the button disables
    only the named category, and required messages remain enabled.
-6. Copy an optional message's `List-Unsubscribe` URL and exercise the provider request directly:
+5. Copy an optional message's `List-Unsubscribe` URL and exercise the provider request directly:
 
    ```bash
    curl --include \
@@ -120,9 +115,9 @@ sender, DNS, template, header, token, or delivery-provider change.
    Expect `204 No Content`, no redirect, and `Cache-Control: private, no-store`. Repeat the request
    and expect the same result.
 
-7. Confirm the setting is off and the preference history identifies `one-click`. Queue another
+6. Confirm the setting is off and the preference history identifies `one-click`. Queue another
    message in that category and confirm delivery is skipped.
-8. Confirm Gmail and Yahoo expose their native unsubscribe control for optional messages. Record the
+7. Confirm Gmail and Yahoo expose their native unsubscribe control for optional messages. Record the
    raw headers, mailbox result, tested commit, and date in the release evidence. Review queue
    dead-letter events and delivery failures before closing the check. Review the
    [Cloudflare suppression list](https://developers.cloudflare.com/email-service/concepts/suppressions/)

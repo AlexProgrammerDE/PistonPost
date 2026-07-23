@@ -4,8 +4,6 @@
 BETTER_AUTH_SECRET=
 # Signs category-scoped email unsubscribe links. Use a separate random value.
 EMAIL_UNSUBSCRIBE_SECRET=
-# Required in product update emails. Use the monitored business postal address.
-MARKETING_POSTAL_ADDRESS=
 # Better Auth dashboard API key used by Dash and Sentinel.
 BETTER_AUTH_API_KEY=
 # Use Cloudflare's always-pass test secret for local development only.

@@ -100,7 +100,6 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 - `BETTER_AUTH_API_KEY`
 - `BETTER_AUTH_SECRET`
 - `EMAIL_UNSUBSCRIBE_SECRET`
-- `MARKETING_POSTAL_ADDRESS`
 - `TURNSTILE_SECRET`
 - `STREAM_WEBHOOK_SECRET`
 - `STREAM_ACCOUNT_ID`
@@ -119,7 +118,6 @@ STORE_ID=replace-with-your-store-id
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_API_KEY --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name EMAIL_UNSUBSCRIBE_SECRET --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name MARKETING_POSTAL_ADDRESS --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
 bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID --scopes workers --remote
@@ -128,7 +126,7 @@ bunx wrangler secrets-store secret create "$STORE_ID" --name VAPID_PRIVATE_KEY -
 ```
 
 Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
-The deployment workflow binds all nine values by name. Its Cloudflare API token needs permission to
+The deployment workflow binds all eight values by name. Its Cloudflare API token needs permission to
 deploy Secrets Store bindings in addition to the permissions required by the other configured
 services.
 
@@ -237,6 +235,5 @@ curl --fail http://127.0.0.1:3000/health
 The expected body is `{"status":"ok"}` and the response must use `Cache-Control: no-store`.
 
 Before sending a product campaign, complete the live mailbox and raw-header checks in
-[Email compliance controls](./email-compliance.md). Product preview and delivery fail when
-`MARKETING_POSTAL_ADDRESS` is empty, which prevents a campaign from leaving without the required
-physical mailing address.
+[Email compliance controls](./email-compliance.md). Keep product updates limited to factual service
+changes because Cloudflare Email Service does not support marketing campaigns.

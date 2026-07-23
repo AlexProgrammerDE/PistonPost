@@ -106,7 +106,6 @@ export function productUpdateMessage(input: {
   readonly actionLabel?: string | null
   readonly actionUrl?: string | null
   readonly unsubscribeUrl: string
-  readonly postalAddress: string
 }): EmailContent {
   return {
     template: "product-update",
@@ -120,6 +119,5 @@ export function productUpdateMessage(input: {
         : undefined,
     footnote: "You received this because product update emails are enabled for your account.",
     subscription: emailSubscription("product-email", input.unsubscribeUrl),
-    senderPostalAddress: input.postalAddress,
   }
 }

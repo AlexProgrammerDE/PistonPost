@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 
-import { readRequiredEmailValue, readUnsubscribeKeyring } from "./email-config"
+import { readUnsubscribeKeyring } from "./email-config"
 
 describe("email configuration", () => {
   it("retains old unsubscribe keys while selecting one current signing key", async () => {
@@ -14,8 +14,8 @@ describe("email configuration", () => {
     expect(keyring).toEqual({ current, verificationKeys: [current, previous] })
   })
 
-  it("rejects missing campaign addresses and short signing keys", async () => {
-    expect(readRequiredEmailValue("  ", "MARKETING_POSTAL_ADDRESS")).rejects.toThrow("unavailable")
+  it("rejects missing and short signing keys", async () => {
+    expect(readUnsubscribeKeyring("  ")).rejects.toThrow("unavailable")
     expect(readUnsubscribeKeyring("too-short")).rejects.toThrow("at least 32 characters")
   })
 })

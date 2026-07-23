@@ -49,7 +49,6 @@ export type EmailContent = {
   readonly code?: string
   readonly footnote?: string
   readonly subscription?: EmailSubscription
-  readonly senderPostalAddress?: string
 }
 
 export type RenderedEmail = {
@@ -112,11 +111,6 @@ export function PistonPostEmail({ content }: { readonly content: EmailContent })
             </Link>
             .
           </Text>
-          {content.senderPostalAddress ? (
-            <Text style={styles.postalAddress}>
-              PistonPost mailing address: {content.senderPostalAddress}
-            </Text>
-          ) : null}
         </Container>
       </Body>
     </Html>
@@ -191,13 +185,6 @@ const styles = {
     lineHeight: "18px",
     marginTop: "28px",
     paddingTop: "18px",
-  },
-  postalAddress: {
-    color: "#806a62",
-    fontSize: "12px",
-    lineHeight: "18px",
-    margin: "8px 0 0",
-    whiteSpace: "pre-line" as const,
   },
   link: { color: "#c82d47" },
 } as const

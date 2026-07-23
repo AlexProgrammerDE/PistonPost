@@ -100,7 +100,6 @@ export function emailJobResolverLayer(
   config: Readonly<{
     baseURL: string
     getUnsubscribeSecret: () => Promise<string>
-    getMarketingPostalAddress: () => Promise<string>
   }>,
 ) {
   return Layer.succeed(EmailJobResolver, {
@@ -326,10 +325,10 @@ export function emailJobResolverLayer(
       if (!recipient || !optInNotificationEnabled(recipient.enabled)) {
         return skip("preference-disabled", campaign.id)
       }
-      const [unsubscribeSecret, postalAddress] = yield* Effect.all([
-        Effect.tryPromise({ try: config.getUnsubscribeSecret, catch: queryFailure }),
-        Effect.tryPromise({ try: config.getMarketingPostalAddress, catch: queryFailure }),
-      ])
+      const unsubscribeSecret = yield* Effect.tryPromise({
+        try: config.getUnsubscribeSecret,
+        catch: queryFailure,
+      })
       const token = yield* signUnsubscribeToken(
         job.recipientUserId,
         "product-email",
@@ -347,7 +346,6 @@ export function emailJobResolverLayer(
           actionLabel: campaign.actionLabel,
           actionUrl: campaign.actionUrl,
           unsubscribeUrl: createUnsubscribeUrl(baseURL, token),
-          postalAddress,
         }),
       })
     }),

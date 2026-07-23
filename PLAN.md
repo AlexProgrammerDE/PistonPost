@@ -234,7 +234,6 @@ Use descriptive binding names and keep actual IDs out of committed documentation
 | ASSETS                   | Fetcher                | Built TanStack Start assets                    |
 | EMAIL                    | SendEmail              | Authentication, notification, and update email |
 | EMAIL_UNSUBSCRIBE_SECRET | Secret                 | Category-scoped unsubscribe token key ring     |
-| MARKETING_POSTAL_ADDRESS | Secret/config          | Physical address shown in product updates      |
 | JOBS                     | Queue                  | General durable background jobs                |
 | ANALYTICS                | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
 | AUTH_RATE_LIMITER        | RateLimit              | Better Auth requests                           |
@@ -1130,16 +1129,17 @@ Record future changes here with date, decision, reason, and affected phases.
   classify comment, reply, and product email as separate optional lists. Give optional messages a
   visible category link, RFC 8058 one-click headers, delivery-time suppression, and auditable
   preference changes. Keep product updates off by default, send them from a dedicated update
-  address, and require a physical mailing address before preview or delivery. Retain previous token
-  keys during rotation so links remain usable for their 180-day lifetime. This affects Phases 3, 4,
-  7, 9, and 10.
+  address, and limit them to factual service changes. Retain previous token keys during rotation so
+  links remain usable for their 180-day lifetime. This affects Phases 3, 4, 7, 9, and 10.
 - 2026-07-22: Keep the Cloudflare-backed product update tool limited to factual service changes
-  because Cloudflare Email Service does not support marketing campaigns. Treat those updates as
-  commercial for the stricter consent, unsubscribe, sender, and mailing-address controls. Use a
-  marketing-capable provider before expanding the tool to promotions, sales, sponsorships, or
-  advertising. Rely on Cloudflare's account suppression list for hard bounces, repeated soft
-  bounces, and spam complaints, and treat suppressed-recipient responses as terminal Queue skips.
-  This affects Phases 4, 7, 9, and 10.
+  because Cloudflare Email Service does not support marketing campaigns. Preserve explicit consent,
+  unsubscribe, and sender separation. Use a marketing-capable provider before expanding the tool to
+  promotions, sales, sponsorships, or advertising. Rely on Cloudflare's account suppression list
+  for hard bounces, repeated soft bounces, and spam complaints, and treat suppressed-recipient
+  responses as terminal Queue skips. This affects Phases 4, 7, 9, and 10.
+- 2026-07-23: Remove the temporary mailing-address binding and product-email footer field. Product
+  updates remain opt-in factual service messages, and production deployment no longer depends on a
+  placeholder address secret. This affects Phases 4 and 10.
 - 2026-07-17: Split email delivery by sensitivity. Better Auth token and code messages run through
   Cloudflare request background tasks with a small bounded transport retry and are never persisted.
   Product and account notifications use ID-only outbox jobs, delivery-time preference checks,
