@@ -3,6 +3,11 @@
   "reviewers": ["AlexProgrammerDE"],
   "packageRules": [
     {
+      "description": "Keep dash.js aligned with the Vidstack DASH provider",
+      "matchPackageNames": ["dashjs"],
+      "allowedVersions": "4.7.4"
+    },
+    {
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
       "automergeType": "branch"

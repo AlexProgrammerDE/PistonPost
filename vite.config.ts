@@ -7,7 +7,18 @@ import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 
 const config = defineConfig(({ mode }) => ({
-  resolve: { tsconfigPaths: true },
+  resolve: {
+    dedupe: [
+      "react",
+      "react-dom",
+      "@tanstack/history",
+      "@tanstack/react-router",
+      "@tanstack/react-store",
+      "@tanstack/router-core",
+      "@tanstack/store",
+    ],
+    tsconfigPaths: true,
+  },
   build: {
     rolldownOptions: {
       output: {
