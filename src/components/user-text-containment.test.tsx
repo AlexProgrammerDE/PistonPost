@@ -13,6 +13,7 @@ const post: PublicPostRead = {
   publishedAt: new Date("2026-07-17T00:00:00.000Z"),
   updatedAt: new Date("2026-07-17T00:00:00.000Z"),
   author: {
+    id: "author-123",
     username: "author",
     normalizedUsername: "author",
     name: `A${"\u0300".repeat(99)}`,

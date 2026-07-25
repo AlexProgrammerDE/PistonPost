@@ -1,3 +1,6 @@
+import { useSession } from "@better-auth-ui/react"
+
+import { authClient } from "@/auth/client"
 import { FeedPostActionsProvider } from "@/components/feed-post-actions"
 import { PostAuthorAvatar, PostView } from "@/components/post-view"
 import {
@@ -19,6 +22,7 @@ export function PostTimeline({
   readonly posts: readonly PublicPostRead[]
   readonly surface: Exclude<PostViewSurface, "detail">
 }) {
+  const session = useSession(authClient)
   const firstPostId = posts[0]?.id
   const postIdentity = posts.map((post) => post.id).join("\0")
   const timelineRef = usePostImpressionTracking({ postIdentity, surface })
@@ -59,6 +63,9 @@ export function PostTimeline({
                   post={post}
                   priority={post.id === firstPostId}
                   authorAvatar={null}
+                  canEdit={
+                    session.data?.user.id === post.author.id || session.data?.user.role === "admin"
+                  }
                   className="border-0 pb-0"
                 />
               </TimelineContent>

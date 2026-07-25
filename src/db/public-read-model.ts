@@ -40,6 +40,7 @@ export type PublicPostRead = {
   readonly publishedAt: Date
   readonly updatedAt: Date
   readonly author: {
+    readonly id: string
     readonly username: string
     readonly normalizedUsername: string
     readonly name: string
@@ -139,6 +140,7 @@ type BasePostRow = {
   readonly visibility: "public" | "unlisted"
   readonly publishedAt: Date
   readonly updatedAt: Date
+  readonly authorId: string
   readonly authorUsername: string
   readonly authorNormalizedUsername: string
   readonly authorName: string
@@ -193,6 +195,7 @@ export async function listPublicPostReads(
       visibility: posts.visibility,
       publishedAt: posts.publishedAt,
       updatedAt: posts.updatedAt,
+      authorId: posts.authorId,
       authorUsername: profiles.username,
       authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
@@ -242,6 +245,7 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
       visibility: posts.visibility,
       publishedAt: posts.publishedAt,
       updatedAt: posts.updatedAt,
+      authorId: posts.authorId,
       authorUsername: profiles.username,
       authorNormalizedUsername: profiles.normalizedUsername,
       authorName: user.name,
@@ -638,6 +642,7 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
       publishedAt: post.publishedAt,
       updatedAt: post.updatedAt,
       author: {
+        id: post.authorId,
         username: post.authorUsername,
         normalizedUsername: post.authorNormalizedUsername,
         name: post.authorName,

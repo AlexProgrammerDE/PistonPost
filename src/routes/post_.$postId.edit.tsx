@@ -26,7 +26,7 @@ import { MAX_POST_MARKDOWN_LENGTH, postMarkdownSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { deletePost, getOwnedPostForEditing, updatePost } from "@/server/composer"
 
-export const Route = createFileRoute("/post/$postId/edit")({
+export const Route = createFileRoute("/post_/$postId/edit")({
   loader: async ({ params }) => {
     const id = z.string().min(1).max(64).parse(params.postId)
     return getOwnedPostForEditing({ data: { id } })

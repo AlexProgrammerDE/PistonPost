@@ -62,7 +62,7 @@ The rewrite must support:
 - Up to five normalized tags per post, preserving the old tag contract.
 - Comments with author and moderator deletion.
 - Heart reactions with at most one heart per user and post.
-- A recent-post feed, tag feeds, profile feeds, and account-owned post management.
+- A recent-post feed, tag feeds, and profile feeds with owner edit controls.
 - Post creation, editing, deletion, upload progress, and media processing status.
 - User settings, email preferences, theme preference, and account deletion.
 - Administrator moderation and operational observability.
@@ -81,7 +81,7 @@ The old product exposed these user-facing routes:
 | /tag/[id]         | Public posts for a tag                | /tag/$tag          |
 | /user/[name]      | Profile and recent public posts       | /user/$username    |
 | /account/post     | Create text, image, or video post     | /posts/new         |
-| /account/posts    | Current user post list                | /posts             |
+| /account/posts    | Current user's public timeline        | /user/$username    |
 | /account/settings | Profile, preferences, theme, deletion | /settings          |
 | /privacy          | Privacy policy                        | /privacy           |
 | /tos              | Terms                                 | /terms             |
@@ -131,8 +131,7 @@ These can be proposed later. They must not complicate the initial data model or 
 - React 19 is the UI runtime.
 - TanStack Query owns server state and hydration.
 - TanStack Form owns complex forms with shared Zod validation.
-- TanStack Table v9 owns administrator data grids. The account post screen uses a responsive
-  management list because each row is a single post with one primary action, not a dense dataset.
+- TanStack Table v9 owns administrator data grids.
 - Tailwind CSS v4 and shadcn/ui provide the UI system.
 - Base UI is the primitive layer. Do not mix Radix APIs into generated components.
 
@@ -493,8 +492,7 @@ use bounded queue concurrency and delayed outbox retries.
 
 - /following: public posts from followed users or followed tags, deduplicated and cursor paginated.
 - /posts/new: post composer.
-- /posts: responsive owner management list covering draft, processing, published,
-  unlisted, failed, moderated, and deleted states.
+- /posts: compatibility redirect to the signed-in user's public profile.
 - /post/$postId/edit: owner or admin editor.
 - /settings/profile.
 - /settings/security.
@@ -875,7 +873,7 @@ Exit criteria:
 - [x] Implement account deletion Workflow.
 - [x] Install and pin TanStack Table v9.
 - [x] Build shared table features and tests.
-- [x] Build the responsive account post management view.
+- [x] Add owner edit actions to public timelines and post details.
 - [x] Build admin posts, comments, users, media, and audit tables.
 - [x] Add moderation actions with confirmations and audit events.
 - [x] Add URL-synchronized filters, sorting, pagination, and column visibility.
@@ -1140,6 +1138,10 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-07-23: Remove the temporary mailing-address binding and product-email footer field. Product
   updates remain opt-in factual service messages, and production deployment no longer depends on a
   placeholder address secret. This affects Phases 4 and 10.
+- 2026-07-25: Remove the separate `/posts` management screen. Owner edit actions now live on public
+  timelines and post details, while `/posts` redirects to the signed-in user's public profile. This
+  keeps post management next to the content and supersedes the earlier responsive-list decision.
+  This affects Phases 5 and 7.
 - 2026-07-17: Split email delivery by sensitivity. Better Auth token and code messages run through
   Cloudflare request background tasks with a small bounded transport retry and are never persisted.
   Product and account notifications use ID-only outbox jobs, delivery-time preference checks,

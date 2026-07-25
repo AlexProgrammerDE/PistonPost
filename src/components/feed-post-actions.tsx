@@ -3,7 +3,7 @@
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Heart, MessageCircle } from "lucide-react"
+import { Heart, MessageCircle, Pencil } from "lucide-react"
 import {
   createContext,
   startTransition,
@@ -181,12 +181,14 @@ export function FeedPostActions({
   heartCount,
   commentCount,
   onOpenPost,
+  canEdit = false,
 }: {
   readonly postId: string
   readonly postTitle: string
   readonly heartCount: number
   readonly commentCount: number
   readonly onOpenPost: (event: MouseEvent<HTMLAnchorElement>) => void
+  readonly canEdit?: boolean
 }) {
   return (
     <>
@@ -205,6 +207,18 @@ export function FeedPostActions({
         <span className="tabular-nums">{commentCount}</span>
       </Button>
       <CopyPostLinkButton postId={postId} compactOnNarrowScreens className={feedActionClassName} />
+      {canEdit ? (
+        <Button
+          variant="ghost"
+          size="sm"
+          className={feedActionClassName}
+          nativeButton={false}
+          render={<Link to="/post/$postId/edit" params={{ postId }} />}
+        >
+          <Pencil aria-hidden="true" data-icon="inline-start" />
+          Edit
+        </Button>
+      ) : null}
     </>
   )
 }

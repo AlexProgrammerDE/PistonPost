@@ -13,35 +13,10 @@ import {
   invalidInputFailure,
   notFoundFailure,
 } from "@/server/server-function-failure"
-import {
-  administratorServerFunctionMiddleware,
-  authenticatedServerFunctionMiddleware,
-} from "@/server/server-function-middleware"
+import { administratorServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
-
-export const getMyPosts = createServerFn({ method: "GET" })
-  .middleware([authenticatedServerFunctionMiddleware])
-  .handler(async ({ context }) =>
-    context.database
-      .select({
-        id: schema.posts.id,
-        title: schema.posts.title,
-        type: schema.posts.type,
-        status: schema.posts.status,
-        visibility: schema.posts.visibility,
-        createdAt: schema.posts.createdAt,
-        updatedAt: schema.posts.updatedAt,
-        version: schema.posts.version,
-        comments: sql<number>`(select count(*) from comments where comments.post_id = ${schema.posts.id} and comments.status = 'published')`,
-        hearts: sql<number>`(select count(*) from reactions where reactions.post_id = ${schema.posts.id})`,
-      })
-      .from(schema.posts)
-      .where(eq(schema.posts.authorId, context.session.user.id))
-      .orderBy(desc(schema.posts.createdAt), desc(schema.posts.id))
-      .limit(500),
-  )
 
 const adminSection = z.enum(["posts", "comments", "reports", "users", "media", "jobs", "audit"])
 const adminPageSize = 20

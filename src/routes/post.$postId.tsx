@@ -1,9 +1,11 @@
+import { useSession } from "@better-auth-ui/react"
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
 import { Link2 } from "lucide-react"
 import { Suspense, useEffect, useRef } from "react"
 import { z } from "zod"
 
+import { authClient } from "@/auth/client"
 import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStates"
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/post/$postId")({
 })
 
 function PostDetail() {
+  const session = useSession(authClient)
   const { postId } = Route.useParams()
   const { image, layout } = Route.useSearch()
   const post = useSuspenseQuery(postQueryOptions(postId)).data
@@ -84,7 +87,13 @@ function PostDetail() {
           </AlertDescription>
         </Alert>
       )}
-      <PostView post={post} detail selectedImageIndex={image} galleryLayout={layout} />
+      <PostView
+        post={post}
+        detail
+        selectedImageIndex={image}
+        galleryLayout={layout}
+        canEdit={session.data?.user.id === post.author.id || session.data?.user.role === "admin"}
+      />
       <Suspense fallback={<DiscussionSkeleton />}>
         <SocialPanel
           postId={post.id}

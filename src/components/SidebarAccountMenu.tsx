@@ -2,7 +2,7 @@
 
 import { useSession } from "@better-auth-ui/react"
 import { Link } from "@tanstack/react-router"
-import { FileText, Settings, Shield, User2 } from "lucide-react"
+import { Settings, Shield, User2 } from "lucide-react"
 import type { ReactElement } from "react"
 
 import { authClient } from "@/auth/client"
@@ -62,17 +62,6 @@ export function SidebarAccountMenu() {
   }
 
   if (user) {
-    links.push(
-      <DropdownMenuItem
-        key="my-posts"
-        render={<Link to="/posts" viewTransition={isMobile ? false : undefined} />}
-        onClick={closeMobileSidebar}
-      >
-        <FileText aria-hidden="true" />
-        My posts
-      </DropdownMenuItem>,
-    )
-
     if (user.role === "admin") {
       links.push(
         <DropdownMenuItem

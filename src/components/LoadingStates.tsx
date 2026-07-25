@@ -203,37 +203,6 @@ export function CommentComposerSkeleton() {
   )
 }
 
-export function ManagementPageSkeleton() {
-  return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-      <LoadingRegion label="Loading your posts…">
-        <header className="mb-8 grid gap-3 border-b pb-6">
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-4 w-72 max-w-full" />
-        </header>
-        <ItemGroup className="gap-0 border-y">
-          {generateN(5).map((identity) => (
-            <Item
-              key={identity}
-              role="listitem"
-              variant="outline"
-              className="rounded-none border-x-0 border-t-0 px-0 py-5 last:border-b-0"
-            >
-              <ItemContent className="min-w-0 gap-3">
-                <Skeleton className="h-5 w-2/3" />
-                <Skeleton className="h-5 w-80 max-w-full" />
-              </ItemContent>
-              <ItemActions>
-                <Skeleton className="h-8 w-20" />
-              </ItemActions>
-            </Item>
-          ))}
-        </ItemGroup>
-      </LoadingRegion>
-    </main>
-  )
-}
-
 export function FormPageSkeleton() {
   return (
     <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">

@@ -292,6 +292,32 @@ Markdown still works **inside** this callout.
     await context.unroute("https://example.com/**")
   })
 
+  test("opens the owner editor from post and timeline views", async ({ context, page }) => {
+    const { username } = await createVerifiedSession(context)
+    await page.goto("/posts/new")
+    await fillPost(page, "editable from anywhere", "testing")
+    await page.getByLabel("Text").fill("This post should be easy to edit.")
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+
+    await page.getByRole("link", { name: "Edit", exact: true }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+\/edit$/u)
+    await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
+    await expect(page.getByLabel("Title")).toHaveValue("editable from anywhere")
+
+    await page.goto("/")
+    await page.locator('[data-hydrated="true"]').waitFor()
+    const timelinePost = page.getByRole("article").filter({
+      has: page.getByRole("heading", { name: "editable from anywhere" }),
+    })
+    await timelinePost.getByRole("link", { name: "Edit", exact: true }).click()
+    await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
+
+    await page.goto("/posts")
+    await expect(page).toHaveURL(new RegExp(`/user/${username}$`, "u"))
+    await expect(page.getByRole("heading", { name: "My posts" })).toHaveCount(0)
+  })
+
   test("guards user-provided profile websites", async ({ context, page }) => {
     const { username } = await createVerifiedSession(context)
     await page.goto("/settings/profile")

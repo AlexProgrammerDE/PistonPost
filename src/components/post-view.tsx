@@ -8,6 +8,7 @@ import {
   LayoutGrid,
   Link2,
   MessageCircle,
+  Pencil,
   TriangleAlert,
 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
@@ -659,6 +660,7 @@ export function PostView({
   selectedImageIndex,
   galleryLayout,
   authorAvatar,
+  canEdit = false,
   className,
 }: {
   readonly post: PublicPostRead
@@ -667,6 +669,7 @@ export function PostView({
   readonly selectedImageIndex?: number | undefined
   readonly galleryLayout?: GalleryLayout | undefined
   readonly authorAvatar?: ReactNode
+  readonly canEdit?: boolean
   readonly className?: string
 }) {
   const resolvedGalleryLayout = resolveGalleryLayout(galleryLayout, selectedImageIndex)
@@ -733,12 +736,23 @@ export function PostView({
             <DateTime value={post.publishedAt} presentation={detail ? "absolute" : "relative"} />
           </p>
         </div>
-        {post.visibility === "unlisted" && (
+        {post.visibility === "unlisted" ? (
           <Badge variant="outline">
             <Link2 aria-hidden="true" data-icon="inline-start" />
             Unlisted
           </Badge>
-        )}
+        ) : null}
+        {canEdit ? (
+          <Button
+            nativeButton={false}
+            variant="outline"
+            size="sm"
+            render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
+          >
+            <Pencil aria-hidden="true" data-icon="inline-start" />
+            Edit
+          </Button>
+        ) : null}
       </header>
 
       <div className="mb-4 flex flex-col gap-3">
@@ -830,7 +844,10 @@ export function PostView({
             </div>
           </div>
           <ButtonGroup
-            className="mt-2 grid w-full grid-cols-3 items-center border-t pt-2 sm:flex sm:w-fit sm:flex-wrap"
+            className={cn(
+              "mt-2 grid w-full items-center border-t pt-2 sm:flex sm:w-fit sm:flex-wrap",
+              canEdit ? "grid-cols-4" : "grid-cols-3",
+            )}
             aria-label={`Actions for ${post.title}`}
           >
             <FeedPostActions
@@ -839,6 +856,7 @@ export function PostView({
               heartCount={post.heartCount}
               commentCount={post.commentCount}
               onOpenPost={openPost}
+              canEdit={canEdit}
             />
           </ButtonGroup>
         </footer>

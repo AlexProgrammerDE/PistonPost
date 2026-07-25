@@ -36,7 +36,7 @@ import { Route as AuthAuthViewRouteImport } from './routes/auth.$authView'
 import { Route as AdminEmailCampaignsRouteImport } from './routes/admin.email-campaigns'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
 import { Route as SitemapsKindPageRouteImport } from './routes/sitemaps.$kind.$page'
-import { Route as PostPostIdEditRouteImport } from './routes/post.$postId.edit'
+import { Route as PostPostIdEditRouteImport } from './routes/post_.$postId.edit'
 import { Route as MediaUploadMediaIdRouteImport } from './routes/media.upload.$mediaId'
 import { Route as MediaExternalImagePostIdRouteImport } from './routes/media.external-image.$postId'
 import { Route as ApiStreamWebhookRouteImport } from './routes/api.stream.webhook'
@@ -184,9 +184,9 @@ const SitemapsKindPageRoute = SitemapsKindPageRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const PostPostIdEditRoute = PostPostIdEditRouteImport.update({
-  id: '/edit',
-  path: '/edit',
-  getParentRoute: () => PostPostIdRoute,
+  id: '/post_/$postId/edit',
+  path: '/post/$postId/edit',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const MediaUploadMediaIdRoute = MediaUploadMediaIdRouteImport.update({
   id: '/media/upload/$mediaId',
@@ -262,7 +262,7 @@ export interface FileRoutesByFullPath {
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
-  '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/post/$postId': typeof PostPostIdRoute
   '/posts/new': typeof PostsNewRoute
   '/settings/$settingsView': typeof SettingsSettingsViewRoute
   '/tag/$tag': typeof TagTagRoute
@@ -298,7 +298,7 @@ export interface FileRoutesByTo {
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
-  '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/post/$postId': typeof PostPostIdRoute
   '/posts/new': typeof PostsNewRoute
   '/settings/$settingsView': typeof SettingsSettingsViewRoute
   '/tag/$tag': typeof TagTagRoute
@@ -339,7 +339,7 @@ export interface FileRoutesById {
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
-  '/post/$postId': typeof PostPostIdRouteWithChildren
+  '/post/$postId': typeof PostPostIdRoute
   '/posts/new': typeof PostsNewRoute
   '/settings/$settingsView': typeof SettingsSettingsViewRoute
   '/tag/$tag': typeof TagTagRoute
@@ -352,7 +352,7 @@ export interface FileRoutesById {
   '/api/stream/webhook': typeof ApiStreamWebhookRoute
   '/media/external-image/$postId': typeof MediaExternalImagePostIdRoute
   '/media/upload/$mediaId': typeof MediaUploadMediaIdRoute
-  '/post/$postId/edit': typeof PostPostIdEditRoute
+  '/post_/$postId/edit': typeof PostPostIdEditRoute
   '/sitemaps/$kind/$page': typeof SitemapsKindPageRoute
   '/media/image/$mediaId/$variant': typeof MediaImageMediaIdVariantRoute
   '/media/post/$postId/card': typeof MediaPostPostIdCardRoute
@@ -470,7 +470,7 @@ export interface FileRouteTypes {
     | '/api/stream/webhook'
     | '/media/external-image/$postId'
     | '/media/upload/$mediaId'
-    | '/post/$postId/edit'
+    | '/post_/$postId/edit'
     | '/sitemaps/$kind/$page'
     | '/media/image/$mediaId/$variant'
     | '/media/post/$postId/card'
@@ -495,13 +495,14 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
-  PostPostIdRoute: typeof PostPostIdRouteWithChildren
+  PostPostIdRoute: typeof PostPostIdRoute
   TagTagRoute: typeof TagTagRoute
   UserUsernameRoute: typeof UserUsernameRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiStreamWebhookRoute: typeof ApiStreamWebhookRoute
   MediaExternalImagePostIdRoute: typeof MediaExternalImagePostIdRoute
   MediaUploadMediaIdRoute: typeof MediaUploadMediaIdRoute
+  PostPostIdEditRoute: typeof PostPostIdEditRoute
   SitemapsKindPageRoute: typeof SitemapsKindPageRoute
   MediaImageMediaIdVariantRoute: typeof MediaImageMediaIdVariantRoute
   MediaPostPostIdCardRoute: typeof MediaPostPostIdCardRoute
@@ -702,12 +703,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SitemapsKindPageRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/post/$postId/edit': {
-      id: '/post/$postId/edit'
-      path: '/edit'
+    '/post_/$postId/edit': {
+      id: '/post_/$postId/edit'
+      path: '/post/$postId/edit'
       fullPath: '/post/$postId/edit'
       preLoaderRoute: typeof PostPostIdEditRouteImport
-      parentRoute: typeof PostPostIdRoute
+      parentRoute: typeof rootRouteImport
     }
     '/media/upload/$mediaId': {
       id: '/media/upload/$mediaId'
@@ -834,18 +835,6 @@ const SettingsRouteWithChildren = SettingsRoute._addFileChildren(
   SettingsRouteChildren,
 )
 
-interface PostPostIdRouteChildren {
-  PostPostIdEditRoute: typeof PostPostIdEditRoute
-}
-
-const PostPostIdRouteChildren: PostPostIdRouteChildren = {
-  PostPostIdEditRoute: PostPostIdEditRoute,
-}
-
-const PostPostIdRouteWithChildren = PostPostIdRoute._addFileChildren(
-  PostPostIdRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -861,13 +850,14 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
-  PostPostIdRoute: PostPostIdRouteWithChildren,
+  PostPostIdRoute: PostPostIdRoute,
   TagTagRoute: TagTagRoute,
   UserUsernameRoute: UserUsernameRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiStreamWebhookRoute: ApiStreamWebhookRoute,
   MediaExternalImagePostIdRoute: MediaExternalImagePostIdRoute,
   MediaUploadMediaIdRoute: MediaUploadMediaIdRoute,
+  PostPostIdEditRoute: PostPostIdEditRoute,
   SitemapsKindPageRoute: SitemapsKindPageRoute,
   MediaImageMediaIdVariantRoute: MediaImageMediaIdVariantRoute,
   MediaPostPostIdCardRoute: MediaPostPostIdCardRoute,
