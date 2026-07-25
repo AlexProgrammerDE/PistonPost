@@ -120,6 +120,13 @@
       "when": 1784745746902,
       "tag": "0016_email-preference-consent-events",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "6",
+      "when": 1784980029854,
+      "tag": "0017_last-login-method",
+      "breakpoints": true
     }
   ]
 }

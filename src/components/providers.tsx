@@ -9,6 +9,7 @@ import { authClient } from "@/auth/client"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { TurnstileWidget } from "@/components/turnstile-widget"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
+import { lastLoginMethodPlugin } from "@/lib/auth/last-login-method-plugin.ts"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
@@ -54,6 +55,7 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
           }),
         ]
       : []),
+    lastLoginMethodPlugin(),
   ]
 }
 
