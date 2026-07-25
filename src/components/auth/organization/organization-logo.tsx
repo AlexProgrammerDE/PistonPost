@@ -1,3 +1,5 @@
+"use client"
+
 import type { Organization } from "better-auth/client"
 import { Briefcase } from "lucide-react"
 import type { ComponentProps, CSSProperties, ReactNode } from "react"

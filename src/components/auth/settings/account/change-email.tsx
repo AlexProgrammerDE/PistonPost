@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuth, useChangeEmail, useSession } from "@better-auth-ui/react"
 import { type SyntheticEvent, useState } from "react"
 import { toast } from "sonner"

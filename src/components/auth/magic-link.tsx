@@ -1,3 +1,5 @@
+"use client"
+
 import { authMutationKeys } from "@better-auth-ui/core"
 import {
   type MagicLinkAuthClient,
@@ -101,7 +103,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
           {socialPosition === "top" && (
             <>
               {socialProviders && socialProviders.length > 0 && (
-                <ProviderButtons socialLayout={socialLayout} />
+                <ProviderButtons socialLayout={socialLayout} view="magicLink" />
               )}
 
               {showSeparator && (
@@ -173,7 +175,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
               )}
 
               {socialProviders && socialProviders.length > 0 && (
-                <ProviderButtons socialLayout={socialLayout} />
+                <ProviderButtons socialLayout={socialLayout} view="magicLink" />
               )}
             </>
           )}

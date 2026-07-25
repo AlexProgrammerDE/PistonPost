@@ -35,8 +35,8 @@
   },
   "dependencies": {
     "@base-ui/react": "1.6.0",
-    "@better-auth-ui/core": "^1.6.28",
-    "@better-auth-ui/react": "^1.6.28",
+    "@better-auth-ui/core": "^1.6.29",
+    "@better-auth-ui/react": "^1.6.29",
     "@better-auth/api-key": "1.6.23",
     "@better-auth/drizzle-adapter": "1.6.23",
     "@better-auth/infra": "^0.3.2",
@@ -46,7 +46,6 @@
     "@dnd-kit/utilities": "3.2.2",
     "@fontsource-variable/outfit": "5.2.8",
     "@marsidev/react-turnstile": "1.5.3",
-    "@react-email/components": "1.0.12",
     "@react-email/render": "2.0.4",
     "@tanstack/react-form": "1.33.2",
     "@tanstack/react-pacer": "0.22.1",

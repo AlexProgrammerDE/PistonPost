@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuthPlugin } from "@better-auth-ui/react"
 import { Fingerprint } from "lucide-react"
 

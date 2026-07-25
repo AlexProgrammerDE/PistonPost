@@ -165,7 +165,7 @@ export function SignUp({ className, socialLayout, socialPosition = "bottom" }: S
           {socialPosition === "top" && (
             <>
               {socialProviders && socialProviders.length > 0 && (
-                <ProviderButtons socialLayout={socialLayout} />
+                <ProviderButtons socialLayout={socialLayout} view="signUp" />
               )}
 
               {showSeparator && (
@@ -435,7 +435,7 @@ export function SignUp({ className, socialLayout, socialPosition = "bottom" }: S
               )}
 
               {socialProviders && socialProviders.length > 0 && (
-                <ProviderButtons socialLayout={socialLayout} />
+                <ProviderButtons socialLayout={socialLayout} view="signUp" />
               )}
             </>
           )}

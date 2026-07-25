@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuth, useRevokeSession, useSession } from "@better-auth-ui/react"
 import type { Session } from "better-auth"
 import Bowser from "bowser"

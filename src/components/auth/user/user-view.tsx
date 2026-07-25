@@ -1,3 +1,5 @@
+"use client"
+
 import { type UsernameAuthClient, useAuth, useSession } from "@better-auth-ui/react"
 import type { User } from "better-auth"
 

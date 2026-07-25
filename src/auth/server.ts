@@ -266,7 +266,9 @@ export function createAuth(runtime: AuthRuntime) {
       passkey({ rpID: new URL(runtime.baseURL).hostname, rpName: "PistonPost" }),
       admin(),
       multiSession({ maximumSessions: 10 }),
-      lastLoginMethod(),
+      lastLoginMethod({
+        storeInDatabase: true,
+      }),
       haveIBeenPwned({ enabled: runtime.production }),
       emailHarmony(),
       ...(runtime.infraEnabled === false

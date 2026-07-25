@@ -1,3 +1,4 @@
+import { render } from "@react-email/render"
 import {
   Body,
   Button,
@@ -9,8 +10,7 @@ import {
   Preview,
   Section,
   Text,
-} from "@react-email/components"
-import { render } from "@react-email/render"
+} from "react-email"
 
 import type { EmailNotificationPreference } from "@/domain"
 

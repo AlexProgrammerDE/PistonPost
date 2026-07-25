@@ -27,6 +27,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
+import { LastUsedBadge } from "./last-login-method/last-used-badge"
 import { ProviderButtons, type SocialLayout } from "./provider-buttons"
 
 export type SignInProps = {
@@ -122,7 +123,7 @@ export function SignIn({ className, socialLayout, socialPosition = "bottom" }: S
           {socialPosition === "top" && (
             <>
               {socialProviders && socialProviders.length > 0 && (
-                <ProviderButtons socialLayout={socialLayout} />
+                <ProviderButtons socialLayout={socialLayout} view="signIn" />
               )}
 
               {showSeparator && (
@@ -256,10 +257,12 @@ export function SignIn({ className, socialLayout, socialPosition = "bottom" }: S
                 {Captcha && <div className="flex justify-center">{Captcha}</div>}
 
                 <div className="flex flex-col gap-3">
-                  <Button type="submit" disabled={isPending}>
+                  <Button type="submit" className="relative overflow-visible" disabled={isPending}>
                     {signInEmailPending && <Spinner />}
 
                     {localization.auth.signIn}
+
+                    <LastUsedBadge method="email" floating />
                   </Button>
 
                   {plugins.flatMap((plugin) =>
@@ -281,7 +284,7 @@ export function SignIn({ className, socialLayout, socialPosition = "bottom" }: S
               )}
 
               {socialProviders && socialProviders.length > 0 && (
-                <ProviderButtons socialLayout={socialLayout} />
+                <ProviderButtons socialLayout={socialLayout} view="signIn" />
               )}
             </>
           )}

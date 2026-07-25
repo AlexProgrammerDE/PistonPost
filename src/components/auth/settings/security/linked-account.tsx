@@ -1,3 +1,5 @@
+"use client"
+
 import { getProviderName } from "@better-auth-ui/core"
 import {
   providerIcons,
