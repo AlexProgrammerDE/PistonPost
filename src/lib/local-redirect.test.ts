@@ -22,6 +22,28 @@ describe("safeLocalRedirect", () => {
     expect(safeLocalRedirect("/".repeat(2049))).toBeUndefined()
   })
 
+  it("allows one validated handoff through the authenticated redirect view", () => {
+    const callback = "/api/auth/delete-user/callback?token=secret&callbackURL=%2F"
+    const handoff = `/auth/redirect?${new URLSearchParams({ redirectTo: callback })}`
+
+    expect(safeLocalRedirect(handoff)).toBe(handoff)
+    expect(safeLocalRedirect("/auth/redirect")).toBeUndefined()
+    expect(
+      safeLocalRedirect(
+        `/auth/redirect?${new URLSearchParams({
+          redirectTo: "/auth/redirect?redirectTo=%2Fsettings",
+        })}`,
+      ),
+    ).toBeUndefined()
+    expect(
+      safeLocalRedirect(
+        `/auth/redirect?${new URLSearchParams({
+          redirectTo: "https://example.com/settings",
+        })}`,
+      ),
+    ).toBeUndefined()
+  })
+
   it("drops invalid redirect search values", () => {
     expect(authSearchSchema.parse({ redirectTo: "https://example.com" })).toEqual({
       redirectTo: undefined,

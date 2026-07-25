@@ -21,6 +21,7 @@
     "src/components/ui/**",
     "src/lib/auth/api-key-plugin.ts",
     "src/lib/auth/multi-session-plugin.ts",
+    "src/lib/auth/oauth-provider-plugin.ts",
     "src/lib/auth/organization-plugin.tsx",
     "src/lib/uploads/image-sanitizer-wasm/**"
   ],

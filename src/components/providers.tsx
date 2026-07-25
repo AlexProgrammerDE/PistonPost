@@ -8,6 +8,7 @@ import type { ComponentPropsWithoutRef, PropsWithChildren } from "react"
 import { authClient } from "@/auth/client"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { TurnstileWidget } from "@/components/turnstile-widget"
+import { adminPlugin } from "@/lib/auth/admin-plugin"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
 import { lastLoginMethodPlugin } from "@/lib/auth/last-login-method-plugin.ts"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
@@ -44,6 +45,7 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
     }),
     magicLinkPlugin(),
     multiSessionPlugin(),
+    adminPlugin(),
     passkeyPlugin(),
     twoFactorPlugin(),
     deleteUserPlugin({ sendDeleteAccountVerification: true }),

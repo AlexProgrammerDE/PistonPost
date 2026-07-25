@@ -22,6 +22,8 @@ import type { D1DatabaseClient, SqliteDatabaseClient } from "@/db"
 import * as schema from "@/db/schema"
 import { authenticationMessage, type EmailContent } from "@/email"
 
+import { createAuthRedirectUrl } from "./auth-redirect"
+
 export type AuthenticationEmail = {
   readonly to: string
   readonly content: EmailContent
@@ -138,7 +140,7 @@ export function createAuth(runtime: AuthRuntime) {
             to: user.email,
             content: authenticationMessage({
               template: "account-deletion",
-              url,
+              url: createAuthRedirectUrl(runtime.baseURL, url),
               expiresIn: "in 24 hours",
             }),
             idempotencyKey: `account-deletion:${token}`,

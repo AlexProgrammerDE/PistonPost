@@ -243,6 +243,57 @@ describe("request-scoped Better Auth", () => {
     expect(emails[0]?.content.action?.url).toContain("/api/auth/verify-email")
   })
 
+  it("routes account deletion confirmation through the authenticated redirect view", async () => {
+    const { auth, database, emails } = setup()
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Account Deletion Tester",
+        username: "account-deletion-tester",
+        email: "delete@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    database.update(schema.user).set({ emailVerified: true }).run()
+
+    const signInResponse = await auth.handler(
+      authRequest("/sign-in/email", {
+        email: "delete@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    const cookie = signInResponse.headers
+      .getSetCookie()
+      .map((value) => value.split(";", 1)[0])
+      .join("; ")
+    emails.length = 0
+
+    const response = await auth.handler(authRequest("/delete-user", { callbackURL: "/" }, cookie))
+
+    expect(response.status).toBe(200)
+    expect(emails).toHaveLength(1)
+    expect(emails[0]?.content.template).toBe("account-deletion")
+
+    const actionUrl = emails[0]?.content.action?.url
+    if (!actionUrl) throw new Error("The account deletion email did not include an action URL.")
+
+    const authenticatedRedirect = new URL(actionUrl)
+    expect(authenticatedRedirect.pathname).toBe("/auth/redirect")
+
+    const callbackPath = authenticatedRedirect.searchParams.get("redirectTo")
+    if (!callbackPath) throw new Error("The authenticated redirect did not include its callback.")
+    expect(callbackPath).toStartWith("/api/auth/delete-user/callback?")
+
+    const deletionResponse = await auth.handler(
+      new Request(new URL(callbackPath, "http://localhost:3000"), {
+        headers: { cookie, origin: "http://localhost:3000" },
+      }),
+    )
+
+    expect(deletionResponse.status).toBe(302)
+    expect(deletionResponse.headers.get("location")).toBe("/")
+    expect(database.select().from(schema.user).all()).toHaveLength(0)
+  })
+
   it("rejects external profile images and accepts the user's managed avatar", async () => {
     const managedImage = `/media/image/${crypto.randomUUID()}/avatar`
     const { auth, database } = setup(async (_userId, image) => image === managedImage)
