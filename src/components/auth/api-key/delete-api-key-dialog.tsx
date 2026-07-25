@@ -1,5 +1,3 @@
-"use client"
-
 import {
   type ApiKeyAuthClient,
   type ListedApiKey,
@@ -20,9 +18,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Field } from "@/components/ui/field"
+import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { apiKeyPlugin } from "@/lib/auth/api-key-plugin"
 
@@ -65,7 +62,7 @@ export function DeleteApiKeyDialog({
         </AlertDialogHeader>
 
         <Field>
-          <Label htmlFor={previewId}>{apiKey.name || apiKeyLocalization.apiKey}</Label>
+          <FieldLabel htmlFor={previewId}>{apiKey.name || apiKeyLocalization.apiKey}</FieldLabel>
 
           <Input id={previewId} value={preview} readOnly className="font-mono text-xs" disabled />
         </Field>

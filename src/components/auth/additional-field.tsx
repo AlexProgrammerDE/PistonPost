@@ -1,3 +1,5 @@
+"use client"
+
 import {
   type AdditionalField as AdditionalFieldConfig,
   resolveInputType,
@@ -27,7 +29,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   Select,
@@ -131,7 +132,7 @@ export function AdditionalField({ name, field, isPending }: AdditionalFieldProps
   if (inputType === "textarea") {
     return (
       <Field>
-        <Label htmlFor={name}>{field.label}</Label>
+        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
         <Textarea
           id={name}
@@ -153,7 +154,7 @@ export function AdditionalField({ name, field, isPending }: AdditionalFieldProps
 
     return (
       <Field>
-        <Label htmlFor={name}>{field.label}</Label>
+        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
         <Input
           id={name}
@@ -223,7 +224,7 @@ export function AdditionalField({ name, field, isPending }: AdditionalFieldProps
   if (inputType === "select") {
     return (
       <Field>
-        <Label htmlFor={name}>{field.label}</Label>
+        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
         <Select
           name={name}
@@ -252,7 +253,7 @@ export function AdditionalField({ name, field, isPending }: AdditionalFieldProps
   if (inputType === "combobox") {
     return (
       <Field>
-        <Label htmlFor={name}>{field.label}</Label>
+        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
         <Combobox
           items={field.options ?? []}
@@ -303,7 +304,7 @@ function InputField({ name, field, isPending }: AdditionalFieldProps) {
   if (hasPrefix || hasSuffix) {
     return (
       <Field>
-        <Label htmlFor={name}>{field.label}</Label>
+        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
         <InputGroup>
           {hasPrefix && <InputGroupAddon align="inline-start">{field.prefix}</InputGroupAddon>}
@@ -340,7 +341,7 @@ function InputField({ name, field, isPending }: AdditionalFieldProps) {
 
   return (
     <Field>
-      <Label htmlFor={name}>{field.label}</Label>
+      <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
       <Input
         id={name}
@@ -384,7 +385,7 @@ function SliderField({ name, field, isPending }: AdditionalFieldProps) {
   return (
     <Field>
       <div className="flex items-center justify-between gap-2">
-        <Label htmlFor={name}>{field.label}</Label>
+        <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
         <span className="text-sm text-muted-foreground tabular-nums">
           {formatter.format(value)}
         </span>
@@ -444,7 +445,7 @@ function DateInput({ name, field, isPending }: AdditionalFieldProps) {
 
   return (
     <Field data-invalid={!!error}>
-      <Label htmlFor={`${name}-date`}>{field.label}</Label>
+      <FieldLabel htmlFor={`${name}-date`}>{field.label}</FieldLabel>
 
       <div className="relative flex gap-2">
         {/* Visually-hidden input so required constraint validation fires on submit.
@@ -500,9 +501,9 @@ function DateInput({ name, field, isPending }: AdditionalFieldProps) {
 
         {isDateTime && (
           <Field className="w-32">
-            <Label htmlFor={`${name}-time`} className="sr-only">
+            <FieldLabel htmlFor={`${name}-time`} className="sr-only">
               {localization.settings.time}
-            </Label>
+            </FieldLabel>
 
             <Input
               type="time"

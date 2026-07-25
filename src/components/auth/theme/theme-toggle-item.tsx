@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuthPlugin } from "@better-auth-ui/react"
 import { Monitor, Moon, PaletteIcon, Sun } from "lucide-react"
 import { useRef } from "react"

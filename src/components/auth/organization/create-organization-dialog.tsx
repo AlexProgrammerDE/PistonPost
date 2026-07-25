@@ -1,3 +1,5 @@
+"use client"
+
 import {
   type OrganizationAuthClient,
   useAuth,
@@ -18,9 +20,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
-import { Field, FieldError } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 
@@ -85,7 +86,9 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
 
           <div className="flex flex-col gap-4">
             <Field data-invalid={!!nameError}>
-              <Label htmlFor="create-organization-name">{organizationLocalization.name}</Label>
+              <FieldLabel htmlFor="create-organization-name">
+                {organizationLocalization.name}
+              </FieldLabel>
 
               <Input
                 id="create-organization-name"

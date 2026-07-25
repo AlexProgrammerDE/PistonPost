@@ -5,14 +5,13 @@ import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldDescription, FieldError, FieldGroup } from "@/components/ui/field"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
@@ -90,7 +89,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
         <form onSubmit={handleSubmit}>
           <FieldGroup>
             <Field data-invalid={!!fieldErrors.password}>
-              <Label htmlFor="password">{localization.auth.password}</Label>
+              <FieldLabel htmlFor="password">{localization.auth.password}</FieldLabel>
 
               <InputGroup>
                 <InputGroupInput
@@ -130,6 +129,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
 
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton
+                    size="icon-xs"
                     aria-label={
                       isPasswordVisible
                         ? localization.auth.hidePassword
@@ -141,7 +141,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
                         : localization.auth.showPassword
                     }
                     onClick={() => {
-                      setIsPasswordVisible(!isPasswordVisible)
+                      setIsPasswordVisible((visible) => !visible)
                     }}
                   >
                     {isPasswordVisible ? <EyeOff /> : <Eye />}
@@ -154,7 +154,9 @@ export function ResetPassword({ className }: ResetPasswordProps) {
 
             {emailAndPassword?.confirmPassword && (
               <Field data-invalid={!!fieldErrors.confirmPassword}>
-                <Label htmlFor="confirmPassword">{localization.auth.confirmPassword}</Label>
+                <FieldLabel htmlFor="confirmPassword">
+                  {localization.auth.confirmPassword}
+                </FieldLabel>
 
                 <InputGroup>
                   <InputGroupInput
@@ -194,6 +196,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
 
                   <InputGroupAddon align="inline-end">
                     <InputGroupButton
+                      size="icon-xs"
                       aria-label={
                         isConfirmPasswordVisible
                           ? localization.auth.hidePassword
@@ -205,7 +208,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
                           : localization.auth.showPassword
                       }
                       onClick={() => {
-                        setIsConfirmPasswordVisible(!isConfirmPasswordVisible)
+                        setIsConfirmPasswordVisible((visible) => !visible)
                       }}
                     >
                       {isConfirmPasswordVisible ? <EyeOff /> : <Eye />}

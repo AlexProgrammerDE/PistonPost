@@ -1,3 +1,5 @@
+"use client"
+
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { Check, Copy, Key } from "lucide-react"
 import { useState } from "react"

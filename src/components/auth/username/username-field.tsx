@@ -1,3 +1,5 @@
+"use client"
+
 import {
   type UsernameAuthClient,
   useAuth,
@@ -9,9 +11,8 @@ import { Check, X } from "lucide-react"
 import { useState } from "react"
 
 import type { AdditionalFieldProps } from "@/components/auth/additional-field"
-import { Field, FieldError } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
 import { Spinner } from "@/components/ui/spinner"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
 
@@ -72,7 +73,7 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
 
   return (
     <Field data-invalid={!!error}>
-      <Label htmlFor={name}>{field.label}</Label>
+      <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
       <InputGroup>
         {usernamePrefix && <InputGroupAddon align="inline-start">{usernamePrefix}</InputGroupAddon>}

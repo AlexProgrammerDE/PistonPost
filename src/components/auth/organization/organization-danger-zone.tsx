@@ -1,3 +1,5 @@
+"use client"
+
 import { type OrganizationAuthClient, useAuth, useHasPermission } from "@better-auth-ui/react"
 import type { ComponentProps } from "react"
 
