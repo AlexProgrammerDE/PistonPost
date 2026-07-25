@@ -30,7 +30,7 @@ export function LastUsedBadge({ method, compact, floating }: LastUsedBadgeProps)
           ? "pointer-events-none absolute top-0 right-0 z-10 translate-x-1/4 -translate-y-1/2 shadow-sm"
           : undefined
       }
-      variant={floating ? "default" : "secondary"}
+      variant="secondary"
     >
       {compact || floating ? localization.lastUsedShort : localization.lastUsed}
     </Badge>
