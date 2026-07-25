@@ -3,11 +3,13 @@ import { createFileRoute, notFound } from "@tanstack/react-router"
 import { Settings } from "@/components/auth/settings/settings"
 import { SettingsPanelSkeleton } from "@/components/LoadingStates"
 import { NotificationSettingsForm, ProfileSettingsForm } from "@/components/product-settings"
-import { authSettingsViewPaths } from "@/lib/auth-ui-metadata"
-import { isSettingsView } from "@/lib/settings-views"
+import { validSettingsPathSegments } from "@/lib/settings-views"
 import { getMyProductSettings } from "@/server/settings"
 
 export const Route = createFileRoute("/settings/$settingsView")({
+  beforeLoad: ({ params }) => {
+    if (!validSettingsPathSegments.has(params.settingsView)) throw notFound()
+  },
   loader: ({ params }) =>
     params.settingsView === "profile" || params.settingsView === "notifications"
       ? getMyProductSettings()
@@ -19,7 +21,6 @@ export const Route = createFileRoute("/settings/$settingsView")({
 
 function SettingsView() {
   const { settingsView } = Route.useParams()
-  if (!isSettingsView(settingsView)) throw notFound()
   const productSettings = Route.useLoaderData()
   if (settingsView === "profile" && productSettings) {
     return <ProfileSettingsForm settings={productSettings} />
@@ -27,11 +28,5 @@ function SettingsView() {
   if (settingsView === "notifications" && productSettings) {
     return <NotificationSettingsForm settings={productSettings} />
   }
-  if (
-    settingsView === authSettingsViewPaths.account ||
-    settingsView === authSettingsViewPaths.security
-  ) {
-    return <Settings path={settingsView} hideNav />
-  }
-  throw notFound()
+  return <Settings path={settingsView} hideNav />
 }

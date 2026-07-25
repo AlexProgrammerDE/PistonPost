@@ -8,7 +8,6 @@ import type { ComponentPropsWithoutRef, PropsWithChildren } from "react"
 import { authClient } from "@/auth/client"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { TurnstileWidget } from "@/components/turnstile-widget"
-import { authSettingsViewPaths, authViewPaths } from "@/lib/auth-ui-metadata"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
@@ -99,7 +98,6 @@ export function AuthenticationProvider({
         requireEmailVerification: true,
       }}
       basePaths={{ auth: "/auth", settings: "/settings" }}
-      viewPaths={{ auth: authViewPaths, settings: authSettingsViewPaths }}
       plugins={createAuthenticationPlugins(turnstileSiteKey)}
     >
       {children}

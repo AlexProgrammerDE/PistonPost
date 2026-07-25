@@ -1,34 +1,26 @@
-export const authViewPaths = {
-  signIn: "sign-in",
-  signUp: "sign-up",
-  forgotPassword: "forgot-password",
-  resetPassword: "reset-password",
-  signOut: "sign-out",
-  verifyEmail: "verify-email",
-  magicLink: "magic-link",
-} as const
+import { viewPaths } from "@better-auth-ui/core"
 
-export type AuthViewPath = (typeof authViewPaths)[keyof typeof authViewPaths]
+import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 
-const authViewLabels = {
-  "sign-in": "Sign in",
-  "sign-up": "Create account",
-  "forgot-password": "Reset password",
-  "reset-password": "Reset password",
-  "sign-out": "Sign out",
-  "verify-email": "Verify email",
-  "magic-link": "Email me a sign-in link",
-} satisfies Record<AuthViewPath, string>
+const magicLinkViewPaths = magicLinkPlugin().viewPaths.auth
 
-export const authSettingsViewPaths = {
-  account: "account",
-  security: "security",
-} as const
+export const validAuthPathSegments = new Set([
+  ...Object.values(viewPaths.auth),
+  ...Object.values(magicLinkViewPaths),
+])
 
-export function isAuthViewPath(value: string): value is AuthViewPath {
-  return Object.values(authViewPaths).some((path) => path === value)
-}
+const authViewLabels = new Map([
+  [viewPaths.auth.signIn, "Sign in"],
+  [viewPaths.auth.signUp, "Create account"],
+  [viewPaths.auth.forgotPassword, "Reset password"],
+  [viewPaths.auth.resetPassword, "Reset password"],
+  [viewPaths.auth.resetLinkSent, "Check your email"],
+  [viewPaths.auth.signOut, "Sign out"],
+  [viewPaths.auth.verifyEmail, "Verify email"],
+  [magicLinkViewPaths.magicLink, "Email me a sign-in link"],
+  [magicLinkViewPaths.magicLinkSent, "Check your email"],
+])
 
 export function getAuthViewLabel(value: string) {
-  return isAuthViewPath(value) ? authViewLabels[value] : "Account access"
+  return authViewLabels.get(value) ?? "Account access"
 }

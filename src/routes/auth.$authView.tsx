@@ -1,11 +1,11 @@
 import { createFileRoute, notFound } from "@tanstack/react-router"
 
 import { Auth } from "@/components/auth/auth"
-import { getAuthViewLabel, isAuthViewPath } from "@/lib/auth-ui-metadata"
+import { getAuthViewLabel, validAuthPathSegments } from "@/lib/auth-ui-metadata"
 
 export const Route = createFileRoute("/auth/$authView")({
   beforeLoad: ({ params }) => {
-    if (!isAuthViewPath(params.authView)) throw notFound()
+    if (!validAuthPathSegments.has(params.authView)) throw notFound()
   },
   component: AuthView,
   head: ({ params }) => ({
