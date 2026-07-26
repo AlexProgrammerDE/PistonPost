@@ -19,10 +19,7 @@
     "src/routeTree.gen.ts",
     "src/components/auth/**",
     "src/components/ui/**",
-    "src/lib/auth/api-key-plugin.ts",
-    "src/lib/auth/multi-session-plugin.ts",
-    "src/lib/auth/oauth-provider-plugin.ts",
-    "src/lib/auth/organization-plugin.tsx",
+    "src/lib/auth/**",
     "src/lib/uploads/image-sanitizer-wasm/**"
   ],
   "ignoreDependencies": [
