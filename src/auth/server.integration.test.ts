@@ -88,6 +88,7 @@ describe("request-scoped Better Auth", () => {
     const pluginIds = auth.options.plugins.map((plugin) => plugin.id)
     expect(pluginIds).toContain("dash")
     expect(pluginIds).toContain("sentinel")
+    expect(pluginIds).not.toContain("magic-link")
   })
 
   it("serves the Better Auth OpenAPI schema", async () => {

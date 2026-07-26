@@ -1,17 +1,14 @@
 import { viewPaths } from "@better-auth-ui/core"
 
 import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
-import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 
 const emailOtpViewPaths = emailOtpPlugin().viewPaths.auth
-const magicLinkViewPaths = magicLinkPlugin().viewPaths.auth
 const twoFactorViewPaths = twoFactorPlugin().viewPaths.auth
 
 export const validAuthPathSegments = new Set([
   ...Object.values(viewPaths.auth),
   ...Object.values(emailOtpViewPaths),
-  ...Object.values(magicLinkViewPaths),
   ...Object.values(twoFactorViewPaths),
 ])
 
@@ -24,8 +21,6 @@ const authViewLabels = new Map([
   [viewPaths.auth.signOut, "Sign out"],
   [viewPaths.auth.verifyEmail, "Verify email"],
   [emailOtpViewPaths.emailOtp, "Email me a sign-in code"],
-  [magicLinkViewPaths.magicLink, "Email me a sign-in link"],
-  [magicLinkViewPaths.magicLinkSent, "Check your email"],
   [twoFactorViewPaths.twoFactor, "Two-factor verification"],
 ])
 

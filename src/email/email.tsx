@@ -5,7 +5,6 @@ import { ChangeEmailConfirmationEmail } from "@/components/auth/email/change-ema
 import { DeleteAccountVerificationEmail } from "@/components/auth/email/delete-account-verification"
 import type { EmailColors } from "@/components/auth/email/email-styles"
 import { EmailVerificationEmail } from "@/components/auth/email/email-verification"
-import { MagicLinkEmail } from "@/components/auth/email/magic-link"
 import { NewDeviceEmail } from "@/components/auth/email/new-device"
 import { OtpEmail } from "@/components/auth/email/otp-email"
 import { PasswordChangedEmail } from "@/components/auth/email/password-changed"
@@ -25,7 +24,7 @@ type EmailContentBase = {
 
 type LinkAuthenticationEmailContent =
   | Readonly<{
-      template: "email-verification" | "magic-link" | "password-reset"
+      template: "email-verification" | "password-reset"
       email: string
       url: string
       expirationMinutes: number
@@ -230,15 +229,6 @@ function AuthenticationEmail({ content }: { readonly content: EmailContent }) {
     case "email-verification":
       return (
         <EmailVerificationEmail
-          {...authenticationTemplateProps}
-          email={content.email}
-          expirationMinutes={content.expirationMinutes}
-          url={content.url}
-        />
-      )
-    case "magic-link":
-      return (
-        <MagicLinkEmail
           {...authenticationTemplateProps}
           email={content.email}
           expirationMinutes={content.expirationMinutes}

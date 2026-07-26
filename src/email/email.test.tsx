@@ -24,17 +24,19 @@ describe("transactional email", () => {
   it("renders branded HTML and a plain-text fallback", async () => {
     const rendered = await renderEmail(
       authenticationMessage({
-        template: "magic-link",
+        template: "password-reset",
         email: "recipient@example.com",
-        url: "https://post.pistonmaster.net/auth/verify?token=redacted",
-        expirationMinutes: 10,
+        url: "https://post.pistonmaster.net/auth/reset-password?token=redacted",
+        expirationMinutes: 60,
       }),
     )
 
-    expect(rendered.subject).toBe("Your PistonPost sign-in link")
-    expect(rendered.html).toContain("https://post.pistonmaster.net/auth/verify?token=redacted")
-    expect(rendered.text).toContain("SIGN IN TO PISTONPOST")
-    expect(rendered.text).toContain("in 10 minutes")
+    expect(rendered.subject).toBe("Reset your PistonPost password")
+    expect(rendered.html).toContain(
+      "https://post.pistonmaster.net/auth/reset-password?token=redacted",
+    )
+    expect(rendered.text).toContain("RESET YOUR PASSWORD")
+    expect(rendered.text).toContain("in 60 minutes")
   })
 
   it("captures local messages without external delivery", async () => {
@@ -223,10 +225,10 @@ describe("transactional email", () => {
     await Effect.runPromise(
       deliverEmail({
         content: authenticationMessage({
-          template: "magic-link",
+          template: "password-reset",
           email: "recipient@example.com",
-          url: "https://post.pistonmaster.net/auth/verify?token=redacted",
-          expirationMinutes: 10,
+          url: "https://post.pistonmaster.net/auth/reset-password?token=redacted",
+          expirationMinutes: 60,
         }),
         to: "recipient@example.com",
         from: "auth@example.com",

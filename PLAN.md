@@ -420,8 +420,7 @@ Use Better Auth minimal with the Drizzle adapter and a request-scoped D1 databas
 Initial authentication capabilities:
 
 - Email and password with email verification.
-- Magic-link sign in to preserve the old product's familiar flow.
-- Email OTP for verification and recovery where it improves the UI.
+- Email OTP for passwordless sign-in, verification, and recovery.
 - Username plugin for profile identity, while email remains the account anchor.
 - Passkeys.
 - Two-factor authentication.
@@ -442,7 +441,7 @@ Security configuration:
 - Five-minute encrypted JWE cookie cache only after revocation tests pass.
 - Cloudflare connecting-IP headers handled intentionally.
 - Rate limiting before expensive auth work.
-- Turnstile on sign-up, sign-in, password reset, magic link, and OTP initiation.
+- Turnstile on sign-up, sign-in, password reset, and OTP initiation.
 - Generic responses for account-discovery-sensitive endpoints.
 - No auth or session data in public cache.
 - Audit events for role, email, password, passkey, 2FA, and deletion changes.
@@ -454,13 +453,12 @@ The old NextAuth JWT sessions, verification tokens, and active login cookies wil
 Use @better-auth-ui/core and @better-auth-ui/react at the same architectural level as EnderDash. Port only PistonPost-relevant customizations:
 
 - Auth provider and view routing.
-- Magic-link view and button.
 - Username fields.
 - Turnstile widget adapter.
 - Error toaster.
 - User button and account menu.
 - User profile, security, sessions, passkeys, 2FA, and account deletion views.
-- Email verification, OTP, magic link, password reset, password changed, email changed, and new-device templates.
+- Email verification, OTP, password reset, password changed, email changed, and new-device templates.
 
 Exclude EnderDash organization, API key, subscription, OAuth-provider, Minecraft, and desktop surfaces.
 
@@ -784,7 +782,7 @@ Exit criteria:
 - [x] Integrate generated auth schema into `src/db` and generate the Drizzle migration.
 - [x] Build request-scoped auth factory with D1 Drizzle adapter.
 - [x] Add auth client and typed session helpers.
-- [x] Add email/password, verification, magic link, email OTP, username, passkey, 2FA, admin, HIBP, Harmony, captcha, and optional multi-session plugins.
+- [x] Add email/password, verification, email OTP, username, passkey, 2FA, admin, HIBP, Harmony, captcha, and optional multi-session plugins.
 - [x] Add Turnstile widget and server verification.
 - [x] Add Better Auth UI routes and account settings views.
 - [x] Port the relevant EnderDash auth UI patterns without organization or billing code.
@@ -939,7 +937,7 @@ Go-live checks:
 
 - Public feed and sampled old post URLs.
 - Text, image, and video rendering.
-- New sign-in and existing-user magic link.
+- New sign-in and existing-user email code.
 - Profile, tag, and unlisted behavior.
 - Heart and comment mutation.
 - New upload and media processing.
@@ -995,10 +993,11 @@ Record future changes here with date, decision, reason, and affected phases.
 
 - 2026-07-26: Adopt Better Auth UI's opt-in email-code flows for passwordless sign-in, email
   verification, and password recovery, plus its two-factor challenge and settings surfaces. Render
-  authentication and security messages with the matching Better Auth UI email templates. Keep
-  email changes on the current-address link confirmation flow until Better Auth UI's change-email
-  OTP client uses Better Auth 1.6's dedicated email-change endpoint. Passwordless sign-in methods
-  remain outside the two-factor challenge as defined by Better Auth. This affects Phase 4.
+  authentication and security messages with the matching Better Auth UI email templates. Retire
+  magic-link sign-in now that email codes cover the passwordless flow. Keep email changes on the
+  current-address link confirmation flow until Better Auth UI's change-email OTP client uses Better
+  Auth 1.6's dedicated email-change endpoint. Passwordless sign-in methods remain outside the
+  two-factor challenge as defined by Better Auth. This affects Phase 4.
 - 2026-07-14: Use a single TanStack Start Worker for the initial product. This keeps SSR, auth, API, and Cloudflare bindings in one request boundary while explicit source folders preserve modularity.
 - 2026-07-15: Flatten the repository into one Bun package. PistonPost is one application with one deployable Worker, so workspace manifests and Turborepo added indirection without an independent release or ownership boundary. Keep auth, database, domain, email, and UI boundaries under `src`.
 - 2026-07-14: Use Base UI because the requested shadcn preset generated Base UI and the user explicitly requested it.

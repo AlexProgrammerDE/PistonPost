@@ -10,7 +10,6 @@ import {
   emailOTP,
   haveIBeenPwned,
   lastLoginMethod,
-  magicLink,
   multiSession,
   openAPI,
   twoFactor,
@@ -205,23 +204,6 @@ export function createAuth(runtime: AuthRuntime) {
         maxUsernameLength: 32,
         usernameValidator: usernameIsValid,
         displayUsernameValidator: usernameIsValid,
-      }),
-      magicLink({
-        disableSignUp: true,
-        expiresIn: 60 * 10,
-        storeToken: "hashed",
-        sendMagicLink: async ({ email, url, token }) => {
-          await send({
-            to: email,
-            content: authenticationMessage({
-              template: "magic-link",
-              email,
-              url,
-              expirationMinutes: 10,
-            }),
-            idempotencyKey: `magic-link:${token}`,
-          })
-        },
       }),
       emailOTP({
         disableSignUp: true,

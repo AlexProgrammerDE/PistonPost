@@ -4,7 +4,6 @@ import {
   adminClient,
   emailOTPClient,
   lastLoginMethodClient,
-  magicLinkClient,
   multiSessionClient,
   twoFactorClient,
   usernameClient,
@@ -19,7 +18,6 @@ export function createPistonPostAuthClient(baseURL?: string) {
     basePath: "/api/auth",
     plugins: [
       usernameClient(),
-      magicLinkClient(),
       emailOTPClient(),
       twoFactorClient(),
       passkeyClient(),

@@ -3,7 +3,6 @@ import { describe, expect, it } from "bun:test"
 import { viewPaths } from "@better-auth-ui/core"
 
 import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
-import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 
 import { validAuthPathSegments } from "./auth-ui-metadata"
@@ -13,7 +12,6 @@ describe("auth route paths", () => {
     const expectedPaths = [
       ...Object.values(viewPaths.auth),
       ...Object.values(emailOtpPlugin().viewPaths.auth),
-      ...Object.values(magicLinkPlugin().viewPaths.auth),
       ...Object.values(twoFactorPlugin().viewPaths.auth),
     ]
 
@@ -21,7 +19,9 @@ describe("auth route paths", () => {
     expect(expectedPaths.every((path) => validAuthPathSegments.has(path))).toBe(true)
   })
 
-  it("rejects unknown auth paths", () => {
+  it("rejects unknown and retired magic-link paths", () => {
     expect(validAuthPathSegments.has("unknown")).toBe(false)
+    expect(validAuthPathSegments.has("magic-link")).toBe(false)
+    expect(validAuthPathSegments.has("magic-link-sent")).toBe(false)
   })
 })

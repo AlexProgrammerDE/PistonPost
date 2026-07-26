@@ -17,7 +17,7 @@ export function emailSubscription(
 
 type AuthenticationMessageInput =
   | Readonly<{
-      template: "email-verification" | "magic-link" | "password-reset"
+      template: "email-verification" | "password-reset"
       email: string
       url: string
       expirationMinutes: number
@@ -52,7 +52,6 @@ type AuthenticationMessageInput =
 
 const copy = {
   "email-verification": "Verify your PistonPost email",
-  "magic-link": "Your PistonPost sign-in link",
   "password-reset": "Reset your PistonPost password",
   "account-deletion": "Confirm PistonPost account deletion",
   "two-factor-otp": "Your PistonPost security code",
