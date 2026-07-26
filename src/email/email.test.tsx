@@ -4,7 +4,11 @@ import { Effect, Either, Exit, Layer } from "effect"
 
 import { renderEmail } from "./email"
 import { decodeEmailDeliveryJob } from "./jobs"
-import { authenticationMessage, productUpdateMessage } from "./messages"
+import {
+  authenticationMessage,
+  productUpdateMessage,
+  securityNotificationMessage,
+} from "./messages"
 import {
   createCloudflareEmailTransport,
   createCaptureEmailTransport,
@@ -21,8 +25,9 @@ describe("transactional email", () => {
     const rendered = await renderEmail(
       authenticationMessage({
         template: "magic-link",
+        email: "recipient@example.com",
         url: "https://post.pistonmaster.net/auth/verify?token=redacted",
-        expiresIn: "in 10 minutes",
+        expirationMinutes: 10,
       }),
     )
 
@@ -37,7 +42,13 @@ describe("transactional email", () => {
       []
     const transport = createCaptureEmailTransport(captured)
     const rendered = await renderEmail(
-      authenticationMessage({ template: "email-otp", code: "123456", expiresIn: "in 5 minutes" }),
+      authenticationMessage({
+        template: "email-otp",
+        purpose: "email-verification",
+        email: "recipient@example.com",
+        code: "123456",
+        expirationMinutes: 5,
+      }),
     )
 
     await Effect.runPromise(
@@ -51,6 +62,45 @@ describe("transactional email", () => {
 
     expect(captured).toHaveLength(1)
     expect(captured[0]?.text).toContain("123456")
+  })
+
+  it("renders account approval and security mail with the Better Auth UI templates", async () => {
+    const approvalUrl = "https://post.pistonmaster.net/api/auth/verify-email?token=redacted"
+    const securityUrl = "https://post.pistonmaster.net/settings/security"
+    const [emailChange, accountDeletion, newDevice] = await Promise.all([
+      renderEmail(
+        authenticationMessage({
+          template: "email-change-approval",
+          currentEmail: "old@example.com",
+          newEmail: "new@example.com",
+          url: approvalUrl,
+          expirationMinutes: 60,
+        }),
+      ),
+      renderEmail(
+        authenticationMessage({
+          template: "account-deletion",
+          email: "delete@example.com",
+          url: "https://post.pistonmaster.net/auth/redirect?redirectTo=redacted",
+          expirationHours: 24,
+        }),
+      ),
+      renderEmail(
+        securityNotificationMessage({
+          template: "new-device",
+          email: "recipient@example.com",
+          secureAccountUrl: securityUrl,
+          timestamp: "2026-07-26T12:00:00.000Z",
+        }),
+      ),
+    ])
+
+    expect(emailChange.html).toContain(approvalUrl.replaceAll("&", "&amp;"))
+    expect(emailChange.text).toContain("old@example.com")
+    expect(emailChange.text).toContain("new@example.com")
+    expect(accountDeletion.text).toContain("24 hours")
+    expect(newDevice.html).toContain(securityUrl)
+    expect(newDevice.text).not.toContain("IP Address")
   })
 
   it("bounds immediate authentication delivery retries", async () => {
@@ -75,8 +125,9 @@ describe("transactional email", () => {
       deliverImmediateEmail({
         content: authenticationMessage({
           template: "password-reset",
+          email: "recipient@example.com",
           url: "https://post.pistonmaster.net/reset",
-          expiresIn: "in one hour",
+          expirationMinutes: 60,
         }),
         to: "recipient@example.com",
         from: "auth@example.com",
@@ -173,8 +224,9 @@ describe("transactional email", () => {
       deliverEmail({
         content: authenticationMessage({
           template: "magic-link",
+          email: "recipient@example.com",
           url: "https://post.pistonmaster.net/auth/verify?token=redacted",
-          expiresIn: "in 10 minutes",
+          expirationMinutes: 10,
         }),
         to: "recipient@example.com",
         from: "auth@example.com",
@@ -200,7 +252,13 @@ describe("transactional email", () => {
       send: () => Promise.reject(providerError),
     })
     const rendered = await renderEmail(
-      authenticationMessage({ template: "email-otp", code: "123456", expiresIn: "in 5 minutes" }),
+      authenticationMessage({
+        template: "email-otp",
+        purpose: "email-verification",
+        email: "recipient@example.com",
+        code: "123456",
+        expirationMinutes: 5,
+      }),
     )
 
     const result = await Effect.runPromise(

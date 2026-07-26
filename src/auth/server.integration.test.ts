@@ -54,6 +54,19 @@ function sessionRequest(cookie: string) {
   })
 }
 
+function responseCookie(response: Response) {
+  return response.headers
+    .getSetCookie()
+    .map((value) => value.split(";", 1)[0])
+    .join("; ")
+}
+
+function stringProperty(value: unknown, property: string) {
+  if (typeof value !== "object" || value === null) return undefined
+  const result = Reflect.get(value, property)
+  return typeof result === "string" ? result : undefined
+}
+
 describe("request-scoped Better Auth", () => {
   it("enables database joins and registers the Better Auth infrastructure plugins", () => {
     const database = createMigratedTestDatabase()
@@ -111,7 +124,7 @@ describe("request-scoped Better Auth", () => {
     expect(scheduled).toHaveLength(1)
   })
 
-  it("registers an unverified user and dispatches verification email", async () => {
+  it("registers an unverified user and dispatches a verification code", async () => {
     const { auth, database, emails } = setup()
     const response = await auth.handler(
       authRequest("/sign-up/email", {
@@ -126,10 +139,16 @@ describe("request-scoped Better Auth", () => {
     expect(response.headers.get("set-cookie")).toBeNull()
     expect(database.select().from(schema.user).all()).toHaveLength(1)
     expect(database.select().from(schema.user).get()?.emailVerified).toBeFalse()
-    expect(emails.map((email) => email.content.template)).toEqual(["email-verification"])
+    expect(emails.map((email) => email.content.template)).toEqual(["email-otp"])
+    expect(emails[0]?.content).toMatchObject({
+      template: "email-otp",
+      purpose: "email-verification",
+      email: "avery@example.com",
+      expirationMinutes: 5,
+    })
   })
 
-  it("automatically signs in a user after email verification", async () => {
+  it("automatically signs in a user after email OTP verification", async () => {
     const { auth, database, emails } = setup()
     await auth.handler(
       authRequest("/sign-up/email", {
@@ -139,20 +158,20 @@ describe("request-scoped Better Auth", () => {
         password: "correct-horse-battery-staple",
       }),
     )
-    const verificationUrl = emails[0]?.content.action?.url
-    if (!verificationUrl) throw new Error("The verification email did not include an action URL.")
+    const verificationEmail = emails[0]?.content
+    if (verificationEmail?.template !== "email-otp") {
+      throw new Error("The verification email did not include an email OTP.")
+    }
 
     const verificationResponse = await auth.handler(
-      new Request(verificationUrl, {
-        headers: { origin: "http://localhost:3000" },
+      authRequest("/email-otp/verify-email", {
+        email: "verified@example.com",
+        otp: verificationEmail.code,
       }),
     )
-    const cookie = verificationResponse.headers
-      .getSetCookie()
-      .map((value) => value.split(";", 1)[0])
-      .join("; ")
+    const cookie = responseCookie(verificationResponse)
 
-    expect(verificationResponse.status).toBe(302)
+    expect(verificationResponse.status).toBe(200)
     expect(cookie).toContain("pistonpost.session_token=")
     expect(database.select().from(schema.user).get()?.emailVerified).toBeTrue()
     expect(database.select().from(schema.session).all()).toHaveLength(1)
@@ -161,6 +180,167 @@ describe("request-scoped Better Auth", () => {
     expect(await sessionResponse.json()).toMatchObject({
       user: { email: "verified@example.com", emailVerified: true },
     })
+  })
+
+  it("signs an existing user in with an emailed code", async () => {
+    const { auth, database, emails } = setup()
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Email Code User",
+        username: "email-code-user",
+        email: "code@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    database.update(schema.user).set({ emailVerified: true }).run()
+    emails.length = 0
+
+    const sendResponse = await auth.handler(
+      authRequest("/email-otp/send-verification-otp", {
+        email: "code@example.com",
+        type: "sign-in",
+      }),
+    )
+    const signInEmail = emails[0]?.content
+    if (signInEmail?.template !== "email-otp") {
+      throw new Error("The email code sign-in did not dispatch an OTP.")
+    }
+
+    expect(sendResponse.status).toBe(200)
+    expect(signInEmail.purpose).toBe("sign-in")
+
+    const signInResponse = await auth.handler(
+      authRequest("/sign-in/email-otp", {
+        email: "code@example.com",
+        otp: signInEmail.code,
+      }),
+    )
+    const cookie = responseCookie(signInResponse)
+
+    expect(signInResponse.status).toBe(200)
+    expect(cookie).toContain("pistonpost.session_token=")
+    expect(await (await auth.handler(sessionRequest(cookie))).json()).toMatchObject({
+      user: { email: "code@example.com", emailVerified: true },
+    })
+  })
+
+  it("resets a password with an emailed code", async () => {
+    const { auth, database, emails } = setup()
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Email OTP Recovery",
+        username: "email-otp-recovery",
+        email: "recovery@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    database.update(schema.user).set({ emailVerified: true }).run()
+    emails.length = 0
+
+    const requestResponse = await auth.handler(
+      authRequest("/email-otp/request-password-reset", {
+        email: "recovery@example.com",
+      }),
+    )
+    const passwordResetEmail = emails[0]?.content
+    if (passwordResetEmail?.template !== "email-otp") {
+      throw new Error("Password recovery did not dispatch an email OTP.")
+    }
+
+    const resetResponse = await auth.handler(
+      authRequest("/email-otp/reset-password", {
+        email: "recovery@example.com",
+        otp: passwordResetEmail.code,
+        password: "new-correct-horse-battery-staple",
+      }),
+    )
+    const signInResponse = await auth.handler(
+      authRequest("/sign-in/email", {
+        email: "recovery@example.com",
+        password: "new-correct-horse-battery-staple",
+      }),
+    )
+
+    expect(requestResponse.status).toBe(200)
+    expect(passwordResetEmail.purpose).toBe("forget-password")
+    expect(resetResponse.status).toBe(200)
+    expect(responseCookie(signInResponse)).toContain("pistonpost.session_token=")
+  })
+
+  it("completes a password sign-in with an emailed second factor", async () => {
+    const { auth, database, emails } = setup()
+    await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Two Factor User",
+        username: "two-factor-user",
+        email: "two-factor@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    database.update(schema.user).set({ emailVerified: true }).run()
+    const initialSignIn = await auth.handler(
+      authRequest("/sign-in/email", {
+        email: "two-factor@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    const initialCookie = responseCookie(initialSignIn)
+
+    const enableResponse = await auth.handler(
+      authRequest(
+        "/two-factor/enable",
+        { password: "correct-horse-battery-staple" },
+        initialCookie,
+      ),
+    )
+    const enableBody: unknown = await enableResponse.json()
+    const totpUri = stringProperty(enableBody, "totpURI")
+    if (!totpUri) throw new Error("Two-factor enrollment did not return a TOTP URI.")
+
+    expect(enableResponse.status).toBe(200)
+    expect(new URL(totpUri).protocol).toBe("otpauth:")
+    expect(database.select().from(schema.twoFactor).get()?.verified).toBeFalse()
+
+    database.update(schema.user).set({ twoFactorEnabled: true }).run()
+    database.update(schema.twoFactor).set({ verified: true }).run()
+    emails.length = 0
+
+    const challengedSignIn = await auth.handler(
+      authRequest("/sign-in/email", {
+        email: "two-factor@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+    const challengeBody: unknown = await challengedSignIn.clone().json()
+    const challengeCookie = responseCookie(challengedSignIn)
+
+    expect(challengeBody).toMatchObject({
+      twoFactorRedirect: true,
+      twoFactorMethods: ["totp", "otp"],
+    })
+    expect(challengeCookie).toContain("pistonpost.session_token=;")
+    expect(challengeCookie).toContain("pistonpost.two_factor=")
+
+    const sendOtpResponse = await auth.handler(
+      authRequest("/two-factor/send-otp", { trustDevice: false }, challengeCookie),
+    )
+    const secondFactorEmail = emails[0]?.content
+    if (secondFactorEmail?.template !== "two-factor-otp") {
+      throw new Error("The two-factor challenge did not dispatch an email code.")
+    }
+    const verifyOtpResponse = await auth.handler(
+      authRequest(
+        "/two-factor/verify-otp",
+        { code: secondFactorEmail.code, trustDevice: false },
+        challengeCookie,
+      ),
+    )
+    const authenticatedCookie = responseCookie(verifyOtpResponse)
+
+    expect(sendOtpResponse.status).toBe(200)
+    expect(secondFactorEmail.expirationMinutes).toBe(3)
+    expect(verifyOtpResponse.status).toBe(200)
+    expect(authenticatedCookie).toContain("pistonpost.session_token=")
   })
 
   it("does not share database state between auth factories", async () => {
@@ -240,7 +420,13 @@ describe("request-scoped Better Auth", () => {
     expect(emails).toHaveLength(1)
     expect(emails[0]?.to).toBe("current@example.com")
     expect(emails[0]?.content.template).toBe("email-change-approval")
-    expect(emails[0]?.content.action?.url).toContain("/api/auth/verify-email")
+    const changeApprovalEmail = emails[0]?.content
+    if (changeApprovalEmail?.template !== "email-change-approval") {
+      throw new Error("The email change approval did not include a confirmation link.")
+    }
+    expect(changeApprovalEmail.currentEmail).toBe("current@example.com")
+    expect(changeApprovalEmail.newEmail).toBe("next@example.com")
+    expect(changeApprovalEmail.url).toContain("/api/auth/verify-email")
   })
 
   it("routes account deletion confirmation through the authenticated redirect view", async () => {
@@ -273,10 +459,12 @@ describe("request-scoped Better Auth", () => {
     expect(emails).toHaveLength(1)
     expect(emails[0]?.content.template).toBe("account-deletion")
 
-    const actionUrl = emails[0]?.content.action?.url
-    if (!actionUrl) throw new Error("The account deletion email did not include an action URL.")
+    const deletionEmail = emails[0]?.content
+    if (deletionEmail?.template !== "account-deletion") {
+      throw new Error("The account deletion email did not include a confirmation link.")
+    }
 
-    const authenticatedRedirect = new URL(actionUrl)
+    const authenticatedRedirect = new URL(deletionEmail.url)
     expect(authenticatedRedirect.pathname).toBe("/auth/redirect")
 
     const callbackPath = authenticatedRedirect.searchParams.get("redirectTo")

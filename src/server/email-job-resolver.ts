@@ -266,7 +266,11 @@ export function emailJobResolverLayer(
       if (job.type === "email.security") {
         const event = yield* promiseQuery(() =>
           database
-            .select({ action: schema.auditEvents.action, actorId: schema.auditEvents.actorId })
+            .select({
+              action: schema.auditEvents.action,
+              actorId: schema.auditEvents.actorId,
+              createdAt: schema.auditEvents.createdAt,
+            })
             .from(schema.auditEvents)
             .where(eq(schema.auditEvents.id, job.auditEventId))
             .get(),
@@ -294,13 +298,12 @@ export function emailJobResolverLayer(
         return ready({
           to: recipient.email,
           channel: "authentication",
-          content: {
-            ...securityNotificationMessage({ template }),
-            action: {
-              label: "Review account security",
-              url: new URL("/settings/security", baseURL).toString(),
-            },
-          },
+          content: securityNotificationMessage({
+            template,
+            email: recipient.email,
+            secureAccountUrl: new URL("/settings/security", baseURL).toString(),
+            timestamp: event.createdAt.toISOString(),
+          }),
         })
       }
 

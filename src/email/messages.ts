@@ -1,6 +1,6 @@
 import type { EmailNotificationPreference } from "@/domain"
 
-import type { EmailContent, EmailSubscription, EmailTemplateKey } from "./email"
+import type { EmailContent, EmailOtpPurpose, EmailSubscription } from "./email"
 
 const emailListIds = {
   "comment-email": "PistonPost comments <comments.post.pistonmaster.net>",
@@ -15,85 +15,111 @@ export function emailSubscription(
   return { preference, unsubscribeUrl, listId: emailListIds[preference] }
 }
 
-type AuthenticationMessageInput = {
-  readonly template: Extract<
-    EmailTemplateKey,
-    | "email-verification"
-    | "magic-link"
-    | "password-reset"
-    | "account-deletion"
-    | "email-otp"
-    | "two-factor-otp"
-    | "email-change-approval"
-  >
-  readonly url?: string
-  readonly code?: string
-  readonly expiresIn: string
-}
+type AuthenticationMessageInput =
+  | Readonly<{
+      template: "email-verification" | "magic-link" | "password-reset"
+      email: string
+      url: string
+      expirationMinutes: number
+    }>
+  | Readonly<{
+      template: "account-deletion"
+      email: string
+      url: string
+      expirationHours: number
+    }>
+  | Readonly<{
+      template: "email-change-approval"
+      currentEmail: string
+      newEmail: string
+      url: string
+      expirationMinutes: number
+    }>
+  | Readonly<{
+      template: "email-otp"
+      purpose: Exclude<EmailOtpPurpose, "two-factor">
+      email: string
+      code: string
+      expirationMinutes: number
+    }>
+  | Readonly<{
+      template: "two-factor-otp"
+      purpose: "two-factor"
+      email: string
+      code: string
+      expirationMinutes: number
+    }>
 
 const copy = {
-  "email-verification": ["Verify your PistonPost email", "Verify your email", "Verify email"],
-  "magic-link": ["Your PistonPost sign-in link", "Sign in to PistonPost", "Sign in"],
-  "password-reset": ["Reset your PistonPost password", "Reset your password", "Reset password"],
-  "account-deletion": [
-    "Confirm PistonPost account deletion",
-    "Confirm account deletion",
-    "Confirm deletion",
-  ],
-  "email-otp": ["Your PistonPost verification code", "Verify your request", "Verify"],
-  "two-factor-otp": ["Your PistonPost security code", "Complete sign-in", "Complete sign-in"],
-  "email-change-approval": [
-    "Approve your PistonPost email change",
-    "Approve your email change",
-    "Approve email change",
-  ],
+  "email-verification": "Verify your PistonPost email",
+  "magic-link": "Your PistonPost sign-in link",
+  "password-reset": "Reset your PistonPost password",
+  "account-deletion": "Confirm PistonPost account deletion",
+  "two-factor-otp": "Your PistonPost security code",
+  "email-change-approval": "Approve your PistonPost email change",
+} as const
+
+const emailOtpSubjects = {
+  "sign-in": "Your PistonPost sign-in code",
+  "email-verification": "Verify your PistonPost email",
+  "forget-password": "Reset your PistonPost password",
+  "change-email": "Confirm your PistonPost email change",
 } as const
 
 export function authenticationMessage(input: AuthenticationMessageInput): EmailContent {
-  const [subject, heading, actionLabel] = copy[input.template]
+  if (input.template === "email-otp") {
+    return {
+      ...input,
+      subject: emailOtpSubjects[input.purpose],
+    }
+  }
+
   return {
-    template: input.template,
-    subject,
-    preview: `${heading}. This request expires ${input.expiresIn}.`,
-    heading,
-    message:
-      "Use the secure action below to continue. PistonPost will never ask you to send this link or code to another person.",
-    action: input.url ? { label: actionLabel, url: input.url } : undefined,
-    code: input.code,
-    footnote: `This request expires ${input.expiresIn}.`,
+    ...input,
+    subject: copy[input.template],
   }
 }
 
-type SecurityNotificationInput = {
+type SecurityNotificationInput = Readonly<{
   readonly template: "password-changed" | "email-changed" | "new-device"
-}
+  readonly email: string
+  readonly secureAccountUrl: string
+  readonly timestamp?: string
+}>
 
 const securityCopy = {
-  "password-changed": [
-    "Your PistonPost password changed",
-    "Password changed",
-    "Your password was changed. If this was not you, start account recovery immediately.",
-  ],
-  "email-changed": [
-    "Your PistonPost email is changing",
-    "Email change requested",
-    "An email address change was requested for your account. If this was not you, secure your account now.",
-  ],
-  "new-device": [
-    "New PistonPost sign-in",
-    "New device sign-in",
-    "A new session signed in to your account. Review active sessions if you do not recognize it.",
-  ],
+  "password-changed": "Your PistonPost password changed",
+  "email-changed": "Your PistonPost email is changing",
+  "new-device": "New PistonPost sign-in",
 } as const
 
 export function securityNotificationMessage(input: SecurityNotificationInput): EmailContent {
-  const [subject, heading, message] = securityCopy[input.template]
+  switch (input.template) {
+    case "password-changed":
+      return {
+        ...input,
+        template: "password-changed",
+        subject: securityCopy[input.template],
+      }
+    case "new-device":
+      return {
+        ...input,
+        template: "new-device",
+        subject: securityCopy[input.template],
+      }
+  }
+
   return {
     template: input.template,
-    subject,
-    preview: heading,
-    heading,
-    message,
+    subject: securityCopy[input.template],
+    preview: "Email change requested",
+    heading: "Email change requested",
+    message:
+      "An email address change was requested for your account. If this was not you, secure your account now.",
+    action: {
+      label: "Review account security",
+      url: input.secureAccountUrl,
+    },
     footnote: "PistonPost security messages are enabled for every account.",
   }
 }

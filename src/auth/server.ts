@@ -92,8 +92,9 @@ export function createAuth(runtime: AuthRuntime) {
           to: user.email,
           content: authenticationMessage({
             template: "password-reset",
+            email: user.email,
             url,
-            expiresIn: "in one hour",
+            expirationMinutes: 60,
           }),
           idempotencyKey: `password-reset:${token}`,
         })
@@ -106,28 +107,19 @@ export function createAuth(runtime: AuthRuntime) {
       sendOnSignUp: true,
       sendOnSignIn: true,
       autoSignInAfterVerification: true,
-      sendVerificationEmail: async ({ user, url, token }) => {
-        await send({
-          to: user.email,
-          content: authenticationMessage({
-            template: "email-verification",
-            url,
-            expiresIn: "in one hour",
-          }),
-          idempotencyKey: `email-verification:${token}`,
-        })
-      },
     },
     user: {
       changeEmail: {
         enabled: true,
-        sendChangeEmailConfirmation: async ({ user, url, token }) => {
+        sendChangeEmailConfirmation: async ({ user, newEmail, url, token }) => {
           await send({
             to: user.email,
             content: authenticationMessage({
               template: "email-change-approval",
+              currentEmail: user.email,
+              newEmail,
               url,
-              expiresIn: "in one hour",
+              expirationMinutes: 60,
             }),
             idempotencyKey: `email-change-approval:${token}`,
           })
@@ -140,8 +132,9 @@ export function createAuth(runtime: AuthRuntime) {
             to: user.email,
             content: authenticationMessage({
               template: "account-deletion",
+              email: user.email,
               url: createAuthRedirectUrl(runtime.baseURL, url),
-              expiresIn: "in 24 hours",
+              expirationHours: 24,
             }),
             idempotencyKey: `account-deletion:${token}`,
           })
@@ -222,8 +215,9 @@ export function createAuth(runtime: AuthRuntime) {
             to: email,
             content: authenticationMessage({
               template: "magic-link",
+              email,
               url,
-              expiresIn: "in 10 minutes",
+              expirationMinutes: 10,
             }),
             idempotencyKey: `magic-link:${token}`,
           })
@@ -234,13 +228,16 @@ export function createAuth(runtime: AuthRuntime) {
         expiresIn: 60 * 5,
         storeOTP: "hashed",
         allowedAttempts: 3,
-        sendVerificationOTP: async ({ email, otp }) => {
+        overrideDefaultEmailVerification: true,
+        sendVerificationOTP: async ({ email, otp, type }) => {
           await send({
             to: email,
             content: authenticationMessage({
               template: "email-otp",
+              purpose: type,
+              email,
               code: otp,
-              expiresIn: "in 5 minutes",
+              expirationMinutes: 5,
             }),
             idempotencyKey: `email-otp:${email}:${otp}`,
           })
@@ -257,8 +254,10 @@ export function createAuth(runtime: AuthRuntime) {
               to: user.email,
               content: authenticationMessage({
                 template: "two-factor-otp",
+                purpose: "two-factor",
+                email: user.email,
                 code: otp,
-                expiresIn: "in 3 minutes",
+                expirationMinutes: 3,
               }),
               idempotencyKey: `two-factor:${user.id}:${otp}`,
             })

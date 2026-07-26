@@ -25,7 +25,7 @@ test.describe("authentication", () => {
     await expect(page.getByRole("region", { name: "Account access" })).toBeVisible()
   })
 
-  test("offers username, password, magic-link, and recovery entry points", async ({ page }) => {
+  test("offers password, email-code, magic-link, and recovery entry points", async ({ page }) => {
     await page.goto("/auth/sign-in")
 
     const accountAccess = page.getByRole("region", { name: "Account access" })
@@ -33,17 +33,25 @@ test.describe("authentication", () => {
       "placeholder",
       "Username or email",
     )
-    await expect(accountAccess.getByLabel("Password")).toBeVisible()
+    await expect(
+      accountAccess.getByRole("textbox", { name: "Password", exact: true }),
+    ).toBeVisible()
     await expect(
       accountAccess.getByRole("link", { name: "Continue with Magic Link" }),
     ).toBeVisible()
+    await expect(
+      accountAccess.getByRole("link", { name: "Continue with Email Code" }),
+    ).toBeVisible()
     await expect(accountAccess.getByRole("link", { name: /forgot/i })).toBeVisible()
+
+    await page.goto("/auth/email-otp")
+    await expect(accountAccess.getByRole("button", { name: /send code/i })).toBeVisible()
 
     await page.goto("/auth/magic-link")
     await expect(accountAccess.getByRole("button", { name: /send magic link/i })).toBeVisible()
 
     await page.goto("/auth/forgot-password")
-    await expect(accountAccess.getByRole("button", { name: /send reset link/i })).toBeVisible()
+    await expect(accountAccess.getByRole("button", { name: /send code/i })).toBeVisible()
   })
 
   test("renders a complete registration form with CAPTCHA", async ({ page }) => {

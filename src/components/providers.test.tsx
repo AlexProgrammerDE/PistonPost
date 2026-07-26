@@ -2,16 +2,24 @@ import { describe, expect, test } from "bun:test"
 
 import {
   adminPlugin as coreAdminPlugin,
+  emailOtpPlugin as coreEmailOtpPlugin,
   multiSessionPlugin as coreMultiSessionPlugin,
   themePlugin as coreThemePlugin,
+  twoFactorPlugin as coreTwoFactorPlugin,
 } from "@better-auth-ui/core/plugins"
 import { captchaPlugin } from "@better-auth-ui/react/plugins"
 
 import { StopImpersonating } from "@/components/auth/admin/stop-impersonating"
+import { EmailOtp } from "@/components/auth/email-otp/email-otp"
+import { ForgotPasswordOtp } from "@/components/auth/email-otp/forgot-password-otp"
+import { ResetPasswordOtp } from "@/components/auth/email-otp/reset-password-otp"
+import { VerifyEmailOtp } from "@/components/auth/email-otp/verify-email-otp"
 import { ManageAccounts } from "@/components/auth/multi-session/manage-accounts"
 import { SwitchAccountSubmenu } from "@/components/auth/multi-session/switch-account-submenu"
 import { Appearance } from "@/components/auth/theme/appearance"
 import { ThemeToggleItem } from "@/components/auth/theme/theme-toggle-item"
+import { TwoFactorChallenge } from "@/components/auth/two-factor/two-factor-challenge"
+import { TwoFactorSettings } from "@/components/auth/two-factor/two-factor-settings"
 
 import { createAuthenticationPlugins } from "./providers"
 
@@ -35,5 +43,21 @@ describe("global authentication plugins", () => {
 
     expect(withoutTurnstile.some((plugin) => plugin.id === captchaPlugin.id)).toBe(false)
     expect(withTurnstile.some((plugin) => plugin.id === captchaPlugin.id)).toBe(true)
+  })
+
+  test("registers email OTP and two-factor flows with matching views", () => {
+    const plugins = createAuthenticationPlugins()
+    const emailOtp = plugins.find((plugin) => plugin.id === coreEmailOtpPlugin.id)
+    const twoFactor = plugins.find((plugin) => plugin.id === coreTwoFactorPlugin.id)
+
+    expect(emailOtp?.views?.auth).toMatchObject({
+      emailOtp: EmailOtp,
+      verifyEmail: VerifyEmailOtp,
+      forgotPassword: ForgotPasswordOtp,
+      resetPassword: ResetPasswordOtp,
+    })
+    expect(emailOtp?.cardOverrides?.account).toBeUndefined()
+    expect(twoFactor?.views?.auth).toEqual({ twoFactor: TwoFactorChallenge })
+    expect(twoFactor?.securityCards).toEqual([TwoFactorSettings])
   })
 })

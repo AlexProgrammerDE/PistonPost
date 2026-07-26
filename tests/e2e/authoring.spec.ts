@@ -14,7 +14,7 @@ const VALID_PNG = Buffer.from(
   "base64",
 )
 
-async function verificationUrlSince(startedAt: number) {
+async function verificationCodeSince(startedAt: number) {
   const temporaryEntries = await readdir(tmpdir(), { withFileTypes: true })
   const messages = (
     await Promise.all(
@@ -44,7 +44,7 @@ async function verificationUrlSince(startedAt: number) {
   ).flatMap((group) => group.filter((message) => message !== null))
 
   for (const message of messages.toSorted((left, right) => right.modifiedAt - left.modifiedAt)) {
-    const match = message.content.match(/https?:\/\/[^\s]+\/api\/auth\/verify-email\?[^\s]+/u)
+    const match = message.content.match(/\b\d{6}\b/u)
     if (match) return match[0]
   }
   return null
@@ -72,17 +72,21 @@ async function createVerifiedSession(context: BrowserContext) {
   })
   expect(signUp.status()).toBe(200)
 
-  let verificationUrl: string | null = null
+  let verificationCode: string | null = null
   await expect
     .poll(async () => {
-      verificationUrl = await verificationUrlSince(startedAt)
-      return verificationUrl
+      verificationCode = await verificationCodeSince(startedAt)
+      return verificationCode
     })
     .not.toBeNull()
-  if (!verificationUrl) throw new Error("The local verification email was not written.")
+  if (!verificationCode) throw new Error("The local verification email was not written.")
 
-  const verification = await context.request.get(verificationUrl, {
-    headers: { "cf-connecting-ip": clientAddress },
+  const verification = await context.request.post("/api/auth/email-otp/verify-email", {
+    headers: {
+      Origin: "http://localhost:3000",
+      "cf-connecting-ip": clientAddress,
+    },
+    data: { email, otp: verificationCode },
   })
   expect(verification.status()).toBeLessThan(400)
 

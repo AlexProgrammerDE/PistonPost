@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-22
+Last updated: 2026-07-26
 
 ## How to execute this plan
 
@@ -993,6 +993,12 @@ The rewrite is complete when:
 
 Record future changes here with date, decision, reason, and affected phases.
 
+- 2026-07-26: Adopt Better Auth UI's opt-in email-code flows for passwordless sign-in, email
+  verification, and password recovery, plus its two-factor challenge and settings surfaces. Render
+  authentication and security messages with the matching Better Auth UI email templates. Keep
+  email changes on the current-address link confirmation flow until Better Auth UI's change-email
+  OTP client uses Better Auth 1.6's dedicated email-change endpoint. Passwordless sign-in methods
+  remain outside the two-factor challenge as defined by Better Auth. This affects Phase 4.
 - 2026-07-14: Use a single TanStack Start Worker for the initial product. This keeps SSR, auth, API, and Cloudflare bindings in one request boundary while explicit source folders preserve modularity.
 - 2026-07-15: Flatten the repository into one Bun package. PistonPost is one application with one deployable Worker, so workspace manifests and Turborepo added indirection without an independent release or ownership boundary. Keep auth, database, domain, email, and UI boundaries under `src`.
 - 2026-07-14: Use Base UI because the requested shadcn preset generated Base UI and the user explicitly requested it.

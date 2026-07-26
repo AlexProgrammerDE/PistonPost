@@ -10,6 +10,7 @@ import { AuthProvider } from "@/components/auth/auth-provider"
 import { TurnstileWidget } from "@/components/turnstile-widget"
 import { adminPlugin } from "@/lib/auth/admin-plugin"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
+import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
 import { lastLoginMethodPlugin } from "@/lib/auth/last-login-method-plugin.ts"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { multiSessionPlugin } from "@/lib/auth/multi-session-plugin"
@@ -44,6 +45,10 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
       localization: { usernamePlaceholder: "garage-name" },
     }),
     magicLinkPlugin(),
+    emailOtpPlugin({
+      emailVerification: true,
+      passwordReset: true,
+    }),
     multiSessionPlugin(),
     adminPlugin(),
     passkeyPlugin(),
