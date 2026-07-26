@@ -34,6 +34,12 @@ export type SignUpProps = {
   className?: string
   socialLayout?: SocialLayout
   socialPosition?: "top" | "bottom"
+  /**
+   * Runs instead of the post-sign-up redirect, but only when the sign-up
+   * created an immediately usable session. Email verification still takes
+   * priority, and social sign-ups are unaffected.
+   */
+  onSignUpSuccess?: () => void
 }
 
 /**
@@ -48,9 +54,15 @@ export type SignUpProps = {
  * @param className - Additional CSS classes applied to the outer container
  * @param socialLayout - Social layout to apply to the component
  * @param socialPosition - Social position to apply to the component
+ * @param onSignUpSuccess - Replaces the post-sign-up redirect when the new account is immediately usable
  * @returns The sign-up form React element.
  */
-export function SignUp({ className, socialLayout, socialPosition = "bottom" }: SignUpProps) {
+export function SignUp({
+  className,
+  socialLayout,
+  socialPosition = "bottom",
+  onSignUpSuccess,
+}: SignUpProps) {
   const {
     additionalFields,
     authClient,
@@ -82,6 +94,8 @@ export function SignUp({ className, socialLayout, socialPosition = "bottom" }: S
         navigate({
           to: `${basePaths.auth}/${viewPaths.auth.verifyEmail}`,
         })
+      } else if (onSignUpSuccess) {
+        onSignUpSuccess()
       } else {
         navigate({ to: redirectTo })
       }
