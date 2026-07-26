@@ -39,6 +39,7 @@
     "tailwindcss",
     "tw-animate-css",
     "wasm-pack",
-    "zod"
+    "zod",
+    "input-otp"
   ]
 }
