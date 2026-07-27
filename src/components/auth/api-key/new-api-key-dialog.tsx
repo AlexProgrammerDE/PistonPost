@@ -5,16 +5,15 @@ import { Check, Copy, Key } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
+import { Button } from "@/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   InputGroup,
   InputGroupAddon,
@@ -37,6 +36,14 @@ export function NewApiKeyDialog({ open, onOpenChange, name, secretKey }: NewApiK
 
   const [copied, setCopied] = useState(false)
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
+      setCopied(false)
+    }
+
+    onOpenChange(nextOpen)
+  }
+
   const copySecretKey = async () => {
     if (!secretKey) return
 
@@ -50,17 +57,16 @@ export function NewApiKeyDialog({ open, onOpenChange, name, secretKey }: NewApiK
   }
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogMedia>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent showCloseButton={false}>
+        <DialogHeader>
+          <DialogTitle>
             <Key />
-          </AlertDialogMedia>
+            {apiKeyLocalization.newApiKey}
+          </DialogTitle>
 
-          <AlertDialogTitle>{apiKeyLocalization.newApiKey}</AlertDialogTitle>
-
-          <AlertDialogDescription>{apiKeyLocalization.newApiKeyWarning}</AlertDialogDescription>
-        </AlertDialogHeader>
+          <DialogDescription>{apiKeyLocalization.newApiKeyWarning}</DialogDescription>
+        </DialogHeader>
 
         <div className="flex flex-col gap-2">
           <Label htmlFor="new-api-key-secret">{name || apiKeyLocalization.apiKey}</Label>
@@ -85,10 +91,12 @@ export function NewApiKeyDialog({ open, onOpenChange, name, secretKey }: NewApiK
           </InputGroup>
         </div>
 
-        <AlertDialogFooter>
-          <AlertDialogAction>{apiKeyLocalization.dismissNewKey}</AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+        <DialogFooter>
+          <Button type="button" onClick={() => handleOpenChange(false)}>
+            {apiKeyLocalization.dismissNewKey}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

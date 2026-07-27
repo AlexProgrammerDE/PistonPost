@@ -1,7 +1,7 @@
 "use client"
 
 import { authMutationKeys, parseAdditionalFieldValue } from "@better-auth-ui/core"
-import { useAuth, useFetchOptions, useSignUpEmail } from "@better-auth-ui/react"
+import { AuthPrompts, useAuth, useFetchOptions, useSignUpEmail } from "@better-auth-ui/react"
 import { useIsMutating } from "@tanstack/react-query"
 import { Eye, EyeOff } from "lucide-react"
 import { type SyntheticEvent, useState } from "react"
@@ -170,6 +170,7 @@ export function SignUp({
 
   return (
     <Card className={cn("w-full max-w-sm", className)}>
+      <AuthPrompts view="signUp" />
       <CardHeader>
         <CardTitle className="text-xl font-semibold">{localization.auth.signUp}</CardTitle>
       </CardHeader>

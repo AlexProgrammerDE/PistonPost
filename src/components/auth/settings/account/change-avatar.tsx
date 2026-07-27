@@ -1,6 +1,6 @@
 "use client"
 
-import { fileToBase64 } from "@better-auth-ui/core"
+import { fileToAvatarDataUrl } from "@better-auth-ui/core"
 import { useAuth, useSession, useUpdateUser } from "@better-auth-ui/react"
 import { Trash2, Upload } from "lucide-react"
 import { type ChangeEvent, useRef, useState } from "react"
@@ -45,7 +45,7 @@ export function ChangeAvatar({ className }: ChangeAvatarProps) {
     try {
       const resized = (await avatar.resize?.(file, avatar.size, avatar.extension)) || file
 
-      const image = (await avatar.upload?.(resized)) || (await fileToBase64(resized))
+      const image = (await avatar.upload?.(resized)) || (await fileToAvatarDataUrl(resized))
 
       updateUser(
         { image },
