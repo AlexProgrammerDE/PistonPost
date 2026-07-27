@@ -19,6 +19,7 @@ import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
 import { RESEND_COOLDOWN_SECONDS, useResendCooldown } from "@/lib/auth/use-resend-cooldown"
 import { cn } from "@/lib/utils"
 
+import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 import { useIsHydrated } from "../use-is-hydrated"
 
@@ -85,6 +86,12 @@ export function VerifyEmailOtp({ className }: VerifyEmailOtpProps) {
 
   const isPending = isSending || isVerifying
 
+  const verifyCode = (completedCode: string) => {
+    if (isPending || !email) return
+
+    verifyEmailOtp({ email, otp: completedCode })
+  }
+
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
@@ -97,7 +104,7 @@ export function VerifyEmailOtp({ className }: VerifyEmailOtpProps) {
       return
     }
 
-    verifyEmailOtp({ email, otp: code })
+    verifyCode(code)
   }
 
   return (
@@ -124,6 +131,7 @@ export function VerifyEmailOtp({ className }: VerifyEmailOtpProps) {
                 name="otp"
                 value={code}
                 onChange={setCode}
+                onComplete={verifyCode}
               />
             ) : (
               <Field data-invalid={!!fieldErrors.email}>
@@ -162,6 +170,8 @@ export function VerifyEmailOtp({ className }: VerifyEmailOtpProps) {
 
                 {email ? emailOtpLocalization.verifyCode : emailOtpLocalization.sendCode}
               </Button>
+
+              {email && <OpenEmailButton email={email} variant="secondary" />}
 
               {email && (
                 <Button

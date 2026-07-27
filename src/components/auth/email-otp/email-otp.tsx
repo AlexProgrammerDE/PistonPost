@@ -28,6 +28,7 @@ import { useResendCooldown } from "@/lib/auth/use-resend-cooldown"
 import { useSignInContinuation } from "@/lib/auth/use-sign-in-continuation"
 import { cn } from "@/lib/utils"
 
+import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 import { ProviderButtons, type SocialLayout } from "../provider-buttons"
 
@@ -90,6 +91,11 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
   const isPending = signInMutating + signUpMutating > 0 || isSending
 
   const sendCode = () => sendVerificationOtp({ email, type: "sign-in" })
+  const verifyCode = (completedCode: string) => {
+    if (isPending || isSigningIn) return
+
+    signInEmailOtp({ email, otp: completedCode })
+  }
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -99,7 +105,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
       return
     }
 
-    signInEmailOtp({ email, otp: code })
+    verifyCode(code)
   }
 
   const showSeparator = socialProviders && socialProviders.length > 0
@@ -143,6 +149,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                   name="otp"
                   value={code}
                   onChange={setCode}
+                  onComplete={verifyCode}
                 />
               ) : (
                 <Field data-invalid={!!fieldErrors.email}>
@@ -188,6 +195,8 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
 
                 {codeSent ? (
                   <>
+                    <OpenEmailButton email={email} variant="secondary" />
+
                     <Button
                       type="button"
                       variant="outline"

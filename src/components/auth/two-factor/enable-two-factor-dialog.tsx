@@ -98,6 +98,14 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
 
   const isPending = isEnabling || isVerifying || isResolvingPasswordRequirement
 
+  const verifyCode = (completedCode: string) => {
+    if (isPending || step !== "verify" || completedCode.length !== codeLength) {
+      return
+    }
+
+    verifyTotp({ code: completedCode })
+  }
+
   const handleOpenChange = (nextOpen: boolean) => {
     onOpenChange(nextOpen)
 
@@ -120,7 +128,7 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
     }
 
     if (step === "verify") {
-      verifyTotp({ code })
+      verifyCode(code)
       return
     }
 
@@ -208,6 +216,7 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
                 name="code"
                 value={code}
                 onChange={setCode}
+                onComplete={verifyCode}
               />
             </div>
           )}

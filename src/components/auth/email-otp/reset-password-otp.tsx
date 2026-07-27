@@ -7,7 +7,7 @@ import {
   useResetPasswordOtp,
 } from "@better-auth-ui/react"
 import { Eye, EyeOff } from "lucide-react"
-import { type SyntheticEvent, useEffect, useState } from "react"
+import { type SyntheticEvent, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
 import { cn } from "@/lib/utils"
 
+import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 import { useIsHydrated } from "../use-is-hydrated"
 import { RESET_PASSWORD_OTP_STORAGE_KEY } from "./forgot-password-otp"
@@ -49,24 +50,31 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
   const { localization: emailOtpLocalization, otpLength } = useAuthPlugin(emailOtpPlugin)
 
   const isHydrated = useIsHydrated()
-  const [email, setEmail] = useState(
-    (isHydrated && sessionStorage.getItem(RESET_PASSWORD_OTP_STORAGE_KEY)) || "",
-  )
+  const initialEmail = (isHydrated && sessionStorage.getItem(RESET_PASSWORD_OTP_STORAGE_KEY)) || ""
+  const [email, setEmail] = useState(initialEmail)
+  const [hasStoredEmail, setHasStoredEmail] = useState(Boolean(initialEmail))
   const [code, setCode] = useState("")
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
+  const formRef = useRef<HTMLFormElement>(null)
+  const submissionLockedRef = useRef(false)
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string
     password?: string
   }>({})
 
   useEffect(() => {
-    setEmail(sessionStorage.getItem(RESET_PASSWORD_OTP_STORAGE_KEY) ?? "")
+    const storedEmail = sessionStorage.getItem(RESET_PASSWORD_OTP_STORAGE_KEY) ?? ""
+    setEmail(storedEmail)
+    setHasStoredEmail(Boolean(storedEmail))
   }, [])
 
   const { mutate: resetPasswordOtp, isPending } = useResetPasswordOtp(
     authClient as EmailOtpAuthClient,
     {
-      onError: () => setCode(""),
+      onError: () => {
+        submissionLockedRef.current = false
+        setCode("")
+      },
       onSuccess: () => {
         sessionStorage.removeItem(RESET_PASSWORD_OTP_STORAGE_KEY)
         toast.success(localization.auth.passwordResetSuccess)
@@ -75,25 +83,48 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
     },
   )
 
-  const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault()
+  const submitReset = (form: HTMLFormElement, submittedCode: string, reportErrors: boolean) => {
+    if (isPending || submissionLockedRef.current) return
 
-    const formData = new FormData(e.currentTarget)
+    const formData = new FormData(form)
     const password = formData.get("password") as string
     const confirmPassword = formData.get("confirmPassword") as string
-    const submittedEmail = email || (formData.get("email") as string)
+    const submittedEmail = hasStoredEmail ? email : (formData.get("email") as string)
 
     if (emailAndPassword?.confirmPassword && password !== confirmPassword) {
-      toast.error(localization.auth.passwordsDoNotMatch)
+      if (reportErrors) {
+        toast.error(localization.auth.passwordsDoNotMatch)
+      }
       return
     }
 
-    if (code.length !== otpLength) {
-      toast.error(emailOtpLocalization.codeLengthMismatch.replace("{{length}}", String(otpLength)))
+    if (submittedCode.length !== otpLength) {
+      if (reportErrors) {
+        toast.error(
+          emailOtpLocalization.codeLengthMismatch.replace("{{length}}", String(otpLength)),
+        )
+      }
       return
     }
 
-    resetPasswordOtp({ email: submittedEmail, otp: code, password })
+    submissionLockedRef.current = true
+    resetPasswordOtp({ email: submittedEmail, otp: submittedCode, password })
+  }
+
+  const tryAutoSubmit = (completedCode?: string) => {
+    const form = formRef.current
+
+    if (!form?.matches(":valid")) return
+
+    const formData = new FormData(form)
+    const submittedCode = completedCode ?? String(formData.get("otp") ?? "")
+
+    submitReset(form, submittedCode, false)
+  }
+
+  const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    submitReset(e.currentTarget, code, true)
   }
 
   return (
@@ -101,7 +132,7 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
       <CardHeader>
         <CardTitle className="text-xl font-semibold">{localization.auth.resetPassword}</CardTitle>
 
-        {email && (
+        {hasStoredEmail && email && (
           <CardDescription>
             {emailOtpLocalization.codeSentTo.replace("{{email}}", email)}
           </CardDescription>
@@ -109,9 +140,9 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
       </CardHeader>
 
       <CardContent>
-        <form onSubmit={handleSubmit}>
+        <form ref={formRef} onSubmit={handleSubmit}>
           <FieldGroup>
-            {!email && (
+            {!hasStoredEmail && (
               <Field data-invalid={!!fieldErrors.email}>
                 <FieldLabel htmlFor="email">{localization.auth.email}</FieldLabel>
 
@@ -120,10 +151,14 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
                   name="email"
                   type="email"
                   autoComplete="email"
+                  value={email}
                   placeholder={localization.auth.emailPlaceholder}
                   required
                   disabled={isPending}
-                  onChange={() => setFieldErrors((prev) => ({ ...prev, email: undefined }))}
+                  onChange={(event) => {
+                    setEmail(event.target.value)
+                    setFieldErrors((prev) => ({ ...prev, email: undefined }))
+                  }}
                   onInvalid={(e) => {
                     e.preventDefault()
 
@@ -140,13 +175,14 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
             )}
 
             <OtpField
-              autoFocus={Boolean(email)}
+              autoFocus={hasStoredEmail}
               disabled={isPending}
               label={emailOtpLocalization.code}
               length={otpLength}
               name="otp"
               value={code}
               onChange={setCode}
+              onComplete={tryAutoSubmit}
             />
 
             <Field data-invalid={!!fieldErrors.password}>
@@ -223,11 +259,15 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
               </Field>
             )}
 
-            <Button type="submit" disabled={isPending}>
-              {isPending && <Spinner />}
+            <div className="flex flex-col gap-3">
+              <Button type="submit" disabled={isPending}>
+                {isPending && <Spinner />}
 
-              {localization.auth.resetPassword}
-            </Button>
+                {localization.auth.resetPassword}
+              </Button>
+
+              {email && <OpenEmailButton email={email} variant="secondary" />}
+            </div>
           </FieldGroup>
         </form>
 
