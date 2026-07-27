@@ -8,23 +8,28 @@ import {
   useEnableTwoFactor,
   useVerifyTotp,
 } from "@better-auth-ui/react"
-import { ShieldCheck } from "lucide-react"
-import { type SyntheticEvent, useMemo, useState } from "react"
+import { Check, Copy, ShieldCheck } from "lucide-react"
+import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 import { useTwoFactorPasswordRequirement } from "@/lib/auth/use-two-factor-password"
@@ -61,6 +66,8 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
   const [totpUri, setTotpUri] = useState("")
   const [backupCodes, setBackupCodes] = useState<string[]>([])
   const [code, setCode] = useState("")
+  const [setupKeyCopied, setSetupKeyCopied] = useState(false)
+  const copyResetTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const qrCode = useMemo(() => (totpUri ? createQrCodeSvgData(totpUri) : null), [totpUri])
 
@@ -75,6 +82,35 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
       return null
     }
   }, [totpUri])
+
+  useEffect(
+    () => () => {
+      if (copyResetTimeout.current !== null) {
+        clearTimeout(copyResetTimeout.current)
+      }
+    },
+    [],
+  )
+
+  const copySetupKey = async () => {
+    if (!setupKey) return
+
+    try {
+      await navigator.clipboard.writeText(setupKey)
+      setSetupKeyCopied(true)
+
+      if (copyResetTimeout.current !== null) {
+        clearTimeout(copyResetTimeout.current)
+      }
+
+      copyResetTimeout.current = setTimeout(() => {
+        setSetupKeyCopied(false)
+        copyResetTimeout.current = null
+      }, 2000)
+    } catch {
+      toast.error(twoFactorLocalization.setupKeyCopyFailed)
+    }
+  }
 
   const {
     mutate: enableTwoFactor,
@@ -114,6 +150,11 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
       setTotpUri("")
       setBackupCodes([])
       setCode("")
+      setSetupKeyCopied(false)
+      if (copyResetTimeout.current !== null) {
+        clearTimeout(copyResetTimeout.current)
+        copyResetTimeout.current = null
+      }
       // Clears the resolved TOTP URI and backup codes from the mutation cache.
       resetEnrollment()
     }
@@ -146,24 +187,23 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
         : twoFactorLocalization.enableTwoFactor
 
   return (
-    <AlertDialog open={open} onOpenChange={handleOpenChange}>
-      <AlertDialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+          <DialogHeader>
+            <DialogTitle>
               <ShieldCheck />
-            </AlertDialogMedia>
+              {twoFactorLocalization.twoFactor}
+            </DialogTitle>
 
-            <AlertDialogTitle>{twoFactorLocalization.twoFactor}</AlertDialogTitle>
-
-            <AlertDialogDescription>
+            <DialogDescription>
               {step === "password" && requiresPassword
                 ? twoFactorLocalization.passwordConfirmation
                 : step === "verify"
                   ? twoFactorLocalization.scanQrCode
                   : twoFactorLocalization.twoFactorDescription}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           {step === "password" && requiresPassword && (
             <Field>
@@ -198,13 +238,37 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
               )}
 
               {setupKey && (
-                <div className="flex w-full flex-col gap-1">
-                  <p className="text-xs text-muted-foreground">{twoFactorLocalization.setupKey}</p>
+                <Field className="w-full gap-1">
+                  <FieldLabel
+                    className="text-xs text-muted-foreground"
+                    htmlFor="two-factor-setup-key"
+                  >
+                    {twoFactorLocalization.setupKey}
+                  </FieldLabel>
 
-                  <code className="rounded-md border bg-muted/40 p-2 text-xs break-all">
-                    {setupKey}
-                  </code>
-                </div>
+                  <InputGroup>
+                    <InputGroupInput
+                      className="font-mono text-xs"
+                      id="two-factor-setup-key"
+                      readOnly
+                      value={setupKey}
+                    />
+
+                    <InputGroupAddon align="inline-end">
+                      <InputGroupButton
+                        aria-label={
+                          setupKeyCopied
+                            ? twoFactorLocalization.setupKeyCopied
+                            : localization.settings.copyToClipboard
+                        }
+                        onClick={copySetupKey}
+                        size="icon-xs"
+                      >
+                        {setupKeyCopied ? <Check /> : <Copy />}
+                      </InputGroupButton>
+                    </InputGroupAddon>
+                  </InputGroup>
+                </Field>
               )}
 
               <OtpField
@@ -223,11 +287,15 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
 
           {step === "backupCodes" && <BackupCodes codes={backupCodes} />}
 
-          <AlertDialogFooter>
+          <DialogFooter>
             {step !== "backupCodes" && (
-              <AlertDialogCancel disabled={isPending}>
+              <DialogClose
+                className={buttonVariants({ variant: "outline" })}
+                disabled={isPending}
+                type="button"
+              >
                 {localization.settings.cancel}
-              </AlertDialogCancel>
+              </DialogClose>
             )}
 
             <Button
@@ -238,9 +306,9 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
 
               {submitLabel}
             </Button>
-          </AlertDialogFooter>
+          </DialogFooter>
         </form>
-      </AlertDialogContent>
-    </AlertDialog>
+      </DialogContent>
+    </Dialog>
   )
 }

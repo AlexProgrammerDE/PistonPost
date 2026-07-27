@@ -9,17 +9,16 @@ import {
 import { Briefcase } from "lucide-react"
 import { type SyntheticEvent, useEffect, useState } from "react"
 
+import { Button, buttonVariants } from "@/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogMedia,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { Button } from "@/components/ui/button"
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Spinner } from "@/components/ui/spinner"
@@ -69,20 +68,19 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
   }, [name, slugEdited])
 
   return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-          <AlertDialogHeader>
-            <AlertDialogMedia>
+          <DialogHeader>
+            <DialogTitle>
               <Briefcase />
-            </AlertDialogMedia>
+              {organizationLocalization.createOrganization}
+            </DialogTitle>
 
-            <AlertDialogTitle>{organizationLocalization.createOrganization}</AlertDialogTitle>
-
-            <AlertDialogDescription>
+            <DialogDescription>
               {organizationLocalization.organizationsDescription}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           <div className="flex flex-col gap-4">
             <Field data-invalid={!!nameError}>
@@ -123,19 +121,23 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
             />
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isCreating}>
+          <DialogFooter>
+            <DialogClose
+              className={buttonVariants({ variant: "outline" })}
+              disabled={isCreating}
+              type="button"
+            >
               {localization.settings.cancel}
-            </AlertDialogCancel>
+            </DialogClose>
 
             <Button type="submit" disabled={isCreating}>
               {isCreating && <Spinner />}
 
               {organizationLocalization.createOrganization}
             </Button>
-          </AlertDialogFooter>
+          </DialogFooter>
         </form>
-      </AlertDialogContent>
-    </AlertDialog>
+      </DialogContent>
+    </Dialog>
   )
 }

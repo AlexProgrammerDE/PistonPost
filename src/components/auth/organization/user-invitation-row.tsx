@@ -12,6 +12,14 @@ import { Check, Clock, X } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 
@@ -35,29 +43,23 @@ export function UserInvitationRow({ invitation }: UserInvitationRowProps) {
   )
 
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-muted">
-        <Clock className="size-4.5" />
-      </div>
-
-      <div className="flex flex-col">
-        <div className="flex items-center gap-1.5">
-          <span className="truncate text-sm leading-tight font-medium">
-            {invitation.organizationName}
-          </span>
-
+    <Item>
+      <ItemMedia variant="icon">
+        <Clock />
+      </ItemMedia>
+      <ItemContent>
+        <ItemTitle>
+          {invitation.organizationName}
           <Badge variant="secondary">{roles?.[invitation.role] ?? invitation.role}</Badge>
-        </div>
-
-        <span className="truncate text-xs text-muted-foreground">
+        </ItemTitle>
+        <ItemDescription>
           {new Date(invitation.createdAt).toLocaleString(undefined, {
             dateStyle: "medium",
             timeStyle: "short",
           })}
-        </span>
-      </div>
-
-      <div className="ml-auto flex shrink-0 items-center gap-2">
+        </ItemDescription>
+      </ItemContent>
+      <ItemActions>
         <Button
           variant="outline"
           size="sm"
@@ -79,7 +81,7 @@ export function UserInvitationRow({ invitation }: UserInvitationRowProps) {
         >
           {isRejecting ? <Spinner /> : <X />}
         </Button>
-      </div>
-    </div>
+      </ItemActions>
+    </Item>
   )
 }

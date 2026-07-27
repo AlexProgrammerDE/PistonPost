@@ -17,7 +17,14 @@ import { useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemMedia,
+  ItemTitle,
+} from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { oauthProviderPlugin } from "@/lib/auth/oauth-provider-plugin"
 
@@ -50,8 +57,8 @@ export function AuthorizedApplication({ application }: AuthorizedApplicationProp
   const websiteUrl = sanitizeOAuthClientUrl(client?.client_uri)
 
   return (
-    <Card className="border-0 bg-transparent shadow-none ring-0">
-      <CardContent className="flex flex-wrap items-start gap-3">
+    <Item>
+      <ItemMedia variant="image">
         {publicClient.isPending ? (
           <Skeleton className="size-10 shrink-0 rounded-md" />
         ) : (
@@ -62,58 +69,52 @@ export function AuthorizedApplication({ application }: AuthorizedApplicationProp
             </AvatarFallback>
           </Avatar>
         )}
+      </ItemMedia>
+      <ItemContent>
+        {publicClient.isPending ? (
+          <Skeleton className="h-4 w-32" />
+        ) : (
+          <ItemTitle>{clientName}</ItemTitle>
+        )}
 
-        <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex min-w-0 flex-col">
-            {publicClient.isPending ? (
-              <Skeleton className="h-4 w-32" />
-            ) : (
-              <span className="truncate text-sm leading-tight font-medium">{clientName}</span>
-            )}
+        {websiteUrl ? (
+          <ItemDescription>
+            <a
+              className="truncate text-xs text-muted-foreground underline-offset-4 hover:underline"
+              href={websiteUrl}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {websiteUrl}
+            </a>
+          </ItemDescription>
+        ) : null}
 
-            {websiteUrl ? (
-              <a
-                className="truncate text-xs text-muted-foreground underline-offset-4 hover:underline"
-                href={websiteUrl}
-                rel="noreferrer"
-                target="_blank"
-              >
-                {websiteUrl}
-              </a>
-            ) : null}
+        {application.updatedAt ? (
+          <ItemDescription>
+            {`${localization.lastAuthorized} ${application.updatedAt.toLocaleDateString(undefined, {
+              dateStyle: "medium",
+            })}`}
+          </ItemDescription>
+        ) : null}
 
-            {application.updatedAt ? (
-              <span className="text-xs text-muted-foreground">
-                {`${localization.lastAuthorized} ${application.updatedAt.toLocaleDateString(
-                  undefined,
-                  { dateStyle: "medium" },
-                )}`}
-              </span>
-            ) : null}
+        {application.scopes.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {application.scopes.map((scope) => (
+              <Badge key={scope} variant="secondary">
+                {
+                  resolveOAuthScopeMetadata(scopeMetadata, scope, {
+                    clientId: application.clientId,
+                    requestedScopes: application.scopes,
+                  }).label
+                }
+              </Badge>
+            ))}
           </div>
-
-          {application.scopes.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {application.scopes.map((scope) => (
-                <Badge key={scope} variant="secondary">
-                  {
-                    resolveOAuthScopeMetadata(scopeMetadata, scope, {
-                      clientId: application.clientId,
-                      requestedScopes: application.scopes,
-                    }).label
-                  }
-                </Badge>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <Button
-          className="shrink-0"
-          size="sm"
-          variant="outline"
-          onClick={() => setRemoveOpen(true)}
-        >
+        )}
+      </ItemContent>
+      <ItemActions>
+        <Button size="sm" variant="outline" onClick={() => setRemoveOpen(true)}>
           {localization.removeAuthorization}
         </Button>
 
@@ -123,7 +124,7 @@ export function AuthorizedApplication({ application }: AuthorizedApplicationProp
           open={removeOpen}
           onOpenChange={setRemoveOpen}
         />
-      </CardContent>
-    </Card>
+      </ItemActions>
+    </Item>
   )
 }
