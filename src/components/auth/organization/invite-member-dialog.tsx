@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -50,6 +51,10 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
 
   const [role, setRole] = useState(() => pickDefaultRole(Object.keys(roles)))
   const [emailError, setEmailError] = useState<string>()
+  const roleItems = Object.entries(roles).map(([value, label]) => ({
+    label,
+    value,
+  }))
 
   useEffect(() => {
     setRole((current) => {
@@ -134,6 +139,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
               <FieldLabel htmlFor="invite-member-role">{organizationLocalization.role}</FieldLabel>
 
               <Select
+                items={roleItems}
                 value={role}
                 onValueChange={(value) => setRole(value ?? "")}
                 disabled={isInviting}
@@ -143,11 +149,13 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
                 </SelectTrigger>
 
                 <SelectContent>
-                  {Object.entries(roles).map(([key, label]) => (
-                    <SelectItem key={key} value={key}>
-                      {label}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup>
+                    {roleItems.map((item) => (
+                      <SelectItem key={item.value} value={item.value}>
+                        {item.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
 

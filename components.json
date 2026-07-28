@@ -21,6 +21,7 @@
     "hooks": "@/hooks"
   },
   "registries": {
-    "@diceui": "https://diceui.com/r/{style}/{name}.json"
+    "@diceui": "https://diceui.com/r/{style}/{name}.json",
+    "@better-auth-ui": "https://better-auth-ui.com/r/{style}/{name}.json"
   }
 }
