@@ -102,11 +102,11 @@ describe("request-scoped Better Auth", () => {
     expect(response.headers.get("content-type")).toContain("application/json")
   })
 
-  it("hands Better Auth background work to the request runtime", () => {
+  it("hands Better Auth background work to the configured runtime handler", () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
     const scheduled: Array<Promise<unknown>> = []
-    const runInBackground = (promise: Promise<unknown>) => scheduled.push(promise)
+    const handler = (promise: Promise<unknown>) => scheduled.push(promise)
     const auth = createAuth({
       database,
       baseURL: "http://localhost:3000",
@@ -118,7 +118,7 @@ describe("request-scoped Better Auth", () => {
       infraEnabled: false,
       isManagedUserAvatar: async () => false,
       sendEmail: async () => {},
-      runInBackground,
+      backgroundTasks: { handler },
     })
 
     auth.options.advanced?.backgroundTasks?.handler(Promise.resolve())

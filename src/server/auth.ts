@@ -25,6 +25,7 @@ async function readSecret(secret: string | SecretsStoreSecret, name: string) {
 
 export async function createRequestAuth(context: AppRequestContext) {
   const { env, runtime } = context
+  const { betterAuthBackgroundTasks } = await import("./auth-background-tasks")
   const baseURL = runtime.config.PUBLIC_APP_URL.toString()
   const [secret, turnstileSecret, betterAuthApiKey] = await Promise.all([
     readSecret(env.BETTER_AUTH_SECRET, "BETTER_AUTH_SECRET"),
@@ -46,7 +47,7 @@ export async function createRequestAuth(context: AppRequestContext) {
     trustedOrigins: [baseURL],
     turnstileSecret,
     production: runtime.config.APP_ENV === "production",
-    runInBackground: (promise) => context.executionContext.waitUntil(promise),
+    backgroundTasks: betterAuthBackgroundTasks,
     isManagedUserAvatar: (userId, image) => isManagedUserAvatar(database, userId, image),
     sendEmail: async (message) => {
       await Effect.runPromise(

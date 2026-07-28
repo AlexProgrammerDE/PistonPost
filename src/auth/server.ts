@@ -39,7 +39,9 @@ export type AuthRuntime = {
   readonly production: boolean
   readonly infraEnabled?: boolean
   readonly sendEmail: (message: AuthenticationEmail) => Promise<void>
-  readonly runInBackground?: (promise: Promise<unknown>) => void
+  readonly backgroundTasks?: {
+    readonly handler: (promise: Promise<unknown>) => void
+  }
   readonly isManagedUserAvatar: (userId: string, image: string) => Promise<boolean>
   readonly audit?: (action: string, userId: string) => Promise<void>
   readonly beforeDeleteUser?: (userId: string) => Promise<void>
@@ -165,7 +167,7 @@ export function createAuth(runtime: AuthRuntime) {
       ipAddress: {
         ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
       },
-      backgroundTasks: runtime.runInBackground ? { handler: runtime.runInBackground } : undefined,
+      backgroundTasks: runtime.backgroundTasks,
     },
     databaseHooks: {
       user: {
