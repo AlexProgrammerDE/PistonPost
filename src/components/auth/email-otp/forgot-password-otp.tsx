@@ -1,5 +1,6 @@
 "use client"
 
+import { getAuthLinkURL } from "@better-auth-ui/core"
 import {
   type EmailOtpAuthClient,
   useAuth,
@@ -35,7 +36,8 @@ export type ForgotPasswordOtpProps = {
  * @param className - Additional CSS classes applied to the card.
  */
 export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
-  const { authClient, basePaths, localization, navigate, plugins, viewPaths, Link } = useAuth()
+  const { authClient, basePaths, localization, navigate, plugins, redirectTo, viewPaths, Link } =
+    useAuth()
   const { localization: emailOtpLocalization } = useAuthPlugin(emailOtpPlugin)
 
   const { fetchOptions, resetFetchOptions } = useFetchOptions()
@@ -113,7 +115,7 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
           <FieldDescription className="text-center">
             {localization.auth.rememberYourPassword}{" "}
             <Link
-              href={`${basePaths.auth}/${viewPaths.auth.signIn}`}
+              href={getAuthLinkURL(`${basePaths.auth}/${viewPaths.auth.signIn}`, redirectTo)}
               className="underline underline-offset-4"
             >
               {localization.auth.signIn}

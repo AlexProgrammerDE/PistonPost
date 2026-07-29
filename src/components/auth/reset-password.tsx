@@ -1,5 +1,6 @@
 "use client"
 
+import { getAuthLinkURL } from "@better-auth-ui/core"
 import { useAuth, useResetPassword } from "@better-auth-ui/react"
 import { Eye, EyeOff } from "lucide-react"
 import { type SyntheticEvent, useEffect, useState } from "react"
@@ -29,13 +30,22 @@ export type ResetPasswordProps = {
  * @returns The password reset form UI ready to be mounted in the app layout.
  */
 export function ResetPassword({ className }: ResetPasswordProps) {
-  const { authClient, basePaths, emailAndPassword, localization, viewPaths, navigate, Link } =
-    useAuth()
+  const {
+    authClient,
+    basePaths,
+    emailAndPassword,
+    localization,
+    navigate,
+    redirectTo,
+    viewPaths,
+    Link,
+  } = useAuth()
+  const signInURL = getAuthLinkURL(`${basePaths.auth}/${viewPaths.auth.signIn}`, redirectTo)
 
   const { mutate: resetPassword, isPending } = useResetPassword(authClient, {
     onSuccess: () => {
       toast.success(localization.auth.passwordResetSuccess)
-      navigate({ to: `${basePaths.auth}/${viewPaths.auth.signIn}` })
+      navigate({ to: signInURL })
     },
   })
 
@@ -53,9 +63,9 @@ export function ResetPassword({ className }: ResetPasswordProps) {
 
     if (!token) {
       toast.error(localization.auth.invalidResetPasswordToken)
-      navigate({ to: `${basePaths.auth}/${viewPaths.auth.signIn}` })
+      navigate({ to: signInURL })
     }
-  }, [basePaths.auth, localization.auth.invalidResetPasswordToken, viewPaths.auth.signIn, navigate])
+  }, [localization.auth.invalidResetPasswordToken, navigate, signInURL])
 
   function handleSubmit(e: SyntheticEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -65,7 +75,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
 
     if (!token) {
       toast.error(localization.auth.invalidResetPasswordToken)
-      navigate({ to: `${basePaths.auth}/${viewPaths.auth.signIn}` })
+      navigate({ to: signInURL })
       return
     }
 
@@ -236,7 +246,7 @@ export function ResetPassword({ className }: ResetPasswordProps) {
           <FieldDescription className="text-center">
             {localization.auth.rememberYourPassword}{" "}
             <Link
-              href={`${basePaths.auth}/${viewPaths.auth.signIn}`}
+              href={getAuthLinkURL(`${basePaths.auth}/${viewPaths.auth.signIn}`, redirectTo)}
               className="underline underline-offset-4"
             >
               {localization.auth.signIn}
