@@ -192,7 +192,7 @@ export function SocialPanel({
   )
 
   useEffect(() => {
-    const contentStart = document.getElementById("post-engagement-start")
+    const contentStart = document.getElementById(`post-engagement-start-${postId}`)
     const footerActions = footerActionsRef.current
     if (!contentStart || !footerActions || typeof IntersectionObserver === "undefined") {
       return undefined

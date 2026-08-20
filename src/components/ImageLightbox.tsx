@@ -1,6 +1,6 @@
 import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react"
 import { useMemo } from "react"
-import Lightbox, { type SlideImage } from "yet-another-react-lightbox"
+import { Lightbox, type SlideImage } from "yet-another-react-lightbox"
 import Counter from "yet-another-react-lightbox/plugins/counter"
 import Zoom from "yet-another-react-lightbox/plugins/zoom"
 

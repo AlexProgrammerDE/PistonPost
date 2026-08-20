@@ -1,4 +1,4 @@
-import posthog, { type CaptureResult, type Properties } from "posthog-js/dist/module.slim"
+import { posthog, type CaptureResult, type Properties } from "posthog-js/dist/module.slim"
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react"
 
 const POSTHOG_KEY = import.meta.env.VITE_PUBLIC_POSTHOG_KEY?.trim()

@@ -41,7 +41,7 @@ function siteverifyResponse(
 
 describe("Turnstile verification", () => {
   test("validates the provider response, hostname, and action", async () => {
-    const request = mock((_: URL | RequestInfo, _init?: RequestInit) =>
+    const request = mock<(input: URL | RequestInfo, init?: RequestInit) => Promise<Response>>(() =>
       Promise.resolve(siteverifyResponse()),
     )
 

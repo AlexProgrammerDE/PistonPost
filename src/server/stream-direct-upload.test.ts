@@ -17,7 +17,7 @@ const input = {
 
 describe("Stream direct uploads", () => {
   test("creates a constrained direct TUS upload without exposing credentials", async () => {
-    const request = mock((_: URL | RequestInfo, _init?: RequestInit) =>
+    const request = mock<(input: URL | RequestInfo, init?: RequestInit) => Promise<Response>>(() =>
       Promise.resolve(
         new Response(null, {
           status: 201,

@@ -31,6 +31,7 @@ export function PostTimeline({
     <FeedPostActionsProvider postIds={posts.map((post) => post.id)}>
       <Timeline
         ref={timelineRef}
+        data-post-identity={postIdentity}
         className="gap-0 [--timeline-connector-thickness:0.0625rem] [--timeline-dot-size:2.25rem] sm:[--timeline-dot-size:2.75rem]"
         aria-orientation={undefined}
       >

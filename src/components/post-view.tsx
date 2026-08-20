@@ -502,8 +502,9 @@ function ImageBrowser({
 
   useEffect(() => {
     const selectedThumbnail = selectedThumbnailRef.current
-    const thumbnailStrip = selectedThumbnail?.parentElement
-    if (!selectedThumbnail || !thumbnailStrip) return
+    if (!selectedThumbnail || selectedThumbnail.dataset.imageIndex !== String(selectedIndex)) return
+    const thumbnailStrip = selectedThumbnail.parentElement
+    if (!thumbnailStrip) return
 
     const centeredPosition =
       selectedThumbnail.offsetLeft -
@@ -580,6 +581,7 @@ function ImageBrowser({
           <Link
             key={image.id}
             ref={index === selectedIndex ? selectedThumbnailRef : undefined}
+            data-image-index={index}
             to="/post/$postId"
             params={{ postId: post.id }}
             search={{ image: index, layout: "browser" }}
@@ -803,7 +805,7 @@ export function PostView({
         />
       ) : null}
       {detail ? (
-        <span id="post-engagement-start" className="block h-px" aria-hidden="true" />
+        <span id={`post-engagement-start-${post.id}`} className="block h-px" aria-hidden="true" />
       ) : null}
 
       <PostMedia

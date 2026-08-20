@@ -1,4 +1,4 @@
-import AxeBuilder from "@axe-core/playwright"
+import { AxeBuilder } from "@axe-core/playwright"
 import { expect, test } from "@playwright/test"
 
 test.describe("composer and media boundaries", () => {

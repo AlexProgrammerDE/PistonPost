@@ -67,7 +67,7 @@ export function AppSidebar() {
   const currentYear = new Date().getUTCFullYear()
 
   useEffect(() => {
-    if (isMobile) setOpenMobile(false)
+    if (pathname && isMobile) setOpenMobile(false)
   }, [isMobile, pathname, setOpenMobile])
 
   function closeMobileSidebar() {

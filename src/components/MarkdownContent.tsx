@@ -97,9 +97,14 @@ function MarkdownLink({ href, children, node, ...props }: ComponentProps<"a"> & 
   )
 }
 
-function providerIcon(embed: MarkdownEmbed) {
-  if (embed.provider === "spotify" || embed.provider === "soundcloud") return Music2
-  return embed.provider === "x" || embed.provider === "tumblr" ? ExternalLink : Video
+function EmbedProviderIcon({ embed }: { readonly embed: MarkdownEmbed }) {
+  if (embed.provider === "spotify" || embed.provider === "soundcloud") {
+    return <Music2 aria-hidden="true" className="text-muted-foreground" />
+  }
+  if (embed.provider === "x" || embed.provider === "tumblr") {
+    return <ExternalLink aria-hidden="true" className="text-muted-foreground" />
+  }
+  return <Video aria-hidden="true" className="text-muted-foreground" />
 }
 
 function xWidgets() {
@@ -342,13 +347,12 @@ function LoadedEmbed({ embed }: { embed: MarkdownEmbed }) {
 function EmbedConsent({ embed, label }: { embed: MarkdownEmbed; label: string | null }) {
   const [loaded, setLoaded] = useState(false)
   const providerName = markdownEmbedProviderName(embed)
-  const ProviderIcon = providerIcon(embed)
 
   if (!loaded) {
     return (
       <Item className="not-typeset my-4 min-h-28 bg-muted/25" variant="outline">
         <ItemMedia variant="icon">
-          <ProviderIcon aria-hidden="true" className="text-muted-foreground" />
+          <EmbedProviderIcon embed={embed} />
         </ItemMedia>
         <ItemContent className="min-w-0">
           <ItemTitle className="line-clamp-2">{label || `${providerName} embed`}</ItemTitle>

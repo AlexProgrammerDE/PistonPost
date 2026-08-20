@@ -8,7 +8,6 @@ import {
   createContext,
   startTransition,
   useContext,
-  useEffect,
   useMemo,
   useOptimistic,
   useState,
@@ -86,18 +85,21 @@ function FeedHeartControl({
   const queryClient = useQueryClient()
   const { viewerId, heartPostIds, pending } = useContext(FeedHeartStateContext)
   const hasHeart = heartPostIds.has(postId)
-  const [confirmedHeartCount, setConfirmedHeartCount] = useState(heartCount)
+  const [confirmedHeartState, setConfirmedHeartState] = useState(() => ({
+    source: heartCount,
+    value: heartCount,
+  }))
+  const confirmedHeartCount =
+    confirmedHeartState.source === heartCount ? confirmedHeartState.value : heartCount
   const [optimisticHasHeart, setOptimisticHasHeart] = useOptimistic(
     hasHeart,
     (_current: boolean, next: boolean) => next,
   )
 
-  useEffect(() => setConfirmedHeartCount(heartCount), [heartCount])
-
   const mutation = useMutation({
     mutationFn: (active: boolean) => setHeart({ data: { postId, active } }),
     onSuccess: async ({ heartCount: nextHeartCount }) => {
-      setConfirmedHeartCount(nextHeartCount)
+      setConfirmedHeartState({ source: heartCount, value: nextHeartCount })
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: discussionKeys.feedViewer() }),
         queryClient.invalidateQueries({ queryKey: discussionKeys.viewerPost(postId) }),

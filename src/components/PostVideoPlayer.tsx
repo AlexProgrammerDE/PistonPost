@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useCallback, useRef, useState } from "react"
 
 import { VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 
@@ -32,33 +32,39 @@ export function PostVideoPlayer({
   readonly mediaId: string
   readonly title: string
 }) {
-  const containerRef = useRef<HTMLDivElement>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
   const [shouldLoadPlayer, setShouldLoadPlayer] = useState(false)
 
-  useEffect(() => {
-    const container = containerRef.current
-    if (!container) return undefined
-    if (detail || typeof IntersectionObserver === "undefined") {
-      setShouldLoadPlayer(true)
-      return undefined
-    }
+  const setContainerRef = useCallback(
+    (container: HTMLDivElement | null) => {
+      observerRef.current?.disconnect()
+      observerRef.current = null
+      if (!container || shouldLoadPlayer) return
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return
+      if (detail || typeof IntersectionObserver === "undefined") {
         setShouldLoadPlayer(true)
-        observer.disconnect()
-      },
-      { rootMargin: "400px 0px" },
-    )
-    observer.observe(container)
-    return () => observer.disconnect()
-  }, [detail])
+        return
+      }
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (!entry?.isIntersecting) return
+          setShouldLoadPlayer(true)
+          observer.disconnect()
+          observerRef.current = null
+        },
+        { rootMargin: "400px 0px" },
+      )
+      observer.observe(container)
+      observerRef.current = observer
+    },
+    [detail, shouldLoadPlayer],
+  )
 
   const poster = <VideoPoster detail={detail} mediaId={mediaId} />
 
   return (
-    <div ref={containerRef} className="size-full">
+    <div ref={setContainerRef} className="size-full">
       {shouldLoadPlayer ? (
         <Suspense fallback={poster}>
           <LazyVidstackVideoPlayer

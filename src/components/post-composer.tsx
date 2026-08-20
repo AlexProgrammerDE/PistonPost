@@ -370,7 +370,9 @@ export function PostComposer({
     },
   })
 
-  uploadsRef.current = uploads
+  useEffect(() => {
+    uploadsRef.current = uploads
+  }, [uploads])
   useEffect(() => () => releaseUploadPreviews(uploadsRef.current), [])
 
   if (!authenticated) {
@@ -816,20 +818,20 @@ function SortableUpload({
   onView: (clientId: string) => void
 }) {
   const dragDisabled = item.kind === "video" || item.status !== "queued"
-  const sortable = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
     disabled: dragDisabled,
   })
   const style = {
-    transform: CSS.Transform.toString(sortable.transform),
-    transition: sortable.transition,
+    transform: CSS.Transform.toString(transform),
+    transition,
   }
   const altTextId = `alt-text-${item.clientId}`
   const altTextDescriptionId = `${altTextId}-description`
 
   return (
     <Item
-      ref={sortable.setNodeRef}
+      ref={setNodeRef}
       style={style}
       role="listitem"
       variant="outline"
@@ -865,8 +867,8 @@ function SortableUpload({
             className="-ml-2 cursor-grab text-muted-foreground active:cursor-grabbing disabled:cursor-default"
             aria-label={`Reorder ${item.filename}`}
             disabled={dragDisabled}
-            {...sortable.attributes}
-            {...sortable.listeners}
+            {...attributes}
+            {...listeners}
           >
             <GripVertical aria-hidden="true" />
           </Button>

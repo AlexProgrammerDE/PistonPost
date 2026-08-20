@@ -1,7 +1,7 @@
 import outfitFontSource from "@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?inline"
 import { createFileRoute } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
-import ImageResponse from "takumi-js/response"
+import { ImageResponse } from "takumi-js/response"
 import { z } from "zod"
 
 import { TextPostSocialCard } from "@/components/TextPostSocialCard"
