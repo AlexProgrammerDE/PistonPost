@@ -260,31 +260,29 @@ describe("public sitemap read model", () => {
     database
       .insert(mediaAssets)
       .values(
-        sitemapPosts.flatMap(
-          (post): Array<typeof mediaAssets.$inferInsert> =>
-            [0, 1].map((ordinal) => ({
-              id: `${post.id}-media-${ordinal.toString()}`,
-              ownerId: "sitemap-author",
-              kind: "image",
-              provider: "images",
-              status: "ready",
-              originalFilename: `${post.id}-${ordinal.toString()}.png`,
-              mimeType: "image/png",
-              byteSize: 1,
-            })),
+        sitemapPosts.flatMap((post): Array<typeof mediaAssets.$inferInsert> =>
+          [0, 1].map((ordinal) => ({
+            id: `${post.id}-media-${ordinal.toString()}`,
+            ownerId: "sitemap-author",
+            kind: "image",
+            provider: "images",
+            status: "ready",
+            originalFilename: `${post.id}-${ordinal.toString()}.png`,
+            mimeType: "image/png",
+            byteSize: 1,
+          })),
         ),
       )
       .run()
     database
       .insert(postMedia)
       .values(
-        sitemapPosts.flatMap(
-          (post): Array<typeof postMedia.$inferInsert> =>
-            [1, 0].map((ordinal) => ({
-              postId: post.id,
-              mediaId: `${post.id}-media-${ordinal.toString()}`,
-              ordinal,
-            })),
+        sitemapPosts.flatMap((post): Array<typeof postMedia.$inferInsert> =>
+          [1, 0].map((ordinal) => ({
+            postId: post.id,
+            mediaId: `${post.id}-media-${ordinal.toString()}`,
+            ordinal,
+          })),
         ),
       )
       .run()

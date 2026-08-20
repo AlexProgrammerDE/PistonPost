@@ -52,24 +52,23 @@ export async function listPublicAtomFeedRecords(
     .orderBy(desc(posts.publishedAt), desc(posts.id))
     .limit(ATOM_FEED_ITEM_LIMIT)
 
-  return rows.flatMap(
-    (row): ReadonlyArray<PublicAtomFeedRecord> =>
-      row.publishedAt
-        ? [
-            {
-              id: row.id,
-              type: row.type,
-              title: row.title,
-              textContent: row.textContent,
-              publishedAt: row.publishedAt,
-              updatedAt: row.updatedAt,
-              author: {
-                name: row.authorName,
-                username: row.authorUsername,
-                normalizedUsername: row.authorNormalizedUsername,
-              },
+  return rows.flatMap((row): ReadonlyArray<PublicAtomFeedRecord> =>
+    row.publishedAt
+      ? [
+          {
+            id: row.id,
+            type: row.type,
+            title: row.title,
+            textContent: row.textContent,
+            publishedAt: row.publishedAt,
+            updatedAt: row.updatedAt,
+            author: {
+              name: row.authorName,
+              username: row.authorUsername,
+              normalizedUsername: row.authorNormalizedUsername,
             },
-          ]
-        : [],
+          },
+        ]
+      : [],
   )
 }
