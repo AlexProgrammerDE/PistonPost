@@ -1177,3 +1177,7 @@ Record future changes here with date, decision, reason, and affected phases.
   added clutter without useful ranking semantics in a chronological friends-and-art feed. Existing
   reaction rows become hearts, and the `(post_id, user_id)` key allows at most one heart per person
   and post. This affects Phases 3, 5, 7, and 9.
+- 2026-08-20: Migrate Better Auth 1.7 account issuers in three stages. Add a nullable column, backfill
+  credential accounts, then add the non-null constraint and unique index. Use a custom Drizzle
+  migration only for the data change that the schema diff cannot express. Keep generated schema SQL
+  and Drizzle metadata unchanged.

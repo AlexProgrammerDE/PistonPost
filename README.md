@@ -65,7 +65,13 @@ After any database schema change, create a named Drizzle migration:
 bunx --bun drizzle-kit@latest generate --name <migration-name>
 ```
 
-Do not edit files in `drizzle` or `drizzle/meta` manually.
+For a data backfill that a schema diff cannot create, generate a custom migration:
+
+```bash
+bunx --bun drizzle-kit@latest generate --custom --name <migration-name>
+```
+
+Edit only the SQL file that this command creates. Do not edit generated schema migrations or files in `drizzle/meta`.
 
 The generated image sanitizer is checked in so normal Bun installs do not require Rust. After
 changing `wasm/image-sanitizer`, install the `wasm32-unknown-unknown` Rust target and regenerate it:

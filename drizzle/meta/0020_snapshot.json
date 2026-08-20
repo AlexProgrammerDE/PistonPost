@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "f3378da6-eb4e-4652-a8fc-ef5f4dc76ab1",
-  "prevId": "1f7f4ca2-eee8-4e94-b484-1fcdaec8ac9f",
+  "id": "86fa270e-a6cc-49c5-81ce-d046395d16d2",
+  "prevId": "1a6d85d1-5166-41b4-901a-281e6a6be79f",
   "tables": {
     "account": {
       "name": "account",
@@ -18,7 +18,7 @@
           "name": "issuer",
           "type": "text",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "autoincrement": false
         },
         "account_id": {
@@ -107,6 +107,14 @@
         }
       },
       "indexes": {
+        "account_issuer_accountId_uidx": {
+          "name": "account_issuer_accountId_uidx",
+          "columns": [
+            "issuer",
+            "account_id"
+          ],
+          "isUnique": true
+        },
         "account_userId_idx": {
           "name": "account_userId_idx",
           "columns": [

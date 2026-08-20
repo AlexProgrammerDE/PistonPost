@@ -131,8 +131,22 @@
     {
       "idx": 18,
       "version": "6",
-      "when": 1787235966424,
-      "tag": "0018_add-account-issuer",
+      "when": 1787252686143,
+      "tag": "0018_add-account-issuer-nullable",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1787252693445,
+      "tag": "0019_backfill-account-issuer",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1787252722211,
+      "tag": "0020_require-account-issuer",
       "breakpoints": true
     }
   ]
