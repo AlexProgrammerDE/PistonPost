@@ -82,7 +82,6 @@ export function createAuth(runtime: AuthRuntime) {
     verification: {
       storeIdentifier: "hashed",
     },
-    experimental: { joins: true },
     trustedOrigins: [...runtime.trustedOrigins],
     emailAndPassword: {
       enabled: true,
@@ -168,6 +167,7 @@ export function createAuth(runtime: AuthRuntime) {
         ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
       },
       backgroundTasks: runtime.backgroundTasks,
+      joins: true,
     },
     databaseHooks: {
       user: {
