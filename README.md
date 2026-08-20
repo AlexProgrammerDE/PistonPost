@@ -48,6 +48,25 @@ bun run db:check
 bun run wrangler:dry-run
 ```
 
+### Generate database schemas
+
+If the Better Auth configuration changes, regenerate its Drizzle schema from the repository root:
+
+```bash
+bunx --bun auth@latest generate \
+  --config ./auth-schema.config.ts \
+  --output ./src/db/schema/auth.generated.ts \
+  --yes
+```
+
+After any database schema change, create a named Drizzle migration:
+
+```bash
+bunx --bun drizzle-kit@latest generate --name <migration-name>
+```
+
+Do not edit files in `drizzle` or `drizzle/meta` manually.
+
 The generated image sanitizer is checked in so normal Bun installs do not require Rust. After
 changing `wasm/image-sanitizer`, install the `wasm32-unknown-unknown` Rust target and regenerate it:
 
