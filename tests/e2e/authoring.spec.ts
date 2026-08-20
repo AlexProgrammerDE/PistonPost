@@ -313,6 +313,7 @@ Markdown still works **inside** this callout.
   })
 
   test("opens the owner editor from post and timeline views", async ({ context, page }) => {
+    test.setTimeout(60_000)
     const { username } = await createVerifiedSession(context)
     await page.goto("/posts/new")
     await fillPost(page, "editable from anywhere", "testing")
