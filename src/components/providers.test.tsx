@@ -1,13 +1,11 @@
 import { describe, expect, test } from "bun:test"
 
-import {
-  adminPlugin as coreAdminPlugin,
-  emailOtpPlugin as coreEmailOtpPlugin,
-  multiSessionPlugin as coreMultiSessionPlugin,
-  themePlugin as coreThemePlugin,
-  twoFactorPlugin as coreTwoFactorPlugin,
-} from "@better-auth-ui/core/plugins"
-import { captchaPlugin } from "@better-auth-ui/react/plugins"
+import { adminPlugin as coreAdminPlugin } from "@better-auth-ui/core/plugins/admin"
+import { emailOtpPlugin as coreEmailOtpPlugin } from "@better-auth-ui/core/plugins/email-otp"
+import { multiSessionPlugin as coreMultiSessionPlugin } from "@better-auth-ui/core/plugins/multi-session"
+import { themePlugin as coreThemePlugin } from "@better-auth-ui/core/plugins/theme"
+import { twoFactorPlugin as coreTwoFactorPlugin } from "@better-auth-ui/core/plugins/two-factor"
+import { captchaPlugin } from "@better-auth-ui/react/plugins/captcha"
 
 import { StopImpersonating } from "@/components/auth/admin/stop-impersonating"
 import { EmailOtp } from "@/components/auth/email-otp/email-otp"

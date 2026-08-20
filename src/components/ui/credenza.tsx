@@ -32,8 +32,8 @@ interface CredenzaProps {
   open?: boolean
 }
 
-type CredenzaTriggerProps = React.ComponentProps<typeof DialogTrigger>
-type CredenzaCloseProps = React.ComponentProps<typeof DialogClose>
+type CredenzaTriggerProps = Omit<React.ComponentProps<typeof DialogTrigger>, "handle">
+type CredenzaCloseProps = Omit<React.ComponentProps<typeof DialogClose>, "handle">
 type CredenzaContentProps = React.PropsWithChildren<{ className?: string }>
 type CredenzaHeaderProps = React.ComponentProps<"div">
 type CredenzaTitleProps = React.ComponentProps<"h2">

@@ -1,7 +1,7 @@
-import { drizzleAdapter } from "@better-auth/drizzle-adapter"
 import { dash, sentinel } from "@better-auth/infra"
 import { passkey } from "@better-auth/passkey"
 import { emailHarmony } from "better-auth-harmony"
+import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { APIError } from "better-auth/api"
 import { betterAuth } from "better-auth/minimal"
 import {

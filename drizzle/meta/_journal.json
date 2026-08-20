@@ -127,6 +127,13 @@
       "when": 1784980029854,
       "tag": "0017_last-login-method",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "6",
+      "when": 1787235966424,
+      "tag": "0018_add-account-issuer",
+      "breakpoints": true
     }
   ]
 }

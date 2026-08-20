@@ -1,5 +1,5 @@
 import type { AuthConfig } from "@better-auth-ui/core"
-import { captchaPlugin } from "@better-auth-ui/react/plugins"
+import { captchaPlugin } from "@better-auth-ui/react/plugins/captcha"
 import type { QueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useTheme } from "next-themes"

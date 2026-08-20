@@ -28,6 +28,7 @@
     "@tanstack/react-router-devtools",
     "@tanstack/router-plugin",
     "@tanstack/react-pacer",
+    "@better-auth/scim",
     "cloudflare",
     "drizzle-kit",
     "embla-carousel-react",

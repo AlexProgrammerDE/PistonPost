@@ -36,17 +36,18 @@ export function TwoFactorCard({ className }: { readonly className?: string }) {
     const passwordEntry = new FormData(event.currentTarget).get("password")
     const password = typeof passwordEntry === "string" ? passwordEntry : ""
     const result = await authClient.twoFactor.enable({ password })
+    const setupData = result.data
     setIsPending(false)
 
-    if (result.error || !result.data?.totpURI) {
+    if (result.error || setupData?.method !== "totp") {
       setError("Two-factor setup could not be started. Check your password and try again.")
       return
     }
 
     setSetup({
       status: "verify",
-      totpURI: result.data.totpURI,
-      backupCodes: result.data.backupCodes,
+      totpURI: setupData.totpURI,
+      backupCodes: setupData.backupCodes,
     })
   }
 
