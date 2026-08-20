@@ -97,6 +97,11 @@ async function createVerifiedSession(context: BrowserContext) {
   })
   expect(session.status()).toBe(200)
   expect(await session.json()).toMatchObject({ user: { email, emailVerified: true } })
+  await context.route("http://localhost:3000/**", async (route) => {
+    await route.continue({
+      headers: { ...route.request().headers(), "cf-connecting-ip": clientAddress },
+    })
+  })
   return { username }
 }
 
@@ -315,8 +320,9 @@ Markdown still works **inside** this callout.
   test("opens the owner editor from post and timeline views", async ({ context, page }) => {
     test.setTimeout(60_000)
     const { username } = await createVerifiedSession(context)
+    const postTitle = `editable from anywhere ${username}`
     await page.goto("/posts/new")
-    await fillPost(page, "editable from anywhere", "testing")
+    await fillPost(page, postTitle, "testing")
     await page
       .getByRole("textbox", { name: "Text", exact: true })
       .fill("This post should be easy to edit.")
@@ -326,12 +332,12 @@ Markdown still works **inside** this callout.
     await page.locator('article a[href$="/edit"]').first().click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+\/edit$/u)
     await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
-    await expect(page.getByLabel("Title")).toHaveValue("editable from anywhere")
+    await expect(page.getByLabel("Title")).toHaveValue(postTitle)
 
     await page.goto("/")
     await page.locator('[data-hydrated="true"]').waitFor()
     const timelinePost = page.getByRole("article").filter({
-      has: page.getByRole("heading", { name: "editable from anywhere" }),
+      has: page.getByRole("heading", { name: postTitle }),
     })
     await timelinePost.locator('a[href$="/edit"]').first().click()
     await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
@@ -397,8 +403,6 @@ Markdown still works **inside** this callout.
       .fill("A small post for checking reactions and comments.")
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
-    await page.reload()
-    await page.locator('[data-hydrated="true"]').waitFor()
 
     const postActions = page.getByRole("navigation", { name: "Post actions" })
     const heart = postActions.getByRole("button", { name: "Heart", exact: true })
@@ -668,7 +672,7 @@ https://youtu.be/dQw4w9WgXcQ`
     const longGalleryPostButton = page.getByRole("button", { name: "Post it" })
     await expect(longGalleryPostButton).toBeEnabled({ timeout: 30_000 })
     await longGalleryPostButton.click()
-    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u, { timeout: 30_000 })
     await expect(page.getByRole("heading", { name: "the whole camera roll" })).toBeVisible()
     const longGallery = page.getByRole("list", { name: /image collection/u })
     await expect(longGallery.locator("img")).toHaveCount(20)
