@@ -83,7 +83,7 @@ describe("request-scoped Better Auth", () => {
       sendEmail: async () => {},
     })
 
-    expect(auth.options).toMatchObject({ experimental: { joins: true } })
+    expect(auth.options).toMatchObject({ advanced: { database: { joins: true } } })
 
     const pluginIds = auth.options.plugins?.map((plugin) => plugin.id) ?? []
     expect(pluginIds).toContain("dash")
