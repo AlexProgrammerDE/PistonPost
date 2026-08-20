@@ -8,7 +8,7 @@ import {
   useListOrganizationInvitations,
   useListTeams,
 } from "@better-auth-ui/react/plugins/organization"
-import { UserPlus } from "lucide-react"
+import { ChevronDown, UserPlus } from "lucide-react"
 import { type SyntheticEvent, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -22,6 +22,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -34,6 +40,7 @@ import {
 } from "@/components/ui/select"
 import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
+import { cn } from "@/lib/utils"
 
 /** Props for the `InviteMemberDialog` component. */
 export type InviteMemberDialogProps = {
@@ -62,7 +69,10 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
   })
   const invitations = useListOrganizationInvitations(authClient)
 
-  const [role, setRole] = useState(() => pickDefaultRole(Object.keys(roles)))
+  const [selectedRoles, setSelectedRoles] = useState(() => {
+    const fallback = pickDefaultRole(Object.keys(roles))
+    return fallback ? [fallback] : []
+  })
   const [teamId, setTeamId] = useState("")
   const [emailError, setEmailError] = useState<string>()
   const activeOrganizationId = activeOrganization?.id
@@ -74,9 +84,14 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
   const teamItems = teams.data?.map((team) => ({ label: team.name, value: team.id })) ?? []
 
   useEffect(() => {
-    setRole((current) => {
+    setSelectedRoles((current) => {
       const keys = Object.keys(roles)
-      return keys.includes(current) ? current : pickDefaultRole(keys)
+      const kept = current.filter((entry) => keys.includes(entry))
+
+      if (kept.length > 0) return kept
+
+      const fallback = pickDefaultRole(keys)
+      return fallback ? [fallback] : []
     })
   }, [roles])
 
@@ -95,7 +110,15 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
     },
   })
 
-  const isRoleValid = Object.keys(roles).includes(role)
+  const isRoleValid = selectedRoles.length > 0
+
+  const roleSummary = selectedRoles.map((entry) => roles[entry] ?? entry).join(", ")
+
+  const toggleRole = (role: string) => {
+    setSelectedRoles((current) =>
+      current.includes(role) ? current.filter((entry) => entry !== role) : [...current, role],
+    )
+  }
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -109,7 +132,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
 
     inviteMember({
       email: email.trim(),
-      role: role as Parameters<typeof inviteMember>[0]["role"],
+      role: selectedRoles as Parameters<typeof inviteMember>[0]["role"],
       teamId: selectedTeamId,
     })
   }
@@ -164,26 +187,38 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
             <Field>
               <FieldLabel htmlFor="invite-member-role">{organizationLocalization.role}</FieldLabel>
 
-              <Select
-                items={roleItems}
-                value={role}
-                onValueChange={(value) => setRole(value ?? "")}
-                disabled={isInviting}
-              >
-                <SelectTrigger id="invite-member-role" className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  id="invite-member-role"
+                  disabled={isInviting}
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "w-full justify-between font-normal",
+                  )}
+                >
+                  <span className={cn(!roleSummary && "text-muted-foreground")}>
+                    {roleSummary || organizationLocalization.selectRoles}
+                  </span>
+                  <ChevronDown className="opacity-50" />
+                </DropdownMenuTrigger>
 
-                <SelectContent>
-                  <SelectGroup>
-                    {roleItems.map((item) => (
-                      <SelectItem key={item.value} value={item.value}>
+                <DropdownMenuContent align="start">
+                  {roleItems.map((item) => {
+                    const checked = selectedRoles.includes(item.value)
+
+                    return (
+                      <DropdownMenuCheckboxItem
+                        key={item.value}
+                        checked={checked}
+                        disabled={checked && selectedRoles.length === 1}
+                        onCheckedChange={() => toggleRole(item.value)}
+                      >
                         {item.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                      </DropdownMenuCheckboxItem>
+                    )
+                  })}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <FieldError />
             </Field>

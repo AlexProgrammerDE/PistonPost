@@ -1,4 +1,9 @@
-import { authMutationKeys, authQueryKeys, isSessionNotFreshError } from "@better-auth-ui/core"
+import {
+  authMutationKeys,
+  authQueryKeys,
+  isPasswordCompromisedError,
+  isSessionNotFreshError,
+} from "@better-auth-ui/core"
 import { oneTapMutationKeys } from "@better-auth-ui/core/plugins/one-tap"
 import { matchMutation, matchQuery, useQueryClient } from "@tanstack/react-query"
 import type { BetterFetchError } from "better-auth/react"
@@ -33,6 +38,9 @@ export function ErrorToaster() {
         return
       }
       if (isSessionNotFreshError(error)) return
+      // Every form that sets a new password renders this one against the
+      // password field, so a toast would just repeat it.
+      if (isPasswordCompromisedError(error)) return
 
       const err = error as BetterFetchError
       if (

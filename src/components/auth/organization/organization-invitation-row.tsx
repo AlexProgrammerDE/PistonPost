@@ -1,10 +1,18 @@
 "use client"
 
-import type { OrganizationAuthClient } from "@better-auth-ui/core/plugins/organization"
+import {
+  memberRoleLabels,
+  type OrganizationAuthClient,
+} from "@better-auth-ui/core/plugins/organization"
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
-import { useCancelInvitation, useHasPermission } from "@better-auth-ui/react/plugins/organization"
+import {
+  useCancelInvitation,
+  useHasPermission,
+  useInviteMember,
+} from "@better-auth-ui/react/plugins/organization"
 import type { Invitation } from "better-auth/client"
-import { X } from "lucide-react"
+import { Send, X } from "lucide-react"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -39,15 +47,31 @@ export function OrganizationInvitationRow({ invitation }: OrganizationInvitation
 
   const { mutate: cancelInvitation, isPending: cancelPending } = useCancelInvitation(authClient)
 
-  const roleLabel = roles?.[invitation.role] ?? invitation.role
+  const { data: inviteMemberPermission, isPending: invitePermissionPending } = useHasPermission(
+    authClient,
+    {
+      permissions: { invitation: ["create"] },
+    },
+  )
+
+  // Better Auth treats a re-invite as a resend: it extends the existing
+  // invitation's expiry and sends the email again rather than creating a
+  // second row.
+  const { mutate: resendInvitation, isPending: resendPending } = useInviteMember(authClient, {
+    onSuccess: () => toast.success(organizationLocalization.invitationResent),
+  })
+
+  const roleLabel = memberRoleLabels(invitation.role, roles).join(", ")
 
   const statusLabel =
     organizationLocalization[invitation.status as keyof typeof organizationLocalization] ??
     invitation.status
 
-  if (cancelPermissionPending) {
+  if (cancelPermissionPending || invitePermissionPending) {
     return <OrganizationInvitationRowSkeleton />
   }
+
+  const isPending = invitation.status === "pending"
 
   return (
     <TableRow>
@@ -69,18 +93,40 @@ export function OrganizationInvitationRow({ invitation }: OrganizationInvitation
       </TableCell>
 
       <TableCell className="text-end">
-        {cancelInvitationPermission?.success && invitation.status === "pending" && (
-          <Button
-            size="icon"
-            variant="outline"
-            className="size-8 text-destructive"
-            disabled={cancelPending}
-            onClick={() => cancelInvitation({ invitationId: invitation.id })}
-            aria-label={organizationLocalization.cancelInvitation}
-          >
-            {cancelPending ? <Spinner /> : <X />}
-          </Button>
-        )}
+        <div className="flex justify-end gap-2">
+          {inviteMemberPermission?.success && isPending && (
+            <Button
+              size="icon"
+              variant="outline"
+              className="size-8"
+              disabled={resendPending}
+              onClick={() =>
+                resendInvitation({
+                  email: invitation.email,
+                  organizationId: invitation.organizationId,
+                  role: invitation.role as Parameters<typeof resendInvitation>[0]["role"],
+                  resend: true,
+                })
+              }
+              aria-label={organizationLocalization.resendInvitation}
+            >
+              {resendPending ? <Spinner /> : <Send />}
+            </Button>
+          )}
+
+          {cancelInvitationPermission?.success && isPending && (
+            <Button
+              size="icon"
+              variant="outline"
+              className="size-8 text-destructive"
+              disabled={cancelPending}
+              onClick={() => cancelInvitation({ invitationId: invitation.id })}
+              aria-label={organizationLocalization.cancelInvitation}
+            >
+              {cancelPending ? <Spinner /> : <X />}
+            </Button>
+          )}
+        </div>
       </TableCell>
     </TableRow>
   )
