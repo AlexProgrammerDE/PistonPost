@@ -1,8 +1,7 @@
 "use client"
 
-import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
+import { useAuth, useAuthPlugin, useCopyToClipboard } from "@better-auth-ui/react"
 import { Check, Copy, Key } from "lucide-react"
-import { useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -34,11 +33,13 @@ export function NewApiKeyDialog({ open, onOpenChange, name, secretKey }: NewApiK
   const { localization } = useAuth()
   const { localization: apiKeyLocalization } = useAuthPlugin(apiKeyPlugin)
 
-  const [copied, setCopied] = useState(false)
+  const { copied, copy, reset } = useCopyToClipboard({
+    onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
+  })
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
-      setCopied(false)
+      reset()
     }
 
     onOpenChange(nextOpen)
@@ -47,13 +48,7 @@ export function NewApiKeyDialog({ open, onOpenChange, name, secretKey }: NewApiK
   const copySecretKey = async () => {
     if (!secretKey) return
 
-    try {
-      await navigator.clipboard.writeText(secretKey)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : String(error))
-    }
+    await copy(secretKey)
   }
 
   return (
@@ -82,7 +77,11 @@ export function NewApiKeyDialog({ open, onOpenChange, name, secretKey }: NewApiK
             <InputGroupAddon align="inline-end">
               <InputGroupButton
                 size="icon-xs"
-                aria-label={localization.settings.copyToClipboard}
+                aria-label={
+                  copied
+                    ? localization.settings.copiedToClipboard
+                    : localization.settings.copyToClipboard
+                }
                 onClick={copySecretKey}
               >
                 {copied ? <Check /> : <Copy />}

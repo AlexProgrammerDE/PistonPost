@@ -1,12 +1,8 @@
 "use client"
 
-import {
-  type OrganizationAuthClient,
-  useAuth,
-  useAuthPlugin,
-  useCancelInvitation,
-  useHasPermission,
-} from "@better-auth-ui/react"
+import type { OrganizationAuthClient } from "@better-auth-ui/core/plugins/organization"
+import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
+import { useCancelInvitation, useHasPermission } from "@better-auth-ui/react/plugins/organization"
 import type { Invitation } from "better-auth/client"
 import { X } from "lucide-react"
 
@@ -31,19 +27,17 @@ const statusBadgeClasses: Record<string, string> = {
 }
 
 export function OrganizationInvitationRow({ invitation }: OrganizationInvitationRowProps) {
-  const { authClient } = useAuth()
+  const { authClient } = useAuth<OrganizationAuthClient>()
   const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
 
   const { data: cancelInvitationPermission, isPending: cancelPermissionPending } = useHasPermission(
-    authClient as OrganizationAuthClient,
+    authClient,
     {
       permissions: { invitation: ["cancel"] },
     },
   )
 
-  const { mutate: cancelInvitation, isPending: cancelPending } = useCancelInvitation(
-    authClient as OrganizationAuthClient,
-  )
+  const { mutate: cancelInvitation, isPending: cancelPending } = useCancelInvitation(authClient)
 
   const roleLabel = roles?.[invitation.role] ?? invitation.role
 

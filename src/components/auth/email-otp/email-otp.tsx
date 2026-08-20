@@ -1,13 +1,10 @@
 "use client"
 
 import { authMutationKeys } from "@better-auth-ui/core"
-import {
-  type EmailOtpAuthClient,
-  useAuth,
-  useAuthPlugin,
-  useSendVerificationOtp,
-  useSignInEmailOtp,
-} from "@better-auth-ui/react"
+import type { EmailOtpAuthClient } from "@better-auth-ui/core/plugins/email-otp"
+import { getSsoFallbackEmail } from "@better-auth-ui/core/plugins/sso"
+import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
+import { useSendVerificationOtp, useSignInEmailOtp } from "@better-auth-ui/react/plugins/email-otp"
 import { useIsMutating } from "@tanstack/react-query"
 import { type SyntheticEvent, useState } from "react"
 
@@ -65,7 +62,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
   const continueSignIn = useSignInContinuation()
   const { cooldown, isCoolingDown, startCooldown } = useResendCooldown()
 
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState(getSsoFallbackEmail)
   const [code, setCode] = useState("")
   const [codeSent, setCodeSent] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<{ email?: string }>({})

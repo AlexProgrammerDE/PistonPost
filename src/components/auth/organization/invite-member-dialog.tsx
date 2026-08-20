@@ -1,13 +1,15 @@
 "use client"
 
+import type { OrganizationAuthClient } from "@better-auth-ui/core/plugins/organization"
+import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import {
-  type OrganizationAuthClient,
-  useAuth,
-  useAuthPlugin,
+  useActiveOrganization,
   useInviteMember,
-} from "@better-auth-ui/react"
+  useListOrganizationInvitations,
+  useListTeams,
+} from "@better-auth-ui/react/plugins/organization"
 import { UserPlus } from "lucide-react"
-import { type SyntheticEvent, useEffect, useState } from "react"
+import { type SyntheticEvent, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { Button, buttonVariants } from "@/components/ui/button"
@@ -46,15 +48,30 @@ const pickDefaultRole = (keys: string[]) =>
  * Render a dialog for inviting a member to the organization.
  */
 export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogProps) {
-  const { authClient, localization } = useAuth()
-  const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
+  const { authClient, localization } = useAuth<OrganizationAuthClient>()
+  const {
+    invitationLimit,
+    localization: organizationLocalization,
+    roles,
+    teams: teamsEnabled,
+  } = useAuthPlugin(organizationPlugin)
+  const { data: activeOrganization } = useActiveOrganization(authClient)
+  const teams = useListTeams(authClient, {
+    query: { organizationId: activeOrganization?.id },
+    enabled: teamsEnabled,
+  })
+  const invitations = useListOrganizationInvitations(authClient)
 
   const [role, setRole] = useState(() => pickDefaultRole(Object.keys(roles)))
+  const [teamId, setTeamId] = useState("")
   const [emailError, setEmailError] = useState<string>()
+  const activeOrganizationId = activeOrganization?.id
+  const previousOrganizationId = useRef(activeOrganizationId)
   const roleItems = Object.entries(roles).map(([value, label]) => ({
     label,
     value,
   }))
+  const teamItems = teams.data?.map((team) => ({ label: team.name, value: team.id })) ?? []
 
   useEffect(() => {
     setRole((current) => {
@@ -64,34 +81,43 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
   }, [roles])
 
   useEffect(() => {
-    if (!open) setEmailError(undefined)
-  }, [open])
+    const organizationChanged = previousOrganizationId.current !== activeOrganizationId
 
-  const { mutate: inviteMember, isPending: isInviting } = useInviteMember(
-    authClient as OrganizationAuthClient,
-    {
-      onSuccess: () => {
-        onOpenChange(false)
-        toast.success(organizationLocalization.inviteMemberSuccess)
-      },
+    if (open || organizationChanged) setTeamId("")
+    if (!open) setEmailError(undefined)
+    previousOrganizationId.current = activeOrganizationId
+  }, [open, activeOrganizationId])
+
+  const { mutate: inviteMember, isPending: isInviting } = useInviteMember(authClient, {
+    onSuccess: () => {
+      onOpenChange(false)
+      toast.success(organizationLocalization.inviteMemberSuccess)
     },
-  )
+  })
 
   const isRoleValid = Object.keys(roles).includes(role)
 
   const handleSubmit = (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!isRoleValid) return
+    if (!isRoleValid || atInvitationLimit) return
 
     const formData = new FormData(e.target as HTMLFormElement)
     const email = formData.get("email") as string
 
+    const selectedTeamId = teams.data?.some((team) => team.id === teamId) ? teamId : undefined
+
     inviteMember({
       email: email.trim(),
       role: role as Parameters<typeof inviteMember>[0]["role"],
+      teamId: selectedTeamId,
     })
   }
+
+  const atInvitationLimit =
+    invitationLimit !== undefined &&
+    (invitations.data?.filter((invitation) => invitation.status === "pending").length ?? 0) >=
+      invitationLimit
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -161,6 +187,33 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
 
               <FieldError />
             </Field>
+
+            {teamsEnabled && (
+              <Field>
+                <FieldLabel htmlFor="invite-member-team">
+                  {organizationLocalization.team}
+                </FieldLabel>
+                <Select
+                  items={teamItems}
+                  value={teamId}
+                  onValueChange={(value) => setTeamId(value ?? "")}
+                  disabled={isInviting}
+                >
+                  <SelectTrigger id="invite-member-team" className="w-full">
+                    <SelectValue placeholder={organizationLocalization.selectTeam} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectGroup>
+                      {teamItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+              </Field>
+            )}
           </div>
 
           <DialogFooter>
@@ -172,7 +225,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
               {localization.settings.cancel}
             </DialogClose>
 
-            <Button type="submit" disabled={isInviting || !isRoleValid}>
+            <Button type="submit" disabled={isInviting || !isRoleValid || atInvitationLimit}>
               {isInviting && <Spinner />}
 
               {organizationLocalization.inviteMember}

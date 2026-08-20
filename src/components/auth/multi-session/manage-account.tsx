@@ -1,14 +1,14 @@
 "use client"
 
+import type {
+  ListDeviceSession,
+  MultiSessionAuthClient,
+} from "@better-auth-ui/core/plugins/multi-session"
+import { useAuth, useAuthPlugin, useSession } from "@better-auth-ui/react"
 import {
-  type ListDeviceSession,
-  type MultiSessionAuthClient,
-  useAuth,
-  useAuthPlugin,
   useRevokeMultiSession,
-  useSession,
   useSetActiveSession,
-} from "@better-auth-ui/react"
+} from "@better-auth-ui/react/plugins/multi-session"
 import { ArrowLeftRight, LogOut, MoreHorizontal } from "lucide-react"
 import { toast } from "sonner"
 
@@ -41,23 +41,17 @@ export type ManageAccountProps = {
  * @returns A JSX element containing the account row
  */
 export function ManageAccount({ deviceSession, isPending }: ManageAccountProps) {
-  const { authClient, localization } = useAuth()
+  const { authClient, localization } = useAuth<MultiSessionAuthClient>()
   const { localization: multiSessionLocalization } = useAuthPlugin(multiSessionPlugin)
   const { data: session } = useSession(authClient)
 
-  const { mutate: setActiveSession, isPending: isSwitching } = useSetActiveSession(
-    authClient as MultiSessionAuthClient,
-    {
-      onSuccess: () => window.scrollTo({ top: 0 }),
-    },
-  )
+  const { mutate: setActiveSession, isPending: isSwitching } = useSetActiveSession(authClient, {
+    onSuccess: () => window.scrollTo({ top: 0 }),
+  })
 
-  const { mutate: revokeSession, isPending: isRevoking } = useRevokeMultiSession(
-    authClient as MultiSessionAuthClient,
-    {
-      onSuccess: () => toast.success(localization.settings.revokeSessionSuccess),
-    },
-  )
+  const { mutate: revokeSession, isPending: isRevoking } = useRevokeMultiSession(authClient, {
+    onSuccess: () => toast.success(localization.settings.revokeSessionSuccess),
+  })
 
   const isActive = deviceSession?.session.userId === session?.session.userId
   const isBusy = isSwitching || isRevoking

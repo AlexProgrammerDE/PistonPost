@@ -1,13 +1,8 @@
 "use client"
 
-import {
-  type OrganizationAuthClient,
-  useAuth,
-  useAuthPlugin,
-  useHasPermission,
-  useSession,
-  useUpdateMemberRole,
-} from "@better-auth-ui/react"
+import type { OrganizationAuthClient } from "@better-auth-ui/core/plugins/organization"
+import { useAuth, useAuthPlugin, useSession } from "@better-auth-ui/react"
+import { useHasPermission, useUpdateMemberRole } from "@better-auth-ui/react/plugins/organization"
 import type { Member, Organization, User } from "better-auth/client"
 import { LogOut, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
@@ -41,20 +36,20 @@ export function OrganizationMemberRow({
   isOwner,
   organization,
 }: OrganizationMemberRowProps) {
-  const { authClient } = useAuth()
+  const { authClient } = useAuth<OrganizationAuthClient>()
   const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
 
   const { data: session } = useSession(authClient)
 
   const { data: hasUpdatePermission, isPending: updatePermissionPending } = useHasPermission(
-    authClient as OrganizationAuthClient,
+    authClient,
     {
       permissions: { member: ["update"] },
     },
   )
 
   const { data: hasDeletePermission, isPending: deletePermissionPending } = useHasPermission(
-    authClient as OrganizationAuthClient,
+    authClient,
     {
       permissions: { member: ["delete"] },
     },
@@ -62,12 +57,9 @@ export function OrganizationMemberRow({
 
   const isPending = updatePermissionPending || deletePermissionPending
 
-  const { mutate: updateMemberRole, isPending: isUpdatingRole } = useUpdateMemberRole(
-    authClient as OrganizationAuthClient,
-    {
-      onSuccess: () => toast.success(organizationLocalization.memberRoleUpdated),
-    },
-  )
+  const { mutate: updateMemberRole, isPending: isUpdatingRole } = useUpdateMemberRole(authClient, {
+    onSuccess: () => toast.success(organizationLocalization.memberRoleUpdated),
+  })
 
   const roleLabel = roles?.[member.role] ?? member.role
 

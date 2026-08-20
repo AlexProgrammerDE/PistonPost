@@ -1,5 +1,6 @@
 "use client"
 
+import { isSessionNotFreshError } from "@better-auth-ui/core"
 import { useAuth, useListSessions, useSession } from "@better-auth-ui/react"
 import { Fragment } from "react"
 
@@ -9,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 import { ActiveSession } from "./active-session"
+import { FreshSessionPrompt } from "./fresh-session-prompt"
 
 export type ActiveSessionsProps = {
   className?: string
@@ -26,7 +28,8 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
   const { authClient, localization } = useAuth()
   const { data: session } = useSession(authClient)
 
-  const { data: sessions, isPending } = useListSessions(authClient)
+  const sessionsQuery = useListSessions(authClient)
+  const { data: sessions, error, isPending } = sessionsQuery
 
   const activeSessions = [...(sessions ?? [])].sort((activeSession) =>
     activeSession.id === session?.session.id ? -1 : 1,
@@ -38,7 +41,9 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
 
       <Card className={cn("p-0", className)}>
         <CardContent className="p-0">
-          {isPending ? (
+          {isSessionNotFreshError(error) ? (
+            <FreshSessionPrompt onFresh={() => sessionsQuery.refetch()} />
+          ) : isPending ? (
             <SessionRowSkeleton />
           ) : (
             <ItemGroup className="gap-0">

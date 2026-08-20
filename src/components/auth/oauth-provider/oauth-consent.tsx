@@ -2,18 +2,13 @@
 
 import {
   type OAuthAuthorizationRequest,
+  type OAuthProviderAuthClient,
   parseOAuthAuthorizationRequest,
   resolveOAuthScopeMetadata,
   sanitizeOAuthClientUrl,
-} from "@better-auth-ui/core/plugins"
-import {
-  type OAuthProviderAuthClient,
-  useAuth,
-  useAuthPlugin,
-  useOAuthConsent,
-  usePublicOAuthClient,
-  useSession,
-} from "@better-auth-ui/react"
+} from "@better-auth-ui/core/plugins/oauth-provider"
+import { useAuth, useAuthPlugin, useSession } from "@better-auth-ui/react"
+import { useOAuthConsent, usePublicOAuthClient } from "@better-auth-ui/react/plugins/oauth-provider"
 import { Check, ShieldCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 

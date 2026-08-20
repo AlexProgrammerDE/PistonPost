@@ -1,14 +1,14 @@
 "use client"
 
-import { getProviderName } from "@better-auth-ui/core"
+import { type AuthSocialProvider, getProviderId, getProviderName } from "@better-auth-ui/core"
 import {
-  providerIcons,
+  renderProviderIcon,
   useAccountInfo,
   useAuth,
   useLinkSocial,
   useUnlinkAccount,
 } from "@better-auth-ui/react"
-import type { Account, SocialProvider } from "better-auth"
+import type { Account } from "better-auth"
 import { Link2, Link2Off, Plug } from "lucide-react"
 import { toast } from "sonner"
 
@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils"
 
 export type LinkedAccountProps = {
   account?: Account
-  provider: SocialProvider
+  provider: AuthSocialProvider | string
 }
 
 /**
@@ -44,7 +44,7 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
   const { authClient, baseURL, localization } = useAuth()
 
   const { data: accountInfo, isPending: isLoadingInfo } = useAccountInfo(authClient, {
-    query: { accountId: account?.accountId },
+    query: { accountId: account?.id ?? "" },
   })
 
   const { mutate: linkSocial, isPending: isLinking } = useLinkSocial(authClient)
@@ -53,24 +53,22 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
     onSuccess: () => toast.success(localization.settings.accountUnlinked),
   })
 
-  const ProviderIcon = providerIcons[provider]
+  const providerId = getProviderId(provider)
+  const providerIcon = renderProviderIcon(provider)
   const providerName = getProviderName(provider)
+  const accountData = accountInfo?.data as { login?: string; username?: string } | undefined
 
   const displayName =
-    accountInfo?.data?.login ||
-    accountInfo?.data?.username ||
+    accountData?.login ||
+    accountData?.username ||
     accountInfo?.user?.email ||
     accountInfo?.user?.name ||
     account?.accountId
 
   return (
     <Item>
-      <ItemMedia variant="icon">
-        {ProviderIcon ? (
-          <ProviderIcon className={cn(!account && "opacity-50")} />
-        ) : (
-          <Plug className={cn(!account && "opacity-50")} />
-        )}
+      <ItemMedia variant="icon" className={cn(!account && "opacity-50")}>
+        {providerIcon ? providerIcon : <Plug />}
       </ItemMedia>
       <ItemContent>
         <ItemTitle>{providerName}</ItemTitle>
@@ -89,7 +87,7 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => unlinkAccount({ providerId: account.providerId })}
+            onClick={() => unlinkAccount({ accountId: account.id })}
             disabled={isUnlinking}
             aria-label={localization.settings.unlinkProvider.replace("{{provider}}", providerName)}
           >
@@ -102,7 +100,7 @@ export function LinkedAccount({ account, provider }: LinkedAccountProps) {
             size="sm"
             onClick={() =>
               linkSocial({
-                provider,
+                provider: providerId,
                 callbackURL: `${baseURL}${window.location.pathname}`,
               })
             }
