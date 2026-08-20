@@ -55,6 +55,7 @@ Run commands from the repository root. The root package owns Vite, Wrangler, Dri
 
 - Use Bun only. Do not add npm, pnpm, or Yarn lockfiles.
 - Use bunx --bun for one-off package CLIs.
+- Run Wrangler without `--bun`. Wrangler uses Node to manage the local `workerd` process.
 - Keep bun.lock committed.
 - Keep one root dependency graph. Do not add workspace-only package manifests or another task orchestrator.
 - Generated route trees, Worker types, Better Auth schemas, and Drizzle migration artifacts must be created by their owning tools.

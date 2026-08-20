@@ -43,7 +43,7 @@ jobs:
             'STREAM_ACCOUNT_ID=ci-only-stream-account-id' \
             'STREAM_API_TOKEN=ci-only-stream-api-token' \
             > .dev.vars
-          bunx --bun wrangler d1 migrations apply DB --local
+          bunx wrangler d1 migrations apply DB --local
 
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
