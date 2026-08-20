@@ -396,6 +396,8 @@ Markdown still works **inside** this callout.
       .fill("A small post for checking reactions and comments.")
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    await page.reload()
+    await page.locator('[data-hydrated="true"]').waitFor()
 
     const postActions = page.getByRole("navigation", { name: "Post actions" })
     const heart = postActions.getByRole("button", { name: "Heart", exact: true })
