@@ -162,12 +162,14 @@ export function createAuth(runtime: AuthRuntime) {
     },
     advanced: {
       cookiePrefix: "pistonpost",
-      database: { generateId: "uuid" },
+      database: {
+        generateId: "uuid",
+        joins: true,
+      },
       ipAddress: {
         ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
       },
       backgroundTasks: runtime.backgroundTasks,
-      joins: true,
     },
     databaseHooks: {
       user: {
