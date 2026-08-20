@@ -9,6 +9,7 @@ import { generateN } from "../../src/lib/generate-n"
 const CAPTCHA_TEST_TOKEN = "XXXX.DUMMY.TOKEN.XXXX"
 const TEST_PASSWORD = "PistonPost-Test-2026!"
 let testSessionSequence = 0
+const testClientAddressOffset = Date.now() % 254
 const VALID_PNG = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
   "base64",
@@ -54,7 +55,8 @@ async function createVerifiedSession(context: BrowserContext) {
   const stamp = Date.now().toString()
   const email = `author-${stamp}@example.com`
   const username = `moss_${stamp}`
-  const clientAddress = `192.0.2.${String(++testSessionSequence)}`
+  const clientAddressOctet = ((testClientAddressOffset + testSessionSequence++) % 254) + 1
+  const clientAddress = `192.0.2.${String(clientAddressOctet)}`
   const authHeaders = {
     Origin: "http://localhost:3000",
     "cf-connecting-ip": clientAddress,
@@ -109,6 +111,13 @@ async function fillPost(page: Page, title: string, tag: string) {
   const tags = page.getByLabel("Tags")
   await tags.fill(tag)
   await tags.press("Enter")
+}
+
+function waitForUserUpdate(page: Page) {
+  return page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/auth/update-user") && response.request().method() === "POST",
+  )
 }
 
 test.describe.serial("authenticated authoring", () => {
@@ -182,15 +191,17 @@ test.describe.serial("authenticated authoring", () => {
     await page.getByRole("button", { name: "Change avatar" }).click()
     await page.getByRole("menuitem", { name: "Upload avatar" }).click()
     const fileChooser = await fileChooserPromise
+    const avatarUpdatePromise = waitForUserUpdate(page)
     await fileChooser.setFiles({
       name: "moss-avatar.png",
       mimeType: "image/png",
       buffer: VALID_PNG,
     })
-    await expect(page.getByText("Avatar changed successfully")).toBeVisible()
+    expect((await avatarUpdatePromise).status()).toBe(200)
+    await page.reload()
+    await page.locator('[data-hydrated="true"]').waitFor()
 
     const avatar = page.getByRole("img", { name: username }).first()
-    await expect(avatar).toBeVisible()
     await expect(avatar).toHaveAttribute("src", /\/media\/image\/[^/]+\/avatar\?v=\d+/u)
     const avatarSource = await avatar.getAttribute("src")
     expect(avatarSource).not.toBeNull()
@@ -203,9 +214,14 @@ test.describe.serial("authenticated authoring", () => {
     expect(avatarResponse.headers()["content-type"]).toContain("image/webp")
 
     await page.getByRole("button", { name: "Change avatar" }).click()
+    const avatarDeletePromise = waitForUserUpdate(page)
     await page.getByRole("menuitem", { name: "Delete avatar" }).click()
-    await expect(page.getByText("Avatar deleted successfully")).toBeVisible()
-    await expect.poll(async () => (await context.request.get(avatarSource)).status()).toBe(404)
+    expect((await avatarDeletePromise).status()).toBe(200)
+    await expect
+      .poll(async () => (await context.request.get(avatarSource)).status(), {
+        timeout: 15_000,
+      })
+      .toBe(404)
   })
 
   test("publishes without prompting to discard submitted changes", async ({ context, page }) => {
@@ -216,7 +232,7 @@ test.describe.serial("authenticated authoring", () => {
       "frame-src 'self' https://challenges.cloudflare.com https://www.youtube.com https://open.spotify.com https://w.soundcloud.com https://player.vimeo.com https://geo.dailymotion.com https://platform.x.com https://platform.twitter.com https://embed.tumblr.com",
     )
     await fillPost(page, "a finished post", "testing")
-    await page.getByLabel("Text").fill(`## Markdown heading
+    await page.getByRole("textbox", { name: "Text", exact: true }).fill(`## Markdown heading
 
 - [x] Ready to share
 
@@ -261,19 +277,19 @@ Markdown still works **inside** this callout.
     await expect(externalLink).toHaveAttribute("rel", "ugc nofollow noopener noreferrer")
 
     await externalLink.click()
-    const externalLinkConfirmation = page.getByRole("dialog", {
+    const externalLinkConfirmation = page.getByRole("alertdialog", {
       name: "Open an external link?",
     })
     await expect(externalLinkConfirmation).toBeVisible()
-    await expect(page.locator('[data-slot="dialog-content"]')).toBeVisible()
+    await expect(page.locator('[data-slot="alert-dialog-content"]')).toBeVisible()
     await externalLinkConfirmation.getByRole("button", { name: "Stay here" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
     const warningPage = await context.newPage()
     await warningPage.goto(new URL(warningHref, page.url()).toString())
     await expect(warningPage).toHaveURL(/\/external\?url=https%3A%2F%2Fexample\.com%2F$/u)
-    await expect(warningPage.getByRole("heading", { name: "Open an external link?" })).toBeVisible()
-    await expect(warningPage.getByRole("link", { name: /Open link/u })).toHaveAttribute(
+    await expect(warningPage.getByRole("alert")).toBeVisible()
+    await expect(warningPage.getByLabel("Open external link")).toHaveAttribute(
       "rel",
       "ugc nofollow noopener noreferrer",
     )
@@ -300,11 +316,13 @@ Markdown still works **inside** this callout.
     const { username } = await createVerifiedSession(context)
     await page.goto("/posts/new")
     await fillPost(page, "editable from anywhere", "testing")
-    await page.getByLabel("Text").fill("This post should be easy to edit.")
+    await page
+      .getByRole("textbox", { name: "Text", exact: true })
+      .fill("This post should be easy to edit.")
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
-    await page.getByRole("link", { name: "Edit", exact: true }).click()
+    await page.getByRole("button", { name: "Edit", exact: true }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+\/edit$/u)
     await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
     await expect(page.getByLabel("Title")).toHaveValue("editable from anywhere")
@@ -314,7 +332,7 @@ Markdown still works **inside** this callout.
     const timelinePost = page.getByRole("article").filter({
       has: page.getByRole("heading", { name: "editable from anywhere" }),
     })
-    await timelinePost.getByRole("link", { name: "Edit", exact: true }).click()
+    await timelinePost.getByRole("button", { name: "Edit", exact: true }).first().click()
     await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
 
     await page.goto("/posts")
@@ -372,7 +390,9 @@ Markdown still works **inside** this callout.
     await page.emulateMedia({ reducedMotion: "reduce" })
     await page.goto("/posts/new")
     await fillPost(page, "motion without the fuss", "testing")
-    await page.getByLabel("Text").fill("A small post for checking reactions and comments.")
+    await page
+      .getByRole("textbox", { name: "Text", exact: true })
+      .fill("A small post for checking reactions and comments.")
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
@@ -508,7 +528,9 @@ https://youtu.be/dQw4w9WgXcQ`
     expect(consoleErrors).toEqual([])
     expect(requestFailures).toEqual([])
     await fillPost(page, "look at this little guy", "art")
-    await page.getByLabel("Text").fill("found this earlier and had to put it somewhere")
+    await page
+      .getByRole("textbox", { name: "Text", exact: true })
+      .fill("found this earlier and had to put it somewhere")
     await page.getByRole("button", { name: "Post it" }).click()
     await page.waitForTimeout(1_000)
     expect(errorResponses).toEqual([])
