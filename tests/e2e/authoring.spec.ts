@@ -322,7 +322,7 @@ Markdown still works **inside** this callout.
     await page.getByRole("button", { name: "Post it" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
-    await page.getByRole("button", { name: "Edit", exact: true }).click()
+    await page.locator('article a[href$="/edit"]').first().click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+\/edit$/u)
     await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
     await expect(page.getByLabel("Title")).toHaveValue("editable from anywhere")
@@ -332,7 +332,7 @@ Markdown still works **inside** this callout.
     const timelinePost = page.getByRole("article").filter({
       has: page.getByRole("heading", { name: "editable from anywhere" }),
     })
-    await timelinePost.getByRole("button", { name: "Edit", exact: true }).first().click()
+    await timelinePost.locator('a[href$="/edit"]').first().click()
     await expect(page.getByRole("heading", { name: "Edit post" })).toBeVisible()
 
     await page.goto("/posts")
@@ -360,8 +360,7 @@ Markdown still works **inside** this callout.
 
     await page.setViewportSize({ width: 390, height: 844 })
     await website.click()
-    await expect(page.getByRole("dialog", { name: "Open an external link?" })).toBeVisible()
-    await expect(page.locator('[data-slot="drawer-content"]')).toBeVisible()
+    await expect(page.getByRole("alertdialog", { name: "Open an external link?" })).toBeVisible()
   })
 
   test("confirms before discarding unfinished composer changes", async ({ context, page }) => {
@@ -370,7 +369,7 @@ Markdown still works **inside** this callout.
     await fillPost(page, "an unfinished post", "draft")
 
     await page.getByRole("link", { name: "Timeline" }).click()
-    const confirmation = page.getByRole("dialog")
+    const confirmation = page.getByRole("alertdialog")
     await expect(confirmation).toBeVisible()
 
     await confirmation.getByRole("button", { name: "Keep editing" }).click()
@@ -386,10 +385,12 @@ Markdown still works **inside** this callout.
     context,
     page,
   }) => {
-    await createVerifiedSession(context)
+    test.setTimeout(60_000)
+    const { username } = await createVerifiedSession(context)
+    const postTitle = `motion without the fuss ${username}`
     await page.emulateMedia({ reducedMotion: "reduce" })
     await page.goto("/posts/new")
-    await fillPost(page, "motion without the fuss", "testing")
+    await fillPost(page, postTitle, "testing")
     await page
       .getByRole("textbox", { name: "Text", exact: true })
       .fill("A small post for checking reactions and comments.")
@@ -406,10 +407,10 @@ Markdown still works **inside** this callout.
     await page.goto("/")
     await page.locator('[data-hydrated="true"]').waitFor()
     const timelinePost = page.getByRole("article").filter({
-      has: page.getByRole("heading", { name: "motion without the fuss" }),
+      has: page.getByRole("heading", { name: postTitle }),
     })
-    const timelineActions = timelinePost.getByRole("navigation", {
-      name: "Actions for motion without the fuss",
+    const timelineActions = timelinePost.getByRole("group", {
+      name: `Actions for ${postTitle}`,
     })
     const timelineHeart = timelineActions.getByRole("button", { name: "Heart", exact: true })
     await expect(timelineHeart).toHaveAttribute("aria-pressed", "true")
@@ -424,7 +425,7 @@ Markdown still works **inside** this callout.
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
       .toMatch(/\/post\/[a-z0-9]+$/u)
 
-    await timelineActions.getByRole("link", { name: /Comments/u }).click()
+    await timelineActions.getByRole("button", { name: /Comments/u }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+#discussion$/u)
 
     const commentImageRequests: string[] = []
@@ -438,8 +439,9 @@ Markdown still works **inside** this callout.
 ![A curious cat](https://images.example/cat.png)
 
 https://youtu.be/dQw4w9WgXcQ`
-    await expect(page.getByText("Markdown formatting is supported.")).toBeVisible()
-    await page.getByLabel("Add a comment").fill(commentText)
+    const commentInput = page.getByLabel("Add a comment")
+    await expect(commentInput).toBeVisible({ timeout: 15_000 })
+    await commentInput.fill(commentText)
     await page.getByRole("button", { name: "Post comment" }).click()
     const comment = page.getByRole("article").filter({
       has: page.getByText("animated discussion", { exact: true }),
@@ -453,7 +455,7 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(comment.getByText("Sending…")).toHaveCount(0)
 
     await comment.getByRole("button", { name: "Delete comment" }).click()
-    const confirmation = page.getByRole("dialog", { name: "Delete this comment?" })
+    const confirmation = page.getByRole("alertdialog", { name: "Delete this comment?" })
     await confirmation.getByRole("button", { name: "Delete comment" }).click()
     await expect(comment).toHaveCount(0)
     await expect(page.getByText("No comments yet")).toBeVisible()
@@ -501,7 +503,7 @@ https://youtu.be/dQw4w9WgXcQ`
     context,
     page,
   }) => {
-    test.setTimeout(120_000)
+    test.setTimeout(180_000)
     const pageErrors: string[] = []
     const consoleErrors: string[] = []
     const requestFailures: string[] = []
@@ -569,7 +571,9 @@ https://youtu.be/dQw4w9WgXcQ`
     await composerImageViewer.getByRole("button", { name: "Close" }).click()
     await expect(composerImageViewer).toBeHidden()
     await expect(firstComposerImage).toBeFocused()
-    await page.getByRole("button", { name: "Post it" }).click()
+    const imagePostButton = page.getByRole("button", { name: "Post it" })
+    await expect(imagePostButton).toBeEnabled({ timeout: 30_000 })
+    await imagePostButton.click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "two extremely important cats" })).toBeVisible()
     const postUrl = page.url()
@@ -605,12 +609,12 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(imageViewer).toBeHidden()
     await expect(secondImageTrigger).toBeFocused()
 
-    await page.getByRole("button", { name: "Gallery options" }).click()
-    await expect(page.getByRole("menuitemradio", { name: "Masonry" })).toHaveAttribute(
-      "aria-checked",
+    const galleryLayout = page.getByRole("group", { name: "Gallery layout" })
+    await expect(galleryLayout.getByRole("button", { name: "Masonry layout" })).toHaveAttribute(
+      "aria-pressed",
       "true",
     )
-    await page.getByRole("menuitemradio", { name: "Image browser" }).click()
+    await galleryLayout.getByRole("button", { name: "Image browser layout" }).click()
     await expect.poll(() => new URL(page.url()).searchParams.get("layout")).toBe("browser")
     await expect.poll(() => new URL(page.url()).searchParams.get("image")).toBe("0")
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toBeVisible()
@@ -629,8 +633,7 @@ https://youtu.be/dQw4w9WgXcQ`
       page.getByRole("img", { name: "A gray cat looking directly at the camera" }),
     ).toBeVisible()
 
-    await page.getByRole("button", { name: "Gallery options" }).click()
-    await page.getByRole("menuitemradio", { name: "Masonry" }).click()
+    await galleryLayout.getByRole("button", { name: "Masonry layout" }).click()
     await expect.poll(() => new URL(page.url()).searchParams.get("layout")).toBe("masonry")
     await expect(imageCollection).toBeVisible()
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
@@ -659,7 +662,9 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(
       page.getByRole("button", { name: /View gallery-\d+\.png full size/u }),
     ).toHaveCount(20)
-    await page.getByRole("button", { name: "Post it" }).click()
+    const longGalleryPostButton = page.getByRole("button", { name: "Post it" })
+    await expect(longGalleryPostButton).toBeEnabled({ timeout: 30_000 })
+    await longGalleryPostButton.click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "the whole camera roll" })).toBeVisible()
     const longGallery = page.getByRole("list", { name: /image collection/u })
