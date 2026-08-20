@@ -19,6 +19,16 @@ const config = defineConfig(({ mode }) => ({
     ],
     tsconfigPaths: true,
   },
+  optimizeDeps: {
+    include: ["@tanstack/react-store > use-sync-external-store/shim/with-selector"],
+  },
+  environments: {
+    ssr: {
+      optimizeDeps: {
+        include: ["@tanstack/react-store > use-sync-external-store/shim/with-selector"],
+      },
+    },
+  },
   build: {
     rolldownOptions: {
       output: {
