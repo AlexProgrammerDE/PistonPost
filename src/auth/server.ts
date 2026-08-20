@@ -3,7 +3,7 @@ import { passkey } from "@better-auth/passkey"
 import { emailHarmony } from "better-auth-harmony"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { APIError } from "better-auth/api"
-import { betterAuth } from "better-auth/minimal"
+import { betterAuth, type BetterAuthOptions } from "better-auth/minimal"
 import {
   admin,
   captcha,
@@ -278,5 +278,5 @@ export function createAuth(runtime: AuthRuntime) {
         : []),
       tanstackStartCookies(),
     ],
-  })
+  } satisfies BetterAuthOptions)
 }
