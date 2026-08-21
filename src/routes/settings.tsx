@@ -2,7 +2,7 @@ import { authQueryKeys, ensureSession } from "@better-auth-ui/core"
 import type { QueryClient } from "@tanstack/react-query"
 import { Link, Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router"
 import { createIsomorphicFn } from "@tanstack/react-start"
-import { Bell, KeyRound, ShieldCheck, UserRound } from "lucide-react"
+import { Activity, Bell, KeyRound, ShieldCheck, UserRound } from "lucide-react"
 
 import { authClient } from "@/auth/client"
 import { SettingsLayoutSkeleton } from "@/components/LoadingStates"
@@ -53,11 +53,13 @@ function SettingsLayout() {
           const ViewIcon =
             view.value === "profile"
               ? UserRound
-              : view.value === "notifications"
-                ? Bell
-                : view.value === "security"
-                  ? ShieldCheck
-                  : KeyRound
+              : view.value === "activity"
+                ? Activity
+                : view.value === "notifications"
+                  ? Bell
+                  : view.value === "security"
+                    ? ShieldCheck
+                    : KeyRound
           return (
             <Link
               key={view.value}

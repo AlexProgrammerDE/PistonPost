@@ -1,12 +1,19 @@
 import { describe, expect, it } from "bun:test"
 
 import { viewPaths } from "@better-auth-ui/core"
+import { dashPlugin } from "@better-auth-ui/core/plugins/dash"
 
 import { validSettingsPathSegments } from "./settings-views"
 
 describe("settings route paths", () => {
   it("accepts every Better Auth UI and product settings path", () => {
-    const expectedPaths = [...Object.values(viewPaths.settings), "profile", "notifications"]
+    const dashActivityPath = dashPlugin({ organization: false }).viewPaths.settings.activity
+    const expectedPaths = [
+      ...Object.values(viewPaths.settings),
+      dashActivityPath,
+      "profile",
+      "notifications",
+    ]
 
     expect(validSettingsPathSegments).toEqual(new Set(expectedPaths))
     expect(expectedPaths.every((path) => validSettingsPathSegments.has(path))).toBe(true)

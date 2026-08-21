@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import { adminPlugin as coreAdminPlugin } from "@better-auth-ui/core/plugins/admin"
+import { dashPlugin as coreDashPlugin } from "@better-auth-ui/core/plugins/dash"
 import { emailOtpPlugin as coreEmailOtpPlugin } from "@better-auth-ui/core/plugins/email-otp"
 import { multiSessionPlugin as coreMultiSessionPlugin } from "@better-auth-ui/core/plugins/multi-session"
 import { themePlugin as coreThemePlugin } from "@better-auth-ui/core/plugins/theme"
@@ -8,6 +9,7 @@ import { twoFactorPlugin as coreTwoFactorPlugin } from "@better-auth-ui/core/plu
 import { captchaPlugin } from "@better-auth-ui/react/plugins/captcha"
 
 import { StopImpersonating } from "@/components/auth/admin/stop-impersonating"
+import { UserActivity } from "@/components/auth/dash/activity"
 import { EmailOtp } from "@/components/auth/email-otp/email-otp"
 import { ForgotPasswordOtp } from "@/components/auth/email-otp/forgot-password-otp"
 import { ResetPasswordOtp } from "@/components/auth/email-otp/reset-password-otp"
@@ -33,6 +35,17 @@ describe("global authentication plugins", () => {
     expect(multiSession?.accountCards).toEqual([ManageAccounts])
     expect(theme?.userMenuItems).toEqual([ThemeToggleItem])
     expect(theme?.accountCards).toEqual([Appearance])
+  })
+
+  test("adds personal Dash activity without organization surfaces", () => {
+    const dash = createAuthenticationPlugins().find((plugin) => plugin.id === coreDashPlugin.id)
+
+    expect(dash?.settingsTabs).toHaveLength(1)
+    expect(dash?.settingsTabs?.[0]).toMatchObject({
+      view: "activity",
+      component: UserActivity,
+    })
+    expect(dash?.organizationTabs).toBeUndefined()
   })
 
   test("registers captcha UI only when Turnstile is configured", () => {
