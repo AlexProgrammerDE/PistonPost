@@ -9,7 +9,6 @@ import { serverFunctionValidator } from "@/lib/server-function-error"
 import { moderationPushJob, type PushDeliveryJob } from "@/push/jobs"
 import {
   conflictFailure,
-  forbiddenFailure,
   invalidInputFailure,
   notFoundFailure,
 } from "@/server/server-function-failure"
@@ -18,7 +17,7 @@ import { administratorServerFunctionMiddleware } from "@/server/server-function-
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
 
-const adminSection = z.enum(["posts", "comments", "reports", "users", "media", "jobs", "audit"])
+const adminSection = z.enum(["posts", "comments", "reports", "media", "jobs", "audit"])
 const adminPageSize = 20
 const adminCursor = z.object({
   createdAt: z.coerce.date(),
@@ -173,29 +172,6 @@ export const getAdminRows = createServerFn({ method: "GET" })
             .orderBy(order(schema.contentReports.createdAt), order(schema.contentReports.id))
             .limit(adminPageSize + 1),
         )
-      case "users":
-        return adminPage(
-          await database
-            .select({
-              id: schema.user.id,
-              primary: schema.user.name,
-              secondary: schema.profiles.username,
-              status: sql<string>`case when ${schema.user.banned} = 1 then 'banned' else coalesce(${schema.user.role}, 'user') end`,
-              createdAt: schema.user.createdAt,
-            })
-            .from(schema.user)
-            .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.user.id))
-            .where(
-              and(
-                data.query
-                  ? or(like(schema.user.name, search), like(schema.profiles.username, search))
-                  : undefined,
-                adminCursorCondition(schema.user.createdAt, schema.user.id, cursor, data.direction),
-              ),
-            )
-            .orderBy(order(schema.user.createdAt), order(schema.user.id))
-            .limit(adminPageSize + 1),
-        )
       case "media":
         return adminPage(
           await database
@@ -311,54 +287,6 @@ export const getAdminOverview = createServerFn({ method: "GET" })
       jobs: pendingJobs?.value ?? 0,
       audit: auditEvents?.value ?? 0,
     }
-  })
-
-export const updateAdminUser = createServerFn({ method: "POST" })
-  .middleware([administratorServerFunctionMiddleware])
-  .validator(
-    serverFunctionValidator(
-      z.object({
-        id: z.string().min(1).max(128),
-        action: z.enum(["promote", "demote", "ban", "unban"]),
-      }),
-    ),
-  )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    if (session.user.id === data.id && (data.action === "demote" || data.action === "ban")) {
-      throw forbiddenFailure("You cannot remove your own administrator access.")
-    }
-    const target = await database
-      .select({ id: schema.user.id })
-      .from(schema.user)
-      .where(eq(schema.user.id, data.id))
-      .get()
-    if (!target) throw notFoundFailure("The user was not found.")
-
-    const userUpdate =
-      data.action === "promote"
-        ? { role: "admin", updatedAt: new Date() }
-        : data.action === "demote"
-          ? { role: "user", updatedAt: new Date() }
-          : data.action === "ban"
-            ? { banned: true, banReason: "Administrator action", updatedAt: new Date() }
-            : { banned: false, banReason: null, banExpires: null, updatedAt: new Date() }
-
-    await database.batch([
-      database.update(schema.user).set(userUpdate).where(eq(schema.user.id, data.id)),
-      database.insert(schema.auditEvents).values({
-        id: crypto.randomUUID(),
-        actorId: session.user.id,
-        action: `user.${data.action}`,
-        entityType: "user",
-        entityId: data.id,
-        metadata: {},
-      }),
-    ])
-    if (data.action === "ban") {
-      await database.delete(schema.session).where(eq(schema.session.userId, data.id))
-    }
-    return { id: data.id, action: data.action }
   })
 
 export const retryAdminJob = createServerFn({ method: "POST" })

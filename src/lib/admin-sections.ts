@@ -29,11 +29,11 @@ export const adminSections = [
   {
     value: "users",
     label: "Users",
-    description: "Manage administrator access and account status.",
+    description: "Manage accounts, access, sessions, and impersonation.",
     primaryLabel: "User",
-    secondaryLabel: "Username",
+    secondaryLabel: "Email",
     statusLabel: "Access",
-    searchPlaceholder: "Search names or usernames…",
+    searchPlaceholder: "Search names or email addresses…",
   },
   {
     value: "media",
@@ -64,7 +64,13 @@ export const adminSections = [
   },
 ] as const
 
-export type AdminSection = (typeof adminSections)[number]["value"]
+type AdminTableSection = Exclude<(typeof adminSections)[number], { value: "users" }>
+
+export const adminTableSections = adminSections.filter(
+  (section): section is AdminTableSection => section.value !== "users",
+)
+
+export type AdminSection = AdminTableSection["value"]
 
 export function getAdminSection(value: string) {
   return adminSections.find((section) => section.value === value)

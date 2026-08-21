@@ -54,18 +54,22 @@ function AdminOverview() {
             <Item
               key={section.value}
               render={
-                <Link
-                  to="/admin/$section"
-                  params={{ section: section.value }}
-                  search={{
-                    q: "",
-                    sort: "createdAt",
-                    direction: "desc",
-                    cursor: "",
-                    trail: "",
-                    hidden: "",
-                  }}
-                />
+                section.value === "users" ? (
+                  <Link to="/admin/users" />
+                ) : (
+                  <Link
+                    to="/admin/$section"
+                    params={{ section: section.value }}
+                    search={{
+                      q: "",
+                      sort: "createdAt",
+                      direction: "desc",
+                      cursor: "",
+                      trail: "",
+                      hidden: "",
+                    }}
+                  />
+                )
               }
               className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
               variant="outline"

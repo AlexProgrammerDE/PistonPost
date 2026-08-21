@@ -5,6 +5,7 @@ import { useDeferredValue, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { AdminSectionNav } from "@/components/AdminSectionNav"
 import { AdminTablePageSkeleton } from "@/components/LoadingStates"
 import {
   AlertDialog,
@@ -40,7 +41,7 @@ import {
   InputGroupTextarea,
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
-import { adminSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
+import { adminTableSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
 import { adminRowsQueryOptions } from "@/lib/queries/admin"
 import {
   DataTable,
@@ -51,15 +52,9 @@ import {
   type DataTableUrlState,
 } from "@/lib/table/app-table"
 import { resolveContentReport } from "@/server/reports"
-import {
-  cleanupAdminMedia,
-  getAdminRows,
-  moderateEntity,
-  retryAdminJob,
-  updateAdminUser,
-} from "@/server/tables"
+import { cleanupAdminMedia, getAdminRows, moderateEntity, retryAdminJob } from "@/server/tables"
 
-const sectionSchema = z.enum(adminSections.map((section) => section.value))
+const sectionSchema = z.enum(adminTableSections.map((section) => section.value))
 const MAX_MODERATION_REASON_LENGTH = 500
 const searchSchema = z.object({
   q: z.string().catch(""),
@@ -209,56 +204,6 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
   )
 }
 
-function UserActions({ row }: { row: AdminRow }) {
-  const router = useRouter()
-  const mutation = useMutation({
-    mutationFn: (action: "promote" | "demote" | "ban" | "unban") =>
-      updateAdminUser({ data: { id: row.id, action } }),
-    onSuccess: async () => {
-      toast.success("User access updated")
-      await router.invalidate()
-    },
-    onError: () => toast.error("The user’s access could not be updated."),
-  })
-  if (row.status === "banned") {
-    return (
-      <ConfirmationAction
-        label="Unban"
-        title="Restore this account?"
-        description="The user will be able to sign in again."
-        disabled={mutation.isPending}
-        onConfirm={() => mutation.mutate("unban")}
-      />
-    )
-  }
-  const roleAction = row.status === "admin" ? "demote" : "promote"
-  return (
-    <ButtonGroup aria-label="Account access actions">
-      <ConfirmationAction
-        label={roleAction === "promote" ? "Make admin" : "Make member"}
-        title={
-          roleAction === "promote" ? "Grant administrator access?" : "Remove administrator access?"
-        }
-        description={
-          roleAction === "promote"
-            ? "This user will be able to manage content, users, and operations."
-            : "This user will lose access to administration pages."
-        }
-        disabled={mutation.isPending}
-        onConfirm={() => mutation.mutate(roleAction)}
-      />
-      <ConfirmationAction
-        label="Ban"
-        title="Ban this account?"
-        description="Active sessions will be revoked and the user will not be able to sign in."
-        destructive
-        disabled={mutation.isPending}
-        onConfirm={() => mutation.mutate("ban")}
-      />
-    </ButtonGroup>
-  )
-}
-
 function MediaAction({ row }: { row: AdminRow }) {
   const router = useRouter()
   const mutation = useMutation({
@@ -342,7 +287,6 @@ function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
   if (section === "posts" || section === "comments") {
     return <ModerationAction row={row} section={section} />
   }
-  if (section === "users") return <UserActions row={row} />
   if (section === "reports") return <ReportAction row={row} />
   if (section === "media") return <MediaAction row={row} />
   if (section === "jobs") return <JobAction row={row} />
@@ -470,27 +414,7 @@ function AdminTableView({
         <h1 className="font-heading text-3xl font-bold tracking-tight">{details.label}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{details.description}</p>
       </header>
-      <nav className="mb-6 flex overflow-x-auto border-b" aria-label="Administration">
-        {adminSections.map((item) => (
-          <Link
-            key={item.value}
-            to="/admin/$section"
-            params={{ section: item.value }}
-            search={{
-              q: "",
-              sort: "createdAt",
-              direction: "desc",
-              cursor: "",
-              trail: "",
-              hidden: "",
-            }}
-            aria-current={item.value === section ? "page" : undefined}
-            className="shrink-0 border-b-2 border-transparent px-3 py-3 text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground"
-          >
-            {item.label}
-          </Link>
-        ))}
-      </nav>
+      <AdminSectionNav className="mb-6" current={section} />
       <div className="mb-5 max-w-sm">
         <InputGroup>
           <InputGroupAddon>

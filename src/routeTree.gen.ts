@@ -25,6 +25,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminSectionRouteImport } from './routes/admin.$section'
 import { Route as AdminEmailCampaignsRouteImport } from './routes/admin.email-campaigns'
+import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as AuthIndexRouteImport } from './routes/auth.index'
 import { Route as AuthAuthViewRouteImport } from './routes/auth.$authView'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email.unsubscribe'
@@ -126,6 +127,11 @@ const AdminSectionRoute = AdminSectionRouteImport.update({
 const AdminEmailCampaignsRoute = AdminEmailCampaignsRouteImport.update({
   id: '/email-campaigns',
   path: '/email-campaigns',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
   getParentRoute: () => AdminRoute,
 } as any)
 const AuthIndexRoute = AuthIndexRouteImport.update({
@@ -260,6 +266,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/admin/$section': typeof AdminSectionRoute
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -296,6 +303,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/$section': typeof AdminSectionRoute
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -337,6 +345,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/admin/$section': typeof AdminSectionRoute
   '/admin/email-campaigns': typeof AdminEmailCampaignsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/$authView': typeof AuthAuthViewRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/$section'
     | '/admin/email-campaigns'
+    | '/admin/users'
     | '/auth/$authView'
     | '/email/unsubscribe'
     | '/post/$postId'
@@ -415,6 +425,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/$section'
     | '/admin/email-campaigns'
+    | '/admin/users'
     | '/auth/$authView'
     | '/email/unsubscribe'
     | '/post/$postId'
@@ -455,6 +466,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/$section'
     | '/admin/email-campaigns'
+    | '/admin/users'
     | '/auth/$authView'
     | '/email/unsubscribe'
     | '/post/$postId'
@@ -626,6 +638,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminEmailCampaignsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/auth/': {
       id: '/auth/'
       path: '/'
@@ -786,12 +805,14 @@ declare module '@tanstack/react-router' {
 interface AdminRouteChildren {
   AdminSectionRoute: typeof AdminSectionRoute
   AdminEmailCampaignsRoute: typeof AdminEmailCampaignsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminSectionRoute: AdminSectionRoute,
   AdminEmailCampaignsRoute: AdminEmailCampaignsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
