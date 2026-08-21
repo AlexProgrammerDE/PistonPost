@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils"
 
 import { ActiveSession } from "./active-session"
 import { FreshSessionPrompt } from "./fresh-session-prompt"
+import { SessionActions } from "./session-actions"
 
 export type ActiveSessionsProps = {
   className?: string
@@ -56,6 +57,13 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
             </ItemGroup>
           )}
         </CardContent>
+        {!isPending && !error && (
+          <SessionActions
+            hasOtherSessions={activeSessions.some(
+              (activeSession) => activeSession.id !== session?.session.id,
+            )}
+          />
+        )}
       </Card>
     </div>
   )

@@ -1,12 +1,18 @@
 "use client"
 
+import { formatAdditionalFieldValue } from "@better-auth-ui/core"
 import {
   memberRoleLabels,
+  mergeOrganizationRoleLabels,
   type OrganizationAuthClient,
   parseMemberRoles,
 } from "@better-auth-ui/core/plugins/organization"
 import { useAuth, useAuthPlugin, useSession } from "@better-auth-ui/react"
-import { useHasPermission, useUpdateMemberRole } from "@better-auth-ui/react/plugins/organization"
+import {
+  useHasPermission,
+  useListRoles,
+  useUpdateMemberRole,
+} from "@better-auth-ui/react/plugins/organization"
 import type { Member, Organization, User } from "better-auth/client"
 import { LogOut, Pencil, Trash2 } from "lucide-react"
 import { useState } from "react"
@@ -41,13 +47,23 @@ export function OrganizationMemberRow({
   organization,
 }: OrganizationMemberRowProps) {
   const { authClient } = useAuth<OrganizationAuthClient>()
-  const { localization: organizationLocalization, roles } = useAuthPlugin(organizationPlugin)
+  const {
+    modelFields: { member: memberFields },
+    dynamicAccessControl,
+    localization: organizationLocalization,
+    roles,
+  } = useAuthPlugin(organizationPlugin)
 
   const { data: session } = useSession(authClient)
+  const dynamicRoles = useListRoles(authClient, {
+    query: { organizationId: organization.id },
+    enabled: dynamicAccessControl?.enabled === true,
+  })
 
   const { data: hasUpdatePermission, isPending: updatePermissionPending } = useHasPermission(
     authClient,
     {
+      organizationId: organization.id,
       permissions: { member: ["update"] },
     },
   )
@@ -55,6 +71,7 @@ export function OrganizationMemberRow({
   const { data: hasDeletePermission, isPending: deletePermissionPending } = useHasPermission(
     authClient,
     {
+      organizationId: organization.id,
       permissions: { member: ["delete"] },
     },
   )
@@ -67,9 +84,10 @@ export function OrganizationMemberRow({
 
   // Better Auth persists multiple roles as one comma-joined string.
   const memberRoles = parseMemberRoles(member.role)
-  const roleLabel = memberRoleLabels(member.role, roles).join(", ")
+  const mergedRoles = mergeOrganizationRoleLabels(roles, dynamicRoles.data)
+  const roleLabel = memberRoleLabels(member.role, mergedRoles).join(", ")
 
-  const assignableRoles = Object.entries(roles).filter(([key]) => isOwner || key !== "owner")
+  const assignableRoles = Object.entries(mergedRoles).filter(([key]) => isOwner || key !== "owner")
 
   const toggleRole = (role: string) => {
     const next = memberRoles.includes(role)
@@ -79,7 +97,11 @@ export function OrganizationMemberRow({
     // A member always holds at least one role, so refuse to clear the last one.
     if (next.length === 0) return
 
-    updateMemberRole({ memberId: member.id, role: next })
+    updateMemberRole({
+      memberId: member.id,
+      organizationId: organization.id,
+      role: next,
+    })
   }
 
   const isCurrentUser = session?.user.id === member.userId
@@ -94,7 +116,19 @@ export function OrganizationMemberRow({
   return (
     <TableRow>
       <TableCell>
-        <UserView user={member.user} />
+        <div className="flex flex-col gap-1">
+          <UserView user={member.user} />
+          {memberFields.map((field) => {
+            const value = formatAdditionalFieldValue(
+              (member as unknown as Record<string, unknown>)[field.name],
+            )
+            return value ? (
+              <span className="text-xs text-muted-foreground" key={field.name}>
+                {field.label}: {value}
+              </span>
+            ) : null
+          })}
+        </div>
       </TableCell>
 
       <TableCell>{roleLabel}</TableCell>

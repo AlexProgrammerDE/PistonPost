@@ -6,8 +6,14 @@ import {
   authMutationKeys,
   getProviderId,
   getProviderName,
+  type OAuthPopupAuthClient,
 } from "@better-auth-ui/core"
-import { renderProviderIcon, useAuth, useSignInSocial } from "@better-auth-ui/react"
+import {
+  renderProviderIcon,
+  useAuth,
+  useSignInOAuthPopup,
+  useSignInSocial,
+} from "@better-auth-ui/react"
 import { useIsMutating } from "@tanstack/react-query"
 import type { ComponentProps } from "react"
 
@@ -37,11 +43,14 @@ export function ProviderButton({
   className,
   ...props
 }: ProviderButtonProps) {
-  const { authClient, baseURL, localization, redirectTo } = useAuth()
+  const { authClient, baseURL, localization, navigate, redirectTo, socialSignInMode } = useAuth()
 
   const callbackURL = `${baseURL}${redirectTo}`
 
   const { mutate: signInSocial, isPending: signInSocialPending } = useSignInSocial(authClient)
+  const { mutate: signInPopup, isPending: signInPopupPending } = useSignInOAuthPopup(
+    authClient as OAuthPopupAuthClient,
+  )
 
   const providerId = getProviderId(provider)
   const providerIcon = renderProviderIcon(provider)
@@ -54,16 +63,32 @@ export function ProviderButton({
   })
   const isPending = signInMutating + signUpMutating > 0
 
+  const handleSignIn = () => {
+    if (socialSignInMode === "popup") {
+      signInPopup(
+        {
+          provider: providerId,
+          callbackURL,
+          requestSignUp: view === "signUp",
+        },
+        { onSuccess: () => navigate({ to: redirectTo }) },
+      )
+      return
+    }
+
+    signInSocial({ provider: providerId, callbackURL })
+  }
+
   return (
     <Button
       type="button"
       variant={variant}
       disabled={isPending}
-      onClick={() => signInSocial({ provider: providerId, callbackURL })}
+      onClick={handleSignIn}
       className={cn("relative overflow-visible", className)}
       {...props}
     >
-      {signInSocialPending ? <Spinner /> : providerIcon}
+      {signInSocialPending || signInPopupPending ? <Spinner /> : providerIcon}
 
       {display === "full"
         ? localization.auth.continueWith.replace("{{provider}}", getProviderName(provider))
