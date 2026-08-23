@@ -34,6 +34,8 @@ export type ApiKeysProps = {
   hideCreate?: boolean
   /** Hide the per-row delete button on listed keys. */
   hideDelete?: boolean
+  /** Hide the per-row edit button on listed keys. */
+  hideUpdate?: boolean
 }
 
 export function ApiKeys({
@@ -42,6 +44,7 @@ export function ApiKeys({
   isPending: isPendingProp,
   hideCreate,
   hideDelete,
+  hideUpdate,
 }: ApiKeysProps) {
   const { authClient } = useAuth<ApiKeyAuthClient>()
   const { localization: apiKeyLocalization, pageSize } = useAuthPlugin(apiKeyPlugin)
@@ -86,7 +89,6 @@ export function ApiKeys({
           </Button>
         )}
       </div>
-
       <Select
         items={sortItems}
         value={sort}
@@ -120,14 +122,18 @@ export function ApiKeys({
               {listData.apiKeys.map((key, index) => (
                 <Fragment key={key.id}>
                   {index > 0 && <ItemSeparator />}
-                  <ApiKey apiKey={key} hideDelete={hideDelete} organizationId={organizationId} />
+                  <ApiKey
+                    apiKey={key}
+                    hideDelete={hideDelete}
+                    hideUpdate={hideUpdate}
+                    organizationId={organizationId}
+                  />
                 </Fragment>
               ))}
             </ItemGroup>
           )}
         </CardContent>
       </Card>
-
       {(page > 0 || (listData?.apiKeys.length ?? 0) === pageSize) && (
         <div className="flex justify-end gap-2">
           <Button

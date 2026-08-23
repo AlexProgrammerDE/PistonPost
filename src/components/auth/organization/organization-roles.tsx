@@ -55,9 +55,13 @@ type Role = {
 export function OrganizationRoles({ organizationId }: { organizationId: string }) {
   const { authClient } = useAuth<OrganizationAuthClient>()
   const { dynamicAccessControl, localization, modelFields } = useAuthPlugin(organizationPlugin)
+  const canRead = useHasPermission(authClient, {
+    organizationId,
+    permissions: { ac: ["read"] },
+  })
   const roles = useListRoles(authClient, {
     query: { organizationId },
-    enabled: !!organizationId,
+    enabled: !!organizationId && canRead.data?.success === true,
   })
   const canCreate = useHasPermission(authClient, {
     organizationId,
@@ -84,17 +88,17 @@ export function OrganizationRoles({ organizationId }: { organizationId: string }
           <h2 className="text-sm font-semibold">{localization.roles}</h2>
           <p className="text-sm text-muted-foreground">{localization.rolesDescription}</p>
         </div>
-        {canCreate.data?.success && (
-          <Button onClick={() => setEditingRole(null)}>
+        {(canCreate.isPending || canCreate.data?.success) && (
+          <Button disabled={canCreate.isPending} onClick={() => setEditingRole(null)}>
             <Plus />
             {localization.createRole}
           </Button>
         )}
       </div>
 
-      {roles.isLoading ? (
+      {canRead.isPending || roles.isLoading ? (
         <Spinner />
-      ) : roles.data?.length ? (
+      ) : !canRead.data?.success ? null : roles.data?.length ? (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -111,7 +115,9 @@ export function OrganizationRoles({ organizationId }: { organizationId: string }
                     key={role.id}
                     authClient={authClient}
                     canDelete={canDelete.data?.success === true}
+                    canDeletePending={canDelete.isPending}
                     canUpdate={canUpdate.data?.success === true}
+                    canUpdatePending={canUpdate.isPending}
                     deleting={deleteRole.isPending}
                     onDelete={() => {
                       if (!window.confirm(localization.deleteRoleDescription)) return
@@ -153,7 +159,9 @@ export function OrganizationRoles({ organizationId }: { organizationId: string }
 function OrganizationRoleRow({
   authClient,
   canDelete,
+  canDeletePending,
   canUpdate,
+  canUpdatePending,
   deleting,
   onDelete,
   onEdit,
@@ -162,7 +170,9 @@ function OrganizationRoleRow({
 }: {
   authClient: OrganizationAuthClient
   canDelete: boolean
+  canDeletePending: boolean
   canUpdate: boolean
+  canUpdatePending: boolean
   deleting: boolean
   onDelete: () => void
   onEdit: () => void
@@ -191,6 +201,11 @@ function OrganizationRoleRow({
       </TableCell>
       <TableCell>
         <div className="flex justify-end gap-1">
+          {canUpdatePending && (
+            <Button aria-label={localization.editRole} disabled size="icon" variant="ghost">
+              <Pencil />
+            </Button>
+          )}
           {canUpdate && (
             <Button size="icon" variant="ghost" onClick={onEdit} aria-label={localization.editRole}>
               <Pencil />
@@ -209,6 +224,17 @@ function OrganizationRoleRow({
               }
               onClick={onDelete}
               aria-label={localization.deleteRole}
+            >
+              <Trash2 />
+            </Button>
+          )}
+          {canDeletePending && (
+            <Button
+              aria-label={localization.deleteRole}
+              className="text-destructive"
+              disabled
+              size="icon"
+              variant="ghost"
             >
               <Trash2 />
             </Button>
@@ -265,6 +291,21 @@ function RoleDialog({
 
     setIsSubmitting(true)
     try {
+      if (Object.values(permission).some((actions) => actions.length > 0)) {
+        const access = await authClient.organization.hasPermission({
+          organizationId,
+          permissions: permission as Parameters<
+            OrganizationAuthClient["organization"]["hasPermission"]
+          >[0]["permissions"],
+        })
+
+        if (access.error || !access.data?.success) {
+          toast.error(localization.permissionsLimitedDescription)
+          setIsSubmitting(false)
+          return
+        }
+      }
+
       const additionalFields = await parseAdditionalFieldValues(
         roleFields,
         new FormData(event.currentTarget),
@@ -334,31 +375,25 @@ function RoleDialog({
               <div className="flex flex-col gap-2" key={resource}>
                 <p className="text-sm font-medium">{definition.label ?? resource}</p>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {Object.entries(definition.actions).map(([action, label]) => {
-                    const checked = permission[resource]?.includes(action) ?? false
-                    return (
-                      <label
-                        className="flex items-center gap-2 text-sm"
-                        htmlFor={`role-permission-${resource}-${action}`}
-                        key={action}
-                      >
-                        <Checkbox
-                          id={`role-permission-${resource}-${action}`}
-                          checked={checked}
-                          disabled={pending}
-                          onCheckedChange={(selected) =>
-                            setPermission((current) => ({
-                              ...current,
-                              [resource]: selected
-                                ? [...(current[resource] ?? []), action]
-                                : (current[resource] ?? []).filter((entry) => entry !== action),
-                            }))
-                          }
-                        />
-                        {label}
-                      </label>
-                    )
-                  })}
+                  {Object.entries(definition.actions).map(([action, label]) => (
+                    <RolePermissionCheckbox
+                      action={action}
+                      checked={permission[resource]?.includes(action) ?? false}
+                      key={action}
+                      label={label}
+                      onCheckedChange={(selected) =>
+                        setPermission((current) => ({
+                          ...current,
+                          [resource]: selected
+                            ? [...(current[resource] ?? []), action]
+                            : (current[resource] ?? []).filter((entry) => entry !== action),
+                        }))
+                      }
+                      organizationId={organizationId}
+                      pending={pending}
+                      resource={resource}
+                    />
+                  ))}
                 </div>
               </div>
             ))}
@@ -381,5 +416,49 @@ function RoleDialog({
         </form>
       </DialogContent>
     </Dialog>
+  )
+}
+
+function RolePermissionCheckbox({
+  action,
+  checked,
+  label,
+  onCheckedChange,
+  organizationId,
+  pending,
+  resource,
+}: {
+  action: string
+  checked: boolean
+  label: string
+  onCheckedChange: (checked: boolean) => void
+  organizationId: string
+  pending: boolean
+  resource: string
+}) {
+  const { authClient } = useAuth<OrganizationAuthClient>()
+  const canAssign = useHasPermission(authClient, {
+    organizationId,
+    permissions: { [resource]: [action] } as Parameters<
+      OrganizationAuthClient["organization"]["hasPermission"]
+    >[0]["permissions"],
+  })
+  const id = `role-permission-${resource}-${action}`
+  const disabled = pending || canAssign.isPending || (!checked && !canAssign.data?.success)
+
+  return (
+    <label
+      className="flex items-center gap-2 text-sm"
+      data-disabled={disabled || undefined}
+      htmlFor={id}
+    >
+      <Checkbox
+        checked={checked}
+        disabled={disabled}
+        id={id}
+        onCheckedChange={(selected) => onCheckedChange(selected === true)}
+      />
+      {label}
+    </label>
   )
 }

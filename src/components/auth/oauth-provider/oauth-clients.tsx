@@ -53,6 +53,7 @@ import {
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -97,6 +98,10 @@ export function OAuthClients({ manager, owner, ownerKey, className }: OAuthClien
   const [editingClient, setEditingClient] = useState<ManagedOAuthClient>()
   const [action, setAction] = useState<ClientAction>()
   const [secret, setSecret] = useState<ManagedOAuthClient>()
+  const applicationTypeItems = [
+    { label: oauthLocalization.webApplication, value: "web" },
+    { label: oauthLocalization.nativeApplication, value: "native" },
+  ]
   const { copied, copy, reset } = useCopyToClipboard({
     onError: (error) => toast.error(error instanceof Error ? error.message : String(error)),
   })
@@ -293,6 +298,7 @@ export function OAuthClients({ manager, owner, ownerKey, className }: OAuthClien
                   {oauthLocalization.applicationType}
                 </FieldLabel>
                 <Select
+                  items={applicationTypeItems}
                   name="applicationType"
                   defaultValue={editingClient?.application_type ?? "web"}
                 >
@@ -300,8 +306,13 @@ export function OAuthClients({ manager, owner, ownerKey, className }: OAuthClien
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="web">{oauthLocalization.webApplication}</SelectItem>
-                    <SelectItem value="native">{oauthLocalization.nativeApplication}</SelectItem>
+                    <SelectGroup>
+                      {applicationTypeItems.map((item) => (
+                        <SelectItem key={item.value} value={item.value}>
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
                   </SelectContent>
                 </Select>
               </Field>

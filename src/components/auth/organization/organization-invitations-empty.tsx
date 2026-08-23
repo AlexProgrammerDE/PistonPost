@@ -15,13 +15,17 @@ import {
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 
 export type OrganizationInvitationsEmptyProps = {
-  onInvitePress: () => void
+  isInvitePending?: boolean
+  onInvitePress?: () => void
 }
 
 /**
  * Empty state for `OrganizationInvitations`.
  */
-export function OrganizationInvitationsEmpty({ onInvitePress }: OrganizationInvitationsEmptyProps) {
+export function OrganizationInvitationsEmpty({
+  isInvitePending,
+  onInvitePress,
+}: OrganizationInvitationsEmptyProps) {
   const { localization: organizationLocalization } = useAuthPlugin(organizationPlugin)
 
   return (
@@ -35,11 +39,13 @@ export function OrganizationInvitationsEmpty({ onInvitePress }: OrganizationInvi
           {organizationLocalization.organizationInvitationsEmptyDescription}
         </EmptyDescription>
       </EmptyHeader>
-      <EmptyContent>
-        <Button size="sm" onClick={onInvitePress}>
-          {organizationLocalization.inviteMember}
-        </Button>
-      </EmptyContent>
+      {(isInvitePending || onInvitePress) && (
+        <EmptyContent>
+          <Button disabled={isInvitePending} size="sm" onClick={onInvitePress}>
+            {organizationLocalization.inviteMember}
+          </Button>
+        </EmptyContent>
+      )}
     </Empty>
   )
 }

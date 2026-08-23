@@ -57,6 +57,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/in
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
@@ -65,6 +66,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { dashPlugin } from "@/lib/auth/dash-plugin"
+import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
 
 type ActivityAccess = "admin" | "admin-user" | "organization" | "user"
@@ -211,6 +213,10 @@ function ActivityFeed({
     () => Object.entries(localization.eventLabels),
     [localization.eventLabels],
   )
+  const eventItems = [
+    { label: localization.allEvents, value: "all" },
+    ...eventOptions.map(([value, label]) => ({ label, value })),
+  ]
   const offset = page * pageSize
   const params = {
     eventType: eventType === "all" ? undefined : eventType,
@@ -278,6 +284,7 @@ function ActivityFeed({
           <Field>
             <FieldLabel htmlFor="dash-event-type">{localization.eventType}</FieldLabel>
             <Select
+              items={eventItems}
               value={eventType}
               onValueChange={(value) => {
                 if (!value) return
@@ -289,12 +296,13 @@ function ActivityFeed({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{localization.allEvents}</SelectItem>
-                {eventOptions.map(([key, label]) => (
-                  <SelectItem key={key} value={key}>
-                    {label}
-                  </SelectItem>
-                ))}
+                <SelectGroup>
+                  {eventItems.map((item) => (
+                    <SelectItem key={item.value} value={item.value}>
+                      {item.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
               </SelectContent>
             </Select>
           </Field>
@@ -421,12 +429,13 @@ export function OrganizationActivity({
   ...props
 }: OrganizationActivityProps) {
   const { authClient } = useAuth()
+  const { creatorRole } = useAuthPlugin(organizationPlugin)
   const { data: memberRole, isPending } = useActiveMemberRole(
     authClient as OrganizationAuthClient,
     { query: { organizationId } },
   )
   const canViewOrganization =
-    hasMemberRole(memberRole?.role, "owner") || hasMemberRole(memberRole?.role, "admin")
+    hasMemberRole(memberRole?.role, creatorRole) || hasMemberRole(memberRole?.role, "admin")
 
   if (isPending) {
     return (

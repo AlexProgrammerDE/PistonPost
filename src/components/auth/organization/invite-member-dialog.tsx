@@ -8,6 +8,7 @@ import {
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import {
   useActiveOrganization,
+  useHasPermission,
   useInviteMember,
   useListOrganizationInvitations,
   useListRoles,
@@ -17,6 +18,7 @@ import { ChevronDown, UserPlus } from "lucide-react"
 import { type SyntheticEvent, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { AdditionalField } from "@/components/auth/additional-field"
 import { Button, buttonVariants } from "@/components/ui/button"
 import {
   Dialog,
@@ -47,8 +49,6 @@ import { Spinner } from "@/components/ui/spinner"
 import { organizationPlugin } from "@/lib/auth/organization-plugin"
 import { cn } from "@/lib/utils"
 
-import { AdditionalField } from "../additional-field"
-
 /** Props for the `InviteMemberDialog` component. */
 export type InviteMemberDialogProps = {
   open: boolean
@@ -64,10 +64,10 @@ const pickDefaultRole = (keys: string[]) =>
 export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogProps) {
   const { authClient, localization } = useAuth<OrganizationAuthClient>()
   const {
+    modelFields: { invitation: invitationFields },
     dynamicAccessControl,
     invitationLimit,
     localization: organizationLocalization,
-    modelFields: { invitation: invitationFields },
     roles,
     teams: teamsEnabled,
   } = useAuthPlugin(organizationPlugin)
@@ -77,9 +77,17 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
     enabled: teamsEnabled,
   })
   const invitations = useListOrganizationInvitations(authClient)
+  const canInvite = useHasPermission(authClient, {
+    organizationId: activeOrganization?.id,
+    permissions: { invitation: ["create"] },
+  })
+  const canReadRoles = useHasPermission(authClient, {
+    organizationId: activeOrganization?.id,
+    permissions: { ac: ["read"] },
+  })
   const dynamicRoles = useListRoles(authClient, {
     query: { organizationId: activeOrganization?.id },
-    enabled: dynamicAccessControl?.enabled === true,
+    enabled: dynamicAccessControl?.enabled === true && canReadRoles.data?.success === true,
   })
   const assignableRoles = useMemo(
     () => mergeOrganizationRoleLabels(roles, dynamicRoles.data),
@@ -141,12 +149,14 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault()
 
-    if (!activeOrganizationId || !isRoleValid || atInvitationLimit) return
+    if (!activeOrganizationId || !canInvite.data?.success || !isRoleValid || atInvitationLimit)
+      return
 
     const formData = new FormData(e.currentTarget)
     const invitationEmail = (formData.get("email") as string).trim()
     const invitationRoles = [...selectedRoles] as Parameters<typeof inviteMember>[0]["role"]
     const selectedTeamId = teams.data?.some((team) => team.id === teamId) ? teamId : undefined
+
     setIsSubmitting(true)
     let invitationValues: Record<string, unknown>
     try {
@@ -200,7 +210,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
                 autoFocus
                 required
                 placeholder={localization.auth.email}
-                disabled={isInviting || isSubmitting}
+                disabled={isInviting}
                 onChange={() => setEmailError(undefined)}
                 onInvalid={(e) => {
                   e.preventDefault()
@@ -222,7 +232,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
               <DropdownMenu>
                 <DropdownMenuTrigger
                   id="invite-member-role"
-                  disabled={isInviting || isSubmitting}
+                  disabled={isInviting}
                   className={cn(
                     buttonVariants({ variant: "outline" }),
                     "w-full justify-between font-normal",
@@ -264,7 +274,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
                   items={teamItems}
                   value={teamId}
                   onValueChange={(value) => setTeamId(value ?? "")}
-                  disabled={isInviting || isSubmitting}
+                  disabled={isInviting}
                 >
                   <SelectTrigger id="invite-member-team" className="w-full">
                     <SelectValue placeholder={organizationLocalization.selectTeam} />
@@ -281,6 +291,7 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
                 </Select>
               </Field>
             )}
+
             {invitationFields.map((field) => (
               <AdditionalField
                 key={field.name}
@@ -303,7 +314,14 @@ export function InviteMemberDialog({ open, onOpenChange }: InviteMemberDialogPro
 
             <Button
               type="submit"
-              disabled={isInviting || isSubmitting || !isRoleValid || atInvitationLimit}
+              disabled={
+                isInviting ||
+                isSubmitting ||
+                !isRoleValid ||
+                atInvitationLimit ||
+                canInvite.isPending ||
+                !canInvite.data?.success
+              }
             >
               {(isInviting || isSubmitting) && <Spinner />}
 
