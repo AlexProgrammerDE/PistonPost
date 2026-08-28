@@ -1,9 +1,13 @@
 import { describe, expect, it } from "bun:test"
 
 import {
+  AVATAR_IMAGE_WIDTHS,
   createManagedAvatarSrcSet,
   createMediaImageSources,
+  DETAIL_IMAGE_WIDTHS,
+  FEED_IMAGE_WIDTHS,
   fitMediaDimensions,
+  GALLERY_THUMBNAIL_WIDTHS,
   isMediaImageVariantAllowed,
   mediaImageUrl,
   parseMediaImageAnimation,
@@ -15,9 +19,16 @@ import {
 describe("responsive media images", () => {
   it("accepts only the shared transformation widths", () => {
     expect(parseResponsiveMediaWidth(null)).toBeUndefined()
-    expect(parseResponsiveMediaWidth("640")).toBe(640)
-    expect(parseResponsiveMediaWidth("641")).toBeNull()
-    expect(parseResponsiveMediaWidth("640px")).toBeNull()
+    expect(parseResponsiveMediaWidth("768")).toBe(768)
+    expect(parseResponsiveMediaWidth("640")).toBeNull()
+    expect(parseResponsiveMediaWidth("768px")).toBeNull()
+  })
+
+  it("keeps the transformation catalog intentionally small", () => {
+    expect(AVATAR_IMAGE_WIDTHS).toEqual([40, 80, 160, 256])
+    expect(FEED_IMAGE_WIDTHS).toEqual([480, 768, 1280])
+    expect(DETAIL_IMAGE_WIDTHS).toEqual([768, 1280, 1920, 2400])
+    expect(GALLERY_THUMBNAIL_WIDTHS).toEqual([96, 192, 320])
   })
 
   it("accepts only the still-image animation override", () => {
@@ -36,14 +47,14 @@ describe("responsive media images", () => {
 
   it("builds ordered candidates with dimensions that preserve the source ratio", () => {
     const sources = createMediaImageSources(
-      { id: "image id", width: 1200, height: 2400 },
+      { id: "image id", width: 1200, height: 600 },
       "feed",
-      [960, 320, 640, 320, 641],
+      [1280, 480, 768, 480, 640],
     )
 
     expect(sources).toEqual([
-      { src: "/media/image/image%20id/feed?v=1&width=320", width: 320, height: 640 },
-      { src: "/media/image/image%20id/feed?v=1&width=640", width: 640, height: 1280 },
+      { src: "/media/image/image%20id/feed?v=1&width=480", width: 480, height: 240 },
+      { src: "/media/image/image%20id/feed?v=1&width=768", width: 768, height: 384 },
     ])
   })
 
@@ -51,16 +62,16 @@ describe("responsive media images", () => {
     expect(mediaImageUrl("image id", "feed", undefined, "still")).toBe(
       "/media/image/image%20id/feed?v=1&animation=still",
     )
-    expect(mediaImageUrl("image id", "feed", 640, "still")).toBe(
-      "/media/image/image%20id/feed?v=1&width=640&animation=still",
+    expect(mediaImageUrl("image id", "feed", 480, "still")).toBe(
+      "/media/image/image%20id/feed?v=1&width=480&animation=still",
     )
     expect(
-      createMediaImageSources({ id: "image id", width: 640, height: 480 }, "feed", [320], "still"),
+      createMediaImageSources({ id: "image id", width: 640, height: 480 }, "feed", [480], "still"),
     ).toEqual([
       {
-        src: "/media/image/image%20id/feed?v=1&width=320&animation=still",
-        width: 320,
-        height: 240,
+        src: "/media/image/image%20id/feed?v=1&width=480&animation=still",
+        width: 480,
+        height: 360,
       },
     ])
   })
@@ -95,7 +106,7 @@ describe("responsive media images", () => {
     expect(createManagedAvatarSrcSet("data:image/webp;base64,avatar")).toBeUndefined()
     expect(createManagedAvatarSrcSet("https://images.example/avatar.webp")).toBeUndefined()
     expect(createManagedAvatarSrcSet("/media/image/avatar-id/avatar")).toBe(
-      [32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256]
+      [40, 80, 160, 256]
         .map(
           (width) =>
             `/media/image/avatar-id/avatar?v=1&width=${width.toString()} ${width.toString()}w`,
@@ -103,7 +114,7 @@ describe("responsive media images", () => {
         .join(", "),
     )
     expect(createManagedAvatarSrcSet("/media/image/avatar-id/avatar", "still")).toBe(
-      [32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256]
+      [40, 80, 160, 256]
         .map(
           (width) =>
             `/media/image/avatar-id/avatar?v=1&width=${width.toString()}&animation=still ${width.toString()}w`,

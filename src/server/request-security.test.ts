@@ -17,6 +17,18 @@ function mutation(path: string, headers: HeadersInit = {}) {
 }
 
 describe("request security", () => {
+  test("allows only read methods for image delivery", () => {
+    const imageUrl = `${origin}/media/image/asset-id/feed?v=1`
+    expect(validateRequestSecurity(new Request(imageUrl), origin)).toBeNull()
+    expect(validateRequestSecurity(new Request(imageUrl, { method: "HEAD" }), origin)).toBeNull()
+
+    for (const method of ["POST", "PUT", "PATCH", "DELETE", "OPTIONS"]) {
+      const response = validateRequestSecurity(new Request(imageUrl, { method }), origin)
+      expect(response?.status).toBe(405)
+      expect(response?.headers.get("Allow")).toBe("GET, HEAD")
+    }
+  })
+
   test("accepts same-origin JSON mutations", () => {
     expect(validateRequestSecurity(mutation("/_serverFn/create"), origin)).toBeNull()
   })

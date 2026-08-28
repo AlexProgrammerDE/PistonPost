@@ -1,5 +1,6 @@
 const BODY_METHODS = new Set(["POST", "PUT", "PATCH"])
 const MUTATION_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"])
+const IMAGE_DELIVERY_METHODS = new Set(["GET", "HEAD"])
 const MAX_DEFAULT_BODY_BYTES = 1024 * 1024
 const MAX_IMAGE_BODY_BYTES = 15 * 1024 * 1024
 const MAX_WEBHOOK_BODY_BYTES = 64 * 1024
@@ -29,6 +30,16 @@ function errorResponse(message: string, status: number) {
   )
 }
 
+function methodNotAllowed(allowedMethods: ReadonlySet<string>) {
+  return new Response(null, {
+    status: 405,
+    headers: {
+      Allow: [...allowedMethods].join(", "),
+      "Cache-Control": "private, no-store",
+    },
+  })
+}
+
 function bodyLimit(pathname: string) {
   if (pathname.startsWith("/media/upload/")) return MAX_IMAGE_BODY_BYTES
   if (pathname === "/api/stream/webhook") return MAX_WEBHOOK_BODY_BYTES
@@ -41,8 +52,11 @@ function mediaType(request: Request) {
 }
 
 export function validateRequestSecurity(request: Request, expectedOrigin: string) {
-  if (!MUTATION_METHODS.has(request.method)) return null
   const pathname = new URL(request.url).pathname
+  if (pathname.startsWith("/media/image/") && !IMAGE_DELIVERY_METHODS.has(request.method)) {
+    return methodNotAllowed(IMAGE_DELIVERY_METHODS)
+  }
+  if (!MUTATION_METHODS.has(request.method)) return null
   const webhook = pathname === "/api/stream/webhook"
   const oneClickUnsubscribe = pathname === "/email/unsubscribe" && request.method === "POST"
 

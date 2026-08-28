@@ -24,16 +24,18 @@ export const MEDIA_IMAGE_CACHE_VERSIONS: Readonly<Record<MediaImageVariant, numb
   og: 2,
 }
 
-export const RESPONSIVE_MEDIA_WIDTHS: ReadonlyArray<number> = [
-  32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256, 320, 480, 640, 768, 960, 1280, 1600, 1920, 2400,
-]
-
-export const AVATAR_IMAGE_WIDTHS: ReadonlyArray<number> = [
-  32, 40, 64, 80, 96, 120, 128, 160, 192, 240, 256,
-]
-export const FEED_IMAGE_WIDTHS: ReadonlyArray<number> = [320, 480, 640, 768, 960, 1280, 1600]
-export const DETAIL_IMAGE_WIDTHS: ReadonlyArray<number> = [...FEED_IMAGE_WIDTHS, 1920, 2400]
-export const GALLERY_THUMBNAIL_WIDTHS: ReadonlyArray<number> = [80, 96, 160, 192, 240, 256, 320]
+export const AVATAR_IMAGE_WIDTHS: ReadonlyArray<number> = [40, 80, 160, 256]
+export const FEED_IMAGE_WIDTHS: ReadonlyArray<number> = [480, 768, 1280]
+export const DETAIL_IMAGE_WIDTHS: ReadonlyArray<number> = [768, 1280, 1920, 2400]
+export const GALLERY_THUMBNAIL_WIDTHS: ReadonlyArray<number> = [96, 192, 320]
+export const RESPONSIVE_MEDIA_WIDTHS: ReadonlyArray<number> = Array.from(
+  new Set([
+    ...AVATAR_IMAGE_WIDTHS,
+    ...FEED_IMAGE_WIDTHS,
+    ...DETAIL_IMAGE_WIDTHS,
+    ...GALLERY_THUMBNAIL_WIDTHS,
+  ]),
+).toSorted((left, right) => left - right)
 
 const responsiveMediaWidthSet: ReadonlySet<number> = new Set(RESPONSIVE_MEDIA_WIDTHS)
 const managedAvatarPathPattern =

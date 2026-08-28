@@ -8,16 +8,20 @@ import {
   AVATAR_IMAGE_SIZE,
   isMediaImageVariantAllowed,
   isResponsiveMediaImageVariant,
+  MEDIA_IMAGE_CACHE_VERSIONS,
   mediaImageUrl,
   parseMediaImageAnimation,
   parseResponsiveMediaWidth,
   responsiveMediaImageMaxWidth,
   SOCIAL_MEDIA_IMAGE_MAX_SIZE,
   shouldPreserveMediaImageAnimation,
+  type MediaImageAnimation,
+  type MediaImageVariant,
 } from "@/lib/media-image"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
+import { requestValidatorsMatch } from "@/server/http-cache"
 
 const variants = {
   avatar: {
@@ -42,15 +46,27 @@ const routeInput = z.object({
   variant: z.enum(["avatar", "feed", "detail", "thumbnail", "og"]),
 })
 
-async function deliverImage({
-  request,
-  context,
-  params,
-}: {
+type ImageHandlerArguments = {
   request: Request
   context: AppRequestContext
   params: { mediaId: string; variant: string }
-}) {
+}
+
+type ResolvedImageRequest = {
+  readonly animation: MediaImageAnimation
+  readonly asset: typeof schema.mediaAssets.$inferSelect
+  readonly postId: string | null
+  readonly publiclyCacheable: boolean
+  readonly requestedWidth: number | undefined
+  readonly r2Key: string
+  readonly variant: MediaImageVariant
+}
+
+async function resolveImageRequest({
+  request,
+  context,
+  params,
+}: ImageHandlerArguments): Promise<ResolvedImageRequest | Response> {
   const input = routeInput.safeParse(params)
   if (!input.success) return new Response("Not found", { status: 404 })
   const searchParams = new URL(request.url).searchParams
@@ -113,50 +129,104 @@ async function deliverImage({
     if (session?.user.id !== row.asset.ownerId) return new Response("Not found", { status: 404 })
   }
 
-  const object = await context.env.MEDIA.get(row.asset.r2Key)
-  if (!object) return new Response("Not found", { status: 404 })
+  return {
+    animation,
+    asset: row.asset,
+    postId: row.postId,
+    publiclyCacheable: (isPublished && row.visibility === "public") || row.asset.kind === "avatar",
+    requestedWidth,
+    r2Key: row.asset.r2Key,
+    variant: input.data.variant,
+  }
+}
 
-  const selected = variants[input.data.variant]
-  const transform: ImageTransform =
-    requestedWidth === undefined
-      ? { width: selected.width, height: selected.height, fit: selected.fit }
-      : input.data.variant === "avatar"
-        ? { width: requestedWidth, height: requestedWidth, fit: "cover" }
-        : { width: requestedWidth, fit: "scale-down" }
-  const transformed = await context.env.IMAGES.input(object.body)
-    .transform(transform)
-    .output({
-      format: input.data.variant === "og" ? "image/jpeg" : "image/webp",
-      quality: selected.quality,
-      anim: shouldPreserveMediaImageAnimation(row.asset.mimeType, input.data.variant, animation),
-    })
-  const response = transformed.response()
-  const headers = new Headers(response.headers)
-  headers.set("Content-Type", transformed.contentType())
+function imageEntityTag(image: ResolvedImageRequest, object: R2Object) {
+  const rendition =
+    image.requestedWidth === undefined ? "default" : `width-${image.requestedWidth.toString()}`
+  return `"${object.etag}-${image.variant}-v${MEDIA_IMAGE_CACHE_VERSIONS[
+    image.variant
+  ].toString()}-${rendition}-${image.animation}"`
+}
+
+function imageResponseHeaders(
+  image: ResolvedImageRequest,
+  object: R2Object,
+  responseHeaders?: HeadersInit,
+) {
+  const headers = new Headers(responseHeaders)
+  headers.set("Content-Type", image.variant === "og" ? "image/jpeg" : "image/webp")
+  headers.set("ETag", imageEntityTag(image, object))
+  headers.set("Last-Modified", object.uploaded.toUTCString())
   headers.set("X-Content-Type-Options", "nosniff")
-  const publiclyCacheable =
-    (isPublished && row.visibility === "public") || row.asset.kind === "avatar"
   headers.set(
     "Cache-Control",
-    publiclyCacheable
-      ? row.asset.kind === "avatar"
+    image.publiclyCacheable
+      ? image.asset.kind === "avatar"
         ? "public, max-age=3600"
         : "public, max-age=31536000, immutable"
       : "private, no-store",
   )
-  if (publiclyCacheable) {
+  if (image.publiclyCacheable) {
     headers.set(
       "Cache-Tag",
       cacheTagHeader([
-        mediaCacheTag(row.asset.id),
-        ...(row.asset.ownerId ? [ownerCacheTag(row.asset.ownerId)] : []),
-        ...(row.postId ? [postCacheTag(row.postId)] : []),
+        mediaCacheTag(image.asset.id),
+        ...(image.asset.ownerId ? [ownerCacheTag(image.asset.ownerId)] : []),
+        ...(image.postId ? [postCacheTag(image.postId)] : []),
       ]),
     )
   }
+  return headers
+}
+
+function notModifiedResponse(request: Request, image: ResolvedImageRequest, object: R2Object) {
+  const headers = imageResponseHeaders(image, object)
+  return requestValidatorsMatch(request, headers.get("ETag") ?? "", object.uploaded)
+    ? new Response(null, { status: 304, headers })
+    : undefined
+}
+
+async function deliverImage(arguments_: ImageHandlerArguments) {
+  const image = await resolveImageRequest(arguments_)
+  if (image instanceof Response) return image
+
+  const object = await arguments_.context.env.MEDIA.get(image.r2Key)
+  if (!object) return new Response("Not found", { status: 404 })
+  const notModified = notModifiedResponse(arguments_.request, image, object)
+  if (notModified) return notModified
+
+  const selected = variants[image.variant]
+  const transform: ImageTransform =
+    image.requestedWidth === undefined
+      ? { width: selected.width, height: selected.height, fit: selected.fit }
+      : image.variant === "avatar"
+        ? { width: image.requestedWidth, height: image.requestedWidth, fit: "cover" }
+        : { width: image.requestedWidth, fit: "scale-down" }
+  const transformed = await arguments_.context.env.IMAGES.input(object.body)
+    .transform(transform)
+    .output({
+      format: image.variant === "og" ? "image/jpeg" : "image/webp",
+      quality: selected.quality,
+      anim: shouldPreserveMediaImageAnimation(image.asset.mimeType, image.variant, image.animation),
+    })
+  const response = transformed.response()
+  const headers = imageResponseHeaders(image, object, response.headers)
+  headers.set("Content-Type", transformed.contentType())
   return new Response(response.body, { status: response.status, headers })
 }
 
+async function deliverImageHead(arguments_: ImageHandlerArguments) {
+  const image = await resolveImageRequest(arguments_)
+  if (image instanceof Response) return image
+
+  const object = await arguments_.context.env.MEDIA.head(image.r2Key)
+  if (!object) return new Response("Not found", { status: 404 })
+  return (
+    notModifiedResponse(arguments_.request, image, object) ??
+    new Response(null, { status: 200, headers: imageResponseHeaders(image, object) })
+  )
+}
+
 export const Route = createFileRoute("/media/image/$mediaId/$variant")({
-  server: { handlers: { GET: deliverImage, HEAD: deliverImage } },
+  server: { handlers: { GET: deliverImage, HEAD: deliverImageHead } },
 })
