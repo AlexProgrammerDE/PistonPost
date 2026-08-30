@@ -129,6 +129,11 @@
       "simple": { "limit": 30, "period": 60 },
     },
     {
+      "name": "IMAGE_UPLOAD_RATE_LIMITER",
+      "namespace_id": "11008",
+      "simple": { "limit": 120, "period": 60 },
+    },
+    {
       "name": "POST_VIEW_RATE_LIMITER",
       "namespace_id": "11007",
       "simple": { "limit": 1, "period": 60 },
@@ -227,6 +232,11 @@
           "name": "UPLOAD_RATE_LIMITER",
           "namespace_id": "21006",
           "simple": { "limit": 30, "period": 60 },
+        },
+        {
+          "name": "IMAGE_UPLOAD_RATE_LIMITER",
+          "namespace_id": "21008",
+          "simple": { "limit": 120, "period": 60 },
         },
         {
           "name": "POST_VIEW_RATE_LIMITER",
@@ -345,6 +355,11 @@
           "name": "UPLOAD_RATE_LIMITER",
           "namespace_id": "31006",
           "simple": { "limit": 30, "period": 60 },
+        },
+        {
+          "name": "IMAGE_UPLOAD_RATE_LIMITER",
+          "namespace_id": "31008",
+          "simple": { "limit": 120, "period": 60 },
         },
         {
           "name": "POST_VIEW_RATE_LIMITER",

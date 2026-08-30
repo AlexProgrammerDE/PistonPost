@@ -221,29 +221,30 @@ Queue consumers
 
 Use descriptive binding names and keep actual IDs out of committed documentation.
 
-| Binding                  | Type                   | Responsibility                                 |
-| ------------------------ | ---------------------- | ---------------------------------------------- |
-| DB                       | D1Database             | Better Auth and product data                   |
-| MEDIA                    | R2Bucket               | Original images and non-video binary objects   |
-| IMAGES                   | ImagesBinding          | Image validation, transformation, and variants |
-| STREAM                   | StreamBinding          | Video status, playback, and provider cleanup   |
-| STREAM_ACCOUNT_ID        | secret/config          | Account used to create direct TUS uploads      |
-| STREAM_API_TOKEN         | secret                 | Dedicated Stream Write credential              |
-| STREAM_WEBHOOK_SECRET    | secret                 | Stream webhook signature verification          |
-| ASSETS                   | Fetcher                | Built TanStack Start assets                    |
-| EMAIL                    | SendEmail              | Authentication, notification, and update email |
-| EMAIL_UNSUBSCRIBE_SECRET | Secret                 | Category-scoped unsubscribe token key ring     |
-| JOBS                     | Queue                  | General durable background jobs                |
-| ANALYTICS                | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
-| AUTH_RATE_LIMITER        | RateLimit              | Better Auth requests                           |
-| ANON_RATE_LIMITER        | RateLimit              | Anonymous reads and probes                     |
-| USER_RATE_LIMITER        | RateLimit              | Authenticated mutations                        |
-| UPLOAD_RATE_LIMITER      | RateLimit              | Upload initialization and finalization         |
-| TURNSTILE_SECRET         | Secret                 | Server-side captcha verification               |
-| BETTER_AUTH_SECRET       | Secret                 | Better Auth signing and encryption             |
-| VAPID_PUBLIC_KEY         | config                 | Browser Web Push subscription key              |
-| VAPID_PRIVATE_KEY        | Secret                 | Server Web Push signing key                    |
-| VAPID_SUBJECT            | config                 | Monitored Web Push contact                     |
+| Binding                   | Type                   | Responsibility                                 |
+| ------------------------- | ---------------------- | ---------------------------------------------- |
+| DB                        | D1Database             | Better Auth and product data                   |
+| MEDIA                     | R2Bucket               | Original images and non-video binary objects   |
+| IMAGES                    | ImagesBinding          | Image validation, transformation, and variants |
+| STREAM                    | StreamBinding          | Video status, playback, and provider cleanup   |
+| STREAM_ACCOUNT_ID         | secret/config          | Account used to create direct TUS uploads      |
+| STREAM_API_TOKEN          | secret                 | Dedicated Stream Write credential              |
+| STREAM_WEBHOOK_SECRET     | secret                 | Stream webhook signature verification          |
+| ASSETS                    | Fetcher                | Built TanStack Start assets                    |
+| EMAIL                     | SendEmail              | Authentication, notification, and update email |
+| EMAIL_UNSUBSCRIBE_SECRET  | Secret                 | Category-scoped unsubscribe token key ring     |
+| JOBS                      | Queue                  | General durable background jobs                |
+| ANALYTICS                 | AnalyticsEngineDataset | Privacy-safe events and operational metrics    |
+| AUTH_RATE_LIMITER         | RateLimit              | Better Auth requests                           |
+| ANON_RATE_LIMITER         | RateLimit              | Anonymous reads and probes                     |
+| USER_RATE_LIMITER         | RateLimit              | Authenticated mutations                        |
+| UPLOAD_RATE_LIMITER       | RateLimit              | Upload initialization and finalization         |
+| IMAGE_UPLOAD_RATE_LIMITER | RateLimit              | Authenticated image-byte uploads               |
+| TURNSTILE_SECRET          | Secret                 | Server-side captcha verification               |
+| BETTER_AUTH_SECRET        | Secret                 | Better Auth signing and encryption             |
+| VAPID_PUBLIC_KEY          | config                 | Browser Web Push subscription key              |
+| VAPID_PRIVATE_KEY         | Secret                 | Server Web Push signing key                    |
+| VAPID_SUBJECT             | config                 | Monitored Web Push contact                     |
 
 wrangler.jsonc should follow the useful EnderDash patterns:
 
@@ -1181,3 +1182,8 @@ Record future changes here with date, decision, reason, and affected phases.
   credential accounts, then add the non-null constraint and unique index. Use a custom Drizzle
   migration only for the data change that the schema diff cannot express. Keep generated schema SQL
   and Drizzle metadata unchanged.
+- 2026-08-30: Increase the new image-post limit from 20 images to 100. This supersedes the
+  2026-07-14 authoring limit. Create upload intents in bounded batches so large galleries stay
+  within D1 request and upload-slot expiry limits. Add a dedicated image-byte limit of 120 requests
+  per minute so one 100-image post does not throttle itself. Keep the existing intent, size, and
+  pixel limits. This affects Phases 2, 6, and 9.

@@ -37,6 +37,21 @@ describe("post draft input", () => {
     ).toBe(false)
   })
 
+  test("accepts up to 100 images", () => {
+    const mediaIds = Array.from({ length: 101 }, (_, index) => `media-${index.toString()}`)
+
+    expect(
+      postDraftInputSchema.safeParse({
+        ...common,
+        type: "images",
+        mediaIds: mediaIds.slice(0, 100),
+      }).success,
+    ).toBe(true)
+    expect(postDraftInputSchema.safeParse({ ...common, type: "images", mediaIds }).success).toBe(
+      false,
+    )
+  })
+
   test("enforces the shared Markdown length boundary", () => {
     expect(postMarkdownSchema.safeParse("x".repeat(MAX_POST_MARKDOWN_LENGTH)).success).toBe(true)
     expect(postMarkdownSchema.safeParse("x".repeat(MAX_POST_MARKDOWN_LENGTH + 1)).success).toBe(

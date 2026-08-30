@@ -1,4 +1,5 @@
 export const MAX_IMAGE_UPLOAD_BYTES = 15 * 1024 * 1024
+export const MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE = 20
 
 export const IMAGE_UPLOAD_MIME_TYPES = [
   "image/jpeg",
@@ -11,6 +12,14 @@ export const IMAGE_UPLOAD_MIME_TYPES = [
 export type ImageUploadMimeType = (typeof IMAGE_UPLOAD_MIME_TYPES)[number]
 
 export const IMAGE_UPLOAD_ACCEPT = IMAGE_UPLOAD_MIME_TYPES.join(",")
+
+export function createImageUploadBatches<T>(files: readonly T[]) {
+  const batches: T[][] = []
+  for (let offset = 0; offset < files.length; offset += MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE) {
+    batches.push(files.slice(offset, offset + MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE))
+  }
+  return batches
+}
 
 const imageUploadMimeTypes: ReadonlySet<string> = new Set(IMAGE_UPLOAD_MIME_TYPES)
 const extensionsByMime: ReadonlyMap<ImageUploadMimeType, ReadonlySet<string>> = new Map([

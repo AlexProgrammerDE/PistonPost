@@ -147,11 +147,12 @@ Do not store secrets in Wrangler `vars`, GitHub logs, command output, or shell h
 
 ## Verify media uploads
 
-Image posts create all upload intents in one request. Before upload, a lazy browser worker removes
-private metadata from JPEG, PNG, GIF, and WebP files. It converts AVIF files to WebP and bounds
-oversized JPEG photos to 4096 pixels on their longest edge. The upload route runs the same Rust WASM
-sanitizer and rejects any non-canonical bytes before writing to R2. A new post can contain 20 images,
-with a limit of 15 MB and 80 megapixels per image.
+Image posts create upload intents in batches of 20. The composer requests each batch after it
+uploads the previous batch. Before upload, a lazy browser worker removes private metadata from JPEG,
+PNG, GIF, and WebP files. It converts AVIF files to WebP and bounds oversized JPEG photos to 4096
+pixels on their longest edge. The upload route runs the same Rust WASM sanitizer and rejects any
+non-canonical bytes before writing to R2. A new post can contain 100 images, with a limit of 15 MB
+and 80 megapixels per image. Image bytes have a dedicated per-user limit of 120 requests per minute.
 
 Video bytes go directly from the browser to Cloudflare Stream. When the Stream credentials above
 are configured, the Worker creates a resumable TUS upload URL with a 2 GB file-size limit and a

@@ -3,10 +3,14 @@ import { and, count, eq, gte, inArray, ne } from "drizzle-orm"
 import { z } from "zod"
 
 import * as schema from "@/db/schema"
-import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
-import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
+import {
+  IMAGE_UPLOAD_MIME_TYPES,
+  MAX_IMAGE_UPLOAD_BYTES,
+  MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE,
+} from "@/lib/uploads/image-upload-policy"
 import {
   MAX_VIDEO_DURATION_SECONDS,
   MAX_VIDEO_UPLOAD_BYTES,
@@ -30,7 +34,6 @@ import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 
-const MAX_IMAGES_PER_POST = 20
 const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
 
 const postColumns = {
@@ -140,7 +143,7 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
         files: z
           .array(imageIntentInput.omit({ postId: true }))
           .min(1)
-          .max(MAX_IMAGES_PER_POST),
+          .max(MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE),
       }),
     ),
   )
@@ -457,7 +460,9 @@ export const publishPost = createServerFn({ method: "POST" })
         and(eq(schema.postMedia.postId, post.id), eq(schema.mediaAssets.ownerId, session.user.id)),
       )
     if (post.type === "images" && (media.length < 1 || media.length > MAX_IMAGES_PER_POST)) {
-      throw invalidInputFailure("An image post needs between 1 and 20 ready images.")
+      throw invalidInputFailure(
+        `An image post needs between 1 and ${MAX_IMAGES_PER_POST.toString()} ready images.`,
+      )
     }
     if (post.type === "video" && media.length !== 1) {
       throw invalidInputFailure("A video post needs one ready video.")

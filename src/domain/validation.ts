@@ -1,6 +1,7 @@
 import { z } from "zod"
 
 export const MAX_POST_MARKDOWN_LENGTH = 10_000
+export const MAX_IMAGES_PER_POST = 100
 
 export const postMarkdownSchema = z.string().trim().min(1).max(MAX_POST_MARKDOWN_LENGTH)
 
@@ -24,7 +25,7 @@ export const postDraftInputSchema = z.discriminatedUnion("type", [
   }),
   basePostDraftSchema.extend({
     type: z.literal("images"),
-    mediaIds: z.array(z.string().min(1)).max(20),
+    mediaIds: z.array(z.string().min(1)).max(MAX_IMAGES_PER_POST),
   }),
   basePostDraftSchema.extend({
     type: z.literal("video"),

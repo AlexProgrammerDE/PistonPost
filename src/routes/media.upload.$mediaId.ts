@@ -47,7 +47,7 @@ async function uploadImage({
   const auth = await createRequestAuth(context)
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session) return jsonError("Authentication is required.", 401)
-  const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
+  const rateLimit = await context.env.IMAGE_UPLOAD_RATE_LIMITER.limit({
     key: `image-bytes:${session.user.id}`,
   })
   if (!rateLimit.success) {

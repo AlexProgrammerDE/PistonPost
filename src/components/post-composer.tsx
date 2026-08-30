@@ -76,7 +76,7 @@ import {
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
-import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
@@ -85,6 +85,7 @@ import {
   IMAGE_UPLOAD_ACCEPT,
   IMAGE_UPLOAD_MIME_TYPES,
   MAX_IMAGE_UPLOAD_BYTES,
+  createImageUploadBatches,
 } from "@/lib/uploads/image-upload-policy"
 import {
   createUploadItem,
@@ -123,7 +124,6 @@ const tagsSchema = z
   .min(1, "Add at least one tag.")
   .max(5, "Use at most five tags.")
 const imageMimeSchema = z.enum(IMAGE_UPLOAD_MIME_TYPES)
-const MAX_POST_IMAGES = 20
 
 const loadImageLightbox = () =>
   import("@/components/ImageLightbox").then((module) => ({
@@ -160,7 +160,7 @@ const composerMessages = new Set([
   "Choose at least one image.",
   "Choose a video.",
   "Too many uploads were started at once. Wait a minute and try again.",
-  "A new post can contain at most 20 images.",
+  `A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`,
   "The image upload could not be started.",
   "This video is too large to upload right now. Try a video under 200 MB.",
   "The video upload could not be started. Try again.",
@@ -180,10 +180,10 @@ function readableError(error: unknown) {
 }
 
 function fileRejectionMessage(type: "images" | "video", message: string) {
-  const maxFiles = type === "images" ? MAX_POST_IMAGES : 1
+  const maxFiles = type === "images" ? MAX_IMAGES_PER_POST : 1
   if (message === `Maximum ${maxFiles} files allowed`) {
     return type === "images"
-      ? `A post can contain up to ${MAX_POST_IMAGES} images.`
+      ? `A post can contain up to ${MAX_IMAGES_PER_POST.toString()} images.`
       : "A post can contain one video."
   }
 
@@ -278,42 +278,46 @@ export function PostComposer({
         const draft = await createPostDraft({ data: { draft: draftInput, turnstileToken } })
 
         if (value.type === "images") {
-          const intents = await createImageUploadIntents({
-            data: {
-              postId: draft.id,
-              files: uploads.map((item) => ({
-                filename: item.filename,
-                mimeType: imageMimeSchema.parse(item.mimeType),
-                byteSize: item.file.size,
-                altText: item.altText,
-              })),
-            },
-          })
           const assetIds: string[] = []
-          for (const [index, item] of uploads.entries()) {
-            const intent = intents[index]
-            if (!intent) throw new Error("The image upload could not be started.")
-            assetIds.push(intent.assetId)
-            form.setFieldValue("mediaIds", [...assetIds])
-            dispatch({ type: "uploading", clientId: item.clientId, assetId: intent.assetId })
-            const controller = new AbortController()
-            uploadControllers.current.set(item.clientId, controller)
-            try {
-              // Uploads are ordered to preserve media order without D1 writer races.
-              // eslint-disable-next-line no-await-in-loop
-              await uploadImage(
-                intent.uploadUrl,
-                item.file,
-                { filename: item.filename, mimeType: item.mimeType },
-                (progress) => dispatch({ type: "progress", clientId: item.clientId, progress }),
-                controller.signal,
-              )
-              dispatch({ type: "ready", clientId: item.clientId })
-            } catch (error) {
-              dispatch({ type: "failed", clientId: item.clientId, error: readableError(error) })
-              throw error
-            } finally {
-              uploadControllers.current.delete(item.clientId)
+          for (const uploadBatch of createImageUploadBatches(uploads)) {
+            // Bounded batches keep D1 requests small and issue upload slots close to their use.
+            // eslint-disable-next-line no-await-in-loop
+            const intents = await createImageUploadIntents({
+              data: {
+                postId: draft.id,
+                files: uploadBatch.map((item) => ({
+                  filename: item.filename,
+                  mimeType: imageMimeSchema.parse(item.mimeType),
+                  byteSize: item.file.size,
+                  altText: item.altText,
+                })),
+              },
+            })
+            for (const [index, item] of uploadBatch.entries()) {
+              const intent = intents[index]
+              if (!intent) throw new Error("The image upload could not be started.")
+              assetIds.push(intent.assetId)
+              form.setFieldValue("mediaIds", [...assetIds])
+              dispatch({ type: "uploading", clientId: item.clientId, assetId: intent.assetId })
+              const controller = new AbortController()
+              uploadControllers.current.set(item.clientId, controller)
+              try {
+                // Uploads are ordered to preserve media order without D1 writer races.
+                // eslint-disable-next-line no-await-in-loop
+                await uploadImage(
+                  intent.uploadUrl,
+                  item.file,
+                  { filename: item.filename, mimeType: item.mimeType },
+                  (progress) => dispatch({ type: "progress", clientId: item.clientId, progress }),
+                  controller.signal,
+                )
+                dispatch({ type: "ready", clientId: item.clientId })
+              } catch (error) {
+                dispatch({ type: "failed", clientId: item.clientId, error: readableError(error) })
+                throw error
+              } finally {
+                uploadControllers.current.delete(item.clientId)
+              }
             }
           }
         }
@@ -406,11 +410,11 @@ export function PostComposer({
   }
 
   async function selectFiles(files: File[], type: ComposerValues["type"]) {
-    const remaining = type === "images" ? Math.max(0, MAX_POST_IMAGES - uploads.length) : 1
+    const remaining = type === "images" ? Math.max(0, MAX_IMAGES_PER_POST - uploads.length) : 1
     if (files.length > remaining) {
       toast.error(
         type === "images"
-          ? `A post can contain up to ${MAX_POST_IMAGES} images.`
+          ? `A post can contain up to ${MAX_IMAGES_PER_POST.toString()} images.`
           : "A post can contain one video.",
       )
     }
@@ -715,7 +719,7 @@ function MediaPicker({
   const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
   const limit =
     type === "images"
-      ? `JPG, PNG, GIF, WebP, or AVIF. Up to ${MAX_POST_IMAGES} files, 15 MB and 80 megapixels each.`
+      ? `JPG, PNG, GIF, WebP, or AVIF. Up to ${MAX_IMAGES_PER_POST.toString()} files, 15 MB and 80 megapixels each.`
       : "One video, up to 2 GB and 10 minutes."
   const inputLabel = `Choose ${type === "images" ? "images" : "a video"} to upload`
   const imageUploads = uploads.filter(
@@ -741,7 +745,7 @@ function MediaPicker({
       <FileUpload
         value={uploads.map(({ file }) => file)}
         accept={accept}
-        maxFiles={type === "images" ? MAX_POST_IMAGES : 1}
+        maxFiles={type === "images" ? MAX_IMAGES_PER_POST : 1}
         maxSize={type === "images" ? MAX_IMAGE_UPLOAD_BYTES : MAX_VIDEO_UPLOAD_BYTES}
         label={inputLabel}
         multiple={type === "images"}
