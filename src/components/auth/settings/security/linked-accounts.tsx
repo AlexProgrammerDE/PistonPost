@@ -25,11 +25,18 @@ export type LinkedAccountsProps = {
  * @returns A JSX element containing the linked accounts card
  */
 export function LinkedAccounts({ className }: LinkedAccountsProps) {
-  const { authClient, localization, multipleAccountsPerProvider, socialProviders } = useAuth()
+  const {
+    authClient,
+    allowUnlinkingAllAccounts,
+    localization,
+    multipleAccountsPerProvider,
+    socialProviders,
+  } = useAuth()
 
   const { data: accounts, isPending } = useListAccounts(authClient)
 
   const linkedAccounts = accounts?.filter((account) => account.providerId !== "credential")
+  const canUnlink = allowUnlinkingAllAccounts === true || (accounts?.length ?? 0) > 1
 
   const linkedProviderIds = new Set(linkedAccounts?.map((a) => a.providerId))
 
@@ -70,7 +77,11 @@ export function LinkedAccounts({ className }: LinkedAccountsProps) {
               : allRows.map((row, index) => (
                   <Fragment key={row.key}>
                     {index > 0 && <ItemSeparator />}
-                    <LinkedAccount account={row.account} provider={row.provider} />
+                    <LinkedAccount
+                      account={row.account}
+                      canUnlink={canUnlink}
+                      provider={row.provider}
+                    />
                   </Fragment>
                 ))}
           </ItemGroup>

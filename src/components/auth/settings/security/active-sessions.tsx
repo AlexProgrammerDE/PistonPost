@@ -40,17 +40,17 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
     <div>
       <h2 className="mb-3 text-sm font-semibold">{localization.settings.activeSessions}</h2>
 
-      <Card className={cn("p-0", className)}>
+      <Card className={cn("gap-0 p-0", className)}>
         <CardContent className="p-0">
           {isSessionNotFreshError(error) ? (
             <FreshSessionPrompt onFresh={() => sessionsQuery.refetch()} />
           ) : isPending ? (
             <SessionRowSkeleton />
           ) : (
-            <ItemGroup className="gap-0">
+            <ItemGroup className="gap-0!">
               {activeSessions?.map((activeSession, index) => (
                 <Fragment key={activeSession.id}>
-                  {index > 0 && <ItemSeparator />}
+                  {index > 0 && <ItemSeparator className="my-0!" />}
                   <ActiveSession activeSession={activeSession} />
                 </Fragment>
               ))}

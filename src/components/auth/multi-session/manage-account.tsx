@@ -58,7 +58,7 @@ export function ManageAccount({ deviceSession, isPending }: ManageAccountProps) 
 
   return (
     <Item>
-      <UserView user={deviceSession?.user} isPending={isPending} />
+      <UserView className="flex-1" user={deviceSession?.user} isPending={isPending} />
       <ItemActions>
         {deviceSession && isActive && (
           <Button

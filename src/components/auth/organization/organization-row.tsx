@@ -52,7 +52,7 @@ export function OrganizationRow({ organization }: OrganizationRowProps) {
 
   return (
     <Item>
-      <OrganizationView organization={organization} />
+      <OrganizationView className="flex-1" organization={organization} />
       <ItemActions>
         <Button
           variant="outline"

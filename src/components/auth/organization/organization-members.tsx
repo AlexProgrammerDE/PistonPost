@@ -79,6 +79,7 @@ export function OrganizationMembers({
     membershipLimit,
     roles,
     creatorRole,
+    teams,
   } = useAuthPlugin(organizationPlugin)
 
   const { data: activeOrganization, isPending: activeOrganizationPending } =
@@ -119,12 +120,31 @@ export function OrganizationMembers({
   // The signed-in user need not be on the loaded page, so their own role comes
   // from a dedicated endpoint rather than from the member list.
   const { data: activeMemberRole } = useActiveMemberRole(authClient)
+  const owners = useListOrganizationMembers(authClient, {
+    query: {
+      organizationId: activeOrganization?.id,
+      filterField: "role",
+      filterValue: creatorRole,
+      filterOperator: "contains",
+      limit: 1,
+    },
+    enabled: Boolean(activeOrganization?.id),
+  })
 
   const canInvite = useHasPermission(authClient, {
     permissions: { invitation: ["create"] },
   })
+  const canListMemberTeams = useHasPermission(authClient, {
+    organizationId: activeOrganization?.id,
+    permissions: { member: ["update"] },
+    enabled: teams && Boolean(activeOrganization?.id),
+  })
 
-  const isPending = activeOrganizationPending || membersPending
+  const isPending =
+    activeOrganizationPending ||
+    membersPending ||
+    owners.isPending ||
+    (teams && canListMemberTeams.isPending)
 
   const filteredMembers = useMemo(() => {
     // The server already applied the role filter when paging, and it has no
@@ -162,6 +182,8 @@ export function OrganizationMembers({
   const [inviteOpen, setInviteOpen] = useState(false)
 
   const isOwner = hasMemberRole(activeMemberRole?.role, creatorRole)
+  const ownerCount = owners.data?.total ?? owners.data?.members.length
+  const showTeams = teams && canListMemberTeams.data?.success === true
 
   const total = membersData?.total ?? membersData?.members.length ?? 0
 
@@ -298,13 +320,15 @@ export function OrganizationMembers({
                   {organizationLocalization.role}
                 </SortableTableHead>
 
+                {showTeams && <TableHead>{organizationLocalization.teams}</TableHead>}
+
                 <TableHead className="text-end">{organizationLocalization.actions}</TableHead>
               </TableRow>
             </TableHeader>
 
             <TableBody>
               {isPending ? (
-                <OrganizationMemberRowSkeleton />
+                <OrganizationMemberRowSkeleton showTeams={showTeams} />
               ) : (
                 !!activeOrganization &&
                 sortedMembers?.map((member) => (
@@ -312,7 +336,9 @@ export function OrganizationMembers({
                     key={member.id}
                     member={member}
                     isOwner={isOwner}
+                    ownerCount={ownerCount}
                     organization={activeOrganization}
+                    showTeams={showTeams}
                   />
                 ))
               )}
