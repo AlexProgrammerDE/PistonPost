@@ -30,12 +30,21 @@ import { SlugField, sanitizeSlug } from "./slug-field"
 export type CreateOrganizationDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
+  hideSlug?: boolean
 }
 
-export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizationDialogProps) {
+export function CreateOrganizationDialog({
+  open,
+  onOpenChange,
+  hideSlug: hideSlugProp,
+}: CreateOrganizationDialogProps) {
   const { authClient, localization } = useAuth<OrganizationAuthClient>()
-  const { additionalFields, localization: organizationLocalization } =
-    useAuthPlugin(organizationPlugin)
+  const {
+    additionalFields,
+    localization: organizationLocalization,
+    hideSlug: pluginHideSlug,
+  } = useAuthPlugin(organizationPlugin)
+  const hideSlug = hideSlugProp ?? pluginHideSlug ?? false
 
   const [name, setName] = useState("")
   const [slug, setSlug] = useState("")
@@ -72,7 +81,11 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
       toast.error(error instanceof Error ? error.message : String(error))
       return
     }
-    createOrganization({ name, slug, ...additionalValues })
+    createOrganization({
+      ...additionalValues,
+      name,
+      slug: hideSlug ? undefined : slug,
+    })
   }
 
   const isPending = isCreating || isSubmitting
@@ -134,15 +147,17 @@ export function CreateOrganizationDialog({ open, onOpenChange }: CreateOrganizat
               <FieldError>{nameError}</FieldError>
             </Field>
 
-            <SlugField
-              id="create-organization-slug"
-              value={slug}
-              onChange={(value) => {
-                setSlug(value)
-                setSlugEdited(true)
-              }}
-              disabled={isPending}
-            />
+            {!hideSlug && (
+              <SlugField
+                id="create-organization-slug"
+                value={slug}
+                onChange={(value) => {
+                  setSlug(value)
+                  setSlugEdited(true)
+                }}
+                disabled={isPending}
+              />
+            )}
 
             {additionalFields.map((field) => (
               <AdditionalField

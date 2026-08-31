@@ -11,6 +11,7 @@ import {
 import {
   renderProviderIcon,
   useAuth,
+  useFetchOptions,
   useSignInOAuthPopup,
   useSignInSocial,
 } from "@better-auth-ui/react"
@@ -46,10 +47,16 @@ export function ProviderButton({
   const { authClient, baseURL, localization, navigate, redirectTo, socialSignInMode } = useAuth()
 
   const callbackURL = `${baseURL}${redirectTo}`
+  const { fetchOptions, resetFetchOptions } = useFetchOptions()
 
-  const { mutate: signInSocial, isPending: signInSocialPending } = useSignInSocial(authClient)
+  const { mutate: signInSocial, isPending: signInSocialPending } = useSignInSocial(authClient, {
+    onError: resetFetchOptions,
+  })
   const { mutate: signInPopup, isPending: signInPopupPending } = useSignInOAuthPopup(
     authClient as OAuthPopupAuthClient,
+    {
+      onError: resetFetchOptions,
+    },
   )
 
   const providerId = getProviderId(provider)
@@ -76,7 +83,7 @@ export function ProviderButton({
       return
     }
 
-    signInSocial({ provider: providerId, callbackURL })
+    signInSocial({ provider: providerId, callbackURL, fetchOptions })
   }
 
   return (

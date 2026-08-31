@@ -52,7 +52,7 @@ export function OrganizationSwitcher({
   hideCreate,
   hidePersonal,
   hideSettings,
-  hideSlug = true,
+  hideSlug: hideSlugProp,
   setActive,
   trigger,
 }: OrganizationSwitcherProps) {
@@ -64,7 +64,9 @@ export function OrganizationSwitcher({
     viewPaths: organizationViewPaths,
     slug,
     slugPrefix,
+    hideSlug: pluginHideSlug,
   } = useAuthPlugin(organizationPlugin)
+  const hideSlug = hideSlugProp ?? pluginHideSlug ?? true
 
   const { data: activeOrganization, isPending: activeOrganizationPending } =
     useActiveOrganization(authClient)
@@ -205,7 +207,11 @@ export function OrganizationSwitcher({
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <CreateOrganizationDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateOrganizationDialog
+        hideSlug={hideSlug}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
     </>
   )
 }
