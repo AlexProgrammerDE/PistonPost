@@ -22,6 +22,18 @@ const config = defineConfig(({ mode }) => ({
   optimizeDeps: {
     include: ["@tanstack/react-store > use-sync-external-store/shim/with-selector"],
   },
+  server: {
+    headers: { "Service-Worker-Allowed": "/" },
+  },
+  worker: {
+    format: "es",
+    rolldownOptions: {
+      output: {
+        entryFileNames: (chunk) =>
+          chunk.name === "service-worker" ? "push-sw.js" : "assets/[name]-[hash].js",
+      },
+    },
+  },
   environments: {
     ssr: {
       optimizeDeps: {

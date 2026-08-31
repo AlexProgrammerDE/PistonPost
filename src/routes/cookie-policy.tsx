@@ -29,7 +29,7 @@ function CookiePolicyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Cookie Policy</h1>
-        <p>Last updated: July 19, 2026.</p>
+        <p>Last updated: August 31, 2026.</p>
         <p>
           This policy describes the cookies, browser storage, and similar technologies PistonPost
           currently uses. Optional PostHog analytics stay off unless you allow them. Authentication,
@@ -129,6 +129,33 @@ function CookiePolicyPage() {
           The <code>theme</code> local-storage entry remembers your light, dark, or system theme
           choice. It stays until you change it, clear site data, or remove it through your browser.
           PistonPost does not use local storage for persistent PostHog analytics identifiers.
+        </p>
+
+        <p>
+          The <code>pistonpost.composer-draft.v1</code> entry saves text and post details for
+          recovery for seven days after the last local save. It does not save selected images,
+          videos, or upload progress. The <code>pistonpost.local-account</code> entry keeps that
+          draft tied to your account. Signing out or changing accounts clears the previous
+          account&apos;s draft.
+        </p>
+        <h2>Shared files and offline storage</h2>
+        <p>
+          When you share text, links, or images into PistonPost, the <code>pistonpost-local</code>
+          IndexedDB database holds them on this device for up to one hour. It keeps at most three
+          pending shares, each with up to 20 images and 50 MB of files. An anonymous share follows
+          your first sign-in. Account changes clear shares belonging to the previous account. Adding
+          or discarding a share removes its temporary record.
+        </p>
+        <p>
+          Shared images can contain their original metadata while stored locally. The composer
+          cleans them before upload. Expired drafts and shares are removed when PistonPost next
+          checks its local storage, so closing the app does not guarantee immediate deletion.
+          Clearing site data removes this browser storage.
+        </p>
+        <p>
+          The service worker caches only a generic offline page and its styles and script. It does
+          not cache feeds, account pages, API responses, or media for offline use. The offline page
+          remains until replaced by an update or removed with site data.
         </p>
 
         <h2>Better Auth Sentinel fingerprinting</h2>

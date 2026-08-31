@@ -126,6 +126,110 @@ function waitForUserUpdate(page: Page) {
 }
 
 test.describe.serial("authenticated authoring", () => {
+  test("recovers a local text draft and clears it when the account signs out", async ({
+    context,
+    page,
+  }, testInfo) => {
+    test.setTimeout(60_000)
+    await createVerifiedSession(context)
+    await page.goto("/posts/new")
+    await page.locator('[data-hydrated="true"]').waitFor()
+    const cookieChoice = page.getByRole("button", { name: "Reject optional", exact: true })
+    if (await cookieChoice.isVisible()) await cookieChoice.click()
+    await fillPost(page, "Something worth sharing", "notes")
+    await page
+      .getByRole("textbox", { name: "Text", exact: true })
+      .fill("A few pictures, a passing thought, or something that made you laugh. Put it here.")
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("pistonpost.composer-draft.v1")))
+      .not.toBeNull()
+    page.on("dialog", (dialog) => void dialog.accept())
+    await page.reload()
+    await page.locator('[data-hydrated="true"]').waitFor()
+    await page.getByRole("button", { name: "Restore draft", exact: true }).click()
+    await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Something worth sharing")
+    await expect(page.getByRole("textbox", { name: "Text", exact: true })).toHaveValue(
+      /A few pictures/,
+    )
+    await page.setViewportSize({ width: 1366, height: 900 })
+    await expect(page.getByRole("status", { name: "Loading account menu" })).toBeHidden()
+    await page.screenshot({
+      path: testInfo.outputPath("composer-desktop.png"),
+      animations: "disabled",
+    })
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.screenshot({
+      path: testInfo.outputPath("composer-mobile.png"),
+      animations: "disabled",
+    })
+    const signOut = await context.request.post("/api/auth/sign-out", {
+      data: {},
+      headers: { Origin: "http://localhost:3000" },
+    })
+    expect(signOut.ok()).toBe(true)
+    await page.reload()
+    await expect(
+      page.getByRole("main").getByRole("button", { name: "Sign in", exact: true }),
+    ).toBeVisible()
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("pistonpost.composer-draft.v1")))
+      .toBeNull()
+  })
+
+  test("imports a shared image only after confirmation and keeps it off the server", async ({
+    context,
+    page,
+  }) => {
+    await createVerifiedSession(context)
+    await page.goto("/posts/new")
+    await page.locator('[data-hydrated="true"]').waitFor()
+    await expect
+      .poll(() => page.evaluate(() => Boolean(navigator.serviceWorker.controller)))
+      .toBe(true)
+    const writes: string[] = []
+    page.on("request", (request) => {
+      const url = new URL(request.url())
+      if (
+        request.method() !== "GET" &&
+        (url.pathname.startsWith("/_serverFn/") || url.pathname.startsWith("/media/"))
+      )
+        writes.push(url.pathname)
+    })
+    await page.evaluate(
+      (bytes) => {
+        const form = document.createElement("form")
+        form.action = "/share"
+        form.method = "POST"
+        form.enctype = "multipart/form-data"
+        const input = document.createElement("input")
+        input.type = "file"
+        input.name = "files"
+        const transfer = new DataTransfer()
+        transfer.items.add(new File([new Uint8Array(bytes)], "shared.png", { type: "image/png" }))
+        input.files = transfer.files
+        form.appendChild(input)
+        document.body.appendChild(form)
+        form.submit()
+      },
+      [...VALID_PNG],
+    )
+    await expect(page).toHaveURL(/shareId=/)
+    await page.locator('[data-hydrated="true"]').waitFor()
+    const cookieChoice = page.getByRole("button", { name: "Reject optional", exact: true })
+    if (await cookieChoice.isVisible()) await cookieChoice.click()
+    await expect(page.getByRole("button", { name: "View shared.png full size" })).toHaveCount(0)
+    await page.getByRole("button", { name: "Add to post", exact: true }).click()
+    await expect(page.getByRole("button", { name: "View shared.png full size" })).toBeVisible({
+      timeout: 30_000,
+    })
+    await expect(page.getByRole("button", { name: "Add to post", exact: true })).toHaveCount(0)
+    expect(writes).toEqual([])
+    page.on("dialog", (dialog) => void dialog.accept())
+    await page.reload()
+    await expect(page.getByText("This share is no longer available")).toBeVisible()
+    await expect(page.getByRole("button", { name: "View shared.png full size" })).toHaveCount(0)
+  })
+
   test("autosaves optional notification switches while required categories stay on", async ({
     context,
     page,

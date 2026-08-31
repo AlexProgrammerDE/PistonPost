@@ -17,9 +17,14 @@ import {
 type UnsavedChangesGuardProps = {
   readonly allowNavigationRef?: RefObject<boolean>
   readonly enabled: boolean
+  readonly description?: string
 }
 
-export function UnsavedChangesGuard({ allowNavigationRef, enabled }: UnsavedChangesGuardProps) {
+export function UnsavedChangesGuard({
+  allowNavigationRef,
+  enabled,
+  description = "Your changes will be lost if you leave this page.",
+}: UnsavedChangesGuardProps) {
   const shouldBlock = () => enabled && !allowNavigationRef?.current
 
   const blocker = useBlocker({
@@ -39,9 +44,7 @@ export function UnsavedChangesGuard({ allowNavigationRef, enabled }: UnsavedChan
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>Discard your unsaved changes?</AlertDialogTitle>
-          <AlertDialogDescription>
-            Your changes will be lost if you leave this page.
-          </AlertDialogDescription>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>Keep editing</AlertDialogCancel>

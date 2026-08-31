@@ -20,6 +20,7 @@ import { Route as PostsRouteImport } from './routes/posts'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ShareRouteImport } from './routes/share'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -102,6 +103,11 @@ const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ShareRoute = ShareRouteImport.update({
+  id: '/share',
+  path: '/share',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -262,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/$section': typeof AdminSectionRoute
@@ -299,6 +306,7 @@ export interface FileRoutesByTo {
   '/following': typeof FollowingRoute
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
+  '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/$section': typeof AdminSectionRoute
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/robots.txt': typeof RobotsDottxtRoute
   '/settings': typeof SettingsRouteWithChildren
+  '/share': typeof ShareRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/$section': typeof AdminSectionRoute
@@ -384,6 +393,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/settings'
+    | '/share'
     | '/sitemap.xml'
     | '/terms'
     | '/admin/$section'
@@ -421,6 +431,7 @@ export interface FileRouteTypes {
     | '/following'
     | '/privacy'
     | '/robots.txt'
+    | '/share'
     | '/sitemap.xml'
     | '/terms'
     | '/admin/$section'
@@ -462,6 +473,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/robots.txt'
     | '/settings'
+    | '/share'
     | '/sitemap.xml'
     | '/terms'
     | '/admin/$section'
@@ -504,6 +516,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RobotsDottxtRoute: typeof RobotsDottxtRoute
   SettingsRoute: typeof SettingsRouteWithChildren
+  ShareRoute: typeof ShareRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
@@ -601,6 +614,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/share': {
+      id: '/share'
+      path: '/share'
+      fullPath: '/share'
+      preLoaderRoute: typeof ShareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -868,6 +888,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RobotsDottxtRoute: RobotsDottxtRoute,
   SettingsRoute: SettingsRouteWithChildren,
+  ShareRoute: ShareRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,

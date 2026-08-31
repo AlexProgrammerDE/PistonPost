@@ -4,6 +4,7 @@ import { useEffect, type PropsWithChildren } from "react"
 
 import { AuthenticationProvider } from "@/components/providers"
 import { PushSubscriptionSync } from "@/components/push-subscription-sync"
+import { PwaProvider } from "@/components/PwaProvider"
 import { Toaster } from "@/components/ui/sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { CookieConsentProvider } from "@/lib/integrations/cookie-consent"
@@ -40,15 +41,17 @@ export function AppProviders({
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <ThemeColorSync />
         <AuthenticationProvider queryClient={queryClient} turnstileSiteKey={turnstileSiteKey}>
-          <PushSubscriptionSync vapidPublicKey={vapidPublicKey} />
-          <CookieConsentProvider>
-            <PostHogProvider>
-              <TooltipProvider>
-                {children}
-                <Toaster />
-              </TooltipProvider>
-            </PostHogProvider>
-          </CookieConsentProvider>
+          <PwaProvider>
+            <PushSubscriptionSync vapidPublicKey={vapidPublicKey} />
+            <CookieConsentProvider>
+              <PostHogProvider>
+                <TooltipProvider>
+                  {children}
+                  <Toaster />
+                </TooltipProvider>
+              </PostHogProvider>
+            </CookieConsentProvider>
+          </PwaProvider>
         </AuthenticationProvider>
       </ThemeProvider>
     </QueryClientProvider>

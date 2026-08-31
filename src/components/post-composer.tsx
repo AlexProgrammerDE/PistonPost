@@ -16,6 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
+import { useStore } from "@tanstack/react-form"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import {
@@ -39,6 +40,7 @@ import { toast } from "sonner"
 import { z } from "zod"
 
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
+import { SharedContentIntake } from "@/components/SharedContentIntake"
 import { TurnstileChallenge, type TurnstileChallengeHandle } from "@/components/TurnstileChallenge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -77,7 +79,9 @@ import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import { useComposerDraft } from "@/hooks/use-composer-draft"
 import { useAppForm } from "@/lib/forms/app-form"
+import { sharedText, type SharedContent } from "@/lib/pwa/share-intake"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { ImagePreparationError, prepareImageForUpload } from "@/lib/uploads/image-preparation"
@@ -209,10 +213,12 @@ async function waitForVideo(queryClient: QueryClient, assetId: string) {
 }
 
 export function PostComposer({
-  authenticated,
+  userId,
+  shareId,
   turnstileSiteKey,
 }: {
-  authenticated: boolean
+  userId: string | null
+  shareId?: string
   turnstileSiteKey: string
 }) {
   const navigate = useNavigate()
@@ -360,6 +366,7 @@ export function PostComposer({
         }
 
         const published = await publishPost({ data: { id: draft.id, version: draft.version } })
+        localDraft.clearAfterPosting()
         allowNavigationRef.current = true
         form.reset()
         releaseUploadPreviews(uploads)
@@ -374,21 +381,33 @@ export function PostComposer({
     },
   })
 
+  const localDraft = useComposerDraft(userId, form)
+  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+
   useEffect(() => {
     uploadsRef.current = uploads
   }, [uploads])
   useEffect(() => () => releaseUploadPreviews(uploadsRef.current), [])
 
-  if (!authenticated) {
+  if (!userId) {
     return (
       <Alert>
         <TriangleAlert aria-hidden="true" />
         <AlertTitle>Sign in to post</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
           <p>You need an account before you can save a draft or upload anything.</p>
+          {shareId && (
+            <p>Your shared content stays on this device for up to one hour while you sign in.</p>
+          )}
           <Button
             onClick={() =>
-              void navigate({ to: "/auth/$authView", params: { authView: "sign-in" } })
+              void navigate({
+                to: "/auth/$authView",
+                params: { authView: "sign-in" },
+                search: {
+                  redirectTo: `/posts/new${shareId ? `?shareId=${encodeURIComponent(shareId)}` : ""}`,
+                },
+              })
             }
           >
             <LogIn aria-hidden="true" data-icon="inline-start" />
@@ -399,18 +418,36 @@ export function PostComposer({
     )
   }
 
-  function changeType(type: ComposerValues["type"]) {
+  function clearMedia() {
     mediaPreparationGeneration.current += 1
     setIsInspectingVideo(false)
     releaseUploadPreviews(uploads)
     dispatch({ type: "reset" })
-    form.setFieldValue("type", type)
     form.setFieldValue("mediaIds", [])
     form.setFieldValue("mediaId", null)
   }
 
-  async function selectFiles(files: File[], type: ComposerValues["type"]) {
-    const remaining = type === "images" ? Math.max(0, MAX_IMAGES_PER_POST - uploads.length) : 1
+  async function importSharedContent(content: SharedContent) {
+    if (isSubmitting || preparingImageCount > 0 || isInspectingVideo)
+      throw new Error("Wait for the current operation to finish.")
+    clearMedia()
+    const type = content.files.length > 0 ? "images" : "text"
+    form.reset(
+      { ...defaultValues, type, title: content.title, textContent: sharedText(content) },
+      { keepDefaultValues: true },
+    )
+    localDraft.resume()
+    if (
+      content.files.length > 0 &&
+      (await selectFiles(content.files, "images", true)) !== content.files.length
+    ) {
+      throw new Error("Some shared images could not be prepared.")
+    }
+  }
+
+  async function selectFiles(files: File[], type: ComposerValues["type"], replace = false) {
+    const remaining =
+      type === "images" ? Math.max(0, MAX_IMAGES_PER_POST - (replace ? 0 : uploads.length)) : 1
     if (files.length > remaining) {
       toast.error(
         type === "images"
@@ -428,7 +465,7 @@ export function PostComposer({
         toast.error("Choose a video no larger than 2 GB and no longer than 10 minutes.")
       }
       const video = accepted[0]
-      if (!video) return
+      if (!video) return 0
 
       const preparationGeneration = ++mediaPreparationGeneration.current
       setIsInspectingVideo(true)
@@ -456,7 +493,7 @@ export function PostComposer({
           setIsInspectingVideo(false)
         }
       }
-      return
+      return 0
     }
 
     setPreparingImageCount((count) => count + selected.length)
@@ -483,7 +520,9 @@ export function PostComposer({
         type: "add",
         items: prepared.map(({ file, metadata }) => createUploadItem(file, "image", metadata)),
       })
+      return prepared.length
     }
+    return 0
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -510,9 +549,62 @@ export function PostComposer({
       }}
     >
       <form.AppForm>
+        {shareId && (
+          <SharedContentIntake
+            key={shareId}
+            shareId={shareId}
+            userId={userId}
+            onImport={importSharedContent}
+          />
+        )}
+        {localDraft.recovery && (
+          <Alert>
+            <AlertTitle>Restore your text draft?</AlertTitle>
+            <AlertDescription className="flex flex-col gap-3">
+              <p>
+                A draft is saved on this device. Restoring it replaces the current form. Images and
+                videos must be selected again.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  disabled={isSubmitting || preparingImageCount > 0 || isInspectingVideo}
+                  onClick={() => {
+                    clearMedia()
+                    if (localDraft.recovery)
+                      form.reset(
+                        { ...defaultValues, ...localDraft.recovery },
+                        { keepDefaultValues: true },
+                      )
+                    localDraft.resume()
+                  }}
+                >
+                  Restore draft
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={isSubmitting}
+                  onClick={localDraft.resume}
+                >
+                  Discard saved draft
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
+        <p className="text-sm text-muted-foreground">
+          {localDraft.unavailable
+            ? "This browser could not save a recovery draft. Keep this page open until you post."
+            : "Text and post details are saved on this device for seven days. Files are not saved. Signing out clears the draft."}
+        </p>
         <form.Subscribe selector={(state) => state.isDirty}>
           {(isDirty) => (
-            <UnsavedChangesGuard allowNavigationRef={allowNavigationRef} enabled={isDirty} />
+            <UnsavedChangesGuard
+              allowNavigationRef={allowNavigationRef}
+              enabled={isDirty || uploads.length > 0}
+              description="Text and post details may be recovered from this device. Selected files and upload progress will be lost if you leave."
+            />
           )}
         </form.Subscribe>
         <FieldSet>
@@ -521,7 +613,7 @@ export function PostComposer({
             Post
           </FieldLegend>
           <FieldGroup>
-            <form.AppField name="type">
+            <form.AppField name="type" listeners={{ onChange: clearMedia }}>
               {(field) => (
                 <field.ChoiceField
                   label="Post type"
@@ -534,9 +626,6 @@ export function PostComposer({
                 />
               )}
             </form.AppField>
-            <form.Subscribe selector={(state) => state.values.type}>
-              {(type) => <TypeSync type={type} onChange={changeType} />}
-            </form.Subscribe>
             <form.AppField name="title" validators={{ onBlur: titleSchema }}>
               {(field) => <field.TextField label="Title" maxLength={100} />}
             </form.AppField>
@@ -559,7 +648,9 @@ export function PostComposer({
                     preparingImageCount={preparingImageCount}
                     isInspectingVideo={isInspectingVideo}
                     sensors={sensors}
-                    onFiles={selectFiles}
+                    onFiles={async (files, kind) => {
+                      await selectFiles(files, kind)
+                    }}
                     onRemove={(item) => cancelUpload(item)}
                     onAltText={(clientId, altText) =>
                       dispatch({ type: "alt-text", clientId, altText })
@@ -626,22 +717,6 @@ export function PostComposer({
       </form.AppForm>
     </form>
   )
-}
-
-function TypeSync({
-  type,
-  onChange,
-}: {
-  type: ComposerValues["type"]
-  onChange: (type: ComposerValues["type"]) => void
-}) {
-  const previousType = useRef(type)
-  useEffect(() => {
-    if (previousType.current === type) return
-    previousType.current = type
-    onChange(type)
-  }, [onChange, type])
-  return null
 }
 
 function MediaDropzonePrompt({

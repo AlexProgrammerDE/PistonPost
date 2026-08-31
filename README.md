@@ -119,3 +119,45 @@ workflow loads non-secret deployment configuration from `.env.production`, reads
 API token from the protected GitHub environment, builds the Worker with the production environment
 selected, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning
 and backup guides before triggering it.
+
+## Installed app and sharing
+
+PistonPost offers installation help in the sidebar. The browser decides whether to show its
+native install prompt. The manifest includes desktop and mobile screenshots captured with local
+test content. Push notifications remain a separate opt-in.
+
+- The service worker registers without notification permission. Push subscription setup waits
+  for an active worker. The production URL stays `/push-sw.js` so existing subscriptions keep
+  their registration.
+- Offline navigation shows a generic fallback. Only its HTML, CSS, and script are cached. Feeds,
+  private pages, API responses, and media are not saved by the service worker.
+- Supported installed apps show an unnumbered activity badge when push arrives with no visible
+  PistonPost window. Returning to the app or opening the notification clears it. This does not
+  represent unread notifications.
+- Native sharing sends post links or an individual image. Copy-link controls remain available.
+  Image sharing has a prepare step followed by a separate share tap to preserve user activation.
+- Installed share targets accept text, HTTP(S) links, and JPEG, PNG, GIF, WebP, or AVIF images.
+  Desktop file handlers use the same image intake where supported. Each share is limited to
+  20 images, 15 MB per image, and 50 MB total. The regular composer retains its 150-image limit.
+- Incoming content stays in IndexedDB until the user adds or discards it, with at most three
+  pending shares and a one-hour expiry. Anonymous shares survive sign-in and then belong to
+  that account. The composer sanitizes images before upload. Importing never posts or uploads.
+- Text and post details autosave locally and remain recoverable for seven days after the last
+  save, separately from server drafts. Recovery requires the same account. Files and upload
+  progress are not restored.
+  Signing out or changing accounts clears previous account data. Expiry cleanup runs on access;
+  browser eviction or clearing site data can remove drafts sooner.
+
+These are progressive enhancements. Browser and OS support differs, especially for badges,
+share targets, and desktop file handling. No background posting, background upload queue,
+periodic sync, protocol handler, or offline feed replication is implemented.
+
+Run `bun run test:e2e tests/e2e/pwa.spec.ts` for offline and incoming-share checks. The authoring
+suite covers draft recovery and confirmed image intake. Test native OS share menus, installation,
+push badges, and file associations on actual installed apps before release.
+
+References: [MDN PWA reference](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Reference),
+[Badging API](https://developer.mozilla.org/en-US/docs/Web/API/Badging_API),
+[Web Share API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Share_API),
+[share targets](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/share_target),
+and [file handlers](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/file_handlers).

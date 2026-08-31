@@ -17,7 +17,7 @@ import {
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
-import { CopyPostLinkButton } from "@/components/post-share-actions"
+import { PostLinkActions } from "@/components/post-share-actions"
 import { Button } from "@/components/ui/button"
 import { Toggle } from "@/components/ui/toggle"
 import { batchFeedPostIds } from "@/lib/feed-heart-state"
@@ -208,7 +208,7 @@ export function FeedPostActions({
         <span className="max-[359px]:sr-only">Comments</span>
         <span className="tabular-nums">{commentCount}</span>
       </Button>
-      <CopyPostLinkButton postId={postId} compactOnNarrowScreens className={feedActionClassName} />
+      <PostLinkActions postId={postId} compactOnNarrowScreens className={feedActionClassName} />
       {canEdit ? (
         <Button
           variant="ghost"

@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, Copy, Link2 } from "lucide-react"
+import { Check, Copy, Link2, Share2 } from "lucide-react"
 import { type ComponentProps, useEffect, useState } from "react"
 import { toast } from "sonner"
 
@@ -12,7 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useNativeSharing } from "@/hooks/use-native-sharing"
 import { createPostShareLinks } from "@/lib/post-share-links"
+import { shareNatively } from "@/lib/pwa/native-share"
 import { cn } from "@/lib/utils"
 
 const COPY_CONFIRMATION_DURATION_MS = 2_000
@@ -37,7 +39,7 @@ export function PostShareActions({
   readonly variant?: ComponentProps<typeof Button>["variant"]
 }) {
   if (imageCount <= 1) {
-    return <CopyPostLinkButton postId={postId} variant={variant} />
+    return <PostLinkActions postId={postId} variant={variant} />
   }
 
   function shareLinks() {
@@ -52,6 +54,7 @@ export function PostShareActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start">
         <DropdownMenuGroup>
+          <NativeShareMenuItem postId={postId} />
           <DropdownMenuItem onClick={() => void copyToClipboard(shareLinks().postUrl)}>
             <Link2 aria-hidden="true" />
             Copy post link
@@ -66,7 +69,46 @@ export function PostShareActions({
   )
 }
 
-export function CopyPostLinkButton({
+async function sharePost(postId: string) {
+  try {
+    await shareNatively({ url: createPostShareLinks(postId, 0, window.location.origin).postUrl })
+  } catch {
+    toast.error("The post could not be shared. Copy the link instead.")
+  }
+}
+
+function NativeShareMenuItem({ postId }: { postId: string }) {
+  const supported = useNativeSharing()
+  return supported ? (
+    <DropdownMenuItem onClick={() => void sharePost(postId)}>
+      <Share2 aria-hidden="true" />
+      Share to another app
+    </DropdownMenuItem>
+  ) : null
+}
+
+export function PostLinkActions(props: ComponentProps<typeof CopyPostLinkButton>) {
+  const supported = useNativeSharing()
+  return (
+    <div className="inline-flex items-center gap-1">
+      {supported && (
+        <Button
+          type="button"
+          variant={props.variant ?? "ghost"}
+          size="sm"
+          className={props.className}
+          onClick={() => void sharePost(props.postId)}
+        >
+          <Share2 aria-hidden="true" data-icon="inline-start" />
+          <span>Share</span>
+        </Button>
+      )}
+      <CopyPostLinkButton {...props} />
+    </div>
+  )
+}
+
+function CopyPostLinkButton({
   postId,
   className,
   compactOnNarrowScreens = false,

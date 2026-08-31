@@ -1,6 +1,5 @@
+import { getActiveAppWorker } from "@/lib/pwa/registration"
 import { pushSubscriptionInputSchema, type PushSubscriptionInput } from "@/push/subscription"
-
-const serviceWorkerPath = "/push-sw.js"
 
 export function supportsPushNotifications() {
   return (
@@ -19,21 +18,14 @@ export function decodeVapidPublicKey(value: string) {
   return Uint8Array.from(decoded, (character) => character.charCodeAt(0))
 }
 
-export async function getPushServiceWorker() {
-  return navigator.serviceWorker.register(serviceWorkerPath, {
-    scope: "/",
-    updateViaCache: "none",
-  })
-}
-
 export async function getExistingPushSubscription() {
   if (!supportsPushNotifications() || Notification.permission !== "granted") return null
-  const registration = await getPushServiceWorker()
+  const registration = await getActiveAppWorker()
   return registration.pushManager.getSubscription()
 }
 
 export async function createPushSubscription(vapidPublicKey: string) {
-  const registration = await getPushServiceWorker()
+  const registration = await getActiveAppWorker()
   return registration.pushManager.subscribe({
     userVisibleOnly: true,
     applicationServerKey: decodeVapidPublicKey(vapidPublicKey),

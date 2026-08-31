@@ -81,7 +81,9 @@ function PublicFeedResults() {
         <Alert className="mb-8">
           <TriangleAlert aria-hidden="true" />
           <AlertTitle>You are offline</AlertTitle>
-          <AlertDescription>Showing the posts already stored in this browser.</AlertDescription>
+          <AlertDescription>
+            Showing posts already loaded in this tab. Reconnect to load more.
+          </AlertDescription>
         </Alert>
       )}
 

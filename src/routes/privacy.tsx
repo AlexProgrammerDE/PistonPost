@@ -28,7 +28,7 @@ function PrivacyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Privacy Policy</h1>
-        <p>Last updated: July 22, 2026.</p>
+        <p>Last updated: August 31, 2026.</p>
         <p>
           This policy explains what PistonPost currently handles when you use the service, why it is
           handled, which providers are involved, and the choices available to you.
@@ -65,6 +65,21 @@ function PrivacyPage() {
             message content in queue or analytics events.
           </li>
         </ul>
+
+        <h2>Drafts and sharing on your device</h2>
+        <p>
+          Text drafts and post details can be recovered on the same device for seven days after
+          saving. Selected files and upload progress are not part of that recovery draft. Incoming
+          shares use separate temporary storage for up to one hour, including original image files.
+          Nothing is posted automatically. Images pass through the usual metadata cleaning before
+          upload. Signing out or changing accounts clears the previous account&apos;s local data.
+        </p>
+        <p>
+          These limits are checked when the app accesses local storage. Your browser can remove
+          stored data earlier, and expired data can remain until the next cleanup. Native sharing
+          sends the link or image you choose to an app selected in your device&apos;s share menu.
+          The <Link to="/cookie-policy">Cookie Policy</Link> describes this storage in more detail.
+        </p>
 
         <h2>How this information is used</h2>
         <p>PistonPost uses this information to:</p>
@@ -135,7 +150,8 @@ function PrivacyPage() {
           PistonPost stores the browser&apos;s push capability with the signed-in session and sends
           generic comment, reply, moderation, and account security alerts. The alert can appear on a
           lock screen, so its text avoids post titles, comment text, usernames, and moderation
-          reasons.
+          reasons. A supported installed app can show a dot for activity received while PistonPost
+          is not visible. The dot clears when you return; it is not an unread count.
         </p>
         <p>
           Your browser routes encrypted alerts through its push provider. Depending on the browser

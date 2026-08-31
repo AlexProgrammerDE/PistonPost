@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router"
 import { Newspaper, SquarePen, UsersRound } from "lucide-react"
 import { lazy, Suspense, useEffect } from "react"
 
+import { InstallAppDialog } from "@/components/InstallAppDialog"
 import {
   Sidebar,
   SidebarContent,
@@ -140,6 +141,7 @@ export function AppSidebar() {
                     </SidebarMenuItem>
                   )
                 })}
+                <InstallAppDialog />
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

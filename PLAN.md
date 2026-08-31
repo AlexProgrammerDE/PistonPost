@@ -826,6 +826,13 @@ Exit criteria:
 - [x] Add public profile header.
 - [x] Add public aggregate heart counts without viewer leakage.
 - [x] Add loading, empty, error, and offline-aware states.
+- [x] Add installation help and screenshots, native outbound sharing, and an offline fallback
+      without caching private or feed responses. Register independently of notification permission.
+- [x] Add an activity badge for background push and clear it when the app becomes visible.
+- [x] Add explicit shared-content import, desktop image intake, and account-scoped text recovery.
+      Enforce file limits and expiry; verify recovery, sign-out cleanup, and no automatic uploads.
+- [ ] Check native installation, OS share menus, push badges, and desktop file associations on
+      supported installed browsers before release.
 - [x] Add Open Graph metadata, canonical URLs, robots, and sitemap rules.
 - [x] Exclude unlisted and non-published content from discovery and caching.
 - [x] Add accessibility and responsive tests for representative posts.
@@ -1191,3 +1198,12 @@ Record future changes here with date, decision, reason, and affected phases.
   The dedicated image-byte limit increases to 180 requests per minute. Upload intents remain in
   batches of 20, and status queries use one JSON parameter for all media IDs. File size, pixel,
   ownership, and upload-intent limits remain unchanged. This affects Phases 2, 6, and 9.
+
+- 2026-08-31: Add progressive PWA integration without offline feed replication or automatic
+  posting. Keep the existing push registration URL, wait for worker activation before subscribing,
+  and use an unnumbered activity badge. Add install help, native outbound sharing, and a generic
+  offline page. Incoming text, links, and supported images use bounded, expiring local storage,
+  survive sign-in, and require explicit composer import. Desktop image file handlers use the same
+  intake. Text recovery drafts expire after seven days and exclude files and upload progress.
+  Account changes clear previous account data. Share intake is limited to 20 images and 50 MB
+  even though manually composed posts allow 150 images. This affects Phases 4, 5, 6, and 9.

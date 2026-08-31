@@ -37,6 +37,46 @@
   "theme_color": "#fff9ed",
   "background_color": "#fff9ed",
   "categories": ["social", "entertainment"],
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": [
+            "image/jpeg",
+            "image/png",
+            "image/gif",
+            "image/webp",
+            "image/avif",
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".webp",
+            ".avif"
+          ]
+        }
+      ]
+    }
+  },
+  "file_handlers": [
+    {
+      "action": "/posts/new",
+      "accept": {
+        "image/jpeg": [".jpg", ".jpeg"],
+        "image/png": [".png"],
+        "image/gif": [".gif"],
+        "image/webp": [".webp"],
+        "image/avif": [".avif"]
+      }
+    }
+  ],
   "shortcuts": [
     {
       "name": "New post",
@@ -50,6 +90,22 @@
           "type": "image/png"
         }
       ]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/composer-desktop.png",
+      "sizes": "1366x900",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Write a post and save a text draft on this device."
+    },
+    {
+      "src": "/screenshots/composer-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Write posts and choose pictures or video on your phone."
     }
   ]
 }

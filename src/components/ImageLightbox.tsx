@@ -4,6 +4,7 @@ import { Lightbox, type SlideImage } from "yet-another-react-lightbox"
 import Counter from "yet-another-react-lightbox/plugins/counter"
 import Zoom from "yet-another-react-lightbox/plugins/zoom"
 
+import { ShareImageButton } from "@/components/ShareImageButton"
 import type { PublicPostMedia } from "@/db/public-read-model"
 import { usePrefersReducedMotion } from "@/hooks/use-prefers-reduced-motion"
 import { DETAIL_IMAGE_WIDTHS, createMediaImageSources, mediaImageUrl } from "@/lib/media-image"
@@ -54,6 +55,14 @@ export function ImageLightboxViewer({
       index={index}
       slides={slides}
       plugins={lightboxPlugins}
+      toolbar={{
+        buttons: [
+          ...(slides[index]?.src.startsWith("/media/image/")
+            ? [<ShareImageButton key={slides[index].src} src={slides[index].src} />]
+            : []),
+          "close",
+        ],
+      }}
       carousel={{ finite: slides.length < 2, preload: 2 }}
       controller={{ closeOnBackdropClick: true }}
       zoom={{ scrollToZoom: true }}
