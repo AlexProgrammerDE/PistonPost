@@ -131,7 +131,7 @@
     {
       "name": "IMAGE_UPLOAD_RATE_LIMITER",
       "namespace_id": "11008",
-      "simple": { "limit": 120, "period": 60 },
+      "simple": { "limit": 180, "period": 60 },
     },
     {
       "name": "POST_VIEW_RATE_LIMITER",
@@ -236,7 +236,7 @@
         {
           "name": "IMAGE_UPLOAD_RATE_LIMITER",
           "namespace_id": "21008",
-          "simple": { "limit": 120, "period": 60 },
+          "simple": { "limit": 180, "period": 60 },
         },
         {
           "name": "POST_VIEW_RATE_LIMITER",
@@ -359,7 +359,7 @@
         {
           "name": "IMAGE_UPLOAD_RATE_LIMITER",
           "namespace_id": "31008",
-          "simple": { "limit": 120, "period": 60 },
+          "simple": { "limit": 180, "period": 60 },
         },
         {
           "name": "POST_VIEW_RATE_LIMITER",

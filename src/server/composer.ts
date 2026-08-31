@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, count, eq, gte, inArray, ne } from "drizzle-orm"
+import { and, count, eq, gte, ne } from "drizzle-orm"
 import { z } from "zod"
 
+import { ownedMediaStatusQuery } from "@/db/media-read-model"
 import * as schema from "@/db/schema"
 import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -374,15 +375,7 @@ export const getOwnedMediaStatus = createServerFn({ method: "GET" })
   )
   .handler(async ({ context, data }) => {
     const { database, session } = context
-    return database
-      .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
-      .from(schema.mediaAssets)
-      .where(
-        and(
-          inArray(schema.mediaAssets.id, data.ids),
-          eq(schema.mediaAssets.ownerId, session.user.id),
-        ),
-      )
+    return ownedMediaStatusQuery(database, session.user.id, data.ids)
   })
 
 export const abortMediaUpload = createServerFn({ method: "POST" })

@@ -37,14 +37,14 @@ describe("post draft input", () => {
     ).toBe(false)
   })
 
-  test("accepts up to 100 images", () => {
-    const mediaIds = Array.from({ length: 101 }, (_, index) => `media-${index.toString()}`)
+  test("accepts up to 150 images", () => {
+    const mediaIds = Array.from({ length: 151 }, (_, index) => `media-${index.toString()}`)
 
     expect(
       postDraftInputSchema.safeParse({
         ...common,
         type: "images",
-        mediaIds: mediaIds.slice(0, 100),
+        mediaIds: mediaIds.slice(0, 150),
       }).success,
     ).toBe(true)
     expect(postDraftInputSchema.safeParse({ ...common, type: "images", mediaIds }).success).toBe(

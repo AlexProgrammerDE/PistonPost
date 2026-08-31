@@ -1187,3 +1187,7 @@ Record future changes here with date, decision, reason, and affected phases.
   within D1 request and upload-slot expiry limits. Add a dedicated image-byte limit of 120 requests
   per minute so one 100-image post does not throttle itself. Keep the existing intent, size, and
   pixel limits. This affects Phases 2, 6, and 9.
+- 2026-08-31: Restore the legacy limit of 150 images per post, replacing the 100-image limit.
+  The dedicated image-byte limit increases to 180 requests per minute. Upload intents remain in
+  batches of 20, and status queries use one JSON parameter for all media IDs. File size, pixel,
+  ownership, and upload-intent limits remain unchanged. This affects Phases 2, 6, and 9.

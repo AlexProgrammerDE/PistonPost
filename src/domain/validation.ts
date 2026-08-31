@@ -1,7 +1,7 @@
 import { z } from "zod"
 
 export const MAX_POST_MARKDOWN_LENGTH = 10_000
-export const MAX_IMAGES_PER_POST = 100
+export const MAX_IMAGES_PER_POST = 150
 
 export const postMarkdownSchema = z.string().trim().min(1).max(MAX_POST_MARKDOWN_LENGTH)
 
