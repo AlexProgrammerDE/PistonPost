@@ -1,5 +1,6 @@
 "use client"
 
+import { getFormFieldErrors } from "@better-auth-ui/core"
 import type { UsernameAuthClient } from "@better-auth-ui/core/plugins/username"
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { useIsUsernameAvailable } from "@better-auth-ui/react/plugins/username"
@@ -19,7 +20,16 @@ import { usernamePlugin } from "@/lib/auth/username-plugin"
  * validation (minLength, required, etc.) — availability feedback is shown
  * via the icon and `aria-label` without affecting the field's invalid state.
  */
-export function UsernameField({ name, field, isPending }: AdditionalFieldProps) {
+export function UsernameField({
+  name,
+  field,
+  value,
+  onBlur,
+  onChange,
+  isInvalid,
+  errors,
+  isPending,
+}: AdditionalFieldProps) {
   const { authClient, localization: authLocalization } = useAuth<UsernameAuthClient>()
   const {
     localization,
@@ -30,8 +40,9 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
   } = useAuthPlugin(usernamePlugin)
 
   const currentUsername = String(field.defaultValue ?? "")
-  const [value, setValue] = useState(currentUsername)
-  const [error, setError] = useState<string>()
+  const username = typeof value === "string" ? value : ""
+  const [nativeError, setNativeError] = useState<string>()
+  const fieldErrors = getFormFieldErrors(errors ?? [])
 
   const {
     mutate: requestAvailability,
@@ -56,8 +67,8 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
   )
 
   function handleChange(next: string) {
-    setValue(next)
-    setError(undefined)
+    onChange(next || null)
+    setNativeError(undefined)
     resetAvailability()
 
     if (checkAvailability) {
@@ -66,10 +77,10 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
   }
 
   const isCheckingAvailability =
-    !!checkAvailability && !!value.trim() && value.trim() !== currentUsername
+    !!checkAvailability && !!username.trim() && username.trim() !== currentUsername
 
   return (
-    <Field data-invalid={!!error}>
+    <Field data-invalid={isInvalid || !!nativeError}>
       <FieldLabel htmlFor={name}>{field.label}</FieldLabel>
 
       <InputGroup>
@@ -85,7 +96,8 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
           disabled={isPending}
           required={field.required}
           readOnly={field.readOnly}
-          value={value}
+          value={username}
+          onBlur={onBlur}
           onChange={(e) => handleChange(e.target.value)}
           onInvalid={(e) => {
             e.preventDefault()
@@ -95,9 +107,9 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
               : el.validity.tooShort
                 ? authLocalization.auth.tooShort.replace("{{min}}", String(minUsernameLength))
                 : authLocalization.auth.tooLong.replace("{{max}}", String(maxUsernameLength))
-            setError(msg)
+            setNativeError(msg)
           }}
-          aria-invalid={!!error}
+          aria-invalid={isInvalid || !!nativeError}
           placeholder={field.placeholder}
         />
 
@@ -123,7 +135,7 @@ export function UsernameField({ name, field, isPending }: AdditionalFieldProps) 
         )}
       </InputGroup>
 
-      <FieldError>{error}</FieldError>
+      <FieldError errors={fieldErrors}>{nativeError}</FieldError>
     </Field>
   )
 }

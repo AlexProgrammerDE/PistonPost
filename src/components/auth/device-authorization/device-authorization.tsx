@@ -10,17 +10,10 @@ import {
   useDenyDevice,
   useVerifyDeviceCode,
 } from "@better-auth-ui/react/plugins/device-authorization"
+import { useSelector } from "@tanstack/react-form"
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp"
 import { CheckIcon, CircleCheckIcon, CircleXIcon, XIcon } from "lucide-react"
-import {
-  type FormEvent,
-  type ReactNode,
-  useCallback,
-  useEffect,
-  useReducer,
-  useRef,
-  useState,
-} from "react"
+import { type ReactNode, useCallback, useEffect, useReducer, useRef, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -37,6 +30,8 @@ import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { deviceAuthorizationPlugin } from "@/lib/auth/device-authorization-plugin"
 import { cn } from "@/lib/utils"
+
+import { useAuthForm } from "../auth-form"
 
 type DeviceAuthorizationStep = "code" | "approval" | "approved" | "denied"
 
@@ -117,7 +112,6 @@ export function DeviceAuthorization({ className }: DeviceAuthorizationProps) {
   const [userCode, setUserCode] = useState("")
   const [state, dispatch] = useReducer(deviceAuthorizationReducer, initialDeviceAuthorizationState)
   const submittedCodeRef = useRef<string | null>(null)
-  const normalizedUserCode = normalizeDeviceCode(userCode)
 
   const handleAuthorizationError = () => {
     dispatch({
@@ -156,19 +150,6 @@ export function DeviceAuthorization({ className }: DeviceAuthorizationProps) {
     onError: handleAuthorizationError,
     onSuccess: () => dispatch({ type: "denied" }),
   })
-
-  const handleCodeChange = (value: string) => {
-    const nextCode = normalizeDeviceCode(value)
-      .replace(/[^A-Z0-9]/g, "")
-      .slice(0, userCodeLength)
-
-    if (nextCode !== submittedCodeRef.current) {
-      submittedCodeRef.current = null
-    }
-
-    setUserCode(nextCode)
-    dispatch({ type: "codeChanged" })
-  }
 
   const submitCode = useCallback(
     (completedCode: string) => {
@@ -209,22 +190,22 @@ export function DeviceAuthorization({ className }: DeviceAuthorizationProps) {
     ],
   )
 
-  useEffect(() => {
-    if (normalizedUserCode.length === userCodeLength) {
-      submitCode(normalizedUserCode)
-    }
-  }, [normalizedUserCode, submitCode, userCodeLength])
+  const handleSubmit = useCallback(
+    (code: string) => {
+      const normalizedCode = normalizeDeviceCode(code)
+      if (normalizedCode.length !== userCodeLength) {
+        dispatch({
+          type: "verificationFailed",
+          message: localization.invalidDeviceCode,
+        })
+        return
+      }
+      submitCode(normalizedCode)
+    },
+    [localization.invalidDeviceCode, submitCode, userCodeLength],
+  )
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-
-    if (normalizedUserCode.length !== userCodeLength) {
-      handleAuthorizationError()
-      return
-    }
-
-    submitCode(normalizedUserCode)
-  }
+  const authorizedCode = submittedCodeRef.current ?? ""
 
   const cardClassName = cn("w-full max-w-sm", className)
 
@@ -233,12 +214,12 @@ export function DeviceAuthorization({ className }: DeviceAuthorizationProps) {
       <DeviceApproval
         className={cardClassName}
         localization={localization}
-        userCode={normalizedUserCode}
+        userCode={authorizedCode}
         user={session.user}
         isApproving={isApproving}
         isDenying={isDenying}
-        onApprove={() => approveDevice({ userCode: normalizedUserCode })}
-        onDeny={() => denyDevice({ userCode: normalizedUserCode })}
+        onApprove={() => approveDevice({ userCode: authorizedCode })}
+        onDeny={() => denyDevice({ userCode: authorizedCode })}
       />
     )
   }
@@ -265,10 +246,10 @@ export function DeviceAuthorization({ className }: DeviceAuthorizationProps) {
       isSessionPending={isSessionPending}
       isVerifying={isVerifying}
       localization={localization}
-      userCode={userCode}
+      initialUserCode={userCode}
       userCodeLength={userCodeLength}
-      onCodeChange={handleCodeChange}
-      onSubmit={handleSubmit}
+      onCodeChange={() => dispatch({ type: "codeChanged" })}
+      onSubmitCode={handleSubmit}
     />
   )
 }
@@ -279,10 +260,10 @@ type DeviceCodeFormProps = {
   isSessionPending: boolean
   isVerifying: boolean
   localization: DeviceAuthorizationLocalization
-  userCode: string
+  initialUserCode: string
   userCodeLength: number
   onCodeChange: (value: string) => void
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onSubmitCode: (code: string) => void
 }
 
 function DeviceCodeForm({
@@ -291,16 +272,31 @@ function DeviceCodeForm({
   isSessionPending,
   isVerifying,
   localization,
-  userCode,
+  initialUserCode,
   userCodeLength,
   onCodeChange,
-  onSubmit,
+  onSubmitCode,
 }: DeviceCodeFormProps) {
   const slots = createDeviceCodeSlots(userCodeLength)
   const groupBreak = Math.ceil(userCodeLength / 2)
   const firstGroup = slots.slice(0, groupBreak)
   const secondGroup = slots.slice(groupBreak)
   const errorId = "device-code-error"
+  const form = useAuthForm({
+    defaultValues: { userCode: initialUserCode },
+    onSubmit: ({ value }) => onSubmitCode(value.userCode),
+  })
+  const userCodeComplete = useSelector(
+    form.store,
+    (state) => state.values.userCode.length === userCodeLength,
+  )
+
+  useEffect(() => {
+    form.setFieldValue("userCode", initialUserCode)
+    if (initialUserCode.length === userCodeLength) {
+      onSubmitCode(initialUserCode)
+    }
+  }, [form.setFieldValue, initialUserCode, onSubmitCode, userCodeLength])
 
   return (
     <Card className={className}>
@@ -310,57 +306,70 @@ function DeviceCodeForm({
       </CardHeader>
 
       <CardContent>
-        <form aria-label={localization.deviceAuthorization} onSubmit={onSubmit}>
-          <FieldGroup>
-            <Field data-invalid={Boolean(codeError)}>
-              <FieldLabel htmlFor="device-code">{localization.deviceCode}</FieldLabel>
+        <form.AppForm>
+          <form.AuthFormRoot aria-label={localization.deviceAuthorization}>
+            <FieldGroup>
+              <form.AppField name="userCode">
+                {(field) => (
+                  <Field data-invalid={Boolean(codeError)}>
+                    <FieldLabel htmlFor="device-code">{localization.deviceCode}</FieldLabel>
 
-              <InputOTP
-                id="device-code"
-                aria-describedby={codeError ? errorId : undefined}
-                aria-invalid={Boolean(codeError)}
-                autoComplete="one-time-code"
-                containerClassName="w-full justify-center"
-                disabled={isVerifying}
-                inputMode="text"
-                maxLength={userCodeLength}
-                name="userCode"
-                pasteTransformer={normalizeDeviceCode}
-                pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-                value={userCode}
-                onChange={onCodeChange}
+                    <InputOTP
+                      id="device-code"
+                      aria-describedby={codeError ? errorId : undefined}
+                      aria-invalid={Boolean(codeError)}
+                      autoComplete="one-time-code"
+                      containerClassName="w-full justify-center"
+                      disabled={isVerifying}
+                      inputMode="text"
+                      maxLength={userCodeLength}
+                      name={field.name}
+                      pasteTransformer={normalizeDeviceCode}
+                      pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
+                      value={field.state.value}
+                      onChange={(value) => {
+                        const nextCode = normalizeDeviceCode(value)
+                          .replace(/[^A-Z0-9]/g, "")
+                          .slice(0, userCodeLength)
+                        field.handleChange(nextCode)
+                        onCodeChange(nextCode)
+                        if (nextCode.length === userCodeLength) onSubmitCode(nextCode)
+                      }}
+                    >
+                      <InputOTPGroup>
+                        {firstGroup.map((slot) => (
+                          <InputOTPSlot key={slot.id} index={slot.index} />
+                        ))}
+                      </InputOTPGroup>
+
+                      {secondGroup.length > 0 ? (
+                        <>
+                          <InputOTPSeparator />
+                          <InputOTPGroup>
+                            {secondGroup.map((slot) => (
+                              <InputOTPSlot key={slot.id} index={slot.index} />
+                            ))}
+                          </InputOTPGroup>
+                        </>
+                      ) : null}
+                    </InputOTP>
+
+                    <FieldError id={errorId}>{codeError}</FieldError>
+                  </Field>
+                )}
+              </form.AppField>
+
+              <form.AuthFormSubmitButton
+                className="w-full"
+                disabled={!userCodeComplete || isSessionPending || isVerifying}
+                type="submit"
               >
-                <InputOTPGroup>
-                  {firstGroup.map((slot) => (
-                    <InputOTPSlot key={slot.id} index={slot.index} />
-                  ))}
-                </InputOTPGroup>
-
-                {secondGroup.length > 0 ? (
-                  <>
-                    <InputOTPSeparator />
-                    <InputOTPGroup>
-                      {secondGroup.map((slot) => (
-                        <InputOTPSlot key={slot.id} index={slot.index} />
-                      ))}
-                    </InputOTPGroup>
-                  </>
-                ) : null}
-              </InputOTP>
-
-              <FieldError id={errorId}>{codeError}</FieldError>
-            </Field>
-
-            <Button
-              className="w-full"
-              disabled={userCode.length !== userCodeLength || isSessionPending || isVerifying}
-              type="submit"
-            >
-              {isVerifying ? <Spinner data-icon="inline-start" /> : null}
-              {localization.continue}
-            </Button>
-          </FieldGroup>
-        </form>
+                {isVerifying ? <Spinner data-icon="inline-start" /> : null}
+                {localization.continue}
+              </form.AuthFormSubmitButton>
+            </FieldGroup>
+          </form.AuthFormRoot>
+        </form.AppForm>
       </CardContent>
     </Card>
   )
