@@ -1,6 +1,12 @@
 "use client"
 
-import { getAuthLinkURL, isPasswordCompromisedError } from "@better-auth-ui/core"
+import {
+  getAuthLinkURL,
+  isPasswordCompromisedError,
+  validateEmailAddress,
+  validateMatchingValue,
+  validateStringLength,
+} from "@better-auth-ui/core"
 import type { EmailOtpAuthClient } from "@better-auth-ui/core/plugins/email-otp"
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { useResetPasswordOtp } from "@better-auth-ui/react/plugins/email-otp"
@@ -10,7 +16,7 @@ import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   InputGroup,
@@ -18,11 +24,15 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Spinner } from "@/components/ui/spinner"
 import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
 import { cn } from "@/lib/utils"
 
-import { useAuthForm } from "../auth-form"
+import {
+  isAuthFormFieldInvalid,
+  setAuthFormServerError,
+  submitAuthForm,
+  useAuthForm,
+} from "../auth-form"
 import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 import { PasswordStrengthMeter } from "../password-strength-meter"
@@ -61,16 +71,19 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
   const initialEmail = (isHydrated && sessionStorage.getItem(RESET_PASSWORD_OTP_STORAGE_KEY)) || ""
   const [hasStoredEmail, setHasStoredEmail] = useState(Boolean(initialEmail))
   const [isPasswordVisible, setIsPasswordVisible] = useState(false)
-  const [passwordError, setPasswordError] = useState("")
 
-  const { mutate: resetPasswordOtp, isPending } = useResetPasswordOtp(
+  const { mutateAsync: resetPasswordOtp, isPending } = useResetPasswordOtp(
     authClient as EmailOtpAuthClient,
     {
       onError: (error) => {
         // The haveIBeenPwned plugin rejects on the password itself, so it
         // belongs against the field rather than in a toast.
         if (isPasswordCompromisedError(error)) {
-          setPasswordError(localization.auth.passwordCompromised)
+          setAuthFormServerError(
+            form,
+            { fields: { password: localization.auth.passwordCompromised } },
+            localization.auth.passwordCompromised,
+          )
         }
         form.setFieldValue("code", "")
       },
@@ -82,6 +95,21 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
     },
   )
 
+  const validatePassword = (value: string) =>
+    validateStringLength(value, {
+      maxLength: emailAndPassword?.maxPasswordLength,
+      maxLengthMessage: localization.auth.tooLong.replace(
+        "{{max}}",
+        String(emailAndPassword?.maxPasswordLength),
+      ),
+      minLength: emailAndPassword?.minPasswordLength,
+      minLengthMessage: localization.auth.tooShort.replace(
+        "{{min}}",
+        String(emailAndPassword?.minPasswordLength),
+      ),
+      requiredMessage: localization.auth.fieldRequired,
+    })
+
   const form = useAuthForm({
     defaultValues: {
       code: "",
@@ -89,18 +117,8 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
       email: initialEmail,
       password: "",
     },
-    onSubmit: ({ value }) => {
-      if (emailAndPassword?.confirmPassword && value.password !== value.confirmPassword) {
-        toast.error(localization.auth.passwordsDoNotMatch)
-        return
-      }
-      if (value.code.length !== otpLength) {
-        toast.error(
-          emailOtpLocalization.codeLengthMismatch.replace("{{length}}", String(otpLength)),
-        )
-        return
-      }
-      resetPasswordOtp({
+    onSubmit: async ({ value }) => {
+      await resetPasswordOtp({
         email: value.email,
         otp: value.code,
         password: value.password,
@@ -132,31 +150,42 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
           <form.AuthFormRoot>
             <FieldGroup>
               {!hasStoredEmail && (
-                <form.AppField name="email">
+                <form.AppField
+                  name="email"
+                  validators={{
+                    onChange: ({ value }) =>
+                      validateEmailAddress(value, {
+                        invalidMessage: localization.auth.invalidEmail,
+                        requiredMessage: localization.auth.fieldRequired,
+                      }),
+                  }}
+                >
                   {(field) => (
-                    <Field>
-                      <FieldLabel htmlFor="email">{localization.auth.email}</FieldLabel>
-
-                      <Input
-                        id="email"
-                        name={field.name}
-                        type="email"
-                        autoComplete="email"
-                        value={field.state.value}
-                        placeholder={localization.auth.emailPlaceholder}
-                        required
-                        disabled={isPending}
-                        onBlur={field.handleBlur}
-                        onChange={(event) => field.handleChange(event.target.value)}
-                      />
-
-                      <field.AuthFormFieldError />
-                    </Field>
+                    <field.AuthFormTextField
+                      autoComplete="email"
+                      disabled={isPending}
+                      id="email"
+                      label={localization.auth.email}
+                      placeholder={localization.auth.emailPlaceholder}
+                      required
+                      type="email"
+                    />
                   )}
                 </form.AppField>
               )}
 
-              <form.AppField name="code">
+              <form.AppField
+                name="code"
+                validators={{
+                  onChange: ({ value }) =>
+                    value.length === otpLength
+                      ? undefined
+                      : emailOtpLocalization.codeLengthMismatch.replace(
+                          "{{length}}",
+                          String(otpLength),
+                        ),
+                }}
+              >
                 {(field) => (
                   <OtpField
                     autoFocus={hasStoredEmail}
@@ -166,17 +195,19 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
                     name="otp"
                     value={field.state.value}
                     onChange={field.handleChange}
-                    onComplete={(code) => {
-                      field.handleChange(code)
-                      if (form.state.values.password) void form.handleSubmit()
-                    }}
+                    onComplete={() => void submitAuthForm(form)}
                   />
                 )}
               </form.AppField>
 
-              <form.AppField name="password">
+              <form.AppField
+                name="password"
+                validators={{
+                  onChange: ({ value }) => validatePassword(value),
+                }}
+              >
                 {(field) => (
-                  <Field data-invalid={Boolean(passwordError)}>
+                  <Field data-invalid={isAuthFormFieldInvalid(field.state.meta)}>
                     <FieldLabel htmlFor="password">{localization.auth.newPassword}</FieldLabel>
 
                     <InputGroup>
@@ -192,11 +223,8 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
                         disabled={isPending}
                         value={field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(event) => {
-                          setPasswordError("")
-                          field.handleChange(event.target.value)
-                        }}
-                        aria-invalid={Boolean(passwordError)}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        aria-invalid={isAuthFormFieldInvalid(field.state.meta)}
                       />
 
                       <InputGroupAddon align="inline-end">
@@ -219,7 +247,7 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
                       </InputGroupAddon>
                     </InputGroup>
 
-                    {passwordError && <FieldError>{passwordError}</FieldError>}
+                    <field.AuthFormFieldError />
 
                     <PasswordStrengthMeter password={field.state.value} />
                   </Field>
@@ -227,9 +255,20 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
               </form.AppField>
 
               {emailAndPassword?.confirmPassword && (
-                <form.AppField name="confirmPassword">
+                <form.AppField
+                  name="confirmPassword"
+                  validators={{
+                    onChangeListenTo: ["password"],
+                    onChange: ({ value, fieldApi }) =>
+                      validateMatchingValue(
+                        value,
+                        fieldApi.form.getFieldValue("password"),
+                        localization.auth.passwordsDoNotMatch,
+                      ),
+                  }}
+                >
                   {(field) => (
-                    <Field>
+                    <Field data-invalid={isAuthFormFieldInvalid(field.state.meta)}>
                       <FieldLabel htmlFor="confirmPassword">
                         {localization.auth.confirmPassword}
                       </FieldLabel>
@@ -247,7 +286,10 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(event) => field.handleChange(event.target.value)}
+                        aria-invalid={isAuthFormFieldInvalid(field.state.meta)}
                       />
+
+                      <field.AuthFormFieldError />
                     </Field>
                   )}
                 </form.AppField>
@@ -255,13 +297,12 @@ export function ResetPasswordOtp({ className }: ResetPasswordOtpProps) {
 
               <div className="flex flex-col gap-3">
                 <form.AuthFormSubmitButton disabled={isPending}>
-                  {isPending && <Spinner />}
-
                   {localization.auth.resetPassword}
                 </form.AuthFormSubmitButton>
 
                 {email && <OpenEmailButton email={email} variant="secondary" />}
               </div>
+              <form.AuthFormServerError />
             </FieldGroup>
           </form.AuthFormRoot>
         </form.AppForm>

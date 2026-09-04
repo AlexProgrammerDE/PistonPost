@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { isAuthFormFieldInvalid, useAuthForm } from "./auth-form"
 import { MAGIC_LINK_SENT_STORAGE_KEY } from "./magic-link-sent"
 import { ProviderButtons, type SocialLayout } from "./provider-buttons"
+import { ReauthenticationNotice } from "./reauthentication"
 
 export type MagicLinkProps = {
   className?: string
@@ -55,7 +56,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
   const { localization: magicLinkLocalization, viewPaths: magicLinkViewPaths } =
     useAuthPlugin(magicLinkPlugin)
 
-  const { mutate: signInMagicLink, isPending: signInMagicLinkPending } = useSignInMagicLink(
+  const { mutateAsync: signInMagicLink, isPending: signInMagicLinkPending } = useSignInMagicLink(
     authClient,
     {
       onSuccess: (_data, variables) => {
@@ -77,8 +78,8 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
 
   const form = useAuthForm({
     defaultValues: { email: getSsoFallbackEmail() },
-    onSubmit: ({ value }) =>
-      signInMagicLink({
+    onSubmit: async ({ value }) =>
+      await signInMagicLink({
         callbackURL: `${baseURL}${redirectTo}`,
         email: value.email,
       }),
@@ -88,6 +89,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
 
   return (
     <Card className={cn("w-full max-w-sm", className)}>
+      <ReauthenticationNotice />
       <CardHeader>
         <CardTitle className="text-xl">{localization.auth.signIn}</CardTitle>
       </CardHeader>

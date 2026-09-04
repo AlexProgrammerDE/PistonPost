@@ -25,10 +25,11 @@ import { useResendCooldown } from "@/lib/auth/use-resend-cooldown"
 import { useSignInContinuation } from "@/lib/auth/use-sign-in-continuation"
 import { cn } from "@/lib/utils"
 
-import { useAuthForm } from "../auth-form"
+import { runAuthFormAction, submitAuthForm, useAuthForm } from "../auth-form"
 import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 import { ProviderButtons, type SocialLayout } from "../provider-buttons"
+import { ReauthenticationNotice } from "../reauthentication"
 
 export type EmailOtpProps = {
   className?: string
@@ -65,14 +66,17 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
 
   const [codeSent, setCodeSent] = useState(false)
 
-  const { mutate: sendVerificationOtp, isPending: isSending } = useSendVerificationOtp(otpClient, {
-    onSuccess: () => {
-      setCodeSent(true)
-      startCooldown()
+  const { mutateAsync: sendVerificationOtp, isPending: isSending } = useSendVerificationOtp(
+    otpClient,
+    {
+      onSuccess: () => {
+        setCodeSent(true)
+        startCooldown()
+      },
     },
-  })
+  )
 
-  const { mutate: signInEmailOtp, isPending: isSigningIn } = useSignInEmailOtp(otpClient, {
+  const { mutateAsync: signInEmailOtp, isPending: isSigningIn } = useSignInEmailOtp(otpClient, {
     onError: () => form.setFieldValue("code", ""),
     onSuccess: (data) => continueSignIn(data),
   })
@@ -85,26 +89,29 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
   })
   const isPending = signInMutating + signUpMutating > 0 || isSending
 
-  const sendCode = () =>
-    sendVerificationOtp({
+  const sendCode = async () =>
+    await sendVerificationOtp({
       email: form.state.values.email,
       type: "sign-in",
     })
-  const verifyCode = (completedCode: string) => {
+  const verifyCode = async (completedCode: string) => {
     if (isPending || isSigningIn) return
 
-    signInEmailOtp({ email: form.state.values.email, otp: completedCode })
+    await signInEmailOtp({
+      email: form.state.values.email,
+      otp: completedCode,
+    })
   }
 
   const form = useAuthForm({
     defaultValues: { code: "", email: getSsoFallbackEmail() },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       if (!codeSent) {
-        sendVerificationOtp({ email: value.email, type: "sign-in" })
+        await sendVerificationOtp({ email: value.email, type: "sign-in" })
         return
       }
 
-      verifyCode(value.code)
+      await verifyCode(value.code)
     },
   })
   const codeComplete = useSelector(form.store, (state) => state.values.code.length === otpLength)
@@ -114,6 +121,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
 
   return (
     <Card className={cn("w-full max-w-sm", className)}>
+      <ReauthenticationNotice />
       <CardHeader>
         <CardTitle className="text-xl">{localization.auth.signIn}</CardTitle>
 
@@ -154,7 +162,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                         name={field.name}
                         value={field.state.value}
                         onChange={field.handleChange}
-                        onComplete={verifyCode}
+                        onComplete={() => void submitAuthForm(form)}
                       />
                     )}
                   </form.AppField>
@@ -181,6 +189,8 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                   </form.AppField>
                 )}
 
+                <form.AuthFormServerError />
+
                 <div className="flex flex-col gap-3">
                   <form.AuthFormSubmitButton
                     disabled={isPending || isSigningIn || (codeSent && !codeComplete)}
@@ -198,7 +208,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                         type="button"
                         variant="outline"
                         disabled={isPending || isSigningIn || isCoolingDown}
-                        onClick={sendCode}
+                        onClick={() => void runAuthFormAction(form, sendCode)}
                       >
                         {isCoolingDown
                           ? localization.auth.resendIn.replace("{{seconds}}", String(cooldown))

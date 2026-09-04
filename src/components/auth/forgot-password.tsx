@@ -33,7 +33,7 @@ export function ForgotPassword({ className }: ForgotPasswordProps) {
 
   const { fetchOptions, resetFetchOptions } = useFetchOptions()
 
-  const { mutate: requestPasswordReset, isPending } = useRequestPasswordReset(authClient, {
+  const { mutateAsync: requestPasswordReset, isPending } = useRequestPasswordReset(authClient, {
     onError: () => {
       resetFetchOptions()
     },
@@ -45,8 +45,8 @@ export function ForgotPassword({ className }: ForgotPasswordProps) {
 
   const form = useAuthForm({
     defaultValues: { email: "" },
-    onSubmit: ({ value }) =>
-      requestPasswordReset({
+    onSubmit: async ({ value }) =>
+      await requestPasswordReset({
         email: value.email,
         redirectTo: getViewURL(baseURL, basePaths.auth, viewPaths.auth.resetPassword),
         fetchOptions,

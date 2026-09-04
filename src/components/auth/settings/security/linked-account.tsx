@@ -4,7 +4,7 @@ import {
   type AuthSocialProvider,
   getProviderId,
   getProviderName,
-  isSessionNotFreshError,
+  isReauthenticationRequiredError,
 } from "@better-auth-ui/core"
 import {
   renderProviderIcon,
@@ -31,7 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { cn } from "@/lib/utils"
 
-import { FreshSessionPrompt } from "./fresh-session-prompt"
+import { ReauthenticationAction } from "../../reauthentication"
 
 export type LinkedAccountProps = {
   account?: Account
@@ -59,6 +59,12 @@ export function LinkedAccount({ account, canUnlink = true, provider }: LinkedAcc
   const { mutate: linkSocial, isPending: isLinking } = useLinkSocial(authClient)
 
   const unlinkAccount = useUnlinkAccount(authClient, {
+    meta: { errorPresentation: "inline" },
+    onError: (error) => {
+      if (!isReauthenticationRequiredError(error)) {
+        toast.error(error.error?.message ?? error.message)
+      }
+    },
     onSuccess: () => toast.success(localization.settings.accountUnlinked),
   })
 
@@ -74,7 +80,7 @@ export function LinkedAccount({ account, canUnlink = true, provider }: LinkedAcc
     accountInfo?.user?.name ||
     account?.accountId
 
-  const needsFreshSession = isSessionNotFreshError(unlinkAccount.error)
+  const needsReauthentication = isReauthenticationRequiredError(unlinkAccount.error)
 
   return (
     <>
@@ -131,7 +137,7 @@ export function LinkedAccount({ account, canUnlink = true, provider }: LinkedAcc
       </Item>
       {account && (
         <Dialog
-          open={needsFreshSession}
+          open={needsReauthentication}
           onOpenChange={(nextOpen) => {
             if (!nextOpen) unlinkAccount.reset()
           }}
@@ -139,10 +145,10 @@ export function LinkedAccount({ account, canUnlink = true, provider }: LinkedAcc
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="sr-only">
-                {localization.settings.freshSessionTitle}
+                {localization.settings.reauthenticationTitle}
               </DialogTitle>
             </DialogHeader>
-            <FreshSessionPrompt onFresh={() => unlinkAccount.mutate({ accountId: account.id })} />
+            <ReauthenticationAction showTitle={false} />
           </DialogContent>
         </Dialog>
       )}

@@ -1,19 +1,17 @@
 "use client"
 
+import { getLookaheadPage } from "@better-auth-ui/core"
 import type { ApiKeyAuthClient, ListedApiKey } from "@better-auth-ui/core/plugins/api-key"
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { useListApiKeys } from "@better-auth-ui/react/plugins/api-key"
 import {
   createTableHook,
-  functionalUpdate,
-  type PaginationState,
   rowPaginationFeature,
   rowSortingFeature,
   type SortingState,
   tableFeatures,
-  type Updater,
 } from "@tanstack/react-table"
-import { Fragment, useState } from "react"
+import { Fragment, useEffect, useMemo, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -29,6 +27,7 @@ import {
 import { apiKeyPlugin } from "@/lib/auth/api-key-plugin"
 import { cn } from "@/lib/utils"
 
+import { useServerTableState } from "../server-table-state"
 import { ApiKey } from "./api-key"
 import { ApiKeySkeleton } from "./api-key-skeleton"
 import { ApiKeysEmpty } from "./api-keys-empty"
@@ -47,6 +46,7 @@ const apiKeyColumns = apiKeyColumnHelper.columns([
   apiKeyColumnHelper.accessor("name", { id: "name" }),
 ])
 const EMPTY_API_KEYS: ListedApiKey[] = []
+const INITIAL_API_KEY_SORTING: SortingState = [{ id: "createdAt", desc: true }]
 
 export type ApiKeysProps = {
   className?: string
@@ -72,11 +72,11 @@ export function ApiKeys({
 }: ApiKeysProps) {
   const { authClient } = useAuth<ApiKeyAuthClient>()
   const { localization: apiKeyLocalization, pageSize } = useAuthPlugin(apiKeyPlugin)
-  const [pagination, setPaginationState] = useState<PaginationState>({
-    pageIndex: 0,
+  const tableState = useServerTableState({
+    initialSorting: INITIAL_API_KEY_SORTING,
     pageSize,
   })
-  const [sorting, setSortingState] = useState<SortingState>([{ id: "createdAt", desc: true }])
+  const { pagination, setPagination, sorting } = tableState
   const primarySort = sorting[0]
   const sortBy = primarySort?.id === "name" ? "name" : "createdAt"
   const sortDirection = primarySort?.desc ? "desc" : "asc"
@@ -88,10 +88,14 @@ export function ApiKeys({
     { label: apiKeyLocalization.nameDescending, value: "name:desc" },
   ]
 
-  const { data: listData, isPending: isListPending } = useListApiKeys(authClient, {
+  const {
+    data: listData,
+    isPending: isListPending,
+    isSuccess: isListSuccess,
+  } = useListApiKeys(authClient, {
     enabled: !isPendingProp,
     query: {
-      limit: pagination.pageSize,
+      limit: pagination.pageSize + 1,
       offset: pagination.pageIndex * pagination.pageSize,
       sortBy,
       sortDirection,
@@ -100,22 +104,30 @@ export function ApiKeys({
   })
 
   const isPending = isPendingProp || isListPending
-  const setPagination = (updater: Updater<PaginationState>) =>
-    setPaginationState((current) => functionalUpdate(updater, current))
-  const setSorting = (updater: Updater<SortingState>) => {
-    setSortingState((current) => functionalUpdate(updater, current))
-    setPaginationState((current) => ({ ...current, pageIndex: 0 }))
-  }
-  const table = useApiKeyTable({
-    columns: apiKeyColumns,
-    data: listData?.apiKeys ?? EMPTY_API_KEYS,
-    getRowId: (apiKey) => apiKey.id,
-    manualPagination: true,
-    manualSorting: true,
-    state: { pagination, sorting },
-    onPaginationChange: setPagination,
-    onSortingChange: setSorting,
-  })
+  const page = useMemo(
+    () => getLookaheadPage(listData?.apiKeys ?? EMPTY_API_KEYS, pagination.pageSize),
+    [listData?.apiKeys, pagination.pageSize],
+  )
+  useEffect(() => {
+    if (isListSuccess && !isPendingProp && pagination.pageIndex > 0 && page.rows.length === 0) {
+      setPagination((current) => ({
+        ...current,
+        pageIndex: Math.max(0, current.pageIndex - 1),
+      }))
+    }
+  }, [isListSuccess, isPendingProp, page.rows.length, pagination.pageIndex, setPagination])
+  const table = useApiKeyTable(
+    {
+      atoms: tableState.atoms,
+      columns: apiKeyColumns,
+      data: page.rows,
+      getRowId: (apiKey) => apiKey.id,
+      manualPagination: true,
+      pageCount: -1,
+      manualSorting: true,
+    },
+    () => null,
+  )
 
   const [createOpen, setCreateOpen] = useState(false)
 
@@ -161,7 +173,7 @@ export function ApiKeys({
         <CardContent className="p-0">
           {isPending ? (
             <ApiKeySkeleton />
-          ) : !listData?.apiKeys.length ? (
+          ) : page.rows.length === 0 ? (
             <ApiKeysEmpty onCreatePress={() => setCreateOpen(true)} hideCreate={hideCreate} />
           ) : (
             <ItemGroup className="gap-0">
@@ -180,7 +192,7 @@ export function ApiKeys({
           )}
         </CardContent>
       </Card>
-      {(pagination.pageIndex > 0 || (listData?.apiKeys.length ?? 0) === pagination.pageSize) && (
+      {(pagination.pageIndex > 0 || page.hasNextPage) && (
         <div className="flex justify-end gap-2">
           <Button
             variant="outline"
@@ -193,7 +205,7 @@ export function ApiKeys({
           <Button
             variant="outline"
             size="sm"
-            disabled={(listData?.apiKeys.length ?? 0) < pagination.pageSize}
+            disabled={!page.hasNextPage}
             onClick={() => table.nextPage()}
           >
             {apiKeyLocalization.nextPage}

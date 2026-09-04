@@ -54,7 +54,7 @@ export function CreateApiKeyDialog({
     localization: apiKeyLocalization,
   } = useAuthPlugin(apiKeyPlugin)
 
-  const { mutate: createApiKey, isPending: isCreating } = useCreateApiKey(authClient)
+  const { mutateAsync: createApiKey, isPending: isCreating } = useCreateApiKey(authClient)
 
   const [isNewKeyDialogOpen, setIsNewKeyDialogOpen] = useState(false)
   const [keyName, setKeyName] = useState<string | null>(null)
@@ -67,12 +67,12 @@ export function CreateApiKeyDialog({
     defaultValues: {
       configId: availableConfigurations[0]?.id ?? "",
       expiration:
-        keyExpiration && keyExpiration.defaultInterval === null
+        keyExpiration === false || keyExpiration?.defaultInterval == null
           ? "never"
-          : String((keyExpiration && keyExpiration.defaultInterval) ?? "never"),
+          : String(keyExpiration.defaultInterval),
       name: "",
     },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const name = value.name.trim()
       const expirationDays = value.expiration !== "never" ? Number(value.expiration) : undefined
       const expiresIn = expirationDays ? apiKeyExpirationDaysToSeconds(expirationDays) : undefined
@@ -84,7 +84,7 @@ export function CreateApiKeyDialog({
         ...(resolvedConfigId ? { configId: resolvedConfigId } : {}),
         ...(organizationId ? { organizationId } : {}),
       }
-      createApiKey(Object.keys(payload).length > 0 ? payload : undefined, {
+      await createApiKey(Object.keys(payload).length > 0 ? payload : undefined, {
         onSuccess: (result) => {
           handleOpenChange(false)
           setKeyName(name)

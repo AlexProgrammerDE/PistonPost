@@ -20,7 +20,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { emailOtpPlugin } from "@/lib/auth/email-otp-plugin"
 import { cn } from "@/lib/utils"
 
-import { useAuthForm } from "../auth-form"
+import { submitAuthForm, useAuthForm } from "../auth-form"
 import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 
@@ -84,9 +84,10 @@ export function ChangeEmailOtp({ className }: ChangeEmailOtpProps) {
   // The step transition is attached per call: the code goes to the current
   // address while the pending change targets the new one, so the address to
   // remember isn't in this mutation's variables.
-  const { mutate: sendVerificationOtp, isPending: isSending } = useSendVerificationOtp(otpClient)
+  const { mutateAsync: sendVerificationOtp, isPending: isSending } =
+    useSendVerificationOtp(otpClient)
 
-  const { mutate: requestEmailChangeOtp, isPending: isRequesting } = useRequestEmailChangeOtp(
+  const { mutateAsync: requestEmailChangeOtp, isPending: isRequesting } = useRequestEmailChangeOtp(
     otpClient,
     {
       onError: () => form.setFieldValue("code", ""),
@@ -97,7 +98,7 @@ export function ChangeEmailOtp({ className }: ChangeEmailOtpProps) {
     },
   )
 
-  const { mutate: changeEmailOtp, isPending: isChanging } = useChangeEmailOtp(otpClient, {
+  const { mutateAsync: changeEmailOtp, isPending: isChanging } = useChangeEmailOtp(otpClient, {
     onError: () => form.setFieldValue("code", ""),
     onSuccess: () => {
       toast.success(localization.settings.changeEmailSuccess)
@@ -107,28 +108,28 @@ export function ChangeEmailOtp({ className }: ChangeEmailOtpProps) {
 
   const isPending = isSending || isRequesting || isChanging
 
-  const submitCode = (completedCode: string) => {
+  const submitCode = async (completedCode: string) => {
     if (isPending || state.step === "email") return
 
     if (state.step === "currentCode") {
-      requestEmailChangeOtp({
+      await requestEmailChangeOtp({
         newEmail: state.newEmail,
         otp: completedCode,
       })
       return
     }
 
-    changeEmailOtp({ newEmail: state.newEmail, otp: completedCode })
+    await changeEmailOtp({ newEmail: state.newEmail, otp: completedCode })
   }
 
   const form = useAuthForm({
     defaultValues: { code: "", email: "" },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       if (state.step === "email") {
         const newEmail = value.email
 
         if (verifyCurrentEmail && currentEmail) {
-          sendVerificationOtp(
+          await sendVerificationOtp(
             { email: currentEmail, type: "change-email" },
             {
               onSuccess: () => dispatch({ type: "currentEmailChallenged", newEmail }),
@@ -137,10 +138,10 @@ export function ChangeEmailOtp({ className }: ChangeEmailOtpProps) {
           return
         }
 
-        requestEmailChangeOtp({ newEmail })
+        await requestEmailChangeOtp({ newEmail })
         return
       }
-      submitCode(value.code)
+      await submitCode(value.code)
     },
   })
   const codeComplete = useSelector(
@@ -221,10 +222,12 @@ export function ChangeEmailOtp({ className }: ChangeEmailOtpProps) {
                         name="otp"
                         value={field.state.value}
                         onChange={field.handleChange}
-                        onComplete={submitCode}
+                        onComplete={() => void submitAuthForm(form)}
                       />
                     )}
                   </form.AppField>
+
+                  <form.AuthFormServerError />
 
                   {codeTarget && <OpenEmailButton email={codeTarget} variant="secondary" />}
                 </div>

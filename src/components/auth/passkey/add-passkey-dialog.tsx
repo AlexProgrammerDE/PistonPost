@@ -1,11 +1,10 @@
 "use client"
 
-import { isSessionNotFreshError } from "@better-auth-ui/core"
+import { isReauthenticationRequiredError } from "@better-auth-ui/core"
 import type { AddPasskeyParams, PasskeyAuthClient } from "@better-auth-ui/core/plugins/passkey"
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { useAddPasskey } from "@better-auth-ui/react/plugins/passkey"
 import { Fingerprint } from "lucide-react"
-import { useRef } from "react"
 
 import { buttonVariants } from "@/components/ui/button"
 import {
@@ -23,7 +22,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { passkeyPlugin } from "@/lib/auth/passkey-plugin"
 
 import { useAuthForm } from "../auth-form"
-import { FreshSessionPrompt } from "../settings/security/fresh-session-prompt"
+import { ReauthenticationAction } from "../reauthentication"
 
 export type AddPasskeyDialogProps = {
   open: boolean
@@ -36,9 +35,8 @@ export function AddPasskeyDialog({ open, onOpenChange }: AddPasskeyDialogProps) 
     useAuthPlugin(passkeyPlugin)
 
   const addPasskey = useAddPasskey(authClient)
-  const pendingRequest = useRef<AddPasskeyParams<PasskeyAuthClient>>(undefined)
 
-  const submitRequest = (request: AddPasskeyParams<PasskeyAuthClient>) => {
+  const submitRequest = async (request: AddPasskeyParams<PasskeyAuthClient>) => {
     const requestWithCallbacks = {
       ...request,
       fetchOptions: {
@@ -46,15 +44,14 @@ export function AddPasskeyDialog({ open, onOpenChange }: AddPasskeyDialogProps) 
         onSuccess: () => handleOpenChange(false),
       },
     }
-    pendingRequest.current = requestWithCallbacks
-    addPasskey.mutate(requestWithCallbacks)
+    await addPasskey.mutateAsync(requestWithCallbacks)
   }
 
   const form = useAuthForm({
     defaultValues: { name: "" },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const name = value.name.trim()
-      submitRequest({
+      await submitRequest({
         ...(name ? { name } : {}),
         ...(authenticatorAttachment ? { authenticatorAttachment } : {}),
       } as AddPasskeyParams<PasskeyAuthClient>)
@@ -65,29 +62,23 @@ export function AddPasskeyDialog({ open, onOpenChange }: AddPasskeyDialogProps) 
     if (!nextOpen) {
       addPasskey.reset()
       form.reset()
-      pendingRequest.current = undefined
     }
     onOpenChange(nextOpen)
   }
 
-  const needsFreshSession = isSessionNotFreshError(addPasskey.error)
+  const needsReauthentication = isReauthenticationRequiredError(addPasskey.error)
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
-        {needsFreshSession ? (
+        {needsReauthentication ? (
           <>
             <DialogHeader>
               <DialogTitle className="sr-only">
-                {localization.settings.freshSessionTitle}
+                {localization.settings.reauthenticationTitle}
               </DialogTitle>
             </DialogHeader>
-            <FreshSessionPrompt
-              onFresh={() => {
-                const request = pendingRequest.current
-                if (request) submitRequest(request)
-              }}
-            />
+            <ReauthenticationAction showTitle={false} />
           </>
         ) : (
           <form.AppForm>

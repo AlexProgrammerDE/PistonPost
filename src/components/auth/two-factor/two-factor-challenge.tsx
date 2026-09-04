@@ -27,7 +27,7 @@ import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 import { RESEND_COOLDOWN_SECONDS, useResendCooldown } from "@/lib/auth/use-resend-cooldown"
 import { cn } from "@/lib/utils"
 
-import { useAuthForm } from "../auth-form"
+import { runAuthFormAction, submitAuthForm, useAuthForm } from "../auth-form"
 import { OtpField } from "../otp-field"
 import { useIsHydrated } from "../use-is-hydrated"
 
@@ -83,7 +83,7 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
     navigate({ to: redirectTo })
   }
 
-  const { mutate: sendTwoFactorOtp, isPending: isSendingOtp } = useSendTwoFactorOtp(
+  const { mutateAsync: sendTwoFactorOtp, isPending: isSendingOtp } = useSendTwoFactorOtp(
     twoFactorClient,
     {
       onSuccess: () => {
@@ -93,12 +93,12 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
     },
   )
 
-  const { mutate: verifyTotp, isPending: isVerifyingTotp } = useVerifyTotp(twoFactorClient, {
+  const { mutateAsync: verifyTotp, isPending: isVerifyingTotp } = useVerifyTotp(twoFactorClient, {
     onError: () => form.setFieldValue("code", ""),
     onSuccess: onVerified,
   })
 
-  const { mutate: verifyTwoFactorOtp, isPending: isVerifyingOtp } = useVerifyTwoFactorOtp(
+  const { mutateAsync: verifyTwoFactorOtp, isPending: isVerifyingOtp } = useVerifyTwoFactorOtp(
     twoFactorClient,
     {
       onError: () => form.setFieldValue("code", ""),
@@ -106,7 +106,7 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
     },
   )
 
-  const { mutate: verifyBackupCode, isPending: isVerifyingBackupCode } = useVerifyBackupCode(
+  const { mutateAsync: verifyBackupCode, isPending: isVerifyingBackupCode } = useVerifyBackupCode(
     twoFactorClient,
     { onSuccess: onVerified },
   )
@@ -116,13 +116,13 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
 
   const form = useAuthForm({
     defaultValues: { backupCode: "", code: "", trustDevice: false },
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
       const trust = trustDeviceEnabled ? { trustDevice: value.trustDevice } : {}
       if (method === "backup") {
-        verifyBackupCode({ code: value.backupCode.trim(), ...trust })
+        await verifyBackupCode({ code: value.backupCode.trim(), ...trust })
         return
       }
-      verifyCode(value.code)
+      await verifyCode(value.code)
     },
   })
 
@@ -132,7 +132,7 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
     setMethod(next)
   }
 
-  const verifyCode = (completedCode: string) => {
+  const verifyCode = async (completedCode: string) => {
     if (
       isPending ||
       needsOtpRequest ||
@@ -145,11 +145,11 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
     const trust = trustDeviceEnabled ? { trustDevice: form.state.values.trustDevice } : {}
 
     if (method === "otp") {
-      verifyTwoFactorOtp({ code: completedCode, ...trust })
+      await verifyTwoFactorOtp({ code: completedCode, ...trust })
       return
     }
 
-    verifyTotp({ code: completedCode, ...trust })
+    await verifyTotp({ code: completedCode, ...trust })
   }
 
   const description =
@@ -234,7 +234,7 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
                       name={field.name}
                       value={field.state.value}
                       onChange={field.handleChange}
-                      onComplete={verifyCode}
+                      onComplete={() => void submitAuthForm(form)}
                     />
                   )}
                 </form.AppField>
@@ -260,9 +260,15 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
                 </form.AppField>
               )}
 
+              <form.AuthFormServerError />
+
               <div className="flex flex-col gap-3">
                 {needsOtpRequest ? (
-                  <Button type="button" disabled={isSendingOtp} onClick={() => sendTwoFactorOtp()}>
+                  <Button
+                    type="button"
+                    disabled={isSendingOtp}
+                    onClick={() => void runAuthFormAction(form, () => sendTwoFactorOtp())}
+                  >
                     {isSendingOtp && <Spinner />}
 
                     {twoFactorLocalization.sendEmailCode}
@@ -285,7 +291,7 @@ export function TwoFactorChallenge({ className }: TwoFactorChallengeProps) {
                     type="button"
                     variant="outline"
                     disabled={isPending || isCoolingDown}
-                    onClick={() => sendTwoFactorOtp()}
+                    onClick={() => void runAuthFormAction(form, () => sendTwoFactorOtp())}
                   >
                     {isCoolingDown
                       ? localization.auth.resendIn.replace("{{seconds}}", String(cooldown))

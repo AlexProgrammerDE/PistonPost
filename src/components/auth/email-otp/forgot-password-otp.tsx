@@ -38,7 +38,7 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
 
   const { fetchOptions, resetFetchOptions } = useFetchOptions()
 
-  const { mutate: requestPasswordResetOtp, isPending } = useRequestPasswordResetOtp(
+  const { mutateAsync: requestPasswordResetOtp, isPending } = useRequestPasswordResetOtp(
     authClient as EmailOtpAuthClient,
     {
       onError: () => resetFetchOptions(),
@@ -51,7 +51,8 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
 
   const form = useAuthForm({
     defaultValues: { email: "" },
-    onSubmit: ({ value }) => requestPasswordResetOtp({ email: value.email, fetchOptions }),
+    onSubmit: async ({ value }) =>
+      await requestPasswordResetOtp({ email: value.email, fetchOptions }),
   })
 
   const Captcha = plugins.find((plugin) => plugin.captchaComponent)?.captchaComponent
@@ -101,6 +102,8 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
               </form.AppField>
 
               {Captcha && <div className="flex justify-center">{Captcha}</div>}
+
+              <form.AuthFormServerError />
 
               <form.AuthFormSubmitButton disabled={isPending}>
                 {isPending && <Spinner />}

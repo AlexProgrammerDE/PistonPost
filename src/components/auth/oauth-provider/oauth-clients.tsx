@@ -431,9 +431,11 @@ export function OAuthClients({ manager, owner, ownerKey, className }: OAuthClien
               <DialogClose type="button" className={buttonVariants({ variant: "outline" })}>
                 {oauthLocalization.cancel}
               </DialogClose>
-              <form.Subscribe selector={(state) => [state.canSubmit, state.isSubmitting] as const}>
-                {([canSubmit, isSubmitting]) => (
-                  <Button type="submit" disabled={!canSubmit || isSubmitting}>
+              <form.Subscribe
+                selector={(state) => [state.isSubmitting, state.isValidating] as const}
+              >
+                {([isSubmitting, isValidating]) => (
+                  <Button type="submit" disabled={isSubmitting || isValidating}>
                     {isSubmitting && <Spinner />}
                     {editingClient ? oauthLocalization.saveChanges : oauthLocalization.createClient}
                   </Button>
