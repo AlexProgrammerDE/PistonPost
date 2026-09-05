@@ -5,7 +5,6 @@ import { useEffect, useRef } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
-import { shouldAutomaticallyLoadNextPage } from "@/lib/infinite-scroll"
 
 const PRELOAD_MARGIN = "0px 0px 2000px 0px"
 
@@ -27,12 +26,7 @@ export function InfiniteScrollTrigger({
   readonly onLoadMore: () => Promise<unknown>
 }) {
   const triggerRef = useRef<HTMLDivElement>(null)
-  const canAutomaticallyLoad = shouldAutomaticallyLoadNextPage({
-    hasNextPage,
-    isFetching,
-    isFetchNextPageError,
-    isPaused,
-  })
+  const canAutomaticallyLoad = hasNextPage && !isFetching && !isFetchNextPageError && !isPaused
 
   useEffect(() => {
     const trigger = triggerRef.current

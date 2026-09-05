@@ -6,7 +6,6 @@ import {
   ConflictError,
   InvalidCursorError,
   NotFoundError,
-  RepositoryError,
 } from "@/domain/errors"
 import { UnsubscribeTokenError } from "@/email/unsubscribe"
 import {
@@ -113,7 +112,6 @@ export function mapEffectFailure(cause: unknown) {
       ? invalidInputFailure(cause.message)
       : internalFailure(cause)
   }
-  if (cause instanceof RepositoryError) return internalFailure(cause)
   return internalFailure(cause)
 }
 

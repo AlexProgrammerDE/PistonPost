@@ -52,6 +52,5 @@ export const usernameSchema = z
   .max(32)
   .regex(/^[A-Za-z0-9._~-]+$/, "Use letters, numbers, hyphen, dot, underscore, or tilde")
 
-export type PostDraftInput = z.infer<typeof postDraftInputSchema>
 export type EmailNotificationPreference = z.infer<typeof emailNotificationPreferenceSchema>
 export type NotificationPreference = z.infer<typeof notificationPreferenceSchema>

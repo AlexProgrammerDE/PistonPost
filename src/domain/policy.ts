@@ -1,6 +1,3 @@
-import { Effect } from "effect"
-
-import { AuthorizationError } from "./errors"
 import type { Actor, Post } from "./model"
 
 export function isAdministrator(actor: Actor) {
@@ -29,12 +26,4 @@ export function canDeleteComment(actor: Actor, commentAuthorId: string) {
 
 export function canFollowUser(viewerId: string, targetUserId: string) {
   return viewerId !== targetUserId
-}
-
-export function requireAuthenticated(actor: Actor, action: string) {
-  return actor.kind === "authenticated"
-    ? Effect.succeed(actor)
-    : Effect.fail(
-        AuthorizationError.make({ action, reason: "Authentication is required for this action." }),
-      )
 }

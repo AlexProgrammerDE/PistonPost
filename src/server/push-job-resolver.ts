@@ -6,6 +6,8 @@ import * as schema from "@/db/schema"
 import type { PushDeliveryJob } from "@/push/jobs"
 import type { PushNotificationPayload, PushTarget } from "@/push/transport"
 
+import { notificationEnabled } from "./notification-policy"
+
 export type ResolvedPush =
   | Readonly<{
       _tag: "Ready"
@@ -43,10 +45,6 @@ function skip(reason: string): ResolvedPush {
 
 function ready(target: PushTarget, payload: PushNotificationPayload): ResolvedPush {
   return { _tag: "Ready", target, payload }
-}
-
-function notificationEnabled(value: boolean | null) {
-  return value !== false
 }
 
 export function pushJobResolverLayer(database: D1DatabaseClient) {
