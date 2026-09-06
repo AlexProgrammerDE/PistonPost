@@ -7,17 +7,6 @@ import { z } from "zod"
 
 import { AdminSectionNav } from "@/components/AdminSectionNav"
 import { AdminTablePageSkeleton } from "@/components/LoadingStates"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -93,22 +82,22 @@ function ConfirmationAction({
   const [open, setOpen] = useState(false)
 
   return (
-    <AlertDialog open={open} onOpenChange={setOpen}>
-      <AlertDialogTrigger
+    <Credenza open={open} onOpenChange={setOpen}>
+      <CredenzaTrigger
         render={
           <Button variant={destructive ? "destructive" : "outline"} size="sm" disabled={disabled} />
         }
       >
         {label}
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction
+      </CredenzaTrigger>
+      <CredenzaContent>
+        <CredenzaHeader>
+          <CredenzaTitle>{title}</CredenzaTitle>
+          <CredenzaDescription>{description}</CredenzaDescription>
+        </CredenzaHeader>
+        <CredenzaFooter>
+          <CredenzaClose render={<Button variant="outline" />}>Cancel</CredenzaClose>
+          <Button
             variant={destructive ? "destructive" : "default"}
             disabled={disabled}
             onClick={() => {
@@ -117,10 +106,10 @@ function ConfirmationAction({
             }}
           >
             {label}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </CredenzaFooter>
+      </CredenzaContent>
+    </Credenza>
   )
 }
 

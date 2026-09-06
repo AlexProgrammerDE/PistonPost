@@ -23,20 +23,19 @@ import { MotionBoundary } from "@/components/MotionBoundary"
 import { PostShareActions } from "@/components/post-share-actions"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
+import {
+  Credenza,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import {
   Item,
@@ -512,8 +511,8 @@ export function SocialPanel({
                                 size="xs"
                               />
                               {canDelete ? (
-                                <AlertDialog>
-                                  <AlertDialogTrigger
+                                <Credenza>
+                                  <CredenzaTrigger
                                     render={
                                       <Button
                                         variant="ghost"
@@ -523,19 +522,22 @@ export function SocialPanel({
                                     }
                                   >
                                     <Trash2 aria-hidden="true" />
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>Delete this comment?</AlertDialogTitle>
-                                      <AlertDialogDescription>
+                                  </CredenzaTrigger>
+                                  <CredenzaContent>
+                                    <CredenzaHeader>
+                                      <CredenzaTitle>Delete this comment?</CredenzaTitle>
+                                      <CredenzaDescription>
                                         The comment text will be removed from the discussion.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel disabled={deleteMutation.isPending}>
+                                      </CredenzaDescription>
+                                    </CredenzaHeader>
+                                    <CredenzaFooter>
+                                      <CredenzaClose
+                                        render={<Button variant="outline" />}
+                                        disabled={deleteMutation.isPending}
+                                      >
                                         Keep comment
-                                      </AlertDialogCancel>
-                                      <AlertDialogAction
+                                      </CredenzaClose>
+                                      <Button
                                         variant="destructive"
                                         disabled={deleteMutation.isPending}
                                         onClick={() => deleteMutation.mutate(comment.id)}
@@ -546,10 +548,10 @@ export function SocialPanel({
                                           <Trash2 aria-hidden="true" data-icon="inline-start" />
                                         )}
                                         Delete comment
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                      </Button>
+                                    </CredenzaFooter>
+                                  </CredenzaContent>
+                                </Credenza>
                               ) : null}
                             </ItemActions>
                           ) : null}

@@ -6,18 +6,17 @@ import { z } from "zod"
 
 import { FormPageSkeleton } from "@/components/LoadingStates"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  Credenza,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { Field, FieldGroup, FieldLegend, FieldSeparator, FieldSet } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
@@ -165,22 +164,24 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
             orientation="horizontal"
             className="flex-col items-stretch sm:flex-row sm:justify-between"
           >
-            <AlertDialog>
-              <AlertDialogTrigger render={<Button type="button" variant="destructive" />}>
+            <Credenza>
+              <CredenzaTrigger render={<Button type="button" variant="destructive" />}>
                 <Trash2 aria-hidden="true" data-icon="inline-start" />
                 Delete post
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete this post?</AlertDialogTitle>
-                  <AlertDialogDescription>
+              </CredenzaTrigger>
+              <CredenzaContent>
+                <CredenzaHeader>
+                  <CredenzaTitle>Delete this post?</CredenzaTitle>
+                  <CredenzaDescription>
                     Public access stops immediately. Images, video, comments, hearts, and tag links
                     are then removed through the cleanup queue.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={deleting}>Keep post</AlertDialogCancel>
-                  <AlertDialogAction
+                  </CredenzaDescription>
+                </CredenzaHeader>
+                <CredenzaFooter>
+                  <CredenzaClose render={<Button variant="outline" />} disabled={deleting}>
+                    Keep post
+                  </CredenzaClose>
+                  <Button
                     variant="destructive"
                     disabled={deleting}
                     onClick={() => void removePost()}
@@ -191,10 +192,10 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                       <Trash2 aria-hidden="true" data-icon="inline-start" />
                     )}
                     {deleting ? "Deleting…" : "Delete post"}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  </Button>
+                </CredenzaFooter>
+              </CredenzaContent>
+            </Credenza>
             <form.SubmitButton>
               <Save aria-hidden="true" data-icon="inline-start" />
               Save changes

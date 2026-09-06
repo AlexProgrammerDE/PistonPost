@@ -386,11 +386,10 @@ Markdown still works **inside** this callout.
     await expect(externalLink).toHaveAttribute("rel", "ugc nofollow noopener noreferrer")
 
     await externalLink.click()
-    const externalLinkConfirmation = page.getByRole("alertdialog", {
+    const externalLinkConfirmation = page.getByRole("dialog", {
       name: "Open an external link?",
     })
     await expect(externalLinkConfirmation).toBeVisible()
-    await expect(page.locator('[data-slot="alert-dialog-content"]')).toBeVisible()
     await externalLinkConfirmation.getByRole("button", { name: "Stay here" }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
 
@@ -471,7 +470,7 @@ Markdown still works **inside** this callout.
 
     await page.setViewportSize({ width: 390, height: 844 })
     await website.click()
-    await expect(page.getByRole("alertdialog", { name: "Open an external link?" })).toBeVisible()
+    await expect(page.getByRole("dialog", { name: "Open an external link?" })).toBeVisible()
   })
 
   test("confirms before discarding unfinished composer changes", async ({ context, page }) => {
@@ -480,7 +479,7 @@ Markdown still works **inside** this callout.
     await fillPost(page, "an unfinished post", "draft")
 
     await page.getByRole("link", { name: "Timeline" }).click()
-    const confirmation = page.getByRole("alertdialog")
+    const confirmation = page.getByRole("dialog")
     await expect(confirmation).toBeVisible()
 
     await confirmation.getByRole("button", { name: "Keep editing" }).click()
@@ -566,7 +565,7 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(comment.getByText("Sending…")).toHaveCount(0)
 
     await comment.getByRole("button", { name: "Delete comment" }).click()
-    const confirmation = page.getByRole("alertdialog", { name: "Delete this comment?" })
+    const confirmation = page.getByRole("dialog", { name: "Delete this comment?" })
     await confirmation.getByRole("button", { name: "Delete comment" }).click()
     await expect(comment).toHaveCount(0)
     await expect(page.getByText("No comments yet")).toBeVisible()

@@ -6,20 +6,19 @@ import { CircleAlert, Eye, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
+import {
+  Credenza,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+  CredenzaTrigger,
+} from "@/components/ui/credenza"
 import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
 import { Field, FieldGroup } from "@/components/ui/field"
 import {
@@ -235,25 +234,28 @@ function EmailCampaigns() {
                 </ItemContent>
                 {campaign.status === "draft" ? (
                   <ItemActions className="basis-full sm:basis-auto">
-                    <AlertDialog>
-                      <AlertDialogTrigger render={<Button size="sm" />}>
+                    <Credenza>
+                      <CredenzaTrigger render={<Button size="sm" />}>
                         <Send aria-hidden="true" data-icon="inline-start" />
                         Queue update
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Queue this product update?</AlertDialogTitle>
-                          <AlertDialogDescription>
+                      </CredenzaTrigger>
+                      <CredenzaContent>
+                        <CredenzaHeader>
+                          <CredenzaTitle>Queue this product update?</CredenzaTitle>
+                          <CredenzaDescription>
                             This cannot be recalled after delivery begins. Recipients are selected
                             in small batches and their current preference is checked again before
                             send.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel disabled={send.isPending}>
+                          </CredenzaDescription>
+                        </CredenzaHeader>
+                        <CredenzaFooter>
+                          <CredenzaClose
+                            render={<Button variant="outline" />}
+                            disabled={send.isPending}
+                          >
                             Keep draft
-                          </AlertDialogCancel>
-                          <AlertDialogAction
+                          </CredenzaClose>
+                          <Button
                             disabled={send.isPending}
                             onClick={() => send.mutate(campaign.id)}
                           >
@@ -263,10 +265,10 @@ function EmailCampaigns() {
                               <Send aria-hidden="true" data-icon="inline-start" />
                             )}
                             {send.isPending ? "Queueing…" : "Queue update"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          </Button>
+                        </CredenzaFooter>
+                      </CredenzaContent>
+                    </Credenza>
                   </ItemActions>
                 ) : null}
               </Item>

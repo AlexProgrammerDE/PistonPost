@@ -3,16 +3,16 @@
 import { useBlocker } from "@tanstack/react-router"
 import type { RefObject } from "react"
 
+import { Button } from "@/components/ui/button"
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+  Credenza,
+  CredenzaClose,
+  CredenzaContent,
+  CredenzaDescription,
+  CredenzaFooter,
+  CredenzaHeader,
+  CredenzaTitle,
+} from "@/components/ui/credenza"
 
 type UnsavedChangesGuardProps = {
   readonly allowNavigationRef?: RefObject<boolean>
@@ -35,24 +35,24 @@ export function UnsavedChangesGuard({
   })
 
   return (
-    <AlertDialog
+    <Credenza
       open={blocker.status === "blocked"}
       onOpenChange={(open) => {
         if (!open && blocker.status === "blocked") blocker.reset()
       }}
     >
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>Discard your unsaved changes?</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Keep editing</AlertDialogCancel>
-          <AlertDialogAction variant="destructive" onClick={blocker.proceed}>
+      <CredenzaContent>
+        <CredenzaHeader>
+          <CredenzaTitle>Discard your unsaved changes?</CredenzaTitle>
+          <CredenzaDescription>{description}</CredenzaDescription>
+        </CredenzaHeader>
+        <CredenzaFooter>
+          <CredenzaClose render={<Button variant="outline" />}>Keep editing</CredenzaClose>
+          <Button variant="destructive" onClick={blocker.proceed}>
             Discard changes
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+          </Button>
+        </CredenzaFooter>
+      </CredenzaContent>
+    </Credenza>
   )
 }
