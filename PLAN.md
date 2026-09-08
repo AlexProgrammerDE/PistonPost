@@ -1210,3 +1210,8 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-09-08: Use `vite-plugin-pwa` to build and register the custom worker. Preserve `/push-sw.js`,
   the existing web manifest, push notifications, and local share intake. Disable precache injection
   and page reloads on worker updates to preserve offline-only caching and uninterrupted composition.
+- 2026-09-08: Better Auth 1.7.3 removes the account issuer requirement introduced in 1.7.0.
+  Regenerate the auth schema and apply `0021_remove-account-issuer` before deploying this update.
+  The migration removes the obsolete index and column while preserving account credentials.
+  This supersedes the issuer requirement recorded on 2026-08-20 and follows the
+  [Better Auth upgrade guide](https://www.better-auth.com/docs/guides/1-7-upgrade-guide#account-identity-keeps-the-provider-key).

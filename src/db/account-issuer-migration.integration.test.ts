@@ -50,7 +50,7 @@ async function copyMigrations(targetFolder: string) {
 }
 
 describe("Better Auth account issuer migration", () => {
-  it("backfills a populated credential account before enforcing the issuer constraints", async () => {
+  it("preserves credential accounts through issuer backfill and removal", async () => {
     const temporaryFolder = await mkdtemp(join(tmpdir(), "pistonpost-migrations-"))
     const client = new Database(":memory:", { create: true, strict: true })
 
@@ -78,7 +78,10 @@ describe("Better Auth account issuer migration", () => {
           ('account-1', 'legacy-account-id', 'credential', 'user-1', 'hash', 1, 1)`,
       )
 
-      await writeFile(journalPath, JSON.stringify(journal))
+      await writeFile(
+        journalPath,
+        JSON.stringify({ ...journal, entries: journal.entries.filter((entry) => entry.idx <= 20) }),
+      )
       migrate(database, { migrationsFolder: temporaryFolder })
 
       const account = migratedAccountSchema.parse(
@@ -96,6 +99,30 @@ describe("Better Auth account issuer migration", () => {
       expect(account).toEqual({ issuer: "local:credential", account_id: "user-1" })
       expect(issuerColumn?.notnull).toBe(1)
       expect(issuerIndex?.unique).toBe(1)
+
+      await writeFile(journalPath, JSON.stringify(journal))
+      migrate(database, { migrationsFolder: temporaryFolder })
+
+      const preservedAccount = client
+        .query("SELECT id, account_id, provider_id, user_id, password FROM account WHERE id = ?")
+        .get("account-1")
+      expect(preservedAccount).toEqual({
+        id: "account-1",
+        account_id: "user-1",
+        provider_id: "credential",
+        user_id: "user-1",
+        password: "hash",
+      })
+      expect(
+        z.array(tableColumnSchema).parse(client.query("PRAGMA table_info('account')").all()),
+      ).not.toContainEqual(expect.objectContaining({ name: "issuer" }))
+      client.run(
+        `INSERT INTO account
+          (id, account_id, provider_id, user_id, password, created_at, updated_at)
+        VALUES
+          ('account-2', 'user-1', 'another-provider', 'user-1', NULL, 1, 1)`,
+      )
+      expect(client.query("SELECT COUNT(*) AS count FROM account").get()).toEqual({ count: 2 })
     } finally {
       client.close()
       await rm(temporaryFolder, { recursive: true })
