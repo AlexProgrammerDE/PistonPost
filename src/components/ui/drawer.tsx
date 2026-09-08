@@ -1,7 +1,8 @@
-import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer"
-import * as React from "react"
+"use client"
 
-import { cn } from "@/lib/utils"
+import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer"
+import { cn } from "cn"
+import * as React from "react"
 
 type DrawerContextProps = {
   hasSnapPoints: boolean
