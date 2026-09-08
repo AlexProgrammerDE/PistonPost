@@ -129,6 +129,9 @@ test content. Push notifications remain a separate opt-in.
 - The service worker registers without notification permission. Push subscription setup waits
   for an active worker. The production URL stays `/push-sw.js` so existing subscriptions keep
   their registration.
+- `vite-plugin-pwa` builds the custom worker with `injectManifest` and handles browser registration.
+  Precache injection is disabled to preserve the offline-only cache policy. Worker updates do not
+  reload open pages. The root route links the existing `public/manifest.json`.
 - Offline navigation shows a generic fallback. Only its HTML, CSS, and script are cached. Feeds,
   private pages, API responses, and media are not saved by the service worker.
 - Supported installed apps show an unnumbered activity badge when push arrives with no visible

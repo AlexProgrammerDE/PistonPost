@@ -5,6 +5,7 @@ import { devtools } from "@tanstack/devtools-vite"
 import { tanstackStart } from "@tanstack/react-start/plugin/vite"
 import viteReact, { reactCompilerPreset } from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
+import { VitePWA } from "vite-plugin-pwa"
 
 const config = defineConfig(({ mode }) => ({
   resolve: {
@@ -27,12 +28,6 @@ const config = defineConfig(({ mode }) => ({
   },
   worker: {
     format: "es",
-    rolldownOptions: {
-      output: {
-        entryFileNames: (chunk) =>
-          chunk.name === "service-worker" ? "push-sw.js" : "assets/[name]-[hash].js",
-      },
-    },
   },
   environments: {
     ssr: {
@@ -61,6 +56,22 @@ const config = defineConfig(({ mode }) => ({
     cloudflare({ viteEnvironment: { name: "ssr" } }),
     tailwindcss(),
     tanstackStart(),
+    VitePWA({
+      strategies: "injectManifest",
+      srcDir: "src/lib/pwa",
+      filename: "push-sw.ts",
+      outDir: "dist/client",
+      scope: "/",
+      injectRegister: false,
+      registerType: "autoUpdate",
+      // The root route links the existing manifest, including share and file handlers.
+      manifest: false,
+      injectManifest: {
+        // Keep the worker's explicit offline-only cache policy.
+        injectionPoint: undefined,
+      },
+      devOptions: { enabled: true, type: "module" },
+    }),
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
   ],

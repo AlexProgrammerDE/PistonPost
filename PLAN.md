@@ -1207,3 +1207,6 @@ Record future changes here with date, decision, reason, and affected phases.
   intake. Text recovery drafts expire after seven days and exclude files and upload progress.
   Account changes clear previous account data. Share intake is limited to 20 images and 50 MB
   even though manually composed posts allow 150 images. This affects Phases 4, 5, 6, and 9.
+- 2026-09-08: Use `vite-plugin-pwa` to build and register the custom worker. Preserve `/push-sw.js`,
+  the existing web manifest, push notifications, and local share intake. Disable precache injection
+  and page reloads on worker updates to preserve offline-only caching and uninterrupted composition.
