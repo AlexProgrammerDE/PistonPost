@@ -182,7 +182,10 @@ export function createMediaImageSrcSet(
     : undefined
 }
 
-export function createManagedAvatarSrcSet(source: string, animation: MediaImageAnimation = "auto") {
+export function createManagedAvatarSources(
+  source: string,
+  animation: MediaImageAnimation = "auto",
+) {
   if (!source.startsWith("/media/image/")) return undefined
 
   const url = new URL(source, "https://pistonpost.invalid")
@@ -197,7 +200,15 @@ export function createManagedAvatarSrcSet(source: string, animation: MediaImageA
     return undefined
   }
 
-  return AVATAR_IMAGE_WIDTHS.map(
-    (width) => `${mediaImageUrl(mediaId, "avatar", width, animation)} ${width.toString()}w`,
-  ).join(", ")
+  return AVATAR_IMAGE_WIDTHS.map((width) => ({
+    src: mediaImageUrl(mediaId, "avatar", width, animation),
+    width,
+    height: width,
+  }))
+}
+
+export function createManagedAvatarSrcSet(source: string, animation: MediaImageAnimation = "auto") {
+  return createManagedAvatarSources(source, animation)
+    ?.map((candidate) => `${candidate.src} ${candidate.width.toString()}w`)
+    .join(", ")
 }

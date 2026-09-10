@@ -1,10 +1,12 @@
 import type { ComponentProps } from "react"
 
+import { AppImage } from "@/components/AppImage"
 import type { PublicPostMedia } from "@/db/public-read-model"
 import {
   DETAIL_IMAGE_WIDTHS,
   FEED_IMAGE_WIDTHS,
   createMediaImageSrcSet,
+  createMediaImageSources,
   mediaImageUrl,
   type ResponsiveMediaImageVariant,
 } from "@/lib/media-image"
@@ -28,7 +30,7 @@ export function ResponsiveMediaImage({
   widths = variant === "detail" ? DETAIL_IMAGE_WIDTHS : FEED_IMAGE_WIDTHS,
   ...props
 }: ResponsiveMediaImageProps) {
-  const srcSet = createMediaImageSrcSet(image, variant, widths)
+  const sources = createMediaImageSources(image, variant, widths)
   const stillSrcSet = createMediaImageSrcSet(image, variant, widths, "still")
   const stillSource = stillSrcSet ?? mediaImageUrl(image.id, variant, undefined, "still")
 
@@ -39,14 +41,15 @@ export function ResponsiveMediaImage({
         srcSet={stillSource}
         sizes={stillSrcSet ? sizes : undefined}
       />
-      <img
+      <AppImage
         {...props}
         alt={alt}
         src={mediaImageUrl(image.id, variant)}
-        srcSet={srcSet}
-        sizes={srcSet ? sizes : undefined}
+        sources={sources}
+        sizes={sizes}
         width={image.width ?? undefined}
         height={image.height ?? undefined}
+        style={{ backgroundColor: image.placeholderColor ?? undefined, ...props.style }}
       />
     </picture>
   )

@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
+import type { MediaImageSource } from "@/lib/media-image"
+
 import { ResponsiveAvatarImage } from "./ResponsiveAvatarImage"
 import { ResponsiveMediaImage } from "./ResponsiveMediaImage"
 
@@ -25,7 +27,12 @@ describe("responsive media motion", () => {
     expect(stillSource.props.media).toBe("(prefers-reduced-motion: reduce)")
     expect(stillSource.props.srcSet).toContain("animation=still")
     expect(image.props.src).toBe("/media/image/image-id/feed?v=1")
-    expect(image.props.srcSet).not.toContain("animation=still")
+    expect(
+      image.props.sources.every(
+        (source: MediaImageSource) =>
+          !new URL(source.src, "https://pistonpost.test").searchParams.has("animation"),
+      ),
+    ).toBe(true)
   })
 
   test("offers a still managed avatar source without changing external avatars", () => {

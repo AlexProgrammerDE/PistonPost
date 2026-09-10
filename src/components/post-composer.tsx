@@ -39,6 +39,7 @@ import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
+import { AppImage } from "@/components/AppImage"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { SharedContentIntake } from "@/components/SharedContentIntake"
 import { TurnstileChallenge, type TurnstileChallengeHandle } from "@/components/TurnstileChallenge"
@@ -926,7 +927,7 @@ function SortableUpload({
             onFocus={preloadImageLightbox}
             onClick={() => onView(item.clientId)}
           >
-            <img src={item.previewUrl} alt="" className="size-full object-cover" />
+            <AppImage src={item.previewUrl} alt="" className="size-full object-cover" />
             <span className="absolute right-1 bottom-1 grid size-5 place-items-center bg-background/90 text-foreground">
               <ZoomIn aria-hidden="true" className="size-3.5" />
             </span>

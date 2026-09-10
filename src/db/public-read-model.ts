@@ -29,6 +29,7 @@ export type PublicPostMedia = {
   readonly height: number | null
   readonly duration: number | null
   readonly altText: string | null
+  readonly placeholderColor?: string | null
 }
 
 export type PublicPostRead = {
@@ -605,6 +606,9 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
         height: mediaAssets.height,
         duration: mediaAssets.duration,
         altText: mediaAssets.altText,
+        placeholderColor: sql<
+          string | null
+        >`json_extract(${mediaAssets.providerMetadata}, '$.placeholderColor')`,
       })
       .from(postMedia)
       .innerJoin(mediaAssets, eq(mediaAssets.id, postMedia.mediaId))

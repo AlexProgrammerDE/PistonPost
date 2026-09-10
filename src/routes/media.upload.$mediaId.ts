@@ -6,6 +6,7 @@ import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { mediaImageUrl } from "@/lib/media-image"
 import { inspectGif, isGifAnimationWithinPixelLimit } from "@/lib/uploads/gif-inspection"
+import { createImagePlaceholder } from "@/lib/uploads/image-placeholder.server"
 import { isSanitizedImage } from "@/lib/uploads/image-sanitizer.server"
 import {
   MAX_IMAGE_UPLOAD_BYTES,
@@ -127,6 +128,13 @@ async function uploadImage({
       customMetadata: { checksum, owner: session.user.id },
     })
 
+    // JPEG is opaque. Leave potentially transparent formats on the neutral canvas,
+    // since image backgrounds remain visible after loading.
+    const placeholderColor =
+      asset.kind === "image" && info.format === "image/jpeg"
+        ? await createImagePlaceholder(context.env.IMAGES, body).catch(() => null)
+        : null
+
     const readyAsset = database
       .update(schema.mediaAssets)
       .set({
@@ -137,6 +145,7 @@ async function uploadImage({
         width: info.width,
         height: info.height,
         checksum,
+        providerMetadata: { ...asset.providerMetadata, placeholderColor },
         finalizedAt: new Date(),
       })
       .where(eq(schema.mediaAssets.id, asset.id))

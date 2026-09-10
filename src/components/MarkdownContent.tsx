@@ -26,6 +26,7 @@ import remarkDirective from "remark-directive"
 import remarkGfm from "remark-gfm"
 import type { PluggableList } from "unified"
 
+import { AppImage } from "@/components/AppImage"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { AspectRatio } from "@/components/ui/aspect-ratio"
 import { Button } from "@/components/ui/button"
@@ -490,7 +491,7 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
   const proxySource = postId && isProxyableExternalImageUrl(src)
   if (localSource || proxySource) {
     const imageSource = proxySource ? externalImageProxyUrl(postId, src) : src
-    return <img src={imageSource} alt={alt ?? ""} loading="lazy" decoding="async" />
+    return <AppImage src={imageSource} alt={alt ?? ""} loading="lazy" decoding="async" />
   }
 
   return (

@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useRef, useState } from "react"
 
+import { AppImage } from "@/components/AppImage"
 import { VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 
 const LazyVidstackVideoPlayer = lazy(() =>
@@ -10,7 +11,7 @@ const LazyVidstackVideoPlayer = lazy(() =>
 
 function VideoPoster({ detail, mediaId }: { readonly detail: boolean; readonly mediaId: string }) {
   return (
-    <img
+    <AppImage
       src={`/media/video/${mediaId}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`}
       alt=""
       aria-hidden="true"

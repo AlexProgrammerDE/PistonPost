@@ -1215,3 +1215,13 @@ Record future changes here with date, decision, reason, and affected phases.
   The migration removes the obsolete index and column while preserving account credentials.
   This supersedes the issuer requirement recorded on 2026-08-20 and follows the
   [Better Auth upgrade guide](https://www.better-auth.com/docs/guides/1-7-upgrade-guide#account-identity-keeps-the-provider-key).
+- 2026-09-10: Use Unpic's base React image component for app-owned gallery images, avatars,
+  upload previews, Markdown images, and video posters. Keep application CSS, authorized media URLs,
+  approved resize widths, and reduced-motion sources. Base UI retains avatar loading and fallback behavior.
+  Direct Cloudflare CDN and flexible Images delivery URLs use their respective Unpic provider transformers.
+  Worker binding routes retain the custom adapter; signed URLs and named delivery variants remain unchanged.
+  Leave upstream auth, UI, lightbox, and video-player internals with their owning libraries.
+  New JPEG post uploads store an Unpic dominant-color placeholder in existing media metadata.
+  Generation uses one additional Images transformation into a tiny PNG and does not block uploads on failure.
+  Existing images and potentially transparent formats retain their current background; no backfill runs.
+  This affects Phases 5 and 6.
