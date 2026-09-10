@@ -3,7 +3,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 import { and, count, desc, eq, lt, or } from "drizzle-orm"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
+import { createD1Database, createD1ReadDatabase } from "@/db/d1-database"
 import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
@@ -53,7 +53,7 @@ export const getDiscussion = createServerFn({ method: "GET" })
     ),
   )
   .handler(async ({ context, data }) => {
-    const database = createD1Database(context.env.DB)
+    const database = createD1ReadDatabase(context.env.DB, "first-primary")
     const post = await database
       .select({ id: schema.posts.id, status: schema.posts.status })
       .from(schema.posts)
@@ -113,7 +113,7 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
     if (!viewer) {
       return { viewerId: null, viewerRole: null, viewerHasHeart: false }
     }
-    const database = createD1Database(context.env.DB)
+    const database = createD1ReadDatabase(context.env.DB, "first-primary")
     const post = await database
       .select({ id: schema.posts.id })
       .from(schema.posts)

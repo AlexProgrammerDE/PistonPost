@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, count, eq, gte, ne } from "drizzle-orm"
 import { z } from "zod"
 
+import { createD1ReadDatabase } from "@/db/d1-database"
 import { ownedMediaStatusQuery } from "@/db/media-read-model"
 import * as schema from "@/db/schema"
 import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
@@ -502,7 +503,8 @@ export const getOwnedPostForEditing = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(z.object({ id: z.string().min(1).max(64) })))
   .handler(async ({ context, data }) => {
-    const { database, session } = context
+    const { session } = context
+    const database = createD1ReadDatabase(context.env.DB, "first-primary")
     const post = await database
       .select(postColumns)
       .from(schema.posts)

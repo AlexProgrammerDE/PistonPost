@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, asc, count, desc, eq, gt, isNull, like, lt, or, sql, type SQL } from "drizzle-orm"
 import { z } from "zod"
 
+import { createD1ReadDatabase } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { moderationEmailJob } from "@/email"
@@ -254,7 +255,9 @@ export const getAdminRows = createServerFn({ method: "GET" })
 export const getAdminOverview = createServerFn({ method: "GET" })
   .middleware([administratorServerFunctionMiddleware])
   .handler(async ({ context }) => {
-    const { database } = context
+    // Administrator authorization has already run against the primary.
+    // These display counts can lag; action handlers still read current state.
+    const database = createD1ReadDatabase(context.env.DB, "first-unconstrained")
     const [posts, comments, reports, users, failedMedia, pendingJobs, auditEvents] =
       await Promise.all([
         database.select({ value: count() }).from(schema.posts).get(),

@@ -999,6 +999,21 @@ The rewrite is complete when:
 
 Record future changes here with date, decision, reason, and affected phases.
 
+- 2026-09-10: Choose D1 consistency at each read boundary (Phases 5, 7, and 9).
+  Use request-local `first-primary` sessions for public and following feeds, post details,
+  profiles, tags, discussions, discussion viewer state, editor loading, social cards, and sitemap
+  pages. Reuse the session for related queries. Each operation starts with current primary data;
+  later reads can use replicas at least as current as that first read.
+  Use `first-unconstrained` only for the admin overview's display counts, after the middleware
+  checks administrator access against the primary. Those counts can lag or regress between
+  requests; D1 does not guarantee a maximum replica lag. Action handlers check current state.
+  Keep direct primary access for authentication, mutation checks and writes, background jobs,
+  and standalone fresh reads. The Atom feed and sitemap index retain primary reads so cache
+  purges do not refill them from stale replicas. Keep profile and post counters in their existing
+  fresh sessions rather than opening separate unconstrained sessions for them. No browser
+  bookmarks are needed because each freshness-sensitive read operation starts from the primary.
+  See [Cloudflare D1 Sessions](https://developers.cloudflare.com/d1/worker-api/d1-database/#withsession).
+
 - 2026-07-26: Adopt Better Auth UI's opt-in email-code flows for passwordless sign-in, email
   verification, and password recovery, plus its two-factor challenge and settings surfaces. Render
   authentication and security messages with the matching Better Auth UI email templates. Retire

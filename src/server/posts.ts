@@ -3,7 +3,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 import { Effect } from "effect"
 import { z } from "zod"
 
-import { createD1Database } from "@/db/d1-database"
+import { createD1Database, createD1ReadDatabase } from "@/db/d1-database"
 import { incrementPostViewCount } from "@/db/post-view-repository"
 import {
   getPublishedPostRead,
@@ -34,7 +34,7 @@ export const getPublicFeed = createServerFn({ method: "GET" })
   .validator(serverFunctionValidator(feedInput))
   .handler(async ({ context, data }) => {
     const cursor = data.cursor ? await runServerEffect(decodePublicPostCursor(data.cursor)) : null
-    const page = await listPublicPostReads(createD1Database(context.env.DB), {
+    const page = await listPublicPostReads(createD1ReadDatabase(context.env.DB, "first-primary"), {
       cursor,
       limit: data.limit,
       tag: data.tag?.toLocaleLowerCase("en-US"),
@@ -50,7 +50,7 @@ export const getPublicFeed = createServerFn({ method: "GET" })
 export const getPublishedPost = createServerFn({ method: "GET" })
   .validator(serverFunctionValidator(z.object({ id: z.string().trim().min(1).max(64) })))
   .handler(async ({ context, data }) =>
-    getPublishedPostRead(createD1Database(context.env.DB), data.id),
+    getPublishedPostRead(createD1ReadDatabase(context.env.DB, "first-primary"), data.id),
   )
 
 export const trackPostViews = createServerFn({ method: "POST" })
@@ -89,11 +89,14 @@ export const trackPostViews = createServerFn({ method: "POST" })
 export const getPublicProfile = createServerFn({ method: "GET" })
   .validator(serverFunctionValidator(z.object({ username: z.string().trim().min(1).max(32) })))
   .handler(async ({ context, data }) =>
-    getPublicProfileRead(createD1Database(context.env.DB), data.username),
+    getPublicProfileRead(createD1ReadDatabase(context.env.DB, "first-primary"), data.username),
   )
 
 export const getPublicTag = createServerFn({ method: "GET" })
   .validator(serverFunctionValidator(z.object({ tag: z.string().trim().min(1).max(64) })))
   .handler(async ({ context, data }) =>
-    getPublicTagRead(createD1Database(context.env.DB), data.tag.toLocaleLowerCase("en-US")),
+    getPublicTagRead(
+      createD1ReadDatabase(context.env.DB, "first-primary"),
+      data.tag.toLocaleLowerCase("en-US"),
+    ),
   )
