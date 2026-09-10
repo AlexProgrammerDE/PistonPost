@@ -30,7 +30,7 @@ const productionConfig = {
   d1_databases: [
     {
       binding: "DB",
-      database_name: "pistonpost-production",
+      database_name: "pistonpost-production-global",
       migrations_dir: "../../drizzle",
     },
   ],
@@ -59,7 +59,7 @@ describe("prepareProductionDeployConfig", () => {
     expect(result.d1_databases).toEqual([
       {
         binding: "DB",
-        database_name: "pistonpost-production",
+        database_name: "pistonpost-production-global",
         migrations_dir: "../../drizzle",
         database_id: input.d1DatabaseId,
       },

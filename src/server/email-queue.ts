@@ -474,9 +474,9 @@ function isLegacyEmailJob(body: unknown) {
 }
 
 async function handleDeadLetter(batch: MessageBatch, env: Cloudflare.Env) {
-  const database = createD1Database(env.DB)
   await Promise.all(
     batch.messages.map(async (message) => {
+      const database = createD1Database(env.DB)
       const metadata = deadLetterMetadata(batch.queue, message)
       const originalId = originalOutboxId(message.body)
       const redactLegacy = isLegacyEmailJob(message.body)
@@ -547,29 +547,29 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
     await handleDeadLetter(batch, env)
     return
   }
-  const database = createD1Database(env.DB)
   const vapidPrivateKey = readSecret(env.VAPID_PRIVATE_KEY, "VAPID_PRIVATE_KEY")
-  const layer = Layer.mergeAll(
-    outboxRepositoryLayer(database),
-    emailJobResolverLayer(database, {
-      baseURL: env.PUBLIC_APP_URL,
-      getUnsubscribeSecret: async () =>
-        (await readUnsubscribeKeyring(env.EMAIL_UNSUBSCRIBE_SECRET)).current,
-    }),
-    pushJobResolverLayer(database),
-    webPushTransportLayer({
-      subject: env.VAPID_SUBJECT,
-      publicKey: env.VAPID_PUBLIC_KEY,
-      getPrivateKey: () => vapidPrivateKey,
-    }),
-    EmailRenderer.live,
-    cloudflareEmailTransportLayer(requireEmailBinding(env)),
-  )
   await Effect.runPromise(
     Effect.forEach(
       batch.messages,
-      (message) =>
-        processQueueBody(message.body, env).pipe(
+      (message) => {
+        const database = createD1Database(env.DB)
+        const layer = Layer.mergeAll(
+          outboxRepositoryLayer(database),
+          emailJobResolverLayer(database, {
+            baseURL: env.PUBLIC_APP_URL,
+            getUnsubscribeSecret: async () =>
+              (await readUnsubscribeKeyring(env.EMAIL_UNSUBSCRIBE_SECRET)).current,
+          }),
+          pushJobResolverLayer(database),
+          webPushTransportLayer({
+            subject: env.VAPID_SUBJECT,
+            publicKey: env.VAPID_PUBLIC_KEY,
+            getPrivateKey: () => vapidPrivateKey,
+          }),
+          EmailRenderer.live,
+          cloudflareEmailTransportLayer(requireEmailBinding(env)),
+        )
+        return processQueueBody(message.body, env).pipe(
           Effect.exit,
           Effect.tap((exit) =>
             Effect.sync(() => {
@@ -586,8 +586,10 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
               message.retry({ delaySeconds })
             }),
           ),
-        ),
+          Effect.provide(layer),
+        )
+      },
       { concurrency: 4 },
-    ).pipe(Effect.provide(layer)),
+    ),
   )
 }

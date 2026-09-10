@@ -63,23 +63,22 @@ export class AccountDeletionWorkflow extends WorkflowEntrypoint<
     )
 
     await step.do("verify account purge", async () => {
+      const database = createD1Database(this.env.DB)
       if (mediaIds.length > 0) {
-        const remaining = await createD1Database(this.env.DB)
+        const remaining = await database
           .select({ id: schema.mediaAssets.id })
           .from(schema.mediaAssets)
           .where(inArray(schema.mediaAssets.id, mediaIds))
         if (remaining.length > 0) throw new Error("Owned media still requires deletion.")
       }
-      await createD1Database(this.env.DB)
-        .insert(schema.auditEvents)
-        .values({
-          id: crypto.randomUUID(),
-          actorId: null,
-          action: "account.deletion-complete",
-          entityType: "user",
-          entityId: userId,
-          metadata: { mediaCount: mediaIds.length },
-        })
+      await database.insert(schema.auditEvents).values({
+        id: crypto.randomUUID(),
+        actorId: null,
+        action: "account.deletion-complete",
+        entityType: "user",
+        entityId: userId,
+        metadata: { mediaCount: mediaIds.length },
+      })
       return { complete: true }
     })
   }

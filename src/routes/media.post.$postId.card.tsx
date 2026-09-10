@@ -5,7 +5,7 @@ import { ImageResponse } from "takumi-js/response"
 import { z } from "zod"
 
 import { TextPostSocialCard } from "@/components/TextPostSocialCard"
-import { createD1ReadDatabase } from "@/db/d1-database"
+import { createD1Database } from "@/db/d1-database"
 import { getPublishedPostRead } from "@/db/public-read-model"
 import * as schema from "@/db/schema"
 import { postMarkdownToPlainText } from "@/lib/markdown"
@@ -25,7 +25,7 @@ async function textPostCard({
   const postId = z.string().trim().min(1).max(64).safeParse(params.postId)
   if (!postId.success) return new Response("Not found", { status: 404 })
 
-  const database = createD1ReadDatabase(context.env.DB, "first-primary")
+  const database = createD1Database(context.env.DB)
   const post = await getPublishedPostRead(database, postId.data)
   if (!post || post.type !== "text") return new Response("Not found", { status: 404 })
   const owner = await database

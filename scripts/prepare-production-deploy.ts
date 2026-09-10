@@ -129,8 +129,8 @@ export function prepareProductionDeployConfig(
     const database = requireRecord(value, "D1 binding")
     if (database.binding !== "DB") return database
     foundDatabase = true
-    if (database.database_name !== "pistonpost-production") {
-      throw new Error("The DB binding does not target pistonpost-production.")
+    if (database.database_name !== "pistonpost-production-global") {
+      throw new Error("The DB binding does not target pistonpost-production-global.")
     }
     return { ...database, database_id: input.d1DatabaseId }
   })

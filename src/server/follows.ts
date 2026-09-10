@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import { z } from "zod"
 
-import { createD1ReadDatabase } from "@/db/d1-database"
 import { createFollowRepository } from "@/db/follow-repository"
 import { listPublicPostReads } from "@/db/public-read-model"
 import {
@@ -52,8 +51,7 @@ export const getFollowingFeed = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(followingFeedInput))
   .handler(async ({ context, data }) => {
-    const { session } = context
-    const database = createD1ReadDatabase(context.env.DB, "first-primary")
+    const { database, session } = context
     const cursor = data.cursor ? await runServerEffect(decodePublicPostCursor(data.cursor)) : null
     const page = await listPublicPostReads(database, {
       cursor,

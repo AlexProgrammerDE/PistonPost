@@ -999,6 +999,20 @@ The rewrite is complete when:
 
 Record future changes here with date, decision, reason, and affected phases.
 
+- 2026-09-11: Default all application D1 access to operation-scoped `first-primary` sessions,
+  including Better Auth, authorization, mutations, media delivery, and background work.
+  Reuse the session for related ORM queries and raw SQL batches. Keep `first-unconstrained`
+  for administrator overview counts. This supersedes the direct-primary exceptions below.
+  The first query reaches the primary; later reads preserve sequential consistency and can
+  use replicas. Writes still reach the primary. Sessions do not provide transaction isolation
+  or guarantee visibility of concurrent changes after the first query. This affects Phases 4 to 10.
+
+- 2026-09-11: Move production D1 to `pistonpost-production-global` without a jurisdiction
+  restriction and enable automatic read replication. This allows replicas outside the EU.
+  Preserve the existing read-consistency policies and the R2 bucket jurisdiction.
+  Keep the production database ID in `.env.production` aligned with the Wrangler binding.
+  This affects Phases 9 and 10.
+
 - 2026-09-10: Choose D1 consistency at each read boundary (Phases 5, 7, and 9).
   Use request-local `first-primary` sessions for public and following feeds, post details,
   profiles, tags, discussions, discussion viewer state, editor loading, social cards, and sitemap

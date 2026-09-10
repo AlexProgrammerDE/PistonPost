@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
-import { createD1ReadDatabase } from "@/db/d1-database"
+import { createD1Database } from "@/db/d1-database"
 import {
   getPublicSitemapCounts,
   listPublicPostSitemapRecords,
@@ -34,7 +34,7 @@ async function sitemapPage({
   const kind = sitemapKindSchema.parse(params.kind)
   const page = sitemapPageSchema.parse(params.page)
   const origin = context.runtime.config.PUBLIC_APP_URL.origin
-  const database = createD1ReadDatabase(context.env.DB, "first-primary")
+  const database = createD1Database(context.env.DB)
   const counts = await getPublicSitemapCounts(database)
   const pageCount = kind === "static" ? 1 : sitemapPageCount(counts[kind])
   if (page > pageCount) return new Response("Sitemap page not found.", { status: 404 })

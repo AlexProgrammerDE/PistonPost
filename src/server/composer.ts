@@ -2,7 +2,6 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, count, eq, gte, ne } from "drizzle-orm"
 import { z } from "zod"
 
-import { createD1ReadDatabase } from "@/db/d1-database"
 import { ownedMediaStatusQuery } from "@/db/media-read-model"
 import * as schema from "@/db/schema"
 import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
@@ -94,37 +93,43 @@ export const createPostDraft = createServerFn({ method: "POST" })
       })),
     )
     const statements: Array<D1PreparedStatement> = [
-      context.env.DB.prepare(
-        `insert into posts
+      context.database.$client
+        .prepare(
+          `insert into posts
           (id, author_id, type, status, visibility, title, text_content, created_at, updated_at, version)
          values (?, ?, ?, 'draft', ?, ?, ?, ?, ?, 1)`,
-      ).bind(
-        id,
-        session.user.id,
-        input.type,
-        input.visibility,
-        input.title,
-        input.type === "text" ? input.textContent : null,
-        Date.now(),
-        Date.now(),
-      ),
+        )
+        .bind(
+          id,
+          session.user.id,
+          input.type,
+          input.visibility,
+          input.title,
+          input.type === "text" ? input.textContent : null,
+          Date.now(),
+          Date.now(),
+        ),
     ]
 
     for (const tag of tagsWithIds) {
       statements.push(
-        context.env.DB.prepare(
-          `insert into tags (id, display_name, normalized_name, created_at)
+        context.database.$client
+          .prepare(
+            `insert into tags (id, display_name, normalized_name, created_at)
            values (?, ?, ?, ?)
            on conflict(normalized_name) do update set display_name = excluded.display_name`,
-        ).bind(tag.id, tag.display, tag.normalized, Date.now()),
-        context.env.DB.prepare(
-          `insert into post_tags (post_id, tag_id, ordinal)
+          )
+          .bind(tag.id, tag.display, tag.normalized, Date.now()),
+        context.database.$client
+          .prepare(
+            `insert into post_tags (post_id, tag_id, ordinal)
            select ?, id, ? from tags where normalized_name = ?`,
-        ).bind(id, tag.ordinal, tag.normalized),
+          )
+          .bind(id, tag.ordinal, tag.normalized),
       )
     }
 
-    await context.env.DB.batch(statements)
+    await context.database.$client.batch(statements)
     return { id, version: 1 }
   })
 
@@ -175,11 +180,12 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
       throw notFoundFailure("The image draft was not found.")
     }
 
-    const postAssetCount = await context.env.DB.prepare(
-      `select count(*) as count from media_assets
+    const postAssetCount = await context.database.$client
+      .prepare(
+        `select count(*) as count from media_assets
        where json_extract(provider_metadata, '$.postId') = ?
          and status not in ('failed', 'deleted')`,
-    )
+      )
       .bind(data.postId)
       .first<{ count: number }>()
     const firstOrdinal = postAssetCount?.count ?? 0
@@ -503,8 +509,7 @@ export const getOwnedPostForEditing = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(z.object({ id: z.string().min(1).max(64) })))
   .handler(async ({ context, data }) => {
-    const { session } = context
-    const database = createD1ReadDatabase(context.env.DB, "first-primary")
+    const { database, session } = context
     const post = await database
       .select(postColumns)
       .from(schema.posts)
@@ -581,22 +586,26 @@ export const updatePost = createServerFn({ method: "POST" })
       })),
     )
     const statements: D1PreparedStatement[] = [
-      context.env.DB.prepare("delete from post_tags where post_id = ?").bind(post.id),
+      context.database.$client.prepare("delete from post_tags where post_id = ?").bind(post.id),
     ]
     for (const tag of tagsWithIds) {
       statements.push(
-        context.env.DB.prepare(
-          `insert into tags (id, display_name, normalized_name, created_at)
+        context.database.$client
+          .prepare(
+            `insert into tags (id, display_name, normalized_name, created_at)
            values (?, ?, ?, ?)
            on conflict(normalized_name) do update set display_name = excluded.display_name`,
-        ).bind(tag.id, tag.display, tag.normalized, Date.now()),
-        context.env.DB.prepare(
-          `insert into post_tags (post_id, tag_id, ordinal)
+          )
+          .bind(tag.id, tag.display, tag.normalized, Date.now()),
+        context.database.$client
+          .prepare(
+            `insert into post_tags (post_id, tag_id, ordinal)
            select ?, id, ? from tags where normalized_name = ?`,
-        ).bind(post.id, tag.ordinal, tag.normalized),
+          )
+          .bind(post.id, tag.ordinal, tag.normalized),
       )
     }
-    await context.env.DB.batch(statements)
+    await context.database.$client.batch(statements)
 
     if (post.status === "published") {
       const invalidate = cacheInvalidationJob(post.id)
@@ -656,27 +665,31 @@ export const deletePost = createServerFn({ method: "POST" })
     }
 
     const statements: D1PreparedStatement[] = [
-      context.env.DB.prepare("delete from comments where post_id = ?").bind(data.id),
-      context.env.DB.prepare("delete from reactions where post_id = ?").bind(data.id),
-      context.env.DB.prepare("delete from post_tags where post_id = ?").bind(data.id),
+      context.database.$client.prepare("delete from comments where post_id = ?").bind(data.id),
+      context.database.$client.prepare("delete from reactions where post_id = ?").bind(data.id),
+      context.database.$client.prepare("delete from post_tags where post_id = ?").bind(data.id),
       ...cleanupJobs.map((job) =>
-        context.env.DB.prepare(
-          `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+        context.database.$client
+          .prepare(
+            `insert into outbox (id, kind, payload, attempts, available_at, created_at)
            values (?, ?, ?, 0, ?, ?) on conflict(id) do nothing`,
-        ).bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now()),
+          )
+          .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now()),
       ),
-      context.env.DB.prepare(
-        `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+      context.database.$client
+        .prepare(
+          `insert into outbox (id, kind, payload, attempts, available_at, created_at)
          values (?, ?, ?, 0, ?, ?)`,
-      ).bind(
-        invalidate.idempotencyKey,
-        invalidate.type,
-        JSON.stringify(invalidate),
-        Date.now(),
-        Date.now(),
-      ),
+        )
+        .bind(
+          invalidate.idempotencyKey,
+          invalidate.type,
+          JSON.stringify(invalidate),
+          Date.now(),
+          Date.now(),
+        ),
     ]
-    await context.env.DB.batch(statements)
+    await context.database.$client.batch(statements)
     context.executionContext.waitUntil(
       Promise.all([...cleanupJobs, invalidate].map((job) => context.env.JOBS.send(job))).then(
         () => undefined,
