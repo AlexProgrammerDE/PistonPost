@@ -4,7 +4,7 @@ import { createQrCodeSvgData } from "@better-auth-ui/core"
 import type { TwoFactorAuthClient, TwoFactorMethod } from "@better-auth-ui/core/plugins/two-factor"
 import { useAuth, useAuthPlugin, useCopyToClipboard } from "@better-auth-ui/react"
 import { useEnableTwoFactor, useVerifyTotp } from "@better-auth-ui/react/plugins/two-factor"
-import { Check, Copy, ShieldCheck } from "lucide-react"
+import { Check, Copy, Mail, ShieldCheck, Smartphone } from "lucide-react"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
@@ -26,7 +26,6 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Spinner } from "@/components/ui/spinner"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 import { useTwoFactorPasswordRequirement } from "@/lib/auth/use-two-factor-password"
@@ -201,11 +200,15 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
                     >
                       {enrollmentMethods.includes("totp") && (
                         <TabsTrigger value="totp">
+                          <Smartphone aria-hidden="true" className="text-muted-foreground" />
                           {twoFactorLocalization.authenticatorApp}
                         </TabsTrigger>
                       )}
                       {enrollmentMethods.includes("otp") && (
-                        <TabsTrigger value="otp">{twoFactorLocalization.deliveredCode}</TabsTrigger>
+                        <TabsTrigger value="otp">
+                          <Mail aria-hidden="true" className="text-muted-foreground" />
+                          {twoFactorLocalization.deliveredCode}
+                        </TabsTrigger>
                       )}
                     </TabsList>
                   </Tabs>
@@ -330,9 +333,9 @@ export function EnableTwoFactorDialog({ open, onOpenChange }: EnableTwoFactorDia
               <form.Subscribe selector={(state) => state.values.code}>
                 {(code) => (
                   <form.AuthFormSubmitButton
+                    isPending={isPending}
                     disabled={isPending || (step === "verify" && code.length !== codeLength)}
                   >
-                    {isPending && <Spinner />}
                     {submitLabel}
                   </form.AuthFormSubmitButton>
                 )}

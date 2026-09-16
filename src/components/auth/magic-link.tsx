@@ -16,7 +16,6 @@ import {
   FieldSeparator,
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Spinner } from "@/components/ui/spinner"
 import { magicLinkPlugin } from "@/lib/auth/magic-link-plugin"
 import { cn } from "@/lib/utils"
 
@@ -148,8 +147,10 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
                 </form.AppField>
 
                 <div className="flex flex-col gap-3">
-                  <form.AuthFormSubmitButton disabled={isPending}>
-                    {signInMagicLinkPending && <Spinner />}
+                  <form.AuthFormSubmitButton
+                    isPending={signInMagicLinkPending}
+                    disabled={isPending}
+                  >
                     {magicLinkLocalization.sendMagicLink}
                   </form.AuthFormSubmitButton>
 

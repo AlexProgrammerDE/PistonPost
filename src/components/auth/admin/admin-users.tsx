@@ -23,7 +23,7 @@ import {
   unbanAdminUserOptions,
   updateAdminUserOptions,
 } from "@better-auth-ui/core/plugins/admin"
-import { useAuth, useAuthPlugin, useSession } from "@better-auth-ui/react"
+import { useAuth, useAuthPlugin, useCopyToClipboard, useSession } from "@better-auth-ui/react"
 import {
   useAdminPermission,
   useAdminUser,
@@ -36,16 +36,19 @@ import type { SortingState } from "@tanstack/react-table"
 import type { BetterFetchError } from "better-auth/react"
 import {
   BanIcon,
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CopyIcon,
   EllipsisIcon,
   KeyRoundIcon,
   LogInIcon,
+  Monitor,
   SearchIcon,
   ShieldAlertIcon,
   Trash2Icon,
   UserPlusIcon,
+  UserRound,
 } from "lucide-react"
 import { type FormEvent, useEffect, useMemo, useState } from "react"
 
@@ -926,6 +929,12 @@ function UserInspector({
     },
     { enabled: Boolean(userId) },
   )
+  const { copied: userIdCopied, copy: copyUserId, reset: resetUserIdCopy } = useCopyToClipboard()
+
+  useEffect(() => {
+    if (open && userId) resetUserIdCopy()
+  }, [open, userId, resetUserIdCopy])
+
   const [banReason, setBanReason] = useState("")
   const [banDuration, setBanDuration] = useState("")
   const banDurationSeconds = getBanDurationSeconds(banDuration)
@@ -1165,11 +1174,15 @@ function UserInspector({
           ) : user ? (
             <Tabs className="min-h-0 gap-0 overflow-hidden" defaultValue="overview">
               <TabsList className="mx-6 h-11 shrink-0" variant="line">
-                <TabsTrigger value="overview">{config.localization.overview}</TabsTrigger>
+                <TabsTrigger value="overview">
+                  <UserRound aria-hidden="true" className="text-muted-foreground" />
+                  {config.localization.overview}
+                </TabsTrigger>
                 <TabsTrigger
                   disabled={sessionsPermission.isPending || !sessionsPermission.data?.success}
                   value="sessions"
                 >
+                  <Monitor aria-hidden="true" className="text-muted-foreground" />
                   {config.localization.sessions}
                 </TabsTrigger>
                 {contributedTabs.map((tab) => (
@@ -1325,13 +1338,17 @@ function UserInspector({
                             <dd className="flex min-w-0 items-center gap-1">
                               <code className="truncate text-xs">{user.id}</code>
                               <Button
-                                aria-label={config.localization.copyUserId}
-                                onClick={() => navigator.clipboard.writeText(user.id)}
+                                aria-label={
+                                  userIdCopied
+                                    ? auth.localization.settings.copiedToClipboard
+                                    : config.localization.copyUserId
+                                }
+                                onClick={() => copyUserId(user.id)}
                                 size="icon-xs"
                                 type="button"
                                 variant="ghost"
                               >
-                                <CopyIcon />
+                                {userIdCopied ? <CheckIcon /> : <CopyIcon />}
                               </Button>
                             </dd>
                           </div>
