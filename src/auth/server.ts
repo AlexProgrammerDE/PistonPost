@@ -6,11 +6,13 @@ import { APIError } from "better-auth/api"
 import { betterAuth, type BetterAuthOptions } from "better-auth/minimal"
 import {
   admin,
+  bearer,
   captcha,
   emailOTP,
   haveIBeenPwned,
   lastLoginMethod,
   multiSession,
+  oauthPopup,
   openAPI,
   twoFactor,
   username,
@@ -203,6 +205,8 @@ export function createAuth(runtime: AuthRuntime) {
       },
     },
     plugins: [
+      bearer(),
+      oauthPopup(),
       username({
         minUsernameLength: 1,
         maxUsernameLength: 32,

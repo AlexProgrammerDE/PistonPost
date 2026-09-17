@@ -83,6 +83,7 @@ export function AuthenticationProvider({
       Link={RouterLink}
       navigate={({ to, replace }) => navigate({ to, replace })}
       redirectTo="/"
+      socialSignInMode="popup"
       avatar={{
         extension: "inherit",
         resize: preserveAvatarSource,

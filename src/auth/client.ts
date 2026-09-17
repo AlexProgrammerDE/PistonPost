@@ -5,6 +5,7 @@ import {
   emailOTPClient,
   lastLoginMethodClient,
   multiSessionClient,
+  oauthPopupClient,
   twoFactorClient,
   usernameClient,
 } from "better-auth/client/plugins"
@@ -17,6 +18,7 @@ export function createPistonPostAuthClient(baseURL?: string) {
     baseURL,
     basePath: "/api/auth",
     plugins: [
+      oauthPopupClient(),
       usernameClient(),
       emailOTPClient(),
       twoFactorClient(),
