@@ -19,6 +19,7 @@ import { CSS } from "@dnd-kit/utilities"
 import { useStore } from "@tanstack/react-form"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import { useSelector } from "@tanstack/react-store"
 import {
   FileText,
   Globe2,
@@ -35,7 +36,7 @@ import {
   Video,
   ZoomIn,
 } from "lucide-react"
-import { lazy, Suspense, useEffect, useReducer, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { z } from "zod"
 
@@ -94,10 +95,10 @@ import {
 } from "@/lib/uploads/image-upload-policy"
 import {
   createUploadItem,
-  mediaUploadReducer,
   releaseUploadPreviews,
   type UploadItem,
 } from "@/lib/uploads/media-upload-state"
+import { createMediaUploadStore, type MediaUploadStore } from "@/lib/uploads/media-upload-store"
 import { UploadClientError, uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
 import {
   prepareVideoForUpload,
@@ -224,8 +225,9 @@ export function PostComposer({
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const [uploads, dispatch] = useReducer(mediaUploadReducer, [])
-  const uploadsRef = useRef(uploads)
+  const [uploadStore] = useState(createMediaUploadStore)
+  const { dispatch } = uploadStore
+  const uploadCount = useSelector(uploadStore.uploads, (items) => items.length)
   const uploadControllers = useRef(new Map<string, AbortController>())
   const mediaPreparationGeneration = useRef(0)
   const turnstile = useRef<TurnstileChallengeHandle>(null)
@@ -241,6 +243,7 @@ export function PostComposer({
   const form = useAppForm({
     defaultValues,
     onSubmit: async ({ value }) => {
+      const uploads = uploadStore.uploads.get()
       setSubmitError(null)
       try {
         const draftInput = postDraftInputSchema.parse(
@@ -385,10 +388,7 @@ export function PostComposer({
   const localDraft = useComposerDraft(userId, form)
   const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
 
-  useEffect(() => {
-    uploadsRef.current = uploads
-  }, [uploads])
-  useEffect(() => () => releaseUploadPreviews(uploadsRef.current), [])
+  useEffect(() => () => releaseUploadPreviews(uploadStore.uploads.get()), [uploadStore])
 
   if (!userId) {
     return (
@@ -422,7 +422,7 @@ export function PostComposer({
   function clearMedia() {
     mediaPreparationGeneration.current += 1
     setIsInspectingVideo(false)
-    releaseUploadPreviews(uploads)
+    releaseUploadPreviews(uploadStore.uploads.get())
     dispatch({ type: "reset" })
     form.setFieldValue("mediaIds", [])
     form.setFieldValue("mediaId", null)
@@ -448,7 +448,9 @@ export function PostComposer({
 
   async function selectFiles(files: File[], type: ComposerValues["type"], replace = false) {
     const remaining =
-      type === "images" ? Math.max(0, MAX_IMAGES_PER_POST - (replace ? 0 : uploads.length)) : 1
+      type === "images"
+        ? Math.max(0, MAX_IMAGES_PER_POST - (replace ? 0 : uploadStore.uploads.get().length))
+        : 1
     if (files.length > remaining) {
       toast.error(
         type === "images"
@@ -603,7 +605,7 @@ export function PostComposer({
           {(isDirty) => (
             <UnsavedChangesGuard
               allowNavigationRef={allowNavigationRef}
-              enabled={isDirty || uploads.length > 0}
+              enabled={isDirty || uploadCount > 0}
               description="Text and post details may be recovered from this device. Selected files and upload progress will be lost if you leave."
             />
           )}
@@ -645,7 +647,7 @@ export function PostComposer({
                 ) : (
                   <MediaPicker
                     type={type}
-                    uploads={uploads}
+                    uploadStore={uploadStore}
                     preparingImageCount={preparingImageCount}
                     isInspectingVideo={isInspectingVideo}
                     sensors={sensors}
@@ -772,7 +774,7 @@ function MediaDropzonePrompt({
 
 function MediaPicker({
   type,
-  uploads,
+  uploadStore,
   preparingImageCount,
   isInspectingVideo,
   sensors,
@@ -782,7 +784,7 @@ function MediaPicker({
   onDragEnd,
 }: {
   type: "images" | "video"
-  uploads: UploadItem[]
+  uploadStore: MediaUploadStore
   preparingImageCount: number
   isInspectingVideo: boolean
   sensors: ReturnType<typeof useSensors>
@@ -791,6 +793,7 @@ function MediaPicker({
   onAltText: (clientId: string, altText: string) => void
   onDragEnd: (event: DragEndEvent) => void
 }) {
+  const uploads = useSelector(uploadStore.pickerItems)
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null)
   const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
   const limit =
@@ -799,7 +802,7 @@ function MediaPicker({
       : "One video, up to 2 GB and 10 minutes."
   const inputLabel = `Choose ${type === "images" ? "images" : "a video"} to upload`
   const imageUploads = uploads.filter(
-    (item): item is UploadItem & { previewUrl: string } =>
+    (item): item is (typeof uploads)[number] & { previewUrl: string } =>
       item.kind === "image" && item.previewUrl !== null,
   )
   const selectedImageIndex =
@@ -860,7 +863,8 @@ function MediaPicker({
               {uploads.map((item) => (
                 <SortableUpload
                   key={item.clientId}
-                  item={item}
+                  clientId={item.clientId}
+                  uploadStore={uploadStore}
                   onRemove={onRemove}
                   onAltText={onAltText}
                   onView={setSelectedImageId}
@@ -887,6 +891,26 @@ function MediaPicker({
 }
 
 function SortableUpload({
+  clientId,
+  uploadStore,
+  onRemove,
+  onAltText,
+  onView,
+}: {
+  clientId: string
+  uploadStore: MediaUploadStore
+  onRemove: (item: UploadItem) => void
+  onAltText: (clientId: string, altText: string) => void
+  onView: (clientId: string) => void
+}) {
+  const item = useSelector(uploadStore.uploads, (items) =>
+    items.find((upload) => upload.clientId === clientId),
+  )
+  if (!item) return null
+  return <UploadRow item={item} onRemove={onRemove} onAltText={onAltText} onView={onView} />
+}
+
+function UploadRow({
   item,
   onRemove,
   onAltText,

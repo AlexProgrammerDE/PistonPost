@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react"
 
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { clockStore } from "@/lib/clock-store"
 import { cn } from "@/lib/utils"
 
 const SECOND_MS = 1_000
@@ -10,46 +11,10 @@ const MINUTE_MS = 60 * SECOND_MS
 const HOUR_MS = 60 * MINUTE_MS
 const DAY_MS = 24 * HOUR_MS
 const RELATIVE_CUTOFF_MS = 7 * DAY_MS
-const CLOCK_INTERVAL_MS = 30 * SECOND_MS
 
 const relativeTimeFormat = new Intl.RelativeTimeFormat("en", { numeric: "always" })
 
-type ClockListener = () => void
 type DateTimePresentation = "absolute" | "relative"
-
-const clockListeners = new Set<ClockListener>()
-let clockSnapshot = Date.now()
-let clockInterval: ReturnType<typeof setInterval> | undefined
-
-function updateClock() {
-  clockSnapshot = Date.now()
-  for (const listener of clockListeners) listener()
-}
-
-function subscribeToClock(listener: ClockListener) {
-  clockListeners.add(listener)
-
-  if (clockListeners.size === 1) {
-    clockSnapshot = Date.now()
-    clockInterval = setInterval(updateClock, CLOCK_INTERVAL_MS)
-  }
-
-  return () => {
-    clockListeners.delete(listener)
-    if (clockListeners.size === 0 && clockInterval !== undefined) {
-      clearInterval(clockInterval)
-      clockInterval = undefined
-    }
-  }
-}
-
-function getClockSnapshot() {
-  return clockSnapshot
-}
-
-function getServerClockSnapshot() {
-  return null
-}
 
 function dateTimeFormat(
   options: Intl.DateTimeFormatOptions,
@@ -119,7 +84,11 @@ export function DateTime({
   readonly presentation?: DateTimePresentation
   readonly className?: string
 }) {
-  const now = useSyncExternalStore(subscribeToClock, getClockSnapshot, getServerClockSnapshot)
+  const now = useSyncExternalStore(
+    clockStore.subscribe,
+    clockStore.getSnapshot,
+    clockStore.getServerSnapshot,
+  )
   const exact = formatAbsoluteDateTime(value, now === null ? "UTC" : undefined)
   const label =
     presentation === "relative" && now !== null
