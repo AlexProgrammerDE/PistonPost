@@ -7,7 +7,7 @@ pre-commit:
     lint:
       glob: "*.{js,jsx,ts,tsx}"
       exclude: "*.d.ts"
-      run: bun run lint
+      run: bunx oxlint --type-aware --deny-warnings --no-error-on-unmatched-pattern {staged_files}
     typecheck:
       glob: "**/*.{ts,tsx}"
       run: bun run typecheck
