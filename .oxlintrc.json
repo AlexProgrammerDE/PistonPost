@@ -17,9 +17,215 @@
     "perf": "warn"
   },
   "rules": {
-    "shadcn/no-unknown-classes": ["error", { "allow": ["vds-poster"] }],
+    "shadcn/no-unknown-classes": [
+      "error",
+      {
+        "allow": ["vds-poster"]
+      }
+    ],
     "shadcn/no-raw-colors": "error",
-    "shadcn/no-arbitrary-values": ["error", { "allow": ["layout"] }],
+    "shadcn/no-arbitrary-values": [
+      "error",
+      {
+        "allow": ["layout"]
+      }
+    ],
+    "shadcn/no-restyle": [
+      "error",
+      {
+        "allow": ["layout"],
+        "contracts": [
+          {
+            "pattern": "^Alert$",
+            "allow": [
+              "layout",
+              "border-l-4",
+              "border-l-callout-tip",
+              "border-l-callout-warning",
+              "border-l-primary",
+              "py-2",
+              "rounded-md"
+            ]
+          },
+          {
+            "pattern": "^AlertDescription$",
+            "allow": ["layout", "gap-3", "gap-4", "text-xs", "truncate"]
+          },
+          {
+            "pattern": "^AspectRatio$",
+            "allow": ["layout", "bg-black", "bg-muted", "not-typeset"]
+          },
+          {
+            "pattern": "^AvatarFallback$",
+            "allow": ["layout", "font-heading", "text-2xl", "text-foreground"]
+          },
+          {
+            "pattern": "^Button$",
+            "allow": [
+              "layout",
+              "hover:text-foreground",
+              "px-1",
+              "rounded-md",
+              "sm:px-3",
+              "text-muted-foreground",
+              "yarl__button"
+            ]
+          },
+          {
+            "pattern": "^ButtonGroup$",
+            "allow": ["layout", "border-t", "pt-2"]
+          },
+          {
+            "pattern": "^ButtonGroupText$",
+            "allow": ["layout", "tabular-nums"]
+          },
+          {
+            "pattern": "^CredenzaBody$",
+            "allow": ["layout", "gap-4"]
+          },
+          {
+            "pattern": "^Empty$",
+            "allow": ["layout", "border", "border-y", "p-6", "rounded-none"]
+          },
+          {
+            "pattern": "^Field$",
+            "allow": ["layout", "gap-2"]
+          },
+          {
+            "pattern": "^FieldGroup$",
+            "allow": ["layout", "gap-3", "gap-5", "gap-6"]
+          },
+          {
+            "pattern": "^FieldLabel$",
+            "allow": ["layout", "font-normal"]
+          },
+          {
+            "pattern": "^FieldLegend$",
+            "allow": ["layout", "gap-2"]
+          },
+          {
+            "pattern": "^FileUploadDropzone$",
+            "allow": [
+              "layout",
+              "data-dragging:bg-primary/5",
+              "data-dragging:border-primary",
+              "data-dragging:ring-3",
+              "data-dragging:ring-primary/15"
+            ]
+          },
+          {
+            "pattern": "^InputGroupAddon$",
+            "allow": ["layout", "border-b", "border-t"]
+          },
+          {
+            "pattern": "^InputGroupText$",
+            "allow": ["layout", "tabular-nums", "text-xs"]
+          },
+          {
+            "pattern": "^Item$",
+            "allow": [
+              "layout",
+              "bg-background",
+              "bg-muted/25",
+              "border-t-0",
+              "border-x-0",
+              "last:border-b-0",
+              "not-typeset",
+              "p-3",
+              "px-0",
+              "px-1",
+              "py-5",
+              "rounded-none",
+              "sm:px-3"
+            ]
+          },
+          {
+            "pattern": "^ItemActions$",
+            "allow": ["layout", "tabular-nums", "text-muted-foreground", "text-sm"]
+          },
+          {
+            "pattern": "^ItemContent$",
+            "allow": ["layout", "gap-2"]
+          },
+          {
+            "pattern": "^ItemDescription$",
+            "allow": ["layout", "line-clamp-none", "text-xs", "truncate"]
+          },
+          {
+            "pattern": "^ItemGroup$",
+            "allow": ["layout", "border-y", "gap-0"]
+          },
+          {
+            "pattern": "^ItemMedia$",
+            "allow": ["layout", "bg-muted", "rounded-none"]
+          },
+          {
+            "pattern": "^ItemTitle$",
+            "allow": ["layout", "line-clamp-2", "line-clamp-none"]
+          },
+          {
+            "pattern": "^Progress$",
+            "allow": ["layout", "gap-1"]
+          },
+          {
+            "pattern": "^SidebarFooter$",
+            "allow": ["layout", "gap-0", "p-0"]
+          },
+          {
+            "pattern": "^SidebarHeader$",
+            "allow": ["layout", "group-data-[collapsible=icon]:p-2", "px-4", "py-3"]
+          },
+          {
+            "pattern": "^Skeleton$",
+            "allow": ["layout", "rounded-full"]
+          },
+          {
+            "pattern": "^TableCell$",
+            "allow": ["layout", "text-muted-foreground", "text-xs"]
+          },
+          {
+            "pattern": "^TableHead$",
+            "allow": ["layout", "py-4"]
+          },
+          {
+            "pattern": "^TableRow$",
+            "allow": ["layout", "hover:bg-transparent"]
+          },
+          {
+            "pattern": "^Tabs$",
+            "allow": ["layout", "gap-3"]
+          },
+          {
+            "pattern": "^TabsContent$",
+            "allow": ["layout", "bg-background", "border", "p-4"]
+          },
+          {
+            "pattern": "^Timeline$",
+            "allow": ["layout", "gap-0"]
+          },
+          {
+            "pattern": "^TimelineItem$",
+            "allow": ["layout", "gap-3", "pb-10", "sm:gap-4"]
+          },
+          {
+            "pattern": "^Toggle$",
+            "allow": [
+              "layout",
+              "aria-pressed:bg-primary/10",
+              "aria-pressed:text-primary",
+              "dark:aria-pressed:bg-primary/15",
+              "hover:text-foreground",
+              "px-1",
+              "rounded-md",
+              "sm:px-3",
+              "text-muted-foreground"
+            ]
+          }
+        ]
+      }
+    ],
+    "shadcn/require-static-classes": "error",
+    "shadcn/no-inline-styles": "error",
     "react/no-array-index-key": "error",
     "react/react-in-jsx-scope": "off",
     "react-perf/jsx-no-new-array-as-prop": "off",
@@ -27,7 +233,12 @@
     "react-perf/jsx-no-jsx-as-prop": "off",
     "react-perf/jsx-no-new-object-as-prop": "off",
     "jsx-a11y/prefer-tag-over-role": "off",
-    "react/no-unstable-nested-components": ["error", { "allowAsProps": true }],
+    "react/no-unstable-nested-components": [
+      "error",
+      {
+        "allowAsProps": true
+      }
+    ],
     "unicorn/filename-case": [
       "error",
       {
@@ -39,6 +250,23 @@
     ]
   },
   "overrides": [
+    {
+      "files": ["src/components/TextPostSocialCard.tsx", "src/email/email.tsx"],
+      "rules": {
+        "shadcn/no-inline-styles": "off"
+      }
+    },
+    {
+      "files": ["src/components/post-composer.tsx"],
+      "rules": {
+        "shadcn/no-inline-styles": [
+          "error",
+          {
+            "allow": ["transform", "transition"]
+          }
+        ]
+      }
+    },
     {
       "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {

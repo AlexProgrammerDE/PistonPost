@@ -612,12 +612,12 @@ function findTransitionPost(event: MouseEvent<HTMLAnchorElement>) {
 export function PostAuthorAvatar({
   post,
   className,
-  avatarClassName,
+  displaySize = "large",
   sizes = "2.5rem",
 }: {
   readonly post: PublicPostRead
   readonly className?: string
-  readonly avatarClassName?: string
+  readonly displaySize?: "large" | "responsive"
   readonly sizes?: string
 }) {
   const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
@@ -645,7 +645,11 @@ export function PostAuthorAvatar({
         className,
       )}
     >
-      <Avatar size="lg" data-view-transition-part="profile-avatar" className={avatarClassName}>
+      <Avatar
+        size={displaySize === "large" ? "lg" : "default"}
+        data-view-transition-part="profile-avatar"
+        className={displaySize === "responsive" ? "sm:size-10" : undefined}
+      >
         {post.author.image && (
           <ResponsiveAvatarImage src={post.author.image} sizes={sizes} alt="" />
         )}

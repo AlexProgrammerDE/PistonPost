@@ -104,6 +104,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+  --color-callout-tip: color-mix(in oklab, var(--color-emerald-500) 70%, transparent);
+  --color-callout-warning: color-mix(in oklab, var(--color-amber-500) 80%, transparent);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);

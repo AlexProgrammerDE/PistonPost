@@ -212,7 +212,8 @@ export function DataTable<TData extends RowData>({
                 {headerGroup.headers.map((header) => (
                   <TableHead
                     key={header.id}
-                    style={{ width: header.getSize() }}
+                    className="w-(--column-width)"
+                    style={{ "--column-width": `${header.getSize()}px` }}
                     aria-sort={
                       header.column.getIsSorted() === "asc"
                         ? "ascending"

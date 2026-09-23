@@ -10,6 +10,7 @@ import {
   mediaImageUrl,
   type ResponsiveMediaImageVariant,
 } from "@/lib/media-image"
+import { cn } from "@/lib/utils"
 
 type ResponsiveMediaImageProps = Omit<
   ComponentProps<"img">,
@@ -33,6 +34,10 @@ export function ResponsiveMediaImage({
   const sources = createMediaImageSources(image, variant, widths)
   const stillSrcSet = createMediaImageSrcSet(image, variant, widths, "still")
   const stillSource = stillSrcSet ?? mediaImageUrl(image.id, variant, undefined, "still")
+  const placeholderStyle = {
+    ...props.style,
+    "--image-placeholder": image.placeholderColor ?? undefined,
+  }
 
   return (
     <picture className="contents">
@@ -49,7 +54,8 @@ export function ResponsiveMediaImage({
         sizes={sizes}
         width={image.width ?? undefined}
         height={image.height ?? undefined}
-        style={{ backgroundColor: image.placeholderColor ?? undefined, ...props.style }}
+        className={cn("bg-(--image-placeholder)", props.className)}
+        style={placeholderStyle}
       />
     </picture>
   )

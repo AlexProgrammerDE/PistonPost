@@ -437,13 +437,10 @@ function MarkdownSpoiler({ label }: { label: string }) {
 }
 
 const calloutPresentation = {
-  note: { icon: Info, label: "Note", className: "border-l-primary" },
-  tip: { icon: Lightbulb, label: "Tip", className: "border-l-emerald-500/70" },
-  warning: { icon: TriangleAlert, label: "Warning", className: "border-l-amber-500/80" },
-} satisfies Record<
-  MarkdownCalloutKind,
-  { readonly icon: typeof Info; readonly label: string; readonly className: string }
->
+  note: { icon: Info, label: "Note" },
+  tip: { icon: Lightbulb, label: "Tip" },
+  warning: { icon: TriangleAlert, label: "Warning" },
+} satisfies Record<MarkdownCalloutKind, { readonly icon: typeof Info; readonly label: string }>
 
 function MarkdownDiv({ node, children, ...props }: ComponentProps<"div"> & ExtraProps) {
   const { variant } = useMarkdownContext()
@@ -461,7 +458,17 @@ function MarkdownDiv({ node, children, ...props }: ComponentProps<"div"> & Extra
     const presentation = calloutPresentation[directive.calloutKind]
     const Icon = presentation.icon
     return (
-      <Alert role="note" className={cn("my-4 rounded-md border-l-4", presentation.className)}>
+      <Alert
+        role="note"
+        className={cn(
+          "my-4 rounded-md border-l-4",
+          directive.calloutKind === "note"
+            ? "border-l-primary"
+            : directive.calloutKind === "tip"
+              ? "border-l-callout-tip"
+              : "border-l-callout-warning",
+        )}
+      >
         <Icon aria-hidden="true" />
         <AlertTitle>{directive.label || presentation.label}</AlertTitle>
         <AlertDescription>{children}</AlertDescription>

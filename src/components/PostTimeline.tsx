@@ -55,7 +55,7 @@ export function PostTimeline({
                 <PostAuthorAvatar
                   post={post}
                   sizes="(min-width: 640px) 2.5rem, 2rem"
-                  avatarClassName="size-8 sm:size-10"
+                  displaySize="responsive"
                 />
               </TimelineDot>
               <TimelineConnector />
