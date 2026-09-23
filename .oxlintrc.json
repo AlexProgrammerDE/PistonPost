@@ -10,6 +10,7 @@
     "jsx-a11y",
     "vitest"
   ],
+  "jsPlugins": ["@shadcn/lint"],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
