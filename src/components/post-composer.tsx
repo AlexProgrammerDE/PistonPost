@@ -840,7 +840,7 @@ function MediaPicker({
       >
         <FileUploadDropzone
           aria-label={type === "images" ? "Image dropzone" : "Video dropzone"}
-          className="min-h-40 data-dragging:border-primary data-dragging:bg-primary/5 data-dragging:ring-[3px] data-dragging:ring-primary/15"
+          className="min-h-40 data-dragging:border-primary data-dragging:bg-primary/5 data-dragging:ring-3 data-dragging:ring-primary/15"
         >
           <MediaDropzonePrompt
             type={type}

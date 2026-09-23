@@ -121,6 +121,11 @@
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: "Outfit Variable", sans-serif;
   --font-heading: "Outfit Variable", sans-serif;
+  --tracking-brand: -0.045em;
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 @layer base {

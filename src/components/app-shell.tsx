@@ -28,7 +28,7 @@ export function AppShell({ children }: PropsWithChildren) {
           <SidebarTrigger aria-label="Open navigation" />
           <Link
             to="/"
-            className="font-heading text-lg font-extrabold tracking-[-0.045em]"
+            className="font-heading text-lg font-extrabold tracking-brand"
             aria-label="PistonPost home"
             translate="no"
           >

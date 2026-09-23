@@ -17,6 +17,9 @@
     "perf": "warn"
   },
   "rules": {
+    "shadcn/no-unknown-classes": ["error", { "allow": ["vds-poster"] }],
+    "shadcn/no-raw-colors": "error",
+    "shadcn/no-arbitrary-values": ["error", { "allow": ["layout"] }],
     "react/no-array-index-key": "error",
     "react/react-in-jsx-scope": "off",
     "react-perf/jsx-no-new-array-as-prop": "off",

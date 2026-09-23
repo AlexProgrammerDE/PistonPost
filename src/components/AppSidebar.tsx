@@ -102,7 +102,7 @@ export function AppSidebar() {
               p
             </span>
             <span
-              className="font-heading text-lg font-extrabold tracking-[-0.045em] group-data-[collapsible=icon]:hidden"
+              className="font-heading text-lg font-extrabold tracking-brand group-data-[collapsible=icon]:hidden"
               translate="no"
             >
               piston<span className="text-sidebar-primary">post</span>

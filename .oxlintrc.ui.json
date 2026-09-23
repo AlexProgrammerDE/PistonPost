@@ -1,0 +1,13 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "jsPlugins": ["@shadcn/lint"],
+  "categories": {
+    "correctness": "off",
+    "suspicious": "off",
+    "perf": "off"
+  },
+  "rules": {
+    "shadcn/no-unknown-classes": "error",
+    "shadcn/no-raw-colors": "error"
+  }
+}

@@ -315,7 +315,7 @@ export function SocialPanel({
           {showActionDock ? (
             <m.nav
               key="quick-post-actions"
-              className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-[env(safe-area-inset-bottom)]"
+              className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-safe"
               aria-label="Quick post actions"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

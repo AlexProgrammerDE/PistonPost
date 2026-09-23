@@ -419,7 +419,7 @@ function MarkdownSpoiler({ label }: { label: string }) {
       aria-pressed={revealed}
       aria-label={revealed ? "Hide spoiler" : "Reveal spoiler"}
       className={cn(
-        "font-inherit inline border px-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "inline border px-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         revealed
           ? "border-border bg-muted/35 text-foreground"
           : "border-foreground/70 bg-foreground text-background",
