@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { Effect, Either } from "effect"
+import { Effect, Result } from "effect"
 
 import { transitionMediaStatus } from "./media-state"
 
@@ -11,9 +11,9 @@ describe("media state", () => {
   })
 
   test("does not resurrect deleted or failed media", () => {
-    const deleted = Effect.runSync(Effect.either(transitionMediaStatus("deleted", "ready")))
-    const failed = Effect.runSync(Effect.either(transitionMediaStatus("failed", "processing")))
-    expect(Either.isLeft(deleted)).toBe(true)
-    expect(Either.isLeft(failed)).toBe(true)
+    const deleted = Effect.runSync(Effect.result(transitionMediaStatus("deleted", "ready")))
+    const failed = Effect.runSync(Effect.result(transitionMediaStatus("failed", "processing")))
+    expect(Result.isFailure(deleted)).toBe(true)
+    expect(Result.isFailure(failed)).toBe(true)
   })
 })

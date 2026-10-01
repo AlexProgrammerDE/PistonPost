@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
-import { Effect, Either } from "effect"
+import { Effect, Result } from "effect"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
@@ -36,12 +36,12 @@ async function videoDownload({
   let downloadUrl = readyVideoDownloadUrl(metadata)
   if (!downloadUrl) {
     const refreshed = await Effect.runPromise(
-      Effect.either(
+      Effect.result(
         refreshVideoDownload(context.env.STREAM.video(video.streamUid).downloads, metadata),
       ),
     )
-    if (Either.isLeft(refreshed)) return unavailableDownload()
-    metadata = refreshed.right
+    if (Result.isFailure(refreshed)) return unavailableDownload()
+    metadata = refreshed.success
     downloadUrl = readyVideoDownloadUrl(metadata)
     context.executionContext.waitUntil(
       createD1Database(context.env.DB)

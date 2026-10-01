@@ -24,12 +24,12 @@ export class PushResolutionError extends Schema.TaggedError<PushResolutionError>
   { operation: Schema.String },
 ) {}
 
-export class PushJobResolver extends Context.Tag("@pistonpost/push/PushJobResolver")<
+export class PushJobResolver extends Context.Service<
   PushJobResolver,
   {
     readonly resolve: (job: PushDeliveryJob) => Effect.Effect<ResolvedPush, PushResolutionError>
   }
->() {}
+>()("@pistonpost/push/PushJobResolver") {}
 
 function queryFailure() {
   return new PushResolutionError({ operation: "query" })

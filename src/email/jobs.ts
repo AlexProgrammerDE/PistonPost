@@ -50,26 +50,26 @@ export class ProductEmailBatchJob extends Schema.Class<ProductEmailBatchJob>(
   cursorUserId: Schema.NullOr(Schema.String),
 }) {}
 
-export const EmailDeliveryJob = Schema.Union(
+export const EmailDeliveryJob = Schema.Union([
   CommentEmailJob,
   ReplyEmailJob,
   ModerationEmailJob,
   SecurityEmailJob,
   ProductEmailJob,
-)
+])
 
 export type EmailDeliveryJob = typeof EmailDeliveryJob.Type
 
-export const EmailQueueJob = Schema.Union(EmailDeliveryJob, ProductEmailBatchJob)
+export const EmailQueueJob = Schema.Union([EmailDeliveryJob, ProductEmailBatchJob])
 
 export type EmailQueueJob = typeof EmailQueueJob.Type
 
 export function decodeEmailDeliveryJob(input: unknown) {
-  return Schema.decodeUnknownEither(EmailDeliveryJob)(input)
+  return Schema.decodeUnknownResult(EmailDeliveryJob)(input)
 }
 
 export function decodeEmailQueueJob(input: unknown) {
-  return Schema.decodeUnknownEither(EmailQueueJob)(input)
+  return Schema.decodeUnknownResult(EmailQueueJob)(input)
 }
 
 export function commentEmailJob(recipientUserId: string, commentId: string) {

@@ -1,4 +1,4 @@
-import { Data, Effect, Either } from "effect"
+import { Data, Effect, Result } from "effect"
 import { z } from "zod"
 
 import {
@@ -116,7 +116,7 @@ export function mapEffectFailure(cause: unknown) {
 }
 
 export async function runServerEffect<Success, Failure>(effect: Effect.Effect<Success, Failure>) {
-  const result = await Effect.runPromise(Effect.either(effect))
-  if (Either.isLeft(result)) throw mapEffectFailure(result.left)
-  return result.right
+  const result = await Effect.runPromise(Effect.result(effect))
+  if (Result.isFailure(result)) throw mapEffectFailure(result.failure)
+  return result.success
 }

@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm"
-import { Effect, Either } from "effect"
+import { Effect, Result } from "effect"
 import { z } from "zod"
 
 import { createD1Database } from "@/db/d1-database"
@@ -106,8 +106,8 @@ export async function handleStreamWebhook(request: Request, context: AppRequestC
 
   const failed = payload.status.state.toLocaleLowerCase("en-US").includes("error")
   const nextStatus = payload.readyToStream ? "ready" : failed ? "failed" : "processing"
-  const transition = Effect.runSync(Effect.either(transitionMediaStatus(asset.status, nextStatus)))
-  if (Either.isLeft(transition)) return new Response("OK", { status: 200 })
+  const transition = Effect.runSync(Effect.result(transitionMediaStatus(asset.status, nextStatus)))
+  if (Result.isFailure(transition)) return new Response("OK", { status: 200 })
   const providerMetadata = {
     ...asset.providerMetadata,
     streamState: payload.status.state,
@@ -118,7 +118,7 @@ export async function handleStreamWebhook(request: Request, context: AppRequestC
   await database
     .update(schema.mediaAssets)
     .set({
-      status: transition.right,
+      status: transition.success,
       width: payload.input?.width,
       height: payload.input?.height,
       duration: payload.duration === undefined ? undefined : Math.round(payload.duration * 1000),

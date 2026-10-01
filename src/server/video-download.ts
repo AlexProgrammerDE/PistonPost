@@ -12,8 +12,8 @@ type VideoDownloadStatus = "ready" | "inprogress" | "error"
 export class VideoDownloadError extends Schema.TaggedError<VideoDownloadError>()(
   "VideoDownloadError",
   {
-    operation: Schema.Literal("generate", "get"),
-    cause: Schema.Defect,
+    operation: Schema.Literals(["generate", "get"]),
+    cause: Schema.Defect(),
   },
 ) {}
 

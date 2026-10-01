@@ -1,6 +1,6 @@
 import { describe, expect, mock, test } from "bun:test"
 
-import { Effect, Either } from "effect"
+import { Effect, Result } from "effect"
 
 import { resolveVideoPlaybackUrl } from "./video-playback"
 
@@ -49,18 +49,18 @@ describe("video playback URLs", () => {
 
   test("rejects playback URLs outside Cloudflare delivery", async () => {
     const result = await Effect.runPromise(
-      Effect.either(
+      Effect.result(
         resolveVideoPlaybackUrl(videoClient({ dashPlaybackUrl: "https://example.com/video.mpd" })),
       ),
     )
 
-    expect(Either.isLeft(result)).toBeTrue()
-    if (Either.isLeft(result)) expect(result.left.operation).toBe("validate")
+    expect(Result.isFailure(result)).toBeTrue()
+    if (Result.isFailure(result)) expect(result.failure.operation).toBe("validate")
   })
 
   test("maps provider failures to a typed playback error", async () => {
     const result = await Effect.runPromise(
-      Effect.either(
+      Effect.result(
         resolveVideoPlaybackUrl({
           details: async () => {
             throw new Error("provider unavailable")
@@ -72,7 +72,7 @@ describe("video playback URLs", () => {
       ),
     )
 
-    expect(Either.isLeft(result)).toBeTrue()
-    if (Either.isLeft(result)) expect(result.left.operation).toBe("details")
+    expect(Result.isFailure(result)).toBeTrue()
+    if (Result.isFailure(result)) expect(result.failure.operation).toBe("details")
   })
 })

@@ -17,7 +17,7 @@ export class OutboxRepositoryError extends Schema.TaggedError<OutboxRepositoryEr
   { operation: Schema.String },
 ) {}
 
-export class OutboxRepository extends Context.Tag("@pistonpost/email/OutboxRepository")<
+export class OutboxRepository extends Context.Service<
   OutboxRepository,
   {
     readonly ensure: (
@@ -39,7 +39,7 @@ export class OutboxRepository extends Context.Tag("@pistonpost/email/OutboxRepos
       minimumDelayMs?: number,
     ) => Effect.Effect<void, OutboxRepositoryError>
   }
->() {}
+>()("@pistonpost/email/OutboxRepository") {}
 
 const leaseDurationMs = 5 * 60 * 1_000
 

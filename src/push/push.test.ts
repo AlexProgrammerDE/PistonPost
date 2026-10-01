@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 
-import { Either } from "effect"
+import { Result } from "effect"
 import { WebPushError } from "web-push"
 
 import {
@@ -28,7 +28,7 @@ describe("push delivery contracts", () => {
     )
 
     expect(first.idempotencyKey).not.toBe(second.idempotencyKey)
-    expect(Either.isRight(decodePushDeliveryJob(first))).toBe(true)
+    expect(Result.isSuccess(decodePushDeliveryJob(first))).toBe(true)
     const reply = replyPushJob(
       { recipientUserId: "recipient", subscriptionId: "subscription-one" },
       "comment",
@@ -42,9 +42,9 @@ describe("push delivery contracts", () => {
       commentId: reply.commentId,
       endpoint: "https://fcm.googleapis.com/a-capability",
     })
-    expect(Either.isRight(decoded)).toBe(true)
-    if (Either.isRight(decoded)) {
-      expect(Object.hasOwn(decoded.right, "endpoint")).toBe(false)
+    expect(Result.isSuccess(decoded)).toBe(true)
+    if (Result.isSuccess(decoded)) {
+      expect(Object.hasOwn(decoded.success, "endpoint")).toBe(false)
     }
   })
 

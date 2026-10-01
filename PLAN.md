@@ -2,7 +2,7 @@
 
 Status: prepared for execution
 
-Last updated: 2026-07-26
+Last updated: 2026-10-01
 
 ## How to execute this plan
 
@@ -996,6 +996,10 @@ The rewrite is complete when:
 - There are no unexplained orphaned production objects.
 
 ## Decisions and deviations
+
+- 2026-10-01: Pin Effect to the stable 4.0.0 release. Use `Context.Service`, `Result`, and v4 Schema
+  APIs at the existing boundaries. Preserve URL decoding, typed unsubscribe errors, email retries,
+  and queue retry delays. Use the canonical `Effect-TS/effect` repository for local source setup.
 
 Record future changes here with date, decision, reason, and affected phases.
 

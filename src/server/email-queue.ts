@@ -1,6 +1,6 @@
 import { cache } from "cloudflare:workers"
 import { and, eq, gt, isNull } from "drizzle-orm"
-import { Cause, Effect, Either, Exit, Layer, Option, Predicate, Schema } from "effect"
+import { Cause, Effect, Result, Exit, Layer, Option, Predicate, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -417,16 +417,16 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
     yield* deliverInternalJob(internal.data, env)
   } else {
     const push = decodePushDeliveryJob(body)
-    if (Either.isRight(push)) {
-      yield* deliverPushJob(push.right, env)
+    if (Result.isSuccess(push)) {
+      yield* deliverPushJob(push.success, env)
     } else {
       const decoded = decodeEmailQueueJob(body)
-      if (Either.isLeft(decoded)) {
+      if (Result.isFailure(decoded)) {
         yield* Effect.fail(
           new QueueDeliveryError({ operation: "invalid-job", retryAfterSeconds: 30 }),
         )
       } else {
-        const job = decoded.right
+        const job = decoded.success
         if (job.type === "email.product-batch") {
           yield* deliverProductBatch(job, env)
         } else {
@@ -441,9 +441,9 @@ function originalOutboxId(body: unknown) {
   const internal = internalJobSchema.safeParse(body)
   if (internal.success) return internal.data.idempotencyKey
   const email = decodeEmailQueueJob(body)
-  if (Either.isRight(email)) return email.right.idempotencyKey
+  if (Result.isSuccess(email)) return email.success.idempotencyKey
   const push = decodePushDeliveryJob(body)
-  if (Either.isRight(push)) return push.right.idempotencyKey
+  if (Result.isSuccess(push)) return push.success.idempotencyKey
   if (
     typeof body === "object" &&
     body !== null &&
@@ -566,7 +566,7 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
             publicKey: env.VAPID_PUBLIC_KEY,
             getPrivateKey: () => vapidPrivateKey,
           }),
-          EmailRenderer.live,
+          EmailRenderer.layer,
           cloudflareEmailTransportLayer(requireEmailBinding(env)),
         )
         return processQueueBody(message.body, env).pipe(
@@ -577,7 +577,7 @@ export async function handleQueue(batch: MessageBatch, env: Cloudflare.Env) {
                 message.ack()
                 return
               }
-              const failure = Cause.failureOption(exit.cause)
+              const failure = Cause.findErrorOption(exit.cause)
               const delaySeconds = Option.match(failure, {
                 onNone: () => 30,
                 onSome: (error) =>

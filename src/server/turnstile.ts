@@ -21,7 +21,7 @@ type TurnstileVerificationReason = "configuration" | "provider" | "rejected"
 export class TurnstileVerificationError extends Schema.TaggedError<TurnstileVerificationError>()(
   "TurnstileVerificationError",
   {
-    reason: Schema.Literal("configuration", "provider", "rejected"),
+    reason: Schema.Literals(["configuration", "provider", "rejected"]),
     message: Schema.String,
   },
 ) {}
@@ -83,7 +83,7 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
     try: () => response.json(),
     catch: () => verificationError("provider"),
   })
-  const result = yield* Schema.decodeUnknown(turnstileResponseSchema)(body).pipe(
+  const result = yield* Schema.decodeUnknownEffect(turnstileResponseSchema)(body).pipe(
     Effect.mapError(() => verificationError("provider")),
   )
   const actionMatches =

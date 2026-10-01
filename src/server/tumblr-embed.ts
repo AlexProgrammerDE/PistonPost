@@ -7,7 +7,7 @@ const MAX_OEMBED_RESPONSE_LENGTH = 32_768
 const tumblrOEmbedSchema = Schema.Struct({ html: Schema.String })
 
 export class TumblrEmbedError extends Schema.TaggedError<TumblrEmbedError>()("TumblrEmbedError", {
-  operation: Schema.Literal("request", "response", "validate"),
+  operation: Schema.Literals(["request", "response", "validate"]),
   status: Schema.NullOr(Schema.Number),
 }) {}
 
@@ -79,7 +79,7 @@ export const resolveTumblrEmbedHref = Effect.fn("resolveTumblrEmbedHref")(functi
     try: () => JSON.parse(responseText),
     catch: () => new TumblrEmbedError({ operation: "response", status: response.status }),
   })
-  const body = yield* Schema.decodeUnknown(tumblrOEmbedSchema)(unknownBody).pipe(
+  const body = yield* Schema.decodeUnknownEffect(tumblrOEmbedSchema)(unknownBody).pipe(
     Effect.mapError(() => new TumblrEmbedError({ operation: "response", status: response.status })),
   )
   const href = validatedEmbedHref(body.html, embed.postId)

@@ -1,8 +1,8 @@
 import { Schema } from "effect"
 
 const runtimeConfigSchema = Schema.Struct({
-  APP_ENV: Schema.Literal("development", "preview", "production"),
-  PUBLIC_APP_URL: Schema.URL,
+  APP_ENV: Schema.Literals(["development", "preview", "production"]),
+  PUBLIC_APP_URL: Schema.URLFromString,
 })
 
 export type RuntimeConfig = Schema.Schema.Type<typeof runtimeConfigSchema>

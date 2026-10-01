@@ -1,4 +1,4 @@
-import { Effect, Either } from "effect"
+import { Effect, Result } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { UnsubscribeTokenError } from "@/email"
@@ -50,7 +50,7 @@ export async function handleOneClickUnsubscribe(request: Request, context: AppRe
   try {
     const keyring = await readUnsubscribeKeyring(context.env.EMAIL_UNSUBSCRIBE_SECRET)
     const result = await Effect.runPromise(
-      Effect.either(
+      Effect.result(
         applyUnsubscribeToken(
           createD1Database(context.env.DB),
           parsed.token,
@@ -59,8 +59,8 @@ export async function handleOneClickUnsubscribe(request: Request, context: AppRe
         ),
       ),
     )
-    if (Either.isRight(result)) return unsubscribeResponse(204)
-    if (result.left instanceof UnsubscribeTokenError) return unsubscribeResponse(400)
+    if (Result.isSuccess(result)) return unsubscribeResponse(204)
+    if (result.failure instanceof UnsubscribeTokenError) return unsubscribeResponse(400)
     console.error(JSON.stringify({ level: "error", event: "email.unsubscribe.failed" }))
     return unsubscribeResponse(500)
   } catch {

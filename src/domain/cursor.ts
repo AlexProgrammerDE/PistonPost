@@ -34,7 +34,7 @@ export function decodePublicPostCursor(value: string) {
     catch: () => InvalidCursorError.make({ reason: "The cursor is not valid base64 JSON." }),
   }).pipe(
     Effect.flatMap(
-      Schema.decodeUnknown(encodedCursorSchema, {
+      Schema.decodeUnknownEffect(encodedCursorSchema, {
         onExcessProperty: "error",
       }),
     ),

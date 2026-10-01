@@ -5,7 +5,7 @@ import type { EmailNotificationPreference } from "@/domain"
 const claimsSchema = Schema.Struct({
   version: Schema.Literal(1),
   userId: Schema.String,
-  preference: Schema.Literal("comment-email", "reply-email", "product-email"),
+  preference: Schema.Literals(["comment-email", "reply-email", "product-email"]),
   expiresAt: Schema.Number,
 })
 
@@ -89,8 +89,8 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
     try: () => JSON.parse(new TextDecoder().decode(decodeBase64Url(payload))),
     catch: () => new UnsubscribeTokenError({ message: "The link is invalid." }),
   }).pipe(
-    Effect.flatMap(Schema.decodeUnknown(claimsSchema)),
-    Effect.catchTag("ParseError", () =>
+    Effect.flatMap(Schema.decodeUnknownEffect(claimsSchema)),
+    Effect.catchTag("SchemaError", () =>
       Effect.fail(new UnsubscribeTokenError({ message: "The link is invalid." })),
     ),
   )

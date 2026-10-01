@@ -8,9 +8,9 @@ const STREAM_UPLOAD_HOSTS = new Set(["upload.cloudflarestream.com", "upload.vide
 export class StreamDirectUploadError extends Schema.TaggedError<StreamDirectUploadError>()(
   "StreamDirectUploadError",
   {
-    operation: Schema.Literal("create", "validate-response"),
+    operation: Schema.Literals(["create", "validate-response"]),
     status: Schema.NullOr(Schema.Number),
-    cause: Schema.optional(Schema.Defect),
+    cause: Schema.optional(Schema.Defect()),
   },
 ) {}
 

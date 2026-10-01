@@ -1,24 +1,24 @@
 import { Schema } from "effect"
 
-export const postTypeSchema = Schema.Literal("text", "images", "video")
-export const postStatusSchema = Schema.Literal(
+export const postTypeSchema = Schema.Literals(["text", "images", "video"])
+export const postStatusSchema = Schema.Literals([
   "draft",
   "processing",
   "published",
   "moderated",
   "deleted",
   "failed",
-)
-export const postVisibilitySchema = Schema.Literal("public", "unlisted")
+])
+export const postVisibilitySchema = Schema.Literals(["public", "unlisted"])
 
-export const actorSchema = Schema.Union(
+export const actorSchema = Schema.Union([
   Schema.Struct({ kind: Schema.Literal("anonymous") }),
   Schema.Struct({
     kind: Schema.Literal("authenticated"),
     userId: Schema.String,
     roles: Schema.Array(Schema.String),
   }),
-)
+])
 
 export type Actor = Schema.Schema.Type<typeof actorSchema>
 
@@ -30,10 +30,10 @@ export const postSchema = Schema.Struct({
   visibility: postVisibilitySchema,
   title: Schema.String,
   textContent: Schema.NullOr(Schema.String),
-  createdAt: Schema.DateFromSelf,
-  updatedAt: Schema.DateFromSelf,
-  publishedAt: Schema.NullOr(Schema.DateFromSelf),
-  deletedAt: Schema.NullOr(Schema.DateFromSelf),
+  createdAt: Schema.Date,
+  updatedAt: Schema.Date,
+  publishedAt: Schema.NullOr(Schema.Date),
+  deletedAt: Schema.NullOr(Schema.Date),
   moderationReason: Schema.NullOr(Schema.String),
   version: Schema.Int,
 })

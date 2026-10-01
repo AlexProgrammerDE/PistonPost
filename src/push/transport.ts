@@ -42,10 +42,9 @@ export type PushTransportService = {
   ) => Effect.Effect<void, PushTransportError>
 }
 
-export class PushTransport extends Context.Tag("@pistonpost/push/PushTransport")<
-  PushTransport,
-  PushTransportService
->() {}
+export class PushTransport extends Context.Service<PushTransport, PushTransportService>()(
+  "@pistonpost/push/PushTransport",
+) {}
 
 function retryAfterSeconds(headers: webPush.Headers) {
   const raw = headers["retry-after"]

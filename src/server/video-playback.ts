@@ -12,8 +12,8 @@ export type VideoPlaybackFormat = "dash" | "hls"
 export class VideoPlaybackError extends Schema.TaggedError<VideoPlaybackError>()(
   "VideoPlaybackError",
   {
-    operation: Schema.Literal("details", "update", "validate"),
-    cause: Schema.Defect,
+    operation: Schema.Literals(["details", "update", "validate"]),
+    cause: Schema.Defect(),
   },
 ) {}
 

@@ -16,7 +16,7 @@ export class AccountMediaPurgeError extends Schema.TaggedError<AccountMediaPurge
   "AccountMediaPurgeError",
   {
     assetId: Schema.String,
-    operation: Schema.Literal("r2", "stream", "database"),
+    operation: Schema.Literals(["r2", "stream", "database"]),
   },
 ) {}
 
@@ -31,7 +31,7 @@ function providerDelete(assetId: string, operation: "r2" | "stream", task: () =>
     try: task,
     catch: (cause) =>
       missingProviderObject(cause) ? null : new AccountMediaPurgeError({ assetId, operation }),
-  }).pipe(Effect.catchAll((error) => (error === null ? Effect.void : Effect.fail(error))))
+  }).pipe(Effect.catch((error) => (error === null ? Effect.void : Effect.fail(error))))
 }
 
 export function purgeAccountMedia(

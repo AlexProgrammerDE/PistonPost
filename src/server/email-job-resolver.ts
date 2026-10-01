@@ -32,12 +32,12 @@ export class EmailResolutionError extends Schema.TaggedError<EmailResolutionErro
   { message: Schema.String },
 ) {}
 
-export class EmailJobResolver extends Context.Tag("@pistonpost/email/EmailJobResolver")<
+export class EmailJobResolver extends Context.Service<
   EmailJobResolver,
   {
     readonly resolve: (job: EmailDeliveryJob) => Effect.Effect<ResolvedEmail, EmailResolutionError>
   }
->() {}
+>()("@pistonpost/email/EmailJobResolver") {}
 
 function skip(reason: string, campaignId?: string): ResolvedEmail {
   return campaignId ? { _tag: "Skip", reason, campaignId } : { _tag: "Skip", reason }

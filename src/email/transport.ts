@@ -33,16 +33,14 @@ export type EmailRendererService = {
   readonly render: (content: EmailContent) => Effect.Effect<RenderedEmail, EmailRenderError>
 }
 
-export class EmailTransport extends Context.Tag("@pistonpost/email/EmailTransport")<
-  EmailTransport,
-  EmailTransportService
->() {}
+export class EmailTransport extends Context.Service<EmailTransport, EmailTransportService>()(
+  "@pistonpost/email/EmailTransport",
+) {}
 
-export class EmailRenderer extends Context.Tag("@pistonpost/email/EmailRenderer")<
-  EmailRenderer,
-  EmailRendererService
->() {
-  static readonly live = Layer.succeed(EmailRenderer, {
+export class EmailRenderer extends Context.Service<EmailRenderer, EmailRendererService>()(
+  "@pistonpost/email/EmailRenderer",
+) {
+  static readonly layer = Layer.succeed(EmailRenderer, {
     render: (content) =>
       Effect.tryPromise({
         try: () => renderEmail(content),

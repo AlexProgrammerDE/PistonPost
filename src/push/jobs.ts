@@ -31,17 +31,17 @@ export class SecurityPushJob extends Schema.Class<SecurityPushJob>("SecurityPush
   auditEventId: Schema.String,
 }) {}
 
-export const PushDeliveryJob = Schema.Union(
+export const PushDeliveryJob = Schema.Union([
   CommentPushJob,
   ReplyPushJob,
   ModerationPushJob,
   SecurityPushJob,
-)
+])
 
 export type PushDeliveryJob = typeof PushDeliveryJob.Type
 
 export function decodePushDeliveryJob(input: unknown) {
-  return Schema.decodeUnknownEither(PushDeliveryJob)(input)
+  return Schema.decodeUnknownResult(PushDeliveryJob)(input)
 }
 
 type PushJobIdentity = Readonly<{

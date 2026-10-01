@@ -24,8 +24,14 @@ type RecordPostViewInput = {
 class PostViewTrackingError extends Schema.TaggedError<PostViewTrackingError>()(
   "PostViewTrackingError",
   {
-    operation: Schema.Literal("fingerprint", "rate-limit", "find-post", "increment", "analytics"),
-    cause: Schema.Defect,
+    operation: Schema.Literals([
+      "fingerprint",
+      "rate-limit",
+      "find-post",
+      "increment",
+      "analytics",
+    ]),
+    cause: Schema.Defect(),
   },
 ) {}
 
@@ -91,7 +97,7 @@ export const recordPostView = Effect.fn("PostView.record")(
       ? yield* Effect.tryPromise({
           try: () => dependencies.incrementViewCount(post.id),
           catch: (cause) => trackingError("increment", cause),
-        }).pipe(Effect.catchAll(() => Effect.succeed(null)))
+        }).pipe(Effect.catch(() => Effect.succeed(null)))
       : null
     if (viewCount !== null) {
       yield* writeAnalyticsEvent(dependencies, post, "post.impression", input.surface)
@@ -102,5 +108,5 @@ export const recordPostView = Effect.fn("PostView.record")(
 
     return viewCount
   },
-  Effect.catchAllCause(() => Effect.succeed(null)),
+  Effect.catchCause(() => Effect.succeed(null)),
 )

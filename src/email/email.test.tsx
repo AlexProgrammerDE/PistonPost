@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test"
 
-import { Effect, Either, Exit, Layer } from "effect"
+import { Effect, Result, Exit, Layer } from "effect"
 
 import { renderEmail } from "./email"
 import { decodeEmailDeliveryJob } from "./jobs"
@@ -18,7 +18,7 @@ import {
   EmailRenderer,
   EmailTransport,
 } from "./transport"
-import { signUnsubscribeToken, verifyUnsubscribeToken } from "./unsubscribe"
+import { signUnsubscribeToken, UnsubscribeTokenError, verifyUnsubscribeToken } from "./unsubscribe"
 
 describe("transactional email", () => {
   it("renders branded HTML and a plain-text fallback", async () => {
@@ -134,7 +134,7 @@ describe("transactional email", () => {
         to: "recipient@example.com",
         from: "auth@example.com",
         idempotencyKey: "password-reset:test",
-      }).pipe(Effect.provide(Layer.mergeAll(EmailRenderer.live, transportLayer))),
+      }).pipe(Effect.provide(Layer.mergeAll(EmailRenderer.layer, transportLayer))),
     )
 
     expect(attempts).toBe(3)
@@ -149,7 +149,7 @@ describe("transactional email", () => {
       commentId: "comment-one",
     })
 
-    expect(Either.isRight(result)).toBeTrue()
+    expect(Result.isSuccess(result)).toBeTrue()
     expect(JSON.stringify(result)).not.toContain("@example.com")
   })
 
@@ -162,7 +162,7 @@ describe("transactional email", () => {
       html: "<script>not allowed</script>",
     })
 
-    expect(Either.isLeft(result)).toBeTrue()
+    expect(Result.isFailure(result)).toBeTrue()
   })
 
   it("renders a working product unsubscribe link", async () => {
@@ -205,7 +205,7 @@ describe("transactional email", () => {
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
-            EmailRenderer.live,
+            EmailRenderer.layer,
             Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
           ),
         ),
@@ -236,7 +236,7 @@ describe("transactional email", () => {
       }).pipe(
         Effect.provide(
           Layer.mergeAll(
-            EmailRenderer.live,
+            EmailRenderer.layer,
             Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
           ),
         ),
@@ -264,7 +264,7 @@ describe("transactional email", () => {
     )
 
     const result = await Effect.runPromise(
-      Effect.either(
+      Effect.result(
         transport.send({
           ...rendered,
           to: "recipient@example.com",
@@ -274,9 +274,9 @@ describe("transactional email", () => {
       ),
     )
 
-    expect(Either.isLeft(result)).toBeTrue()
-    if (Either.isLeft(result)) {
-      expect(result.left).toMatchObject({
+    expect(Result.isFailure(result)).toBeTrue()
+    if (Result.isFailure(result)) {
+      expect(result.failure).toMatchObject({
         code: "E_RECIPIENT_SUPPRESSED",
         retryable: false,
       })
@@ -297,5 +297,19 @@ describe("transactional email", () => {
 
     expect(Exit.isFailure(expiredResult)).toBeTrue()
     expect(Exit.isFailure(modifiedResult)).toBeTrue()
+  })
+
+  it("maps malformed signed claims to a token error", async () => {
+    const secret = "test-only-unsubscribe-secret-at-least-32-characters"
+    const token = await Effect.runPromise(
+      signUnsubscribeToken("user-one", "comment-email", secret, Number.NaN),
+    )
+
+    const result = await Effect.runPromise(Effect.result(verifyUnsubscribeToken(token, secret)))
+
+    expect(Result.isFailure(result)).toBeTrue()
+    if (Result.isFailure(result)) {
+      expect(result.failure).toBeInstanceOf(UnsubscribeTokenError)
+    }
   })
 })

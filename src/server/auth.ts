@@ -33,7 +33,7 @@ export async function createRequestAuth(context: AppRequestContext) {
     readSecret(env.BETTER_AUTH_API_KEY, "BETTER_AUTH_API_KEY"),
   ])
   const emailLayer = Layer.mergeAll(
-    EmailRenderer.live,
+    EmailRenderer.layer,
     cloudflareEmailTransportLayer(requireEmailBinding(env)),
   )
 
