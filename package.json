@@ -139,6 +139,11 @@
     "vite-plugin-pwa": "^1.3.0",
     "wasm-pack": "0.15.0"
   },
+  "overrides": {
+    "@cloudflare/build-output-utils": "0.8.4",
+    "@cloudflare/config": "0.22.0",
+    "@cloudflare/runtime-types": "0.1.6"
+  },
   "engines": {
     "node": ">=20"
   },
