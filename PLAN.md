@@ -1254,3 +1254,8 @@ Record future changes here with date, decision, reason, and affected phases.
   Generation uses one additional Images transformation into a tiny PNG and does not block uploads on failure.
   Existing images and potentially transparent formats retain their current background; no backfill runs.
   This affects Phases 5 and 6.
+
+- 2026-09-30: Move Worker configuration, production resource validation, and deployment
+  commands to the Cloudflare CLI. Validate the production D1 ID and Secrets Store
+  bindings before building, then deploy the checked Build Output. Use Vite directly
+  for the `prod` build because the CLI beta rejects TanStack build modes.

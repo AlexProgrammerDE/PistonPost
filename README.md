@@ -45,7 +45,7 @@ bun run test:web
 bun run typecheck:web
 bun run cf:typegen
 bun run db:check
-bun run wrangler:dry-run
+bun run cf:dry-run
 ```
 
 ### Generate database schemas
@@ -91,7 +91,7 @@ Web Push uses one VAPID key pair per deployed environment. Generate a pair once:
 bunx --bun web-push generate-vapid-keys --json
 ```
 
-Put the public key in `VAPID_PUBLIC_KEY` for the relevant `wrangler.jsonc` environment. Put the
+Put the public key in `VAPID_PUBLIC_KEY` for the relevant `cloudflare.config.ts` environment. Put the
 private key in the ignored `.dev.vars` file as `VAPID_PRIVATE_KEY`; production uses a Secrets Store
 secret with the same name. The two values must come from the same pair. Keep
 `VAPID_SUBJECT=mailto:support@pistonmaster.net` unless the monitored contact address changes.
@@ -164,3 +164,12 @@ References: [MDN PWA reference](https://developer.mozilla.org/en-US/docs/Web/Pro
 [Web Share API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Share_API),
 [share targets](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/share_target),
 and [file handlers](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Manifest/Reference/file_handlers).
+
+## Cloudflare CLI migration
+
+`cloudflare.config.ts` owns the Worker configuration. The legacy Wrangler file
+remains as a backup until the first successful production deployment.
+
+Local D1 commands use a stable development UUID and retain `.wrangler/state/`.
+The development UUID differs from the legacy database name. Existing checkouts
+need a local database copy before the first run with the new configuration.

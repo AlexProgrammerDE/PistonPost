@@ -145,7 +145,7 @@ export function generateN(count: number) {
 ## Cloudflare runtime
 
 - The root TanStack Start application is the only production Worker unless PLAN.md is explicitly changed.
-- Keep wrangler.jsonc valid and generate binding types after every binding change.
+- Keep cloudflare.config.ts valid and generate binding types after every binding change.
 - Use a current compatibility date and nodejs_compat only where dependencies require it.
 - Copy EnderDash configuration patterns selectively. Do not copy account IDs, resource IDs, secrets, hostnames, or irrelevant bindings.
 - Use D1 for relational data, R2 for original files, Cloudflare Images for image transformation and delivery, and Cloudflare Stream for video.

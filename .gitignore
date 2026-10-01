@@ -25,3 +25,6 @@ test-results
 # typescript
 *.tsbuildinfo
 .idea
+
+# Cloudflare CLI build output, generated types, and local state
+.cloudflare/

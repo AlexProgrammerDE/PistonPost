@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises"
 import { resolve } from "node:path"
 
-const clientDirectory = resolve("dist/client/assets")
+const clientDirectory = resolve(".cloudflare/output/v0/workers/default/assets/assets")
 const forbiddenMarkers = ["@/db", "cloudflare:workers"]
 
 const files: Array<{ path: string; bytes: number }> = []

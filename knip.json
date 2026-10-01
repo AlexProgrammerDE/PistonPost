@@ -12,7 +12,8 @@
     "src/lib/auth/auth-plugin.ts",
     "src/router.tsx",
     "src/routes/**/*.{ts,tsx}",
-    "src/styles/**/*.css"
+    "src/styles/**/*.css",
+    "cloudflare.config.ts"
   ],
   "project": ["*.ts", "scripts/**/*.ts", "tests/**/*.ts", "src/**/*.{ts,tsx}"],
   "ignore": [

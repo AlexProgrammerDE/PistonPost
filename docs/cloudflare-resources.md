@@ -5,12 +5,12 @@ resource names, binding contracts, and where configuration belongs without commi
 
 ## Before you begin
 
-Install dependencies and authenticate Wrangler from the repository root:
+Install dependencies and authenticate the Cloudflare CLI from the repository root:
 
 ```bash
 bun install
-bunx wrangler login
-bunx wrangler whoami
+bun cf auth login
+bun cf auth whoami
 ```
 
 Use separate resources for preview and production. The examples below use `pistonpost-staging` and `pistonpost-production` consistently.
@@ -20,13 +20,12 @@ Use separate resources for preview and production. The examples below use `pisto
 PistonPost uses one D1 database per environment for authentication and product data.
 
 ```bash
-bunx wrangler d1 create pistonpost-staging --location weur
-bunx wrangler d1 create pistonpost-production --location weur
+bun cf d1 create --name pistonpost-staging --primary-location-hint weur
+bun cf d1 create --name pistonpost-production --primary-location-hint weur
 ```
 
-Wrangler prints each database ID after creation. Store the production ID as
-`PRODUCTION_D1_DATABASE_ID` in the tracked `.env.production` file. The deployment preparation step
-adds it to the generated Wrangler configuration.
+The CLI prints each database ID after creation. Store the production ID as
+`PRODUCTION_D1_DATABASE_ID` in the tracked `.env.production` file. The production configuration validates it before the build.
 
 The local development database is created automatically by the Cloudflare Vite plugin. Regenerate Worker types after any binding change:
 
@@ -39,8 +38,8 @@ bun run cf:typegen
 Phase 6 binds private R2 buckets as `MEDIA`. Create one bucket per remote environment:
 
 ```bash
-bunx wrangler r2 bucket create pistonpost-staging-media --location weur
-bunx wrangler r2 bucket create pistonpost-production-media --location weur
+bun cf r2 buckets create --name pistonpost-staging-media --location-hint weur
+bun cf r2 buckets create --name pistonpost-production-media --location-hint weur
 ```
 
 Do not make these buckets public. Image delivery passes private R2 objects through fixed Images binding variants.
@@ -50,13 +49,13 @@ Do not make these buckets public. Image delivery passes private R2 objects throu
 The Worker produces to and consumes from `JOBS`. Failed messages move to a separate dead-letter queue.
 
 ```bash
-bunx wrangler queues create pistonpost-staging-jobs
-bunx wrangler queues create pistonpost-staging-dead-letter
-bunx wrangler queues create pistonpost-production-jobs
-bunx wrangler queues create pistonpost-production-dead-letter
+bun cf queues create --queue-name pistonpost-staging-jobs
+bun cf queues create --queue-name pistonpost-staging-dead-letter
+bun cf queues create --queue-name pistonpost-production-jobs
+bun cf queues create --queue-name pistonpost-production-dead-letter
 ```
 
-Queue names belong in Wrangler environment blocks. Queue payloads must use versioned schemas and must not contain secrets, rendered email bodies, message content, or direct personal data.
+Queue names belong in Cloudflare configuration modes. Queue payloads must use versioned schemas and must not contain secrets, rendered email bodies, message content, or direct personal data.
 
 Authentication links and one-time codes never enter a Queue or D1 outbox row. Better Auth hands those
 messages to the request execution context and the email transport uses a small bounded retry. Comment,
@@ -82,7 +81,7 @@ Some bindings require account-level setup rather than a create command:
 The Worker configuration is the binding source of truth. Run a dry deployment after every binding change:
 
 ```bash
-bun run wrangler:dry-run
+bun run cf:dry-run
 ```
 
 Inspect the binding summary and confirm that no preview resource appears in the production build.
@@ -110,20 +109,9 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 `STREAM_ACCOUNT_ID`. Do not reuse the broader token that deploys the Worker. The Worker reads these
 credentials only while creating a one-time TUS URL. They are never returned to the browser.
 
-Create or select a store, then create each secret with the `workers` scope:
-
-```bash
-bunx wrangler secrets-store store list
-STORE_ID=replace-with-your-store-id
-bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_API_KEY --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name BETTER_AUTH_SECRET --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name EMAIL_UNSUBSCRIBE_SECRET --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name TURNSTILE_SECRET --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_WEBHOOK_SECRET --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_ACCOUNT_ID --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name STREAM_API_TOKEN --scopes workers --remote
-bunx wrangler secrets-store secret create "$STORE_ID" --name VAPID_PRIVATE_KEY --scopes workers --remote
-```
+Create or select a Secrets Store in the Cloudflare dashboard. Add each secret
+with the `workers` scope. Keep the store ID in `PRODUCTION_SECRETS_STORE_ID`;
+`cloudflare.config.ts` declares the production secret bindings.
 
 Store the selected store ID as `PRODUCTION_SECRETS_STORE_ID` in the tracked `.env.production` file.
 The deployment workflow binds all eight values by name. Its Cloudflare API token needs permission to
@@ -132,7 +120,7 @@ services.
 
 Generate a VAPID pair once for each environment with
 `bunx --bun web-push generate-vapid-keys --json`. Store the private value as
-`VAPID_PRIVATE_KEY`. Put the matching public value in the relevant Wrangler environment as
+`VAPID_PRIVATE_KEY`. Put the matching public value in the relevant Cloudflare configuration mode as
 `VAPID_PUBLIC_KEY`; for production, set `PRODUCTION_VAPID_PUBLIC_KEY` in `.env.production` so the
 deployment preparation step can validate and inject it. The public key is configuration, but it is
 useless if it does not match the private key. Keep the VAPID subject set to the monitored support
@@ -143,7 +131,7 @@ Auth project has a project-scoped ingestion URL, set `VITE_PUBLIC_BETTER_AUTH_ID
 tracked `.env` file and rebuild. This URL is public configuration, but it must belong to the
 PistonPost project. Do not copy another project's ingestion URL.
 
-Do not store secrets in Wrangler `vars`, GitHub logs, command output, or shell history.
+Do not store secrets in text bindings, GitHub logs, command output, or shell history.
 
 ## Verify media uploads
 
@@ -208,9 +196,9 @@ together before changing the proxy origin or enabled extensions.
 The production workflow performs these steps in order:
 
 1. Run the complete repository CI gate.
-2. Build with `CLOUDFLARE_ENV=production` so the Cloudflare Vite plugin selects the production environment.
-3. Add the external resource IDs, Custom Domain, Turnstile site key, and Secrets Store bindings to the ignored generated configuration.
-4. Run a Wrangler dry run and stop if the build still points at local or placeholder resources.
+2. Run `bun run build:production` to select the `prod` mode.
+3. Supply the resource IDs and public keys through `.env.production`. The configuration validates them before building.
+4. Run `bun cf deploy --prebuilt --mode prod --dry-run` and stop if the build still points at local or placeholder resources.
 5. Record a D1 Time Travel bookmark and apply generated migrations.
 6. Deploy the Worker with commit metadata.
 7. Run the production smoke tests and publish the rollback checkpoint.

@@ -5,7 +5,7 @@
     "scripts/**/*.ts",
     "tests/**/*.ts",
     "*.config.ts",
-    "worker-configuration.d.ts"
+    ".cloudflare/types/index.d.ts"
   ],
   "compilerOptions": {
     "target": "ES2022",

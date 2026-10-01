@@ -32,6 +32,11 @@ jobs:
       - name: Load production configuration
         run: sed -e '/^[[:space:]]*#/d' -e '/^[[:space:]]*$/d' .env.production >> "$GITHUB_ENV"
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
         with:
@@ -44,39 +49,33 @@ jobs:
         run: bun run generated:check && bun run ci
 
       - name: Build production Worker
-        env:
-          CLOUDFLARE_ENV: production
-        run: bun run build
-
-      - name: Prepare production configuration
-        run: bun run deploy:prepare:production
+        run: bun run build:production
 
       - name: Verify production deployment
         run: >-
-          bunx wrangler deploy --config dist/server/wrangler.json --dry-run
-          --x-provision=false --x-auto-create=false
+          bun cf deploy --prebuilt --mode prod --dry-run
 
       - name: Confirm existing production database
-        run: bunx wrangler d1 info DB --config dist/server/wrangler.json --json
+        run: bun cf d1 get "$PRODUCTION_D1_DATABASE_ID"
 
       - name: Record D1 Time Travel bookmark
         id: bookmark
         run: |
-          bookmark="$(bunx wrangler d1 time-travel info DB --config dist/server/wrangler.json --json | jq -r 'if type == "array" then .[0].bookmark else .bookmark end')"
+          bookmark="$(bun cf d1 time-travel get-bookmark "$PRODUCTION_D1_DATABASE_ID" | jq -r 'if type == "array" then .[0].bookmark else .bookmark end')"
           test -n "$bookmark"
           echo "bookmark=$bookmark" >> "$GITHUB_OUTPUT"
           echo "D1 bookmark recorded before migration." >> "$GITHUB_STEP_SUMMARY"
 
       - name: List unapplied migrations
-        run: bunx wrangler d1 migrations list DB --config dist/server/wrangler.json --remote
+        run: bun cf d1 migrations list "$PRODUCTION_D1_DATABASE_ID" --dir drizzle
 
       - name: Apply generated migrations
-        run: bunx wrangler d1 migrations apply DB --config dist/server/wrangler.json --remote
+        run: bun cf d1 migrations apply "$PRODUCTION_D1_DATABASE_ID" --dir drizzle
 
       - name: Deploy tagged Worker version
         run: |
           subject="$(git log -1 --pretty=%s)"
-          bunx wrangler deploy --config dist/server/wrangler.json --tag "$GITHUB_SHA" --message "$subject" --x-provision=false --x-auto-create=false
+          bun cf deploy --prebuilt --mode prod --tag "$GITHUB_SHA" --message "$subject"
 
       - name: Run production smoke tests
         run: bun run smoke:production
