@@ -20,6 +20,9 @@ export default defineConfig((ctx) => {
             crossVersionCache: true,
           },
           observability: {
+            issues: {
+              enabled: true,
+            },
             enabled: true,
             logs: {
               enabled: true,
@@ -218,6 +221,9 @@ export default defineConfig((ctx) => {
             crossVersionCache: true,
           },
           observability: {
+            issues: {
+              enabled: true,
+            },
             enabled: true,
             logs: {
               enabled: true,
@@ -433,6 +439,9 @@ export default defineConfig((ctx) => {
             crossVersionCache: true,
           },
           observability: {
+            issues: {
+              enabled: true,
+            },
             enabled: true,
             logs: {
               enabled: true,
