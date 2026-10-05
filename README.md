@@ -173,3 +173,8 @@ remains as a backup until the first successful production deployment.
 Local D1 commands use a stable development UUID and retain `.wrangler/state/`.
 The development UUID differs from the legacy database name. Existing checkouts
 need a local database copy before the first run with the new configuration.
+
+## Contributing and support
+
+Read [the contribution guide](CONTRIBUTING.md) for development and review.
+Use [the support guide](SUPPORT.md) for questions and issue routing.
