@@ -38,6 +38,8 @@ const legalLinks = [
   { to: "/terms", label: "Terms" },
 ] as const
 
+const currentYear = new Date().getUTCFullYear()
+
 function isCurrentPath(pathname: string, to: string, exact: boolean) {
   return exact ? pathname === to : pathname === to || pathname.startsWith(`${to}/`)
 }
@@ -65,7 +67,6 @@ function AccountMenuFallback() {
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { isMobile, setOpenMobile, state } = useSidebar()
-  const currentYear = new Date().getUTCFullYear()
 
   useEffect(() => {
     if (pathname && isMobile) setOpenMobile(false)
