@@ -31,7 +31,12 @@ function providerDelete(assetId: string, operation: "r2" | "stream", task: () =>
     try: task,
     catch: (cause) =>
       missingProviderObject(cause) ? null : new AccountMediaPurgeError({ assetId, operation }),
-  }).pipe(Effect.catch((error) => (error === null ? Effect.void : Effect.fail(error))))
+  }).pipe(
+    Effect.catchIf(
+      (error) => error === null,
+      () => Effect.void,
+    ),
+  )
 }
 
 export function purgeAccountMedia(

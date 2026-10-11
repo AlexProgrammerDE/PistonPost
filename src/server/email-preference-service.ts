@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm"
-import { Effect } from "effect"
+import { Data, Effect } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
 import type { SqliteDatabaseClient } from "@/db/database"
@@ -12,8 +12,16 @@ import { verifyUnsubscribeToken } from "@/email"
 
 type PreferenceDatabase = D1DatabaseClient | SqliteDatabaseClient
 
+class EmailPreferenceQueryError extends Data.TaggedError("EmailPreferenceQueryError")<{
+  readonly cause: unknown
+  readonly message: string
+}> {}
+
 function repositoryQueryError(cause: unknown) {
-  return cause instanceof Error ? cause : new Error("The email preference could not be loaded.")
+  return new EmailPreferenceQueryError({
+    cause,
+    message: cause instanceof Error ? cause.message : "The email preference could not be loaded.",
+  })
 }
 
 async function userExists(database: PreferenceDatabase, userId: string) {

@@ -8,7 +8,7 @@ const tumblrOEmbedSchema = Schema.Struct({ html: Schema.String })
 
 export class TumblrEmbedError extends Schema.TaggedError<TumblrEmbedError>()("TumblrEmbedError", {
   operation: Schema.Literals(["request", "response", "validate"]),
-  status: Schema.NullOr(Schema.Number),
+  status: Schema.NullOr(Schema.Finite),
 }) {}
 
 type TumblrEmbedInput = {

@@ -67,14 +67,14 @@ export const trackPostViews = createServerFn({ method: "POST" })
     }
     const postIds = Array.from(new Set(data.postIds))
     const results = await runServerEffect(
-      Effect.all(
-        postIds.map((postId) =>
+      Effect.forEach(
+        postIds,
+        (postId) =>
           recordPostView(dependencies, {
             address,
             postId,
             surface: data.surface,
           }).pipe(Effect.map((viewCount) => ({ postId, viewCount }))),
-        ),
         { concurrency: 4 },
       ),
     )

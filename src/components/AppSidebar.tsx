@@ -1,6 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router"
 import { Newspaper, SquarePen, UsersRound } from "lucide-react"
-import { lazy, Suspense, useEffect } from "react"
+import { lazy, Suspense, useEffect, useState } from "react"
 
 import { InstallAppDialog } from "@/components/InstallAppDialog"
 import {
@@ -65,7 +65,7 @@ function AccountMenuFallback() {
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { isMobile, setOpenMobile, state } = useSidebar()
-  const currentYear = new Date().getUTCFullYear()
+  const [currentYear] = useState(() => new Date().getUTCFullYear())
 
   useEffect(() => {
     if (pathname && isMobile) setOpenMobile(false)

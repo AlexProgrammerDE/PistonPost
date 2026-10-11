@@ -75,7 +75,7 @@ function checkAnonymousRateLimit(request: Request, limiter: RateLimit) {
     catch: () => undefined,
   }).pipe(
     Effect.map((result) => result.success),
-    Effect.catch(() => Effect.succeed(true)),
+    Effect.orElseSucceed(() => true),
   )
 }
 

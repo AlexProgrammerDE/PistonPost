@@ -21,11 +21,11 @@ export type PushTarget = Readonly<{
 
 export class PushSubscriptionExpired extends Schema.TaggedError<PushSubscriptionExpired>()(
   "PushSubscriptionExpired",
-  { statusCode: Schema.Number },
+  { statusCode: Schema.Finite },
 ) {}
 
 export class PushRateLimited extends Schema.TaggedError<PushRateLimited>()("PushRateLimited", {
-  retryAfterSeconds: Schema.Number,
+  retryAfterSeconds: Schema.Finite,
 }) {}
 
 export class PushDeliveryError extends Schema.TaggedError<PushDeliveryError>()(

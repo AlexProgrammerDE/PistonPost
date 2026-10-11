@@ -9,7 +9,7 @@ export class StreamDirectUploadError extends Schema.TaggedError<StreamDirectUplo
   "StreamDirectUploadError",
   {
     operation: Schema.Literals(["create", "validate-response"]),
-    status: Schema.NullOr(Schema.Number),
+    status: Schema.NullOr(Schema.Finite),
     cause: Schema.optional(Schema.Defect()),
   },
 ) {}
