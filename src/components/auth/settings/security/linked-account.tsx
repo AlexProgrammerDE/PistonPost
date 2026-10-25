@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  getAuthCallbackURL,
   type AuthSocialProvider,
   getAuthErrorMessage,
   getProviderId,
@@ -128,7 +129,7 @@ export function LinkedAccount({ account, canUnlink = true, provider }: LinkedAcc
               onClick={() =>
                 linkSocial({
                   provider: providerId,
-                  callbackURL: `${baseURL}${window.location.pathname}`,
+                  callbackURL: getAuthCallbackURL(baseURL, window.location.pathname),
                 })
               }
               disabled={isLinking}

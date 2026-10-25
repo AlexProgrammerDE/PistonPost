@@ -3,7 +3,7 @@
 import { authMutationKeys } from "@better-auth-ui/core"
 import type { EmailOtpAuthClient } from "@better-auth-ui/core/plugins/email-otp"
 import { getSsoFallbackEmail } from "@better-auth-ui/core/plugins/sso"
-import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
+import { useAuth, useAuthPlugin, useFetchOptions } from "@better-auth-ui/react"
 import { useSendVerificationOtp, useSignInEmailOtp } from "@better-auth-ui/react/plugins/email-otp"
 import { useSelector } from "@tanstack/react-form"
 import { useIsMutating } from "@tanstack/react-query"
@@ -59,6 +59,8 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
   } = useAuth()
   const { localization: emailOtpLocalization, otpLength } = useAuthPlugin(emailOtpPlugin)
 
+  const { fetchOptions, resetCaptcha } = useFetchOptions()
+  const Captcha = plugins.find((plugin) => plugin.captchaComponent)?.captchaComponent
   const otpClient = authClient as EmailOtpAuthClient
   const continueSignIn = useSignInContinuation()
   const { cooldown, isCoolingDown, startCooldown } = useResendCooldown()
@@ -68,7 +70,9 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
   const { mutateAsync: sendVerificationOtp, isPending: isSending } = useSendVerificationOtp(
     otpClient,
     {
+      onError: () => resetCaptcha(),
       onSuccess: () => {
+        resetCaptcha()
         setCodeSent(true)
         startCooldown()
       },
@@ -76,7 +80,10 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
   )
 
   const { mutateAsync: signInEmailOtp, isPending: isSigningIn } = useSignInEmailOtp(otpClient, {
-    onError: () => form.setFieldValue("code", ""),
+    onError: () => {
+      form.setFieldValue("code", "")
+      resetCaptcha()
+    },
     onSuccess: (data) => continueSignIn(data),
   })
 
@@ -92,6 +99,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
     await sendVerificationOtp({
       email: form.state.values.email,
       type: "sign-in",
+      fetchOptions,
     })
   const verifyCode = async (completedCode: string) => {
     if (isPending || isSigningIn) return
@@ -99,6 +107,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
     await signInEmailOtp({
       email: form.state.values.email,
       otp: completedCode,
+      fetchOptions,
     })
   }
 
@@ -106,7 +115,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
     defaultValues: { code: "", email: getSsoFallbackEmail() },
     onSubmit: async ({ value }) => {
       if (!codeSent) {
-        await sendVerificationOtp({ email: value.email, type: "sign-in" })
+        await sendVerificationOtp({ email: value.email, type: "sign-in", fetchOptions })
         return
       }
 
@@ -189,6 +198,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                 )}
 
                 <form.AuthFormServerError />
+                {Captcha && <div className="flex justify-center">{Captcha}</div>}
 
                 <div className="flex flex-col gap-3">
                   <form.AuthFormSubmitButton
@@ -227,8 +237,8 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                     </>
                   ) : (
                     plugins.flatMap((plugin) =>
-                      (plugin.authButtons ?? []).map((AuthButton, index) => (
-                        <AuthButton key={`${plugin.id}-${index.toString()}`} view="emailOtp" />
+                      (plugin.authButtons ?? []).map((AuthButton) => (
+                        <AuthButton key={`${plugin.id}-${AuthButton.name}`} view="emailOtp" />
                       )),
                     )
                   )}

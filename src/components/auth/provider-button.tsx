@@ -1,6 +1,7 @@
 "use client"
 
 import {
+  getAuthCallbackURL,
   type AuthSocialProvider,
   type AuthView,
   authMutationKeys,
@@ -46,7 +47,7 @@ export function ProviderButton({
 }: ProviderButtonProps) {
   const { authClient, baseURL, localization, navigate, redirectTo, socialSignInMode } = useAuth()
 
-  const callbackURL = `${baseURL}${redirectTo}`
+  const callbackURL = getAuthCallbackURL(baseURL, redirectTo)
   const { fetchOptions, resetFetchOptions } = useFetchOptions()
 
   const { mutate: signInSocial, isPending: signInSocialPending } = useSignInSocial(authClient, {
