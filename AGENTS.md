@@ -55,7 +55,7 @@ Run commands from the repository root. The root package owns Vite, Wrangler, Dri
 
 - Use Bun only. Do not add npm, pnpm, or Yarn lockfiles.
 - Use bunx --bun for one-off package CLIs.
-- Run Wrangler without `--bun`. Wrangler uses Node to manage the local `workerd` process.
+- For existing scripts that invoke Wrangler, preserve its Node runtime for the local `workerd` process.
 - Keep bun.lock committed.
 - Keep one root dependency graph. Do not add workspace-only package manifests or another task orchestrator.
 - Generated route trees, Worker types, Better Auth schemas, and Drizzle migration artifacts must be created by their owning tools.
@@ -214,3 +214,21 @@ bunx --bun drizzle-kit generate --custom --name <migration-name>
 - Use natural, direct language. Do not use em dashes.
 - Prefer short paragraphs, descriptive links, fenced commands, and compact tables.
 - Record architectural decisions that future agents might otherwise reverse accidentally.
+
+## React conventions
+
+- Keep page structure, headings, navigation, labels, and independent content mounted while data loads.
+- Show skeletons only for unresolved values, rows, and permission-dependent actions. Do not block a page on its slowest query.
+
+## shadcn/ui
+
+- For shadcn/ui work, use the `shadcn` skill and component documentation.
+
+## Design skills
+
+- For visual design work, use `frontend-design` and `uncodixfy`.
+
+## Cloudflare tooling
+
+- Use `cf` for direct Cloudflare CLI commands. Prefer existing package scripts for project workflows.
+- For new Cloudflare configuration, prefer `cloudflare.config.ts`. Preserve existing configuration formats during unrelated work.
