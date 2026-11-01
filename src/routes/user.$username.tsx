@@ -58,6 +58,15 @@ export const Route = createFileRoute("/user/$username")({
     const profileIdentityUrl = absoluteUrl(pagePath)
     const website = safeWebsite(loaderData?.website ?? null)
     return createSeoHead({
+      discord: loaderData
+        ? {
+            title: `${name} (@${username})`,
+            description,
+            url: profileIdentityUrl,
+            label: "View profile",
+            thumbnail: loaderData.image ? absoluteUrl(loaderData.image) : undefined,
+          }
+        : false,
       title: `${name} (@${username}) · ${SITE_NAME}`,
       description,
       path,

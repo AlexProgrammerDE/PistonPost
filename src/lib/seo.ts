@@ -1,5 +1,7 @@
 import type { ComponentProps } from "react"
 
+import { discordEmbedScript, type DiscordEmbedOptions } from "./discord-embed"
+
 export const SITE_NAME = "PistonPost"
 export const SITE_URL = "https://post.pistonmaster.net"
 export const SITE_DESCRIPTION =
@@ -36,6 +38,7 @@ export type SeoVideo = {
 }
 
 type SeoOptions = {
+  readonly discord?: DiscordEmbedOptions | false
   readonly title: string
   readonly description: string
   readonly path: string
@@ -205,16 +208,23 @@ export function createSeoHead(options: SeoOptions) {
   return {
     meta,
     links: [{ rel: "canonical", href: canonical }],
-    scripts: options.jsonLd
-      ? [
-          {
-            type: "application/ld+json",
-            children: JSON.stringify(options.jsonLd)
-              .replaceAll("<", "\\u003c")
-              .replaceAll("\u2028", "\\u2028")
-              .replaceAll("\u2029", "\\u2029"),
-          },
-        ]
-      : [],
+    scripts: [
+      ...(options.jsonLd
+        ? [
+            {
+              type: "application/ld+json",
+              children: JSON.stringify(options.jsonLd)
+                .replaceAll("<", "\\u003c")
+                .replaceAll("\u2028", "\\u2028")
+                .replaceAll("\u2029", "\\u2029"),
+            },
+          ]
+        : []),
+      ...(options.discord === false || (indexing === "noindex" && !options.discord)
+        ? []
+        : discordEmbedScript(
+            options.discord ?? { title, description, url: canonical, images: [imageUrl] },
+          )),
+    ],
   }
 }

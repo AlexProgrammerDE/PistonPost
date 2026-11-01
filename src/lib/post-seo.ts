@@ -261,6 +261,27 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   }
 
   return createSeoHead({
+    discord:
+      post.visibility === "public"
+        ? {
+            title: post.title,
+            description: `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
+            url: canonical,
+            label: "View post",
+            images:
+              post.type === "images"
+                ? [image, ...galleryImages.filter((entry) => entry !== image)].flatMap((entry) =>
+                    entry ? [absoluteUrl(entry.url)] : [],
+                  )
+                : video
+                  ? [absoluteUrl(video.download.url)]
+                  : [],
+            links: [
+              { label: "Comments", url: `${canonical}#discussion` },
+              { label: "View author", url: authorUrl },
+            ],
+          }
+        : false,
     title:
       post.type === "video"
         ? `${truncateTitle(post.title, 40)} · ${authorName} · ${SITE_NAME}`

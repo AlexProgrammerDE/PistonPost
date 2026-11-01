@@ -268,3 +268,31 @@ describe("SEO metadata", () => {
     expect(script?.children).toContain("\\u003c/script>")
   })
 })
+
+describe("Discord post previews", () => {
+  it("uses post content, counts and canonical actions while preserving structured data", () => {
+    const head = createPostSeoHead({
+      ...basePost,
+      title: "A fresh post",
+      heartCount: 17,
+      commentCount: 3,
+    })
+    const script = head.scripts.find(
+      (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+    )
+    const payload = JSON.parse(script?.children ?? "")
+    expect(payload.component.components[0].content).toContain("A fresh post")
+    expect(payload.component.components[0].content).toContain("17 hearts · 3 comments")
+    expect(payload.component.components.at(-1).components[1].url).toBe(
+      `${SITE_URL}/post/post%20one#discussion`,
+    )
+    expect(head.scripts[0]?.type).toBe("application/ld+json")
+  })
+
+  it("does not add a component preview to unlisted posts", () => {
+    const head = createPostSeoHead({ ...basePost, visibility: "unlisted" })
+    expect(
+      head.scripts.some((script) => "id" in script && script.id === "discord:component-embed"),
+    ).toBe(false)
+  })
+})
