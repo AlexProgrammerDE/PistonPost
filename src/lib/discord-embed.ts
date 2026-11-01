@@ -9,6 +9,7 @@ export interface DiscordEmbedOptions {
   images?: readonly string[]
   links?: readonly { label: string; url: string }[]
   color?: number
+  layout?: "default" | "compact" | "media"
 }
 
 function shorten(value: string, length: number) {
@@ -48,6 +49,7 @@ export function createDiscordEmbed(
   let description = shorten(options.description?.trim() ?? "", 600)
   const images = (options.images ?? []).flatMap((value) => publicUrl(value, 2048) ?? []).slice(0, 4)
   const thumbnail = options.thumbnail ? publicUrl(options.thumbnail, 512) : undefined
+  const layout = options.layout ?? "default"
   const links = [{ label: options.label ?? "View page", url }, ...(options.links ?? [])]
     .flatMap((link) => {
       const href = publicUrl(link.url)
@@ -57,21 +59,30 @@ export function createDiscordEmbed(
     .slice(0, 4)
 
   for (;;) {
+    if (layout === "media" && images.length === 0) return undefined
+    const heading = `[${markdown(title)}](${url})`
     const text = {
       type: ComponentType.TextDisplay,
-      content: `## [${markdown(title)}](${url})${description ? `\n${markdown(description)}` : ""}`,
+      content: `${layout === "compact" ? `**${heading}**` : `## ${heading}`}${description ? `\n${markdown(description)}` : ""}`,
     } as const
     const component: APIContainerComponent = {
       type: ComponentType.Container,
       ...(options.color === undefined ? {} : { accent_color: options.color }),
       components: [
-        thumbnail
-          ? {
-              type: ComponentType.Section,
-              components: [text],
-              accessory: { type: ComponentType.Thumbnail, media: { url: thumbnail } },
-            }
-          : text,
+        ...(layout === "media"
+          ? []
+          : [
+              thumbnail
+                ? {
+                    type: ComponentType.Section as const,
+                    components: [text],
+                    accessory: {
+                      type: ComponentType.Thumbnail as const,
+                      media: { url: thumbnail },
+                    },
+                  }
+                : text,
+            ]),
         ...(images.length
           ? [
               {
@@ -80,14 +91,18 @@ export function createDiscordEmbed(
               },
             ]
           : []),
-        {
-          type: ComponentType.ActionRow,
-          components: links.map((link) => ({
-            type: ComponentType.Button,
-            style: ButtonStyle.Link,
-            ...link,
-          })),
-        },
+        ...(layout === "default"
+          ? [
+              {
+                type: ComponentType.ActionRow as const,
+                components: links.map((link) => ({
+                  type: ComponentType.Button as const,
+                  style: ButtonStyle.Link as const,
+                  ...link,
+                })),
+              },
+            ]
+          : []),
       ],
     }
     if (new TextEncoder().encode(serializeDiscordEmbed(component)).byteLength <= 3000)

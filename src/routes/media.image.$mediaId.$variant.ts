@@ -37,7 +37,7 @@ const variants = {
     width: SOCIAL_MEDIA_IMAGE_MAX_SIZE,
     height: SOCIAL_MEDIA_IMAGE_MAX_SIZE,
     fit: "scale-down" as const,
-    quality: 84,
+    quality: 95,
   },
 } as const
 

@@ -15,13 +15,13 @@ export type MediaImageSource = {
 }
 
 export const AVATAR_IMAGE_SIZE = 256
-export const SOCIAL_MEDIA_IMAGE_MAX_SIZE = 1200
+export const SOCIAL_MEDIA_IMAGE_MAX_SIZE = 2400
 export const MEDIA_IMAGE_CACHE_VERSIONS: Readonly<Record<MediaImageVariant, number>> = {
   avatar: 1,
   feed: 1,
   detail: 1,
   thumbnail: 1,
-  og: 2,
+  og: 3,
 }
 
 export const AVATAR_IMAGE_WIDTHS: ReadonlyArray<number> = [40, 80, 160, 256]

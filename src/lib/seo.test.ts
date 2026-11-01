@@ -92,7 +92,7 @@ describe("SEO metadata", () => {
     const head = createPostSeoHead(post, 1)
 
     expect(metaContent(head.meta, "property", "og:image")).toBe(
-      `${SITE_URL}/media/image/second/og?v=2`,
+      `${SITE_URL}/media/image/second/og?v=3`,
     )
     expect(metaContent(head.meta, "property", "og:image:alt")).toBe("A sleepy fox")
     expect(metaContent(head.meta, "property", "og:image:type")).toBe("image/jpeg")
@@ -270,6 +270,65 @@ describe("SEO metadata", () => {
 })
 
 describe("Discord post previews", () => {
+  const galleryPost: PublicPostRead = {
+    ...basePost,
+    type: "images",
+    textContent: null,
+    media: Array.from({ length: 70 }, (_, index) => ({
+      id: `image-${index}`,
+      kind: "image",
+      width: 3000,
+      height: 4000,
+      duration: null,
+      altText: `Artwork ${index + 1}`,
+    })),
+  }
+
+  it("previews each copied image link once without repeating the full post card", () => {
+    const links = createPostShareLinks(galleryPost.id, galleryPost.media.length)
+    for (const [index, url] of links.imageUrls.entries()) {
+      const head = createPostSeoHead(galleryPost, Number(new URL(url).searchParams.get("image")))
+      const script = head.scripts.find(
+        (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+      )
+      const payload = JSON.parse(script?.children ?? "")
+      expect(payload.component.components).toHaveLength(index === 0 ? 2 : 1)
+      expect(payload.component.components.at(-1)).toEqual({
+        type: 12,
+        items: [{ media: { url: `${SITE_URL}/media/image/image-${index}/og?v=3` } }],
+      })
+      if (index === 0) {
+        expect(payload.component.components[0].content).toBe(
+          `**[look at this](${url})**\n@Alex · Image 1 of 70`,
+        )
+      }
+      expect(head.links).toEqual([{ rel: "canonical", href: links.postUrl }])
+      expect(metaContent(head.meta, "property", "og:title")).toContain("look at this")
+      expect(metaContent(head.meta, "property", "og:image:width")).toBe("1800")
+      expect(metaContent(head.meta, "property", "og:image:height")).toBe("2400")
+      expect(new TextEncoder().encode(script?.children).byteLength).toBeLessThanOrEqual(3000)
+    }
+  })
+
+  it("uses one image on the post link and clamps selected images to the available gallery", () => {
+    for (const [selected, expected] of [
+      [0, 0],
+      [-1, 0],
+      [149, 69],
+      [NaN, 0],
+      [1.9, 1],
+    ]) {
+      const head = createPostSeoHead(galleryPost, selected)
+      const script = head.scripts.find(
+        (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+      )
+      const payload = JSON.parse(script?.children ?? "")
+      expect(payload.component.components.at(-1).items).toEqual([
+        { media: { url: `${SITE_URL}/media/image/image-${expected}/og?v=3` } },
+      ])
+    }
+  })
+
   it("uses post content, counts and canonical actions while preserving structured data", () => {
     const head = createPostSeoHead({
       ...basePost,

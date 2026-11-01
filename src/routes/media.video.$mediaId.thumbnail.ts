@@ -1,16 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 
-import { fitMediaDimensions, SOCIAL_MEDIA_IMAGE_MAX_SIZE } from "@/lib/media-image"
-import { createStreamThumbnailUrl } from "@/lib/video-thumbnail"
+import { fitMediaDimensions } from "@/lib/media-image"
+import { createStreamThumbnailUrl, SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
 import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
 const thumbnailSearchSchema = z.object({
   time: z.coerce.number().finite().min(0).optional(),
-  width: z.coerce.number().int().min(2).max(SOCIAL_MEDIA_IMAGE_MAX_SIZE).optional(),
-  height: z.coerce.number().int().min(2).max(SOCIAL_MEDIA_IMAGE_MAX_SIZE).optional(),
+  width: z.coerce.number().int().min(2).max(SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE).optional(),
+  height: z.coerce.number().int().min(2).max(SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE).optional(),
 })
 
 async function videoThumbnail({
@@ -39,9 +39,9 @@ async function videoThumbnail({
   const details = await context.env.STREAM.video(video.streamUid).details()
   const defaultDimensions = fitMediaDimensions(
     video,
-    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
-    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
-  ) ?? { width: SOCIAL_MEDIA_IMAGE_MAX_SIZE, height: SOCIAL_MEDIA_IMAGE_MAX_SIZE }
+    SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
+    SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
+  ) ?? { width: SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE, height: SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE }
   const thumbnail = createStreamThumbnailUrl({
     source: details.thumbnail,
     durationSeconds: details.duration,

@@ -16,6 +16,7 @@ import {
 } from "./seo"
 import {
   normalizeStreamThumbnailDimensions,
+  SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
   VIDEO_PLAYER_CACHE_VERSION,
   VIDEO_THUMBNAIL_CACHE_VERSION,
 } from "./video-thumbnail"
@@ -98,15 +99,6 @@ function structuredPostImages(
     })
 }
 
-function selectedPostImage(
-  images: ReadonlyArray<SeoImage>,
-  selectedImageIndex: number,
-): SeoImage | undefined {
-  if (images.length === 0) return undefined
-  const index = Math.min(Math.max(selectedImageIndex, 0), images.length - 1)
-  return images[index]
-}
-
 function postVideo(post: PublicPostRead, postTitle: string) {
   const media = post.media.find((entry) => entry.kind === "video")
   if (!media) return undefined
@@ -114,8 +106,8 @@ function postVideo(post: PublicPostRead, postTitle: string) {
   const height = media.height ?? 720
   const fittedThumbnailDimensions = fitMediaDimensions(
     media,
-    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
-    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+    SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
+    SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
   )
   const thumbnailDimensions = fittedThumbnailDimensions
     ? normalizeStreamThumbnailDimensions(fittedThumbnailDimensions)
@@ -186,10 +178,14 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   const description = postDescription(post, authorName)
   const video = post.type === "video" ? postVideo(post, postTitle) : undefined
   const galleryImages = post.type === "images" ? postImages(post, postTitle) : []
+  const imageIndex = Math.min(
+    Math.max(Number.isFinite(selectedImageIndex) ? Math.trunc(selectedImageIndex) : 0, 0),
+    Math.max(0, galleryImages.length - 1),
+  )
   const structuredImages = post.type === "images" ? structuredPostImages(post, postTitle) : []
   const image =
     post.type === "images"
-      ? selectedPostImage(galleryImages, selectedImageIndex)
+      ? galleryImages[imageIndex]
       : post.type === "text"
         ? textPostImage(post, postTitle, authorName)
         : video?.image
@@ -265,14 +261,18 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
       post.visibility === "public"
         ? {
             title: post.title,
-            description: `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
-            url: canonical,
+            description:
+              post.type === "images"
+                ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
+                : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
+            url: post.type === "images" ? `${canonical}?image=${imageIndex}` : canonical,
+            layout: post.type === "images" ? (imageIndex === 0 ? "compact" : "media") : "default",
             label: "View post",
             images:
               post.type === "images"
-                ? [image, ...galleryImages.filter((entry) => entry !== image)].flatMap((entry) =>
-                    entry ? [absoluteUrl(entry.url)] : [],
-                  )
+                ? image
+                  ? [absoluteUrl(image.url)]
+                  : []
                 : video
                   ? [absoluteUrl(video.download.url)]
                   : [],

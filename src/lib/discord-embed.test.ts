@@ -5,6 +5,52 @@ import { ComponentType } from "discord-api-types/v10"
 import { createDiscordEmbed, discordEmbedScript, serializeDiscordEmbed } from "./discord-embed"
 
 describe("Discord component embeds", () => {
+  test("keeps compact image cards to a small linked heading and media", () => {
+    const card = createDiscordEmbed({
+      title: "Gallery",
+      description: "@alice · Image 1 of 70",
+      url: "https://example.com/post/42?image=0",
+      images: ["https://example.com/art.jpg"],
+      layout: "compact",
+    })
+    expect(card?.components.map((component) => component.type)).toEqual([
+      ComponentType.TextDisplay,
+      ComponentType.MediaGallery,
+    ])
+    const text = card?.components[0]
+    expect(text?.type === ComponentType.TextDisplay && text.content).toBe(
+      "**[Gallery](https://example.com/post/42?image=0)**\n@alice · Image 1 of 70",
+    )
+  })
+
+  test("omits repeated text and actions from image-only continuation links", () => {
+    const card = createDiscordEmbed({
+      title: "Gallery",
+      description: "This should not repeat",
+      url: "https://example.com/post/42?image=1",
+      images: ["https://example.com/second.jpg"],
+      links: [{ label: "Author", url: "https://example.com/alice" }],
+      layout: "media",
+    })
+    expect(card?.components).toEqual([
+      {
+        type: ComponentType.MediaGallery,
+        items: [{ media: { url: "https://example.com/second.jpg" } }],
+      },
+    ])
+    expect(
+      createDiscordEmbed({ title: "Empty", url: "https://example.com", layout: "media" }),
+    ).toBeUndefined()
+    expect(
+      createDiscordEmbed({
+        title: "Invalid",
+        url: "https://example.com",
+        images: ["javascript:alert(1)"],
+        layout: "media",
+      }),
+    ).toBeUndefined()
+  })
+
   test("renders current page data and link-only actions", () => {
     const scripts = discordEmbedScript({
       title: "A new post",
