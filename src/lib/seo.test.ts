@@ -310,7 +310,27 @@ describe("Discord post previews", () => {
     }
   })
 
-  it("uses one image on the post link and clamps selected images to the available gallery", () => {
+  it("keeps up to four images on the root post link", () => {
+    for (const count of [1, 2, 4, 70]) {
+      const head = createPostSeoHead({ ...galleryPost, media: galleryPost.media.slice(0, count) })
+      const script = head.scripts.find(
+        (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+      )
+      const payload = JSON.parse(script?.children ?? "")
+      expect(payload.component.components).toHaveLength(2)
+      expect(payload.component.components[0].content).toBe(
+        `**[look at this](${SITE_URL}/post/post%20one)**\n@Alex · ${count} image${count === 1 ? "" : "s"}`,
+      )
+      expect(payload.component.components[1].items).toEqual(
+        Array.from({ length: Math.min(4, count) }, (_, index) => ({
+          media: { url: `${SITE_URL}/media/image/image-${index}/og?v=3` },
+        })),
+      )
+      expect(new TextEncoder().encode(script?.children).byteLength).toBeLessThanOrEqual(3000)
+    }
+  })
+
+  it("uses one image on selection links and clamps selection to the available gallery", () => {
     for (const [selected, expected] of [
       [0, 0],
       [-1, 0],

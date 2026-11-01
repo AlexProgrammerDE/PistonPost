@@ -170,7 +170,7 @@ function postInteractionStatistics(post: PublicPostRead): ReadonlyArray<JsonLdOb
   ]
 }
 
-export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) {
+export function createPostSeoHead(post: PublicPostRead, selectedImageIndex?: number) {
   const path = `/post/${encodeURIComponent(post.id)}`
   const authorUrl = absoluteUrl(`/user/${encodeURIComponent(post.author.normalizedUsername)}`)
   const postTitle = truncateTitle(post.title, 64)
@@ -178,8 +178,10 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   const description = postDescription(post, authorName)
   const video = post.type === "video" ? postVideo(post, postTitle) : undefined
   const galleryImages = post.type === "images" ? postImages(post, postTitle) : []
+  const hasSelectedImage = post.type === "images" && selectedImageIndex !== undefined
+  const requestedImageIndex = selectedImageIndex ?? 0
   const imageIndex = Math.min(
-    Math.max(Number.isFinite(selectedImageIndex) ? Math.trunc(selectedImageIndex) : 0, 0),
+    Math.max(Number.isFinite(requestedImageIndex) ? Math.trunc(requestedImageIndex) : 0, 0),
     Math.max(0, galleryImages.length - 1),
   )
   const structuredImages = post.type === "images" ? structuredPostImages(post, postTitle) : []
@@ -263,16 +265,24 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
             title: post.title,
             description:
               post.type === "images"
-                ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
+                ? hasSelectedImage
+                  ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
+                  : `@${post.author.username} · ${galleryImages.length} image${galleryImages.length === 1 ? "" : "s"}`
                 : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
-            url: post.type === "images" ? `${canonical}?image=${imageIndex}` : canonical,
-            layout: post.type === "images" ? (imageIndex === 0 ? "compact" : "media") : "default",
+            url: hasSelectedImage ? `${canonical}?image=${imageIndex}` : canonical,
+            layout:
+              post.type === "images"
+                ? hasSelectedImage && imageIndex > 0
+                  ? "media"
+                  : "compact"
+                : "default",
             label: "View post",
             images:
               post.type === "images"
-                ? image
-                  ? [absoluteUrl(image.url)]
-                  : []
+                ? (hasSelectedImage
+                    ? galleryImages.slice(imageIndex, imageIndex + 1)
+                    : galleryImages.slice(0, 4)
+                  ).map((entry) => absoluteUrl(entry.url))
                 : video
                   ? [absoluteUrl(video.download.url)]
                   : [],

@@ -36,7 +36,7 @@ export const Route = createFileRoute("/post/$postId")({
   }),
   head: ({ loaderData, match }) =>
     loaderData
-      ? createPostSeoHead(loaderData, match.search.image ?? 0)
+      ? createPostSeoHead(loaderData, match.search.image)
       : createSeoHead({
           title: "Post · PistonPost",
           description: "A post on PistonPost.",
