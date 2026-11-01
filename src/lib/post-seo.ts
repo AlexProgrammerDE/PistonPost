@@ -263,19 +263,11 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex?: num
       post.visibility === "public"
         ? {
             title: post.title,
-            description:
-              post.type === "images"
-                ? hasSelectedImage
-                  ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
-                  : `@${post.author.username} · ${galleryImages.length} image${galleryImages.length === 1 ? "" : "s"}`
-                : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
+            description: hasSelectedImage
+              ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
+              : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
             url: hasSelectedImage ? `${canonical}?image=${imageIndex}` : canonical,
-            layout:
-              post.type === "images"
-                ? hasSelectedImage && imageIndex > 0
-                  ? "media"
-                  : "compact"
-                : "default",
+            layout: hasSelectedImage ? (imageIndex > 0 ? "media" : "compact") : "default",
             label: "View post",
             images:
               post.type === "images"
