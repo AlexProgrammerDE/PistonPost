@@ -4,6 +4,7 @@ import { getAuthLinkURL, validateEmailAddress } from "@better-auth-ui/core"
 import type { EmailOtpAuthClient } from "@better-auth-ui/core/plugins/email-otp"
 import { useAuth, useAuthPlugin, useFetchOptions } from "@better-auth-ui/react"
 import { useRequestPasswordResetOtp } from "@better-auth-ui/react/plugins/email-otp"
+import { useId } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
@@ -31,6 +32,7 @@ export type ForgotPasswordOtpProps = {
  * @param className - Additional CSS classes applied to the card.
  */
 export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
+  const emailErrorId = useId()
   const { authClient, basePaths, localization, navigate, plugins, redirectTo, viewPaths, Link } =
     useAuth()
   const { localization: emailOtpLocalization } = useAuthPlugin(emailOtpPlugin)
@@ -40,6 +42,7 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
   const { mutateAsync: requestPasswordResetOtp, isPending } = useRequestPasswordResetOtp(
     authClient as EmailOtpAuthClient,
     {
+      meta: { errorPresentation: "inline" },
       onError: () => resetFetchOptions(),
       onSuccess: (_data, { email }) => {
         sessionStorage.setItem(RESET_PASSWORD_OTP_STORAGE_KEY, email)
@@ -64,7 +67,7 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
 
       <CardContent>
         <form.AppForm>
-          <form.AuthFormRoot>
+          <form.AuthFormRoot noValidate serverErrorMessage={localization.errors.generic}>
             <FieldGroup>
               <form.AppField
                 name="email"
@@ -83,6 +86,7 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
                       <FieldLabel htmlFor="email">{localization.auth.email}</FieldLabel>
                       <Input
                         id="email"
+                        aria-describedby={isInvalid ? emailErrorId : undefined}
                         name={field.name}
                         type="email"
                         autoComplete="email"
@@ -94,7 +98,7 @@ export function ForgotPasswordOtp({ className }: ForgotPasswordOtpProps) {
                         onChange={(event) => field.handleChange(event.target.value)}
                         aria-invalid={isInvalid}
                       />
-                      <field.AuthFormFieldError />
+                      <field.AuthFormFieldError id={emailErrorId} />
                     </Field>
                   )
                 }}

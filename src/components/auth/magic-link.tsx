@@ -6,6 +6,7 @@ import { getSsoFallbackEmail } from "@better-auth-ui/core/plugins/sso"
 import { useAuth, useAuthPlugin } from "@better-auth-ui/react"
 import { useSignInMagicLink } from "@better-auth-ui/react/plugins/magic-link"
 import { useIsMutating } from "@tanstack/react-query"
+import { useId } from "react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -39,6 +40,7 @@ export type MagicLinkProps = {
  * @returns The magic-link sign-in UI as a JSX element
  */
 export function MagicLink({ className, socialLayout, socialPosition = "bottom" }: MagicLinkProps) {
+  const emailErrorId = useId()
   const {
     authClient,
     basePaths,
@@ -58,6 +60,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
   const { mutateAsync: signInMagicLink, isPending: signInMagicLinkPending } = useSignInMagicLink(
     authClient,
     {
+      meta: { errorPresentation: "inline" },
       onSuccess: (_data, variables) => {
         sessionStorage.setItem(MAGIC_LINK_SENT_STORAGE_KEY, variables.email)
         navigate({
@@ -110,7 +113,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
           )}
 
           <form.AppForm>
-            <form.AuthFormRoot>
+            <form.AuthFormRoot noValidate serverErrorMessage={localization.errors.generic}>
               <FieldGroup>
                 <form.AppField
                   name="email"
@@ -129,6 +132,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
                         <FieldLabel htmlFor="email">{localization.auth.email}</FieldLabel>
                         <Input
                           id="email"
+                          aria-describedby={isInvalid ? emailErrorId : undefined}
                           name={field.name}
                           type="email"
                           autoComplete="email"
@@ -140,7 +144,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
                           disabled={isPending}
                           aria-invalid={isInvalid}
                         />
-                        <field.AuthFormFieldError />
+                        <field.AuthFormFieldError id={emailErrorId} />
                       </Field>
                     )
                   }}
@@ -160,6 +164,7 @@ export function MagicLink({ className, socialLayout, socialPosition = "bottom" }
                     )),
                   )}
                 </div>
+                <form.AuthFormServerError />
               </FieldGroup>
             </form.AuthFormRoot>
           </form.AppForm>

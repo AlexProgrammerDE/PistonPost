@@ -1,3 +1,4 @@
+import { useSession } from "@better-auth-ui/react"
 import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react"
 
 import { authClient } from "@/auth/client"
@@ -20,7 +21,7 @@ export function useAppInstallation() {
 }
 
 export function PwaProvider({ children }: PropsWithChildren) {
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session, isPending } = useSession(authClient)
   const userId = session?.user.id ?? null
   const [installation, setInstallation] = useState<InstallState>({ installed: false, prompt: null })
 

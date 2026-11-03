@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "@better-auth-ui/react"
 import { TriangleAlert } from "lucide-react"
 import { type FormEvent, useState } from "react"
 
@@ -23,7 +24,7 @@ type SetupState =
     }
 
 export function TwoFactorCard({ className }: { readonly className?: string }) {
-  const session = authClient.useSession()
+  const session = useSession(authClient)
   const [setup, setSetup] = useState<SetupState>({ status: "idle" })
   const [error, setError] = useState<string>()
   const [isPending, setIsPending] = useState(false)

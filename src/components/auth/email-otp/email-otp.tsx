@@ -1,13 +1,13 @@
 "use client"
 
-import { authMutationKeys } from "@better-auth-ui/core"
+import { authMutationKeys, validateEmailAddress } from "@better-auth-ui/core"
 import type { EmailOtpAuthClient } from "@better-auth-ui/core/plugins/email-otp"
 import { getSsoFallbackEmail } from "@better-auth-ui/core/plugins/sso"
 import { useAuth, useAuthPlugin, useFetchOptions } from "@better-auth-ui/react"
 import { useSendVerificationOtp, useSignInEmailOtp } from "@better-auth-ui/react/plugins/email-otp"
 import { useSelector } from "@tanstack/react-form"
 import { useIsMutating } from "@tanstack/react-query"
-import { useState } from "react"
+import { useId, useState } from "react"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -24,7 +24,12 @@ import { useResendCooldown } from "@/lib/auth/use-resend-cooldown"
 import { useSignInContinuation } from "@/lib/auth/use-sign-in-continuation"
 import { cn } from "@/lib/utils"
 
-import { runAuthFormAction, submitAuthForm, useAuthForm } from "../auth-form"
+import {
+  isAuthFormFieldInvalid,
+  runAuthFormAction,
+  submitAuthForm,
+  useAuthForm,
+} from "../auth-form"
 import { OpenEmailButton } from "../open-email-button"
 import { OtpField } from "../otp-field"
 import { ProviderButtons, type SocialLayout } from "../provider-buttons"
@@ -47,6 +52,7 @@ export type EmailOtpProps = {
  * @param socialPosition - `"top"` or `"bottom"`. Defaults to `"bottom"`.
  */
 export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }: EmailOtpProps) {
+  const emailErrorId = useId()
   const {
     authClient,
     basePaths,
@@ -115,7 +121,11 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
     defaultValues: { code: "", email: getSsoFallbackEmail() },
     onSubmit: async ({ value }) => {
       if (!codeSent) {
-        await sendVerificationOtp({ email: value.email, type: "sign-in", fetchOptions })
+        await sendVerificationOtp({
+          email: value.email,
+          type: "sign-in",
+          fetchOptions,
+        })
         return
       }
 
@@ -157,7 +167,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
           )}
 
           <form.AppForm>
-            <form.AuthFormRoot>
+            <form.AuthFormRoot noValidate>
               <FieldGroup>
                 {codeSent ? (
                   <form.AppField name="code">
@@ -175,13 +185,26 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                     )}
                   </form.AppField>
                 ) : (
-                  <form.AppField name="email">
+                  <form.AppField
+                    name="email"
+                    validators={{
+                      onChange: ({ value }) =>
+                        validateEmailAddress(value, {
+                          invalidMessage: localization.auth.invalidEmail,
+                          requiredMessage: localization.auth.fieldRequired,
+                        }),
+                    }}
+                  >
                     {(field) => (
-                      <Field>
+                      <Field data-invalid={isAuthFormFieldInvalid(field.state.meta)}>
                         <FieldLabel htmlFor="email">{localization.auth.email}</FieldLabel>
                         <Input
                           id="email"
+                          aria-describedby={
+                            isAuthFormFieldInvalid(field.state.meta) ? emailErrorId : undefined
+                          }
                           name={field.name}
+                          aria-invalid={isAuthFormFieldInvalid(field.state.meta)}
                           type="email"
                           autoComplete="email"
                           value={field.state.value}
@@ -191,7 +214,7 @@ export function EmailOtp({ className, socialLayout, socialPosition = "bottom" }:
                           required
                           disabled={isPending}
                         />
-                        <field.AuthFormFieldError />
+                        <field.AuthFormFieldError id={emailErrorId} />
                       </Field>
                     )}
                   </form.AppField>
