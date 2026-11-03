@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title id="title">PistonPost</title>
+  <rect width="64" height="64" rx="10" fill="#dc3850"/>
+  <path fill="#fff9ed" d="M18 17h16.5C44 17 50 22.6 50 31.2c0 8.7-6.2 14.3-15.5 14.3h-6V55H18V17Zm10.5 9v10.5h5.2c3.8 0 5.8-1.8 5.8-5.3 0-3.4-2-5.2-5.8-5.2h-5.2Z"/>
+</svg>
