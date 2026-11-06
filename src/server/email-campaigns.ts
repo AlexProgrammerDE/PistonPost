@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, desc, eq, sql } from "drizzle-orm"
-import { z } from "zod"
+import { Schema } from "effect"
 
 import * as schema from "@/db/schema"
 import { productEmailBatchJob, productUpdateMessage, renderEmail } from "@/email"
@@ -8,34 +8,31 @@ import { serverFunctionValidator } from "@/lib/server-function-error"
 import { conflictFailure, notFoundFailure } from "@/server/server-function-failure"
 import { administratorServerFunctionMiddleware } from "@/server/server-function-middleware"
 
-const campaignInput = z
-  .object({
-    subject: z.string().trim().min(1).max(160),
-    preview: z.string().trim().min(1).max(200),
-    heading: z.string().trim().min(1).max(120),
-    message: z.string().trim().min(1).max(2000),
-    actionLabel: z.string().trim().max(80),
-    actionUrl: z.string().trim().max(2048),
-  })
-  .superRefine((value, context) => {
+const campaignInput = Schema.Struct({
+  subject: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(160)),
+  preview: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(200)),
+  heading: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(120)),
+  message: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(2000)),
+  actionLabel: Schema.Trim.check(Schema.isMaxLength(80)),
+  actionUrl: Schema.Trim.check(Schema.isMaxLength(2048)),
+}).check(
+  Schema.makeFilter((value) => {
     if (Boolean(value.actionLabel) !== Boolean(value.actionUrl)) {
-      context.addIssue({
-        code: "custom",
-        message: "Add both an action label and URL, or leave both empty.",
-      })
-      return
+      return "Add both an action label and URL, or leave both empty."
     }
     if (value.actionUrl) {
       try {
         const url = new URL(value.actionUrl)
-        if (url.protocol !== "https:") throw new Error("The URL must use HTTPS.")
+        if (url.protocol !== "https:") return "The action URL must be a valid HTTPS URL."
       } catch {
-        context.addIssue({ code: "custom", message: "The action URL must be a valid HTTPS URL." })
+        return "The action URL must be a valid HTTPS URL."
       }
     }
-  })
+    return true
+  }),
+)
 
-export type EmailCampaignInput = z.infer<typeof campaignInput>
+export type EmailCampaignInput = (typeof campaignInput)["Type"]
 
 function campaignContent(input: EmailCampaignInput, baseURL: string) {
   return productUpdateMessage({
@@ -108,7 +105,7 @@ export const createEmailCampaign = createServerFn({ method: "POST" })
 
 export const sendEmailCampaign = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
+  .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const campaign = await database

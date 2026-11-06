@@ -407,9 +407,9 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
   body: unknown,
   env: Cloudflare.Env,
 ) {
-  const internal = internalJobSchema.safeParse(body)
-  if (internal.success) {
-    yield* deliverInternalJob(internal.data, env)
+  const internal = Schema.decodeUnknownResult(internalJobSchema, { errors: "all" })(body)
+  if (Result.isSuccess(internal)) {
+    yield* deliverInternalJob(internal.success, env)
   } else {
     const push = decodePushDeliveryJob(body)
     if (Result.isSuccess(push)) {
@@ -432,8 +432,8 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
 })
 
 function originalOutboxId(body: unknown) {
-  const internal = internalJobSchema.safeParse(body)
-  if (internal.success) return internal.data.idempotencyKey
+  const internal = Schema.decodeUnknownResult(internalJobSchema, { errors: "all" })(body)
+  if (Result.isSuccess(internal)) return internal.success.idempotencyKey
   const email = decodeEmailQueueJob(body)
   if (Result.isSuccess(email)) return email.success.idempotencyKey
   const push = decodePushDeliveryJob(body)

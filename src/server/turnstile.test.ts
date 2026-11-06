@@ -1,16 +1,15 @@
 import { describe, expect, mock, test } from "bun:test"
 
-import { Effect, Exit } from "effect"
-import { z } from "zod"
+import { Effect, Exit, Schema } from "effect"
 
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 
 import { allowedTurnstileHostnames, verifyTurnstile } from "./turnstile"
 
-const requestBodySchema = z.object({
-  secret: z.string(),
-  response: z.string(),
-  idempotency_key: z.string().uuid(),
+const requestBodySchema = Schema.Struct({
+  secret: Schema.String,
+  response: Schema.String,
+  idempotency_key: Schema.String.check(Schema.isUUID()),
 })
 
 const input = {
@@ -60,7 +59,9 @@ describe("Turnstile verification", () => {
     expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json")
     expect(typeof init?.body).toBe("string")
     expect(
-      requestBodySchema.parse(JSON.parse(typeof init?.body === "string" ? init.body : "")),
+      Schema.decodeUnknownSync(requestBodySchema, { errors: "all" })(
+        JSON.parse(typeof init?.body === "string" ? init.body : ""),
+      ),
     ).toEqual({
       secret: input.secret,
       response: input.token,

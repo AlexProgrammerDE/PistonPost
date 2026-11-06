@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -17,21 +17,32 @@ import {
 } from "@/server/server-function-middleware"
 import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
 
-const reportReasonSchema = z.enum(["spam", "harassment", "illegal", "copyright", "other"])
-const reportTargetSchema = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("post"), id: z.string().trim().min(1).max(64) }),
-  z.object({ type: z.literal("comment"), id: z.string().trim().min(1).max(64) }),
-  z.object({ type: z.literal("profile"), id: z.string().trim().min(1).max(32) }),
+const reportReasonSchema = Schema.Literals(["spam", "harassment", "illegal", "copyright", "other"])
+const reportTargetSchema = Schema.Union([
+  Schema.Struct({
+    type: Schema.Literal("post"),
+    id: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+  }),
+  Schema.Struct({
+    type: Schema.Literal("comment"),
+    id: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+  }),
+  Schema.Struct({
+    type: Schema.Literal("profile"),
+    id: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32)),
+  }),
 ])
 
 export const createContentReport = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
+      Schema.Struct({
         target: reportTargetSchema,
         reason: reportReasonSchema,
-        details: z.string().trim().max(1000).default(""),
+        details: Schema.Trim.check(Schema.isMaxLength(1000)).pipe(
+          Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+        ),
         turnstileToken: turnstileTokenSchema,
       }),
     ),
@@ -105,9 +116,9 @@ export const resolveContentReport = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
-        id: z.string().uuid(),
-        resolution: z.enum(["resolved", "dismissed"]),
+      Schema.Struct({
+        id: Schema.String.check(Schema.isUUID()),
+        resolution: Schema.Literals(["resolved", "dismissed"]),
       }),
     ),
   )

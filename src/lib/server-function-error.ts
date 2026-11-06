@@ -1,35 +1,37 @@
-import { z } from "zod"
+import { Schema, Result } from "effect"
 
-const messageSchema = z.string().trim().min(1).max(500)
+const messageSchema = Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(500))
 
-const validationIssueSchema = z.object({
-  path: z.string().max(500),
+const validationIssueSchema = Schema.Struct({
+  path: Schema.String.check(Schema.isMaxLength(500)),
   message: messageSchema,
 })
 
-export const serverFunctionErrorSchema = z.discriminatedUnion("code", [
-  z.object({
-    code: z.literal("INVALID_INPUT"),
+export const serverFunctionErrorSchema = Schema.Union([
+  Schema.Struct({
+    code: Schema.Literal("INVALID_INPUT"),
     message: messageSchema,
-    issues: z.array(validationIssueSchema).max(20),
+    issues: Schema.mutable(Schema.Array(validationIssueSchema)).check(Schema.isMaxLength(20)),
   }),
-  z.object({ code: z.literal("UNAUTHENTICATED"), message: messageSchema }),
-  z.object({ code: z.literal("FORBIDDEN"), message: messageSchema }),
-  z.object({ code: z.literal("NOT_FOUND"), message: messageSchema }),
-  z.object({ code: z.literal("CONFLICT"), message: messageSchema }),
-  z.object({
-    code: z.literal("RATE_LIMITED"),
+  Schema.Struct({ code: Schema.Literal("UNAUTHENTICATED"), message: messageSchema }),
+  Schema.Struct({ code: Schema.Literal("FORBIDDEN"), message: messageSchema }),
+  Schema.Struct({ code: Schema.Literal("NOT_FOUND"), message: messageSchema }),
+  Schema.Struct({ code: Schema.Literal("CONFLICT"), message: messageSchema }),
+  Schema.Struct({
+    code: Schema.Literal("RATE_LIMITED"),
     message: messageSchema,
-    retryAfterSeconds: z.number().int().positive().max(86_400),
+    retryAfterSeconds: Schema.Finite.check(Schema.isInt())
+      .check(Schema.isGreaterThan(0))
+      .check(Schema.isLessThanOrEqualTo(86_400)),
   }),
-  z.object({
-    code: z.literal("INTERNAL_ERROR"),
+  Schema.Struct({
+    code: Schema.Literal("INTERNAL_ERROR"),
     message: messageSchema,
-    requestId: z.string().uuid(),
+    requestId: Schema.String.check(Schema.isUUID()),
   }),
 ])
 
-export type ServerFunctionError = z.infer<typeof serverFunctionErrorSchema>
+export type ServerFunctionError = (typeof serverFunctionErrorSchema)["Type"]
 
 const serverFunctionErrorStatuses = {
   INVALID_INPUT: 400,
@@ -58,8 +60,8 @@ export class ServerFunctionClientError extends Error {
 }
 
 export function parseServerFunctionError(value: unknown) {
-  const parsed = serverFunctionErrorSchema.safeParse(value)
-  return parsed.success ? parsed.data : null
+  const parsed = Schema.decodeUnknownResult(serverFunctionErrorSchema, { errors: "all" })(value)
+  return Result.isSuccess(parsed) ? parsed.success : null
 }
 
 export function toServerFunctionClientError(value: unknown) {
@@ -67,6 +69,9 @@ export function toServerFunctionClientError(value: unknown) {
   return parsed ? new ServerFunctionClientError(parsed) : null
 }
 
-export function serverFunctionValidator<Schema extends z.ZodType>(schema: Schema) {
-  return (input: z.input<Schema>): z.output<Schema> => schema.parse(input)
+export function serverFunctionValidator<Schema extends Schema.ConstraintDecoder<unknown>>(
+  schema: Schema,
+) {
+  return (input: Schema["Encoded"]): Schema["Type"] =>
+    Schema.decodeUnknownSync(schema, { errors: "all" })(input)
 }

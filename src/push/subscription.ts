@@ -1,11 +1,8 @@
-import { z } from "zod"
+import { Schema } from "effect"
 
-const base64UrlSchema = z
-  .string()
-  .trim()
-  .min(16)
-  .max(512)
-  .regex(/^[A-Za-z0-9_-]+={0,2}$/)
+const base64UrlSchema = Schema.Trim.check(Schema.isMinLength(16))
+  .check(Schema.isMaxLength(512))
+  .check(Schema.isPattern(/^[A-Za-z0-9_-]+={0,2}$/))
 
 const trustedPushHostnames = new Set([
   "fcm.googleapis.com",
@@ -35,16 +32,18 @@ export function isTrustedPushEndpoint(endpoint: string) {
   }
 }
 
-export const pushSubscriptionInputSchema = z.object({
-  endpoint: z.string().trim().min(1).max(2048).refine(isTrustedPushEndpoint),
-  expirationTime: z.number().int().positive().nullable(),
-  keys: z.object({
-    p256dh: base64UrlSchema.max(512),
-    auth: base64UrlSchema.max(256),
+export const pushSubscriptionInputSchema = Schema.Struct({
+  endpoint: Schema.Trim.check(Schema.isMinLength(1))
+    .check(Schema.isMaxLength(2048))
+    .check(Schema.makeFilter((value) => isTrustedPushEndpoint(value))),
+  expirationTime: Schema.NullOr(Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0))),
+  keys: Schema.Struct({
+    p256dh: base64UrlSchema.check(Schema.isMaxLength(512)),
+    auth: base64UrlSchema.check(Schema.isMaxLength(256)),
   }),
 })
 
-export type PushSubscriptionInput = z.infer<typeof pushSubscriptionInputSchema>
+export type PushSubscriptionInput = (typeof pushSubscriptionInputSchema)["Type"]
 
 export async function hashPushEndpoint(endpoint: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint))

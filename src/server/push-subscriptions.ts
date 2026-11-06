@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema } from "effect"
 
 import type { D1DatabaseClient } from "@/db"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
@@ -83,7 +83,13 @@ export const upsertPushSubscription = createServerFn({ method: "POST" })
 
 export const removePushSubscription = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ endpoint: z.string().trim().min(1).max(2048) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        endpoint: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(2048)),
+      }),
+    ),
+  )
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const endpointHash = await hashPushEndpoint(data.endpoint)

@@ -13,7 +13,7 @@ export type RuntimeEnv = {
 }
 
 export function decodeRuntimeConfig(input: unknown): RuntimeConfig {
-  return Schema.decodeUnknownSync(runtimeConfigSchema)(input)
+  return Schema.decodeUnknownSync(runtimeConfigSchema, { errors: "all" })(input)
 }
 
 export function resolveRuntimeEnv(bindings: Cloudflare.Env): RuntimeEnv {

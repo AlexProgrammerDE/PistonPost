@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { z } from "zod"
+import { Schema, SchemaGetter, Effect, SchemaIssue, Result } from "effect"
 
 import { fitMediaDimensions } from "@/lib/media-image"
 import { createStreamThumbnailUrl, SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE } from "@/lib/video-thumbnail"
@@ -7,10 +7,54 @@ import type { AppRequestContext } from "@/server"
 import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
-const thumbnailSearchSchema = z.object({
-  time: z.coerce.number().finite().min(0).optional(),
-  width: z.coerce.number().int().min(2).max(SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE).optional(),
-  height: z.coerce.number().int().min(2).max(SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE).optional(),
+const thumbnailSearchSchema = Schema.Struct({
+  time: Schema.optional(
+    Schema.Unknown.pipe(
+      Schema.decodeTo(Schema.Finite, {
+        decode: SchemaGetter.transformEffect((value) =>
+          Effect.try({
+            try: () => Number(value),
+            catch: () => new SchemaIssue.InvalidValue({ message: "Invalid number" }),
+          }),
+        ),
+        encode: SchemaGetter.passthrough(),
+      }),
+    )
+      .check(Schema.isFinite())
+      .check(Schema.isGreaterThanOrEqualTo(0)),
+  ),
+  width: Schema.optional(
+    Schema.Unknown.pipe(
+      Schema.decodeTo(Schema.Finite, {
+        decode: SchemaGetter.transformEffect((value) =>
+          Effect.try({
+            try: () => Number(value),
+            catch: () => new SchemaIssue.InvalidValue({ message: "Invalid number" }),
+          }),
+        ),
+        encode: SchemaGetter.passthrough(),
+      }),
+    )
+      .check(Schema.isInt())
+      .check(Schema.isGreaterThanOrEqualTo(2))
+      .check(Schema.isLessThanOrEqualTo(SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE)),
+  ),
+  height: Schema.optional(
+    Schema.Unknown.pipe(
+      Schema.decodeTo(Schema.Finite, {
+        decode: SchemaGetter.transformEffect((value) =>
+          Effect.try({
+            try: () => Number(value),
+            catch: () => new SchemaIssue.InvalidValue({ message: "Invalid number" }),
+          }),
+        ),
+        encode: SchemaGetter.passthrough(),
+      }),
+    )
+      .check(Schema.isInt())
+      .check(Schema.isGreaterThanOrEqualTo(2))
+      .check(Schema.isLessThanOrEqualTo(SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE)),
+  ),
 })
 
 async function videoThumbnail({
@@ -22,19 +66,21 @@ async function videoThumbnail({
   context: AppRequestContext
   params: { mediaId: string }
 }) {
-  const mediaId = z.string().uuid().safeParse(params.mediaId)
-  if (!mediaId.success) return new Response("Not found", { status: 404 })
+  const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
+    errors: "all",
+  })(params.mediaId)
+  if (!Result.isSuccess(mediaId)) return new Response("Not found", { status: 404 })
 
-  const video = await getDeliverableVideo(request, context, mediaId.data)
+  const video = await getDeliverableVideo(request, context, mediaId.success)
   if (!video) return new Response("Not found", { status: 404 })
 
   const requestUrl = new URL(request.url)
-  const search = thumbnailSearchSchema.safeParse({
+  const search = Schema.decodeResult(thumbnailSearchSchema, { errors: "all" })({
     time: requestUrl.searchParams.get("time") ?? undefined,
     width: requestUrl.searchParams.get("width") ?? undefined,
     height: requestUrl.searchParams.get("height") ?? undefined,
   })
-  if (!search.success) return new Response("Invalid thumbnail request", { status: 400 })
+  if (!Result.isSuccess(search)) return new Response("Invalid thumbnail request", { status: 400 })
 
   const details = await context.env.STREAM.video(video.streamUid).details()
   const defaultDimensions = fitMediaDimensions(
@@ -46,9 +92,9 @@ async function videoThumbnail({
     source: details.thumbnail,
     durationSeconds: details.duration,
     timestampPct: details.thumbnailTimestampPct,
-    timeSeconds: search.data.time,
-    width: search.data.width ?? defaultDimensions.width,
-    height: search.data.height ?? defaultDimensions.height,
+    timeSeconds: search.success.time,
+    width: search.success.width ?? defaultDimensions.width,
+    height: search.success.height ?? defaultDimensions.height,
   })
 
   return new Response(null, {
@@ -60,7 +106,7 @@ async function videoThumbnail({
       ...(video.publiclyCacheable
         ? {
             "Cache-Tag": cacheTagHeader([
-              mediaCacheTag(mediaId.data),
+              mediaCacheTag(mediaId.success),
               ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
               ...(video.postId ? [postCacheTag(video.postId)] : []),
             ]),

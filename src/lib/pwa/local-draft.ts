@@ -1,21 +1,23 @@
-import { z } from "zod"
+import { Schema } from "effect"
 
 const DRAFT_KEY = "pistonpost.composer-draft.v1"
 const ACCOUNT_KEY = "pistonpost.local-account"
 const DRAFT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000
 
-export const draftValuesSchema = z.object({
-  type: z.enum(["text", "images", "video"]),
-  title: z.string().max(100),
-  textContent: z.string().max(10_000),
-  tags: z.array(z.string().max(100)).max(5),
-  visibility: z.enum(["public", "unlisted"]),
+export const draftValuesSchema = Schema.Struct({
+  type: Schema.Literals(["text", "images", "video"]),
+  title: Schema.String.check(Schema.isMaxLength(100)),
+  textContent: Schema.String.check(Schema.isMaxLength(10_000)),
+  tags: Schema.mutable(Schema.Array(Schema.String.check(Schema.isMaxLength(100)))).check(
+    Schema.isMaxLength(5),
+  ),
+  visibility: Schema.Literals(["public", "unlisted"]),
 })
-export type DraftValues = z.infer<typeof draftValuesSchema>
+export type DraftValues = (typeof draftValuesSchema)["Type"]
 
-const draftSchema = z.object({
-  userId: z.string(),
-  updatedAt: z.number(),
+const draftSchema = Schema.Struct({
+  userId: Schema.String,
+  updatedAt: Schema.Finite,
   values: draftValuesSchema,
 })
 
@@ -25,7 +27,7 @@ export function reconcileDraftAccount(userId: string | null) {
   const raw = localStorage.getItem(DRAFT_KEY)
   if (!raw) return
   try {
-    const draft = draftSchema.parse(JSON.parse(raw))
+    const draft = Schema.decodeUnknownSync(draftSchema, { errors: "all" })(JSON.parse(raw))
     if (
       draft.userId === userId &&
       draft.updatedAt <= Date.now() &&
@@ -42,7 +44,7 @@ export function readLocalDraft(userId: string, now = Date.now()) {
   const raw = localStorage.getItem(DRAFT_KEY)
   if (!raw) return null
   try {
-    const draft = draftSchema.parse(JSON.parse(raw))
+    const draft = Schema.decodeUnknownSync(draftSchema, { errors: "all" })(JSON.parse(raw))
     if (
       draft.userId === userId &&
       draft.updatedAt <= now &&
@@ -62,7 +64,7 @@ export function removeLocalDraft(userId: string) {
 export function saveLocalDraft(userId: string, input: unknown) {
   // Prevent an unmount or another tab from restoring private data after sign-out.
   if (localStorage.getItem(ACCOUNT_KEY) !== userId) return
-  const values = draftValuesSchema.parse(input)
+  const values = Schema.decodeUnknownSync(draftValuesSchema, { errors: "all" })(input)
   if (!values.title && !values.textContent && values.tags.length === 0) {
     removeLocalDraft(userId)
     return

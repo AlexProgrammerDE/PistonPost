@@ -74,7 +74,6 @@
         "vanilla-cookieconsent": "^3.1.0",
         "web-push": "^3.6.7",
         "yet-another-react-lightbox": "3.32.2",
-        "zod": "4.5.4",
       },
       "devDependencies": {
         "@axe-core/playwright": "4.13.0",

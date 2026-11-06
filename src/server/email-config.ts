@@ -1,8 +1,12 @@
-import { z } from "zod"
+import { Schema, Effect } from "effect"
 
-const unsubscribeKeyringSchema = z.object({
-  current: z.string().min(32).max(4096),
-  previous: z.array(z.string().min(32).max(4096)).max(2).default([]),
+const unsubscribeKeyringSchema = Schema.Struct({
+  current: Schema.String.check(Schema.isMinLength(32)).check(Schema.isMaxLength(4096)),
+  previous: Schema.mutable(
+    Schema.Array(Schema.String.check(Schema.isMinLength(32)).check(Schema.isMaxLength(4096))),
+  )
+    .check(Schema.isMaxLength(2))
+    .pipe(Schema.withDecodingDefaultType(Effect.sync(() => []))),
 })
 
 export async function readUnsubscribeKeyring(binding: string | SecretsStoreSecret) {
@@ -14,7 +18,9 @@ export async function readUnsubscribeKeyring(binding: string | SecretsStoreSecre
     return { current: value, verificationKeys: [value] } as const
   }
 
-  const parsed = unsubscribeKeyringSchema.parse(JSON.parse(value))
+  const parsed = Schema.decodeUnknownSync(unsubscribeKeyringSchema, { errors: "all" })(
+    JSON.parse(value),
+  )
   const verificationKeys: [string, ...string[]] = [
     parsed.current,
     ...new Set(parsed.previous.filter((key) => key !== parsed.current)),

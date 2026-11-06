@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, count, eq, gte, ne } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Struct, Effect } from "effect"
 
 import { ownedMediaStatusQuery } from "@/db/media-read-model"
 import * as schema from "@/db/schema"
@@ -68,7 +68,7 @@ export const createPostDraft = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({ draft: postDraftInputSchema, turnstileToken: turnstileTokenSchema }),
+      Schema.Struct({ draft: postDraftInputSchema, turnstileToken: turnstileTokenSchema }),
     ),
   )
   .handler(async ({ context, data }) => {
@@ -133,24 +133,25 @@ export const createPostDraft = createServerFn({ method: "POST" })
     return { id, version: 1 }
   })
 
-const imageIntentInput = z.object({
-  postId: z.string().min(1).max(64),
-  filename: z.string().trim().min(1).max(255),
-  mimeType: z.enum(IMAGE_UPLOAD_MIME_TYPES),
-  byteSize: z.number().int().min(1).max(MAX_IMAGE_UPLOAD_BYTES),
-  altText: z.string().trim().max(300),
+const imageIntentInput = Schema.Struct({
+  postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+  filename: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(255)),
+  mimeType: Schema.Literals(IMAGE_UPLOAD_MIME_TYPES),
+  byteSize: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(1))
+    .check(Schema.isLessThanOrEqualTo(MAX_IMAGE_UPLOAD_BYTES)),
+  altText: Schema.Trim.check(Schema.isMaxLength(300)),
 })
 
 export const createImageUploadIntents = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
-        postId: z.string().min(1).max(64),
-        files: z
-          .array(imageIntentInput.omit({ postId: true }))
-          .min(1)
-          .max(MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE),
+      Schema.Struct({
+        postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        files: Schema.mutable(Schema.Array(imageIntentInput.mapFields(Struct.omit(["postId"]))))
+          .check(Schema.isMinLength(1))
+          .check(Schema.isMaxLength(MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE)),
       }),
     ),
   )
@@ -235,19 +236,18 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
     }))
   })
 
-const videoIntentInput = z.object({
-  postId: z.string().min(1).max(64),
-  filename: z.string().trim().min(1).max(255),
-  mimeType: z
-    .string()
-    .trim()
-    .regex(/^video\//),
-  byteSize: z.number().int().min(1).max(MAX_VIDEO_UPLOAD_BYTES),
-  thumbnailTimestampPct: z
-    .number()
-    .min(MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT)
-    .max(MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT)
-    .default(DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT),
+const videoIntentInput = Schema.Struct({
+  postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+  filename: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(255)),
+  mimeType: Schema.Trim.check(Schema.isPattern(/^video\//)),
+  byteSize: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(1))
+    .check(Schema.isLessThanOrEqualTo(MAX_VIDEO_UPLOAD_BYTES)),
+  thumbnailTimestampPct: Schema.Finite.check(
+    Schema.isGreaterThanOrEqualTo(MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT),
+  )
+    .check(Schema.isLessThanOrEqualTo(MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT))
+    .pipe(Schema.withDecodingDefaultType(Effect.sync(() => DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT))),
 })
 
 async function readOptionalSecret(secret: string | SecretsStoreSecret | undefined) {
@@ -377,7 +377,11 @@ export const getOwnedMediaStatus = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({ ids: z.array(z.string().uuid()).min(1).max(MAX_IMAGES_PER_POST) }),
+      Schema.Struct({
+        ids: Schema.mutable(Schema.Array(Schema.String.check(Schema.isUUID())))
+          .check(Schema.isMinLength(1))
+          .check(Schema.isMaxLength(MAX_IMAGES_PER_POST)),
+      }),
     ),
   )
   .handler(async ({ context, data }) => {
@@ -387,7 +391,7 @@ export const getOwnedMediaStatus = createServerFn({ method: "GET" })
 
 export const abortMediaUpload = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
+  .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const asset = await database
@@ -414,7 +418,10 @@ export const publishPost = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }),
+      Schema.Struct({
+        id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        version: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
+      }),
     ),
   )
   .handler(async ({ context, data }) => {
@@ -507,7 +514,13 @@ export const publishPost = createServerFn({ method: "POST" })
 
 export const getOwnedPostForEditing = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().min(1).max(64) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      }),
+    ),
+  )
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const post = await database
@@ -528,13 +541,19 @@ export const getOwnedPostForEditing = createServerFn({ method: "GET" })
     return { ...post, tags: tags.map(({ name }) => name) }
   })
 
-const updatePostInput = z.object({
-  id: z.string().min(1).max(64),
-  version: z.number().int().positive(),
-  title: z.string().trim().min(1).max(100),
-  textContent: z.string().trim().min(1).max(MAX_POST_MARKDOWN_LENGTH).nullable(),
-  tags: z.array(z.string().trim().min(1).max(64)).min(1).max(5),
-  visibility: z.enum(["public", "unlisted"]),
+const updatePostInput = Schema.Struct({
+  id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+  version: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
+  title: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(100)),
+  textContent: Schema.NullOr(
+    Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(MAX_POST_MARKDOWN_LENGTH)),
+  ),
+  tags: Schema.mutable(
+    Schema.Array(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
+  )
+    .check(Schema.isMinLength(1))
+    .check(Schema.isMaxLength(5)),
+  visibility: Schema.Literals(["public", "unlisted"]),
 })
 
 export const updatePost = createServerFn({ method: "POST" })
@@ -623,7 +642,10 @@ export const deletePost = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({ id: z.string().min(1).max(64), version: z.number().int().positive() }),
+      Schema.Struct({
+        id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        version: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
+      }),
     ),
   )
   .handler(async ({ context, data }) => {

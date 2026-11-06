@@ -69,7 +69,7 @@ Run commands from the repository root. The root package owns Vite, Wrangler, Dri
 - Hooks and utilities use kebab-case filenames.
 - Prefer named exports for reusable code.
 - Keep server-only modules visibly separated and never import them into client bundles.
-- Parse untrusted data at the boundary with Zod or the owning library schema.
+- Parse untrusted data at the boundary with Effect Schema or the owning library schema.
 - Model domain states with discriminated unions instead of loosely related booleans.
 - Prefer composition over boolean-prop-heavy components.
 - Use React 19 APIs when they solve the actual state or scheduling problem.

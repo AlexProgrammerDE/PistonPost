@@ -2,6 +2,7 @@ import { isNotFound, isRedirect } from "@tanstack/react-router"
 import { createMiddleware } from "@tanstack/react-start"
 import { setResponseHeader, setResponseStatus } from "@tanstack/react-start/server"
 import { eq } from "drizzle-orm"
+import { Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -38,7 +39,7 @@ export const serverFunctionErrorMiddleware = createMiddleware({ type: "function"
     } catch (cause) {
       if (cause instanceof Response || isRedirect(cause) || isNotFound(cause)) throw cause
       const failure = normalizeServerFunctionFailure(cause)
-      const error = serverFunctionErrorSchema.parse(failure.error)
+      const error = Schema.decodeSync(serverFunctionErrorSchema, { errors: "all" })(failure.error)
       setResponseStatus(serverFunctionErrorStatus(error))
       if (error.code === "RATE_LIMITED") {
         setResponseHeader("Retry-After", error.retryAfterSeconds.toString())

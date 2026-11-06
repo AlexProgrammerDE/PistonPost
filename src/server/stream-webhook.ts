@@ -1,6 +1,5 @@
 import { eq } from "drizzle-orm"
-import { Effect, Result } from "effect"
-import { z } from "zod"
+import { Effect, Result, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -8,18 +7,23 @@ import { transitionMediaStatus } from "@/domain"
 import type { AppRequestContext } from "@/server"
 import { synchronizeVideoDownload } from "@/server/video-download"
 
-const streamPayload = z.object({
-  uid: z.string().min(1),
-  readyToStream: z.boolean(),
-  status: z.object({
-    state: z.string(),
-    errorReasonText: z.string().optional(),
+const streamPayload = Schema.Struct({
+  uid: Schema.String.check(Schema.isMinLength(1)),
+  readyToStream: Schema.Boolean,
+  status: Schema.Struct({
+    state: Schema.String,
+    errorReasonText: Schema.optional(Schema.String),
   }),
-  duration: z.number().nonnegative().optional(),
-  size: z.number().int().nonnegative().optional(),
-  input: z
-    .object({ width: z.number().int().positive(), height: z.number().int().positive() })
-    .optional(),
+  duration: Schema.optional(Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0))),
+  size: Schema.optional(
+    Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThanOrEqualTo(0)),
+  ),
+  input: Schema.optional(
+    Schema.Struct({
+      width: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
+      height: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
+    }),
+  ),
 })
 
 function decodeHex(value: string) {
@@ -89,9 +93,9 @@ export async function handleStreamWebhook(request: Request, context: AppRequestC
   } catch {
     return new Response("Invalid payload", { status: 400 })
   }
-  const decoded = streamPayload.safeParse(parsed)
-  if (!decoded.success) return new Response("Invalid payload", { status: 400 })
-  const payload = decoded.data
+  const decoded = Schema.decodeUnknownResult(streamPayload, { errors: "all" })(parsed)
+  if (!Result.isSuccess(decoded)) return new Response("Invalid payload", { status: 400 })
+  const payload = decoded.success
   const database = createD1Database(context.env.DB)
   const asset = await database
     .select({

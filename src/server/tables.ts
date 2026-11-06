@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, asc, count, desc, eq, gt, isNull, like, lt, or, sql, type SQL } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
@@ -18,30 +18,45 @@ import { administratorServerFunctionMiddleware } from "@/server/server-function-
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
 
-const adminSection = z.enum(["posts", "comments", "reports", "media", "jobs", "audit"])
+const adminSection = Schema.Literals(["posts", "comments", "reports", "media", "jobs", "audit"])
 const adminPageSize = 20
-const adminCursor = z.object({
-  createdAt: z.coerce.date(),
-  id: z.string().min(1).max(128),
+const adminCursor = Schema.Struct({
+  createdAt: Schema.Unknown.pipe(
+    Schema.decodeTo(Schema.Date, {
+      decode: SchemaGetter.transformEffect((value) =>
+        Effect.try({
+          try: () => {
+            if (value instanceof Date || typeof value === "string" || typeof value === "number")
+              return new Date(value)
+            if (value === null || typeof value === "boolean") return new Date(Number(value))
+            throw new Error("Invalid date")
+          },
+          catch: () => new SchemaIssue.InvalidValue({ message: "Invalid date" }),
+        }),
+      ),
+      encode: SchemaGetter.passthrough(),
+    }),
+  ),
+  id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(128)),
 })
 
 function decodeAdminCursor(value: string | undefined) {
   if (!value) return undefined
   try {
-    return adminCursor.parse(JSON.parse(atob(value)))
+    return Schema.decodeUnknownSync(adminCursor, { errors: "all" })(JSON.parse(atob(value)))
   } catch {
     throw invalidInputFailure("The administration cursor is invalid.")
   }
 }
 
-function encodeAdminCursor(value: z.infer<typeof adminCursor>) {
+function encodeAdminCursor(value: (typeof adminCursor)["Type"]) {
   return btoa(JSON.stringify(value))
 }
 
 function adminCursorCondition(
   createdAt: Parameters<typeof eq>[0],
   id: Parameters<typeof eq>[0],
-  cursor: z.infer<typeof adminCursor> | undefined,
+  cursor: (typeof adminCursor)["Type"] | undefined,
   direction: "asc" | "desc",
 ): SQL | undefined {
   if (!cursor) return undefined
@@ -67,11 +82,15 @@ export const getAdminRows = createServerFn({ method: "GET" })
   .middleware([administratorServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
+      Schema.Struct({
         section: adminSection,
-        query: z.string().trim().max(100).default(""),
-        cursor: z.string().max(512).optional(),
-        direction: z.enum(["asc", "desc"]).default("desc"),
+        query: Schema.Trim.check(Schema.isMaxLength(100)).pipe(
+          Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+        ),
+        cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))),
+        direction: Schema.Literals(["asc", "desc"]).pipe(
+          Schema.withDecodingDefaultType(Effect.sync(() => "desc" as const)),
+        ),
       }),
     ),
   )
@@ -294,7 +313,13 @@ export const getAdminOverview = createServerFn({ method: "GET" })
 
 export const retryAdminJob = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().min(1).max(256) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(256)),
+      }),
+    ),
+  )
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const job = await database
@@ -334,7 +359,7 @@ export const retryAdminJob = createServerFn({ method: "POST" })
 
 export const cleanupAdminMedia = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
+  .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const asset = await database
@@ -374,11 +399,11 @@ export const moderateEntity = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
-        target: z.enum(["post", "comment"]),
-        id: z.string().min(1).max(64),
-        action: z.enum(["hide", "restore"]),
-        reason: z.string().trim().min(3).max(500),
+      Schema.Struct({
+        target: Schema.Literals(["post", "comment"]),
+        id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        action: Schema.Literals(["hide", "restore"]),
+        reason: Schema.Trim.check(Schema.isMinLength(3)).check(Schema.isMaxLength(500)),
       }),
     ),
   )

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { z } from "zod"
+import { Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import {
@@ -19,8 +19,20 @@ import {
 import type { AppRequestContext } from "@/server"
 import { SITEMAP_CACHE_TAG } from "@/server/cache-tags"
 
-const sitemapKindSchema = z.enum(["static", "posts", "profiles", "tags"])
-const sitemapPageSchema = z.coerce.number().int().positive()
+const sitemapKindSchema = Schema.Literals(["static", "posts", "profiles", "tags"])
+const sitemapPageSchema = Schema.Unknown.pipe(
+  Schema.decodeTo(Schema.Finite, {
+    decode: SchemaGetter.transformEffect((value) =>
+      Effect.try({
+        try: () => Number(value),
+        catch: () => new SchemaIssue.InvalidValue({ message: "Invalid number" }),
+      }),
+    ),
+    encode: SchemaGetter.passthrough(),
+  }),
+)
+  .check(Schema.isInt())
+  .check(Schema.isGreaterThan(0))
 
 async function sitemapPage({
   request,
@@ -31,8 +43,8 @@ async function sitemapPage({
   context: AppRequestContext
   params: { kind: string; page: string }
 }) {
-  const kind = sitemapKindSchema.parse(params.kind)
-  const page = sitemapPageSchema.parse(params.page)
+  const kind = Schema.decodeUnknownSync(sitemapKindSchema, { errors: "all" })(params.kind)
+  const page = Schema.decodeSync(sitemapPageSchema, { errors: "all" })(params.page)
   const origin = context.runtime.config.PUBLIC_APP_URL.origin
   const database = createD1Database(context.env.DB)
   const counts = await getPublicSitemapCounts(database)

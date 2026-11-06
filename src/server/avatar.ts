@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema } from "effect"
 
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -10,10 +10,12 @@ import { authenticatedServerFunctionMiddleware } from "@/server/server-function-
 
 import { mediaCleanupJob } from "./jobs"
 
-const avatarIntentInput = z.object({
-  filename: z.string().trim().min(1).max(255),
-  mimeType: z.enum(IMAGE_UPLOAD_MIME_TYPES),
-  byteSize: z.number().int().min(1).max(MAX_IMAGE_UPLOAD_BYTES),
+const avatarIntentInput = Schema.Struct({
+  filename: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(255)),
+  mimeType: Schema.Literals(IMAGE_UPLOAD_MIME_TYPES),
+  byteSize: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(1))
+    .check(Schema.isLessThanOrEqualTo(MAX_IMAGE_UPLOAD_BYTES)),
 })
 
 export const createAvatarUploadIntent = createServerFn({ method: "POST" })
@@ -59,7 +61,7 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
 
 export const cancelAvatarUpload = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
+  .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const asset = await database
@@ -87,7 +89,7 @@ export const cancelAvatarUpload = createServerFn({ method: "POST" })
 
 export const deleteManagedAvatar = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({})))
+  .validator(serverFunctionValidator(Schema.Struct({})))
   .handler(async ({ context }) => {
     const { database, session } = context
     const profile = await database

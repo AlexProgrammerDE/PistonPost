@@ -1,5 +1,4 @@
 import { Effect, Schema } from "effect"
-import { z } from "zod"
 
 import type { TurnstileAction } from "@/lib/turnstile"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE } from "@/lib/turnstile"
@@ -8,7 +7,9 @@ import type { AppRequestContext } from "@/server"
 const TURNSTILE_SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 const TURNSTILE_ALWAYS_PASS_TEST_SECRET = "1x0000000000000000000000000000000AA"
 
-export const turnstileTokenSchema = z.string().min(1).max(2048)
+export const turnstileTokenSchema = Schema.String.check(Schema.isMinLength(1)).check(
+  Schema.isMaxLength(2048),
+)
 
 const turnstileResponseSchema = Schema.Struct({
   success: Schema.Boolean,

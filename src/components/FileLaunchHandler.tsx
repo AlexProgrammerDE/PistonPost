@@ -1,4 +1,5 @@
 import { useNavigate } from "@tanstack/react-router"
+import { Schema } from "effect"
 import { useEffect, useEffectEvent } from "react"
 import { toast } from "sonner"
 
@@ -27,7 +28,7 @@ export function FileLaunchHandler() {
       if (handles.length > MAX_SHARED_FILES)
         throw new Error("Open no more than 20 images at a time.")
       const files = await Promise.all(handles.map((handle) => handle.getFile()))
-      const content = sharedContentSchema.parse({ files })
+      const content = Schema.decodeSync(sharedContentSchema, { errors: "all" })({ files })
       const shareId = await stageSharedContent(content)
       await navigate({ to: "/posts/new", search: { shareId } })
     } catch {

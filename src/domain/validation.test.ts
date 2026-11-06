@@ -1,5 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
+import { Result, Schema } from "effect"
+
 import { MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema, postMarkdownSchema } from "./validation"
 
 const common = { title: "look at this", tags: ["art"], visibility: "public" as const }
@@ -7,33 +9,54 @@ const common = { title: "look at this", tags: ["art"], visibility: "public" as c
 describe("post draft input", () => {
   test("accepts text, image, and video drafts", () => {
     expect(
-      postDraftInputSchema.safeParse({ ...common, type: "text", textContent: "Cut, weld, repeat." })
-        .success,
+      Result.isSuccess(
+        Schema.decodeResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "text",
+          textContent: "Cut, weld, repeat.",
+        }),
+      ),
     ).toBe(true)
     expect(
-      postDraftInputSchema.safeParse({ ...common, type: "images", mediaIds: [] }).success,
+      Result.isSuccess(
+        Schema.decodeResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "images",
+          mediaIds: [],
+        }),
+      ),
     ).toBe(true)
     expect(
-      postDraftInputSchema.safeParse({ ...common, type: "video", mediaId: null }).success,
+      Result.isSuccess(
+        Schema.decodeResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "video",
+          mediaId: null,
+        }),
+      ),
     ).toBe(true)
   })
 
   test("rejects unsafe tag syntax and dishonest visibility values", () => {
     expect(
-      postDraftInputSchema.safeParse({
-        ...common,
-        type: "text",
-        textContent: "hello",
-        tags: ["not a tag"],
-      }).success,
+      Result.isSuccess(
+        Schema.decodeResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "text",
+          textContent: "hello",
+          tags: ["not a tag"],
+        }),
+      ),
     ).toBe(false)
     expect(
-      postDraftInputSchema.safeParse({
-        ...common,
-        type: "text",
-        textContent: "hello",
-        visibility: "private",
-      }).success,
+      Result.isSuccess(
+        Schema.decodeUnknownResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "text",
+          textContent: "hello",
+          visibility: "private",
+        }),
+      ),
     ).toBe(false)
   })
 
@@ -41,21 +64,39 @@ describe("post draft input", () => {
     const mediaIds = Array.from({ length: 151 }, (_, index) => `media-${index.toString()}`)
 
     expect(
-      postDraftInputSchema.safeParse({
-        ...common,
-        type: "images",
-        mediaIds: mediaIds.slice(0, 150),
-      }).success,
+      Result.isSuccess(
+        Schema.decodeResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "images",
+          mediaIds: mediaIds.slice(0, 150),
+        }),
+      ),
     ).toBe(true)
-    expect(postDraftInputSchema.safeParse({ ...common, type: "images", mediaIds }).success).toBe(
-      false,
-    )
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(postDraftInputSchema, { errors: "all" })({
+          ...common,
+          type: "images",
+          mediaIds,
+        }),
+      ),
+    ).toBe(false)
   })
 
   test("enforces the shared Markdown length boundary", () => {
-    expect(postMarkdownSchema.safeParse("x".repeat(MAX_POST_MARKDOWN_LENGTH)).success).toBe(true)
-    expect(postMarkdownSchema.safeParse("x".repeat(MAX_POST_MARKDOWN_LENGTH + 1)).success).toBe(
-      false,
-    )
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(postMarkdownSchema, { errors: "all" })(
+          "x".repeat(MAX_POST_MARKDOWN_LENGTH),
+        ),
+      ),
+    ).toBe(true)
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(postMarkdownSchema, { errors: "all" })(
+          "x".repeat(MAX_POST_MARKDOWN_LENGTH + 1),
+        ),
+      ),
+    ).toBe(false)
   })
 })

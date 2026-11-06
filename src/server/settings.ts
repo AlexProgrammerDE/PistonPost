@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq, ne } from "drizzle-orm"
-import { z } from "zod"
+import { Schema } from "effect"
 
 import * as schema from "@/db/schema"
 import { createUserSettingsRepository } from "@/db/user-settings-repository"
@@ -47,12 +47,17 @@ export const updateProfile = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
-        name: z.string().trim().min(1).max(80),
+      Schema.Struct({
+        name: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(80)),
         username: usernameSchema,
-        bio: z.string().trim().max(500),
-        website: z.union([z.literal(""), z.url().max(500)]),
-        location: z.string().trim().max(100),
+        bio: Schema.Trim.check(Schema.isMaxLength(500)),
+        website: Schema.Union([
+          Schema.Literal(""),
+          Schema.String.check(
+            Schema.makeFilter((value) => URL.canParse(value) || "Invalid URL"),
+          ).check(Schema.isMaxLength(500)),
+        ]),
+        location: Schema.Trim.check(Schema.isMaxLength(100)),
       }),
     ),
   )
@@ -90,9 +95,9 @@ export const updateProfile = createServerFn({ method: "POST" })
     return { username: data.username }
   })
 
-const notificationPreferenceInputSchema = z.object({
+const notificationPreferenceInputSchema = Schema.Struct({
   preference: notificationPreferenceSchema,
-  enabled: z.boolean(),
+  enabled: Schema.Boolean,
 })
 
 export const updateNotificationPreference = createServerFn({ method: "POST" })

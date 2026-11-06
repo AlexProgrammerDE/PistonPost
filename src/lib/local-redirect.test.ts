@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
+import { Schema } from "effect"
+
 import { authSearchSchema, safeLocalRedirect } from "./local-redirect"
 
 describe("safeLocalRedirect", () => {
@@ -45,10 +47,18 @@ describe("safeLocalRedirect", () => {
   })
 
   it("drops invalid redirect search values", () => {
-    expect(authSearchSchema.parse({ redirectTo: "https://example.com" })).toEqual({
+    expect(
+      Schema.decodeSync(authSearchSchema, { errors: "all" })({
+        redirectTo: "https://example.com",
+      }),
+    ).toEqual({
       redirectTo: undefined,
     })
-    expect(authSearchSchema.parse({ redirectTo: ["/settings", "//example.com"] })).toEqual({
+    expect(
+      Schema.decodeSync(authSearchSchema, { errors: "all" })({
+        redirectTo: ["/settings", "//example.com"],
+      }),
+    ).toEqual({
       redirectTo: undefined,
     })
   })

@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { Effect } from "effect"
-import { z } from "zod"
+import { Effect, Schema, Result } from "effect"
 
 import { InvalidCursorError, NotFoundError, RepositoryError } from "@/domain/errors"
 
@@ -50,17 +49,26 @@ describe("server function failure mapping", () => {
   })
 
   test("normalizes validation errors without exposing unrelated defects", () => {
-    const parsed = z.object({ title: z.string().min(1, "Add a title.") }).safeParse({ title: "" })
-    expect(parsed.success).toBeFalse()
-    if (parsed.success) return
+    const parsed = Schema.decodeResult(
+      Schema.Struct({
+        title: Schema.String.check(Schema.isMinLength(1, { message: "Add a title." })),
+        text: Schema.String.check(Schema.isMinLength(1, { message: "Add some text." })),
+      }),
+      { errors: "all" },
+    )({ title: "", text: "" })
+    expect(Result.isSuccess(parsed)).toBeFalse()
+    if (Result.isSuccess(parsed)) return
 
-    const validation = normalizeServerFunctionFailure(parsed.error)
+    const validation = normalizeServerFunctionFailure(parsed.failure)
     const defect = normalizeServerFunctionFailure(new Error("private database error"))
 
     expect(validation.error).toEqual({
       code: "INVALID_INPUT",
       message: "Check the submitted values.",
-      issues: [{ path: "title", message: "Add a title." }],
+      issues: [
+        { path: "title", message: "Add a title." },
+        { path: "text", message: "Add some text." },
+      ],
     })
     expect(defect).toBeInstanceOf(ServerFunctionFailure)
     expect(defect.error).toMatchObject({

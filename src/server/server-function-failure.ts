@@ -1,5 +1,4 @@
-import { Data, Effect, Result } from "effect"
-import { z } from "zod"
+import { Data, Effect, Result, Schema, SchemaIssue } from "effect"
 
 import {
   AuthorizationError,
@@ -66,11 +65,13 @@ type ServerFunctionErrorIssues = Array<{
   readonly message: string
 }>
 
-function zodIssues(error: z.ZodError): ServerFunctionErrorIssues {
-  return error.issues.slice(0, 20).map((issue) => ({
-    path: issue.path.map(String).join("."),
-    message: issue.message.slice(0, 500),
-  }))
+function schemaIssues(error: Schema.SchemaError): ServerFunctionErrorIssues {
+  return SchemaIssue.makeFormatterStandardSchemaV1()(error.issue)
+    .issues.slice(0, 20)
+    .map((issue) => ({
+      path: (issue.path ?? []).map(String).join("."),
+      message: issue.message.slice(0, 500),
+    }))
 }
 
 export function normalizeServerFunctionFailure(cause: unknown) {
@@ -78,8 +79,8 @@ export function normalizeServerFunctionFailure(cause: unknown) {
   if (cause instanceof ServerFunctionClientError) return failure(cause.details, cause)
   const wireError = parseServerFunctionError(cause)
   if (wireError) return failure(wireError, cause)
-  if (cause instanceof z.ZodError) {
-    return invalidInputFailure("Check the submitted values.", zodIssues(cause))
+  if (cause instanceof Schema.SchemaError) {
+    return invalidInputFailure("Check the submitted values.", schemaIssues(cause))
   }
   return internalFailure(cause)
 }

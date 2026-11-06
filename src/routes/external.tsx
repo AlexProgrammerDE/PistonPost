@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
+import { Schema, Effect, Option } from "effect"
 import { ArrowLeft, ExternalLink, TriangleAlert } from "lucide-react"
-import { z } from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -12,12 +12,17 @@ import {
   userGeneratedLinkRel,
 } from "@/lib/user-generated-link"
 
-const externalLinkSearchSchema = z.object({
-  url: z.string().max(MAX_USER_GENERATED_URL_LENGTH).catch(""),
+const externalLinkSearchSchema = Schema.Struct({
+  url: Schema.String.check(Schema.isMaxLength(MAX_USER_GENERATED_URL_LENGTH)).pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(""))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+  ),
 })
 
 export const Route = createFileRoute("/external")({
-  validateSearch: externalLinkSearchSchema,
+  validateSearch: Schema.toStandardSchemaV1(externalLinkSearchSchema, {
+    parseOptions: { errors: "all" },
+  }),
   headers: () => ({ "Cache-Control": "private, no-store" }),
   head: () => ({
     meta: [

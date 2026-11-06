@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { z } from "zod"
+import { Schema, Effect } from "effect"
 
 import { createFollowRepository } from "@/db/follow-repository"
 import { listPublicPostReads } from "@/db/public-read-model"
@@ -21,21 +21,28 @@ import {
 } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
-const followTargetSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("user"), username: usernameSchema }),
-  z.object({ kind: z.literal("tag"), tag: tagSchema }),
+const followTargetSchema = Schema.Union([
+  Schema.Struct({ kind: Schema.Literal("user"), username: usernameSchema }),
+  Schema.Struct({ kind: Schema.Literal("tag"), tag: tagSchema }),
 ])
-const setFollowSchema = z.discriminatedUnion("kind", [
-  z.object({ kind: z.literal("user"), username: usernameSchema, following: z.boolean() }),
-  z.object({ kind: z.literal("tag"), tag: tagSchema, following: z.boolean() }),
+const setFollowSchema = Schema.Union([
+  Schema.Struct({
+    kind: Schema.Literal("user"),
+    username: usernameSchema,
+    following: Schema.Boolean,
+  }),
+  Schema.Struct({ kind: Schema.Literal("tag"), tag: tagSchema, following: Schema.Boolean }),
 ])
 
-const followingFeedInput = z.object({
-  cursor: z.string().max(512).optional(),
-  limit: z.number().int().min(1).max(30).default(12),
+const followingFeedInput = Schema.Struct({
+  cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))),
+  limit: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(1))
+    .check(Schema.isLessThanOrEqualTo(30))
+    .pipe(Schema.withDecodingDefaultType(Effect.succeed(12))),
 })
 
-export type FollowTarget = z.infer<typeof followTargetSchema>
+export type FollowTarget = (typeof followTargetSchema)["Type"]
 
 function normalize(value: string) {
   return value.toLocaleLowerCase("en-US")

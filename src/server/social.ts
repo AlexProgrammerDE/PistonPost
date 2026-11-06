@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import { and, count, desc, eq, lt, or } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Effect } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
@@ -21,7 +21,7 @@ import {
 } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
-const commentCursorSchema = z.object({ createdAt: z.number(), id: z.string() })
+const commentCursorSchema = Schema.Struct({ createdAt: Schema.Finite, id: Schema.String })
 
 function encodeCommentCursor(createdAt: Date, id: string) {
   return btoa(JSON.stringify({ createdAt: createdAt.getTime(), id }))
@@ -30,7 +30,9 @@ function encodeCommentCursor(createdAt: Date, id: string) {
 function decodeCommentCursor(cursor: string | undefined) {
   if (!cursor) return null
   try {
-    const value = commentCursorSchema.parse(JSON.parse(atob(cursor)))
+    const value = Schema.decodeUnknownSync(commentCursorSchema, { errors: "all" })(
+      JSON.parse(atob(cursor)),
+    )
     return { createdAt: new Date(value.createdAt), id: value.id }
   } catch {
     return null
@@ -45,10 +47,13 @@ async function optionalViewer(context: Parameters<typeof createRequestAuth>[0]) 
 export const getDiscussion = createServerFn({ method: "GET" })
   .validator(
     serverFunctionValidator(
-      z.object({
-        postId: z.string().min(1).max(64),
-        cursor: z.string().max(512).optional(),
-        limit: z.number().int().min(1).max(50).default(25),
+      Schema.Struct({
+        postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))),
+        limit: Schema.Finite.check(Schema.isInt())
+          .check(Schema.isGreaterThanOrEqualTo(1))
+          .check(Schema.isLessThanOrEqualTo(50))
+          .pipe(Schema.withDecodingDefaultType(Effect.succeed(25))),
       }),
     ),
   )
@@ -107,7 +112,13 @@ export const getDiscussion = createServerFn({ method: "GET" })
   })
 
 export const getDiscussionViewer = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ postId: z.string().min(1).max(64) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      }),
+    ),
+  )
   .handler(async ({ context, data }) => {
     const viewer = await optionalViewer(context)
     if (!viewer) {
@@ -135,8 +146,12 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
 export const getFeedHeartStates = createServerFn({ method: "GET" })
   .validator(
     serverFunctionValidator(
-      z.object({
-        postIds: z.array(z.string().min(1).max(64)).min(1).max(FEED_HEART_BATCH_SIZE),
+      Schema.Struct({
+        postIds: Schema.mutable(
+          Schema.Array(Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
+        )
+          .check(Schema.isMinLength(1))
+          .check(Schema.isMaxLength(FEED_HEART_BATCH_SIZE)),
       }),
     ),
   )
@@ -153,7 +168,12 @@ export const getFeedHeartStates = createServerFn({ method: "GET" })
 export const setHeart = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
-    serverFunctionValidator(z.object({ postId: z.string().min(1).max(64), active: z.boolean() })),
+    serverFunctionValidator(
+      Schema.Struct({
+        postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        active: Schema.Boolean,
+      }),
+    ),
   )
   .handler(async ({ context, data }) => {
     const { database, session } = context
@@ -189,10 +209,10 @@ export const createComment = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(
     serverFunctionValidator(
-      z.object({
-        postId: z.string().min(1).max(64),
+      Schema.Struct({
+        postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
         content: commentInputSchema,
-        parentCommentId: z.string().uuid().optional(),
+        parentCommentId: Schema.optional(Schema.String.check(Schema.isUUID())),
       }),
     ),
   )
@@ -274,7 +294,7 @@ export const createComment = createServerFn({ method: "POST" })
 
 export const deleteComment = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ id: z.string().uuid() })))
+  .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
   .handler(async ({ context, data }) => {
     const { database, session } = context
     const comment = await database

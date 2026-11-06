@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { Effect } from "effect"
-import { z } from "zod"
+import { Effect, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { incrementPostViewCount } from "@/db/post-view-repository"
@@ -18,16 +17,23 @@ import { runServerEffect } from "@/server/server-function-failure"
 
 import { recordPostView } from "./post-view-tracking"
 
-const feedInput = z.object({
-  cursor: z.string().max(512).optional(),
-  limit: z.number().int().min(1).max(30).default(12),
-  tag: z.string().trim().min(1).max(64).optional(),
-  username: z.string().trim().min(1).max(32).optional(),
+const feedInput = Schema.Struct({
+  cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))),
+  limit: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(1))
+    .check(Schema.isLessThanOrEqualTo(30))
+    .pipe(Schema.withDecodingDefaultType(Effect.succeed(12))),
+  tag: Schema.optional(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
+  username: Schema.optional(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32))),
 })
 
-const postViewInput = z.object({
-  postIds: z.array(z.string().trim().min(1).max(64)).min(1).max(30),
-  surface: z.enum(POST_VIEW_SURFACES),
+const postViewInput = Schema.Struct({
+  postIds: Schema.mutable(
+    Schema.Array(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
+  )
+    .check(Schema.isMinLength(1))
+    .check(Schema.isMaxLength(30)),
+  surface: Schema.Literals(POST_VIEW_SURFACES),
 })
 
 export const getPublicFeed = createServerFn({ method: "GET" })
@@ -48,7 +54,11 @@ export const getPublicFeed = createServerFn({ method: "GET" })
   })
 
 export const getPublishedPost = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ id: z.string().trim().min(1).max(64) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({ id: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)) }),
+    ),
+  )
   .handler(async ({ context, data }) =>
     getPublishedPostRead(createD1Database(context.env.DB), data.id),
   )
@@ -87,13 +97,25 @@ export const trackPostViews = createServerFn({ method: "POST" })
   })
 
 export const getPublicProfile = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ username: z.string().trim().min(1).max(32) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        username: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32)),
+      }),
+    ),
+  )
   .handler(async ({ context, data }) =>
     getPublicProfileRead(createD1Database(context.env.DB), data.username),
   )
 
 export const getPublicTag = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ tag: z.string().trim().min(1).max(64) })))
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        tag: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      }),
+    ),
+  )
   .handler(async ({ context, data }) =>
     getPublicTagRead(createD1Database(context.env.DB), data.tag.toLocaleLowerCase("en-US")),
   )

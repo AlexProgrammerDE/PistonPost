@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { Schema, SchemaGetter } from "effect"
 
 const LOCAL_REDIRECT_BASE_URL = new URL("https://pistonpost.invalid")
 const MAX_LOCAL_REDIRECT_LENGTH = 2048
@@ -38,6 +38,11 @@ export function safeLocalRedirect(value: unknown) {
   return normalizeLocalRedirect(value, true)
 }
 
-export const authSearchSchema = z.object({
-  redirectTo: z.unknown().optional().transform(safeLocalRedirect),
+export const authSearchSchema = Schema.Struct({
+  redirectTo: Schema.optional(Schema.Unknown).pipe(
+    Schema.decodeTo(Schema.UndefinedOr(Schema.String), {
+      decode: SchemaGetter.transform(safeLocalRedirect),
+      encode: SchemaGetter.passthrough(),
+    }),
+  ),
 })
