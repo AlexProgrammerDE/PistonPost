@@ -49,7 +49,11 @@ jobs:
         run: bun run generated:check && bun run ci
 
       - name: Build production Worker
-        run: bun run build:production
+        env:
+          POSTHOG_PERSONAL_API_KEY: ${{ secrets.POSTHOG_PERSONAL_API_KEY }}
+        run: |
+          test -n "$POSTHOG_PERSONAL_API_KEY" || { echo "Missing POSTHOG_PERSONAL_API_KEY in the production environment"; exit 1; }
+          bun run build:production
 
       - name: Verify production deployment
         run: >-
