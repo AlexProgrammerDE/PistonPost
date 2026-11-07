@@ -46,10 +46,17 @@ Main commands:
 - bun run fix: apply Oxc formatting and lint fixes.
 - bun run test: run all tests.
 - bun run test:web: run the unit and integration test group without Playwright.
+- bun run test:prepare-db: apply generated migrations to the local browser-test database.
 - bun run typecheck:web: check the application TypeScript configuration.
 - bun run ci: run the complete local CI gate.
 
 Run commands from the repository root. The root package owns Vite, Wrangler, Drizzle, shadcn, and tests.
+
+Browser tests use the local state in `.wrangler/state`.
+Run automated browser verification in a fresh CI checkout or an isolated source copy with its own disposable state.
+Do not apply test migrations to pre-existing user state. Run `test:prepare-db` only in the disposable copy.
+This command uses Wrangler because the installed `cf` local migration command can remain alive after successful migration.
+Keep this fallback local. Production deployment continues to use `cf`.
 
 ## Package management and generated files
 
