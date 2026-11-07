@@ -54,7 +54,10 @@ const config = defineConfig(({ command, mode }) => ({
   },
   plugins: [
     ...(mode === "development" ? [devtools()] : []),
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    cloudflare({
+      viteEnvironment: { name: "ssr" },
+      persistState: { path: ".wrangler/state" },
+    }),
     tailwindcss(),
     tanstackStart(),
     VitePWA({
