@@ -137,20 +137,18 @@ test.describe.serial("authenticated authoring", () => {
     const cookieChoice = page.getByRole("button", { name: "Reject optional", exact: true })
     if (await cookieChoice.isVisible()) await cookieChoice.click()
     await fillPost(page, "Something worth sharing", "notes")
-    await page
-      .getByRole("textbox", { name: "Text", exact: true })
-      .fill("A few pictures, a passing thought, or something that made you laugh. Put it here.")
+    const textContent =
+      "A few pictures, a passing thought, or something that made you laugh. Put it here."
+    await page.getByRole("textbox", { name: "Text", exact: true }).fill(textContent)
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("pistonpost.composer-draft.v1")))
-      .not.toBeNull()
+      .toContain(textContent)
     page.on("dialog", (dialog) => void dialog.accept())
     await page.reload()
     await page.locator('[data-hydrated="true"]').waitFor()
     await page.getByRole("button", { name: "Restore draft", exact: true }).click()
     await expect(page.getByLabel("Title", { exact: true })).toHaveValue("Something worth sharing")
-    await expect(page.getByRole("textbox", { name: "Text", exact: true })).toHaveValue(
-      /A few pictures/,
-    )
+    await expect(page.getByRole("textbox", { name: "Text", exact: true })).toHaveValue(textContent)
     await page.setViewportSize({ width: 1366, height: 900 })
     await expect(page.getByRole("status", { name: "Loading account menu" })).toBeHidden()
     await page.screenshot({
