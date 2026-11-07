@@ -997,6 +997,10 @@ The rewrite is complete when:
 
 ## Decisions and deviations
 
+- 2026-11-07: Use native Effect programs across request services, authentication hooks, queue jobs, scheduled maintenance, and account-deletion steps. Run programs at TanStack, HTTP, Better Auth, Queue, and Workflow boundaries. Keep pure helpers, Drizzle statements, React rendering, and SDK contracts direct.
+  Request programs inherit the request cancellation signal. Once a mutation starts, finish its publication and durable settlement before interruption returns. Wait for executing D1 and binding operations before cleanup. Guard outbox release and completion with the claiming attempt. Read the attempt from the claim statement.
+  Independent maintenance tasks finish after a sibling failure or defect. Preserve their causes for operators. Cloudflare still owns durable Workflow checkpoints and retry policies. Keep the three account-deletion step names and their work unchanged. Never add an in-memory retry around an external mutation.
+
 - 2026-11-07: Replace application-owned Zod validation with Effect v4 Schema, as requested by the owner. Keep TanStack integration on Standard Schema. Preserve input normalization, defaults, error paths, and the public error response. This replaces the earlier Zod choice for server-function inputs.
 
 - 2026-10-01: Pin Effect to the stable 4.0.0 release. Use `Context.Service`, `Result`, and v4 Schema

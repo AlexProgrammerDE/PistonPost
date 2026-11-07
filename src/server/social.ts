@@ -12,7 +12,9 @@ import { commentEmailJob, replyEmailJob } from "@/email"
 import { FEED_HEART_BATCH_SIZE } from "@/lib/feed-heart-state"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { commentPushJob, replyPushJob, type PushDeliveryJob } from "@/push/jobs"
-import { createRequestAuth } from "@/server/auth"
+import { createRequestAuthEffect } from "@/server/auth"
+import { bindingOperation } from "@/server/operation"
+import { runRequestEffect } from "@/server/request-effect"
 import {
   forbiddenFailure,
   invalidInputFailure,
@@ -39,10 +41,14 @@ function decodeCommentCursor(cursor: string | undefined) {
   }
 }
 
-async function optionalViewer(context: Parameters<typeof createRequestAuth>[0]) {
-  const auth = await createRequestAuth(context)
-  return auth.api.getSession({ headers: getRequestHeaders() })
-}
+const optionalViewer = Effect.fn("optionalViewer")(function* (
+  context: Parameters<typeof createRequestAuthEffect>[0],
+) {
+  const auth = yield* createRequestAuthEffect(context)
+  return yield* bindingOperation("viewer.session", () =>
+    auth.api.getSession({ headers: getRequestHeaders() }),
+  )
+})
 
 export const getDiscussion = createServerFn({ method: "GET" })
   .validator(
@@ -57,59 +63,67 @@ export const getDiscussion = createServerFn({ method: "GET" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const database = createD1Database(context.env.DB)
-    const post = await database
-      .select({ id: schema.posts.id, status: schema.posts.status })
-      .from(schema.posts)
-      .where(eq(schema.posts.id, data.postId))
-      .get()
-    if (!post || post.status !== "published") {
-      throw notFoundFailure("The post was not found.")
-    }
-    const cursor = decodeCommentCursor(data.cursor)
-    const rows = await database
-      .select({
-        id: schema.comments.id,
-        content: schema.comments.content,
-        createdAt: schema.comments.createdAt,
-        updatedAt: schema.comments.updatedAt,
-        authorId: schema.comments.authorId,
-        parentId: schema.comments.parentId,
-        authorName: schema.user.name,
-        authorImage: schema.user.image,
-        authorUsername: schema.profiles.username,
-      })
-      .from(schema.comments)
-      .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
-      .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
-      .where(
-        and(
-          eq(schema.comments.postId, post.id),
-          eq(schema.comments.status, "published"),
-          ...(cursor
-            ? [
-                or(
-                  lt(schema.comments.createdAt, cursor.createdAt),
-                  and(
-                    eq(schema.comments.createdAt, cursor.createdAt),
-                    lt(schema.comments.id, cursor.id),
-                  ),
-                ),
-              ]
-            : []),
-        ),
-      )
-      .orderBy(desc(schema.comments.createdAt), desc(schema.comments.id))
-      .limit(data.limit + 1)
-    const page = rows.slice(0, data.limit)
-    const last = page.at(-1)
-    return {
-      comments: page,
-      nextCursor:
-        rows.length > data.limit && last ? encodeCommentCursor(last.createdAt, last.id) : null,
-    }
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const database = createD1Database(context.env.DB)
+        const post = yield* bindingOperation("getDiscussion.post", () =>
+          database
+            .select({ id: schema.posts.id, status: schema.posts.status })
+            .from(schema.posts)
+            .where(eq(schema.posts.id, data.postId))
+            .get(),
+        )
+        if (!post || post.status !== "published") {
+          return yield* notFoundFailure("The post was not found.")
+        }
+        const cursor = decodeCommentCursor(data.cursor)
+        const rows = yield* bindingOperation("getDiscussion.rows", () =>
+          database
+            .select({
+              id: schema.comments.id,
+              content: schema.comments.content,
+              createdAt: schema.comments.createdAt,
+              updatedAt: schema.comments.updatedAt,
+              authorId: schema.comments.authorId,
+              parentId: schema.comments.parentId,
+              authorName: schema.user.name,
+              authorImage: schema.user.image,
+              authorUsername: schema.profiles.username,
+            })
+            .from(schema.comments)
+            .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
+            .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
+            .where(
+              and(
+                eq(schema.comments.postId, post.id),
+                eq(schema.comments.status, "published"),
+                ...(cursor
+                  ? [
+                      or(
+                        lt(schema.comments.createdAt, cursor.createdAt),
+                        and(
+                          eq(schema.comments.createdAt, cursor.createdAt),
+                          lt(schema.comments.id, cursor.id),
+                        ),
+                      ),
+                    ]
+                  : []),
+              ),
+            )
+            .orderBy(desc(schema.comments.createdAt), desc(schema.comments.id))
+            .limit(data.limit + 1),
+        )
+        const page = rows.slice(0, data.limit)
+        const last = page.at(-1)
+        return {
+          comments: page,
+          nextCursor:
+            rows.length > data.limit && last ? encodeCommentCursor(last.createdAt, last.id) : null,
+        }
+      }),
+    ),
+  )
 
 export const getDiscussionViewer = createServerFn({ method: "GET" })
   .validator(
@@ -119,29 +133,42 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const viewer = await optionalViewer(context)
-    if (!viewer) {
-      return { viewerId: null, viewerRole: null, viewerHasHeart: false }
-    }
-    const database = createD1Database(context.env.DB)
-    const post = await database
-      .select({ id: schema.posts.id })
-      .from(schema.posts)
-      .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
-      .get()
-    if (!post) throw notFoundFailure("The post was not found.")
-    const heart = await database
-      .select({ postId: schema.reactions.postId })
-      .from(schema.reactions)
-      .where(and(eq(schema.reactions.postId, post.id), eq(schema.reactions.userId, viewer.user.id)))
-      .get()
-    return {
-      viewerId: viewer.user.id,
-      viewerRole: viewer.user.role ?? null,
-      viewerHasHeart: heart !== undefined,
-    }
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const viewer = yield* optionalViewer(context)
+        if (!viewer) {
+          return { viewerId: null, viewerRole: null, viewerHasHeart: false }
+        }
+        const database = createD1Database(context.env.DB)
+        const post = yield* bindingOperation("getDiscussionViewer.post", () =>
+          database
+            .select({ id: schema.posts.id })
+            .from(schema.posts)
+            .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+            .get(),
+        )
+        if (!post) return yield* notFoundFailure("The post was not found.")
+        const heart = yield* bindingOperation("getDiscussionViewer.heart", () =>
+          database
+            .select({ postId: schema.reactions.postId })
+            .from(schema.reactions)
+            .where(
+              and(
+                eq(schema.reactions.postId, post.id),
+                eq(schema.reactions.userId, viewer.user.id),
+              ),
+            )
+            .get(),
+        )
+        return {
+          viewerId: viewer.user.id,
+          viewerRole: viewer.user.role ?? null,
+          viewerHasHeart: heart !== undefined,
+        }
+      }),
+    ),
+  )
 
 export const getFeedHeartStates = createServerFn({ method: "GET" })
   .validator(
@@ -155,15 +182,21 @@ export const getFeedHeartStates = createServerFn({ method: "GET" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const viewer = await optionalViewer(context)
-    if (!viewer) return { heartPostIds: [] }
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const viewer = yield* optionalViewer(context)
+        if (!viewer) return { heartPostIds: [] }
 
-    const database = createD1Database(context.env.DB)
-    const heartPostIds = await listViewerFeedHeartPostIds(database, viewer.user.id, data.postIds)
+        const database = createD1Database(context.env.DB)
+        const heartPostIds = yield* bindingOperation("getFeedHeartStates.heartPostIds", () =>
+          listViewerFeedHeartPostIds(database, viewer.user.id, data.postIds),
+        )
 
-    return { heartPostIds }
-  })
+        return { heartPostIds }
+      }),
+    ),
+  )
 
 export const setHeart = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -175,35 +208,54 @@ export const setHeart = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const limited = await context.env.REACTION_RATE_LIMITER.limit({ key: session.user.id })
-    if (!limited.success) throw rateLimitedFailure("The heart rate limit was reached.")
-    const post = await database
-      .select({ id: schema.posts.id })
-      .from(schema.posts)
-      .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
-      .get()
-    if (!post) throw notFoundFailure("The post was not found.")
-    if (data.active) {
-      await database
-        .insert(schema.reactions)
-        .values({ postId: post.id, userId: session.user.id })
-        .onConflictDoNothing()
-    } else {
-      await database
-        .delete(schema.reactions)
-        .where(
-          and(eq(schema.reactions.postId, post.id), eq(schema.reactions.userId, session.user.id)),
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const limited = yield* bindingOperation("setHeart.limited", () =>
+          context.env.REACTION_RATE_LIMITER.limit({ key: session.user.id }),
         )
-    }
-    const aggregate = await database
-      .select({ heartCount: count() })
-      .from(schema.reactions)
-      .where(eq(schema.reactions.postId, post.id))
-      .get()
-    return { heartCount: aggregate?.heartCount ?? 0 }
-  })
+        if (!limited.success) return yield* rateLimitedFailure("The heart rate limit was reached.")
+        const post = yield* bindingOperation("setHeart.post", () =>
+          database
+            .select({ id: schema.posts.id })
+            .from(schema.posts)
+            .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+            .get(),
+        )
+        if (!post) return yield* notFoundFailure("The post was not found.")
+        return yield* Effect.gen(function* () {
+          if (data.active) {
+            yield* bindingOperation("setHeart.operation", () =>
+              database
+                .insert(schema.reactions)
+                .values({ postId: post.id, userId: session.user.id })
+                .onConflictDoNothing(),
+            )
+          } else {
+            yield* bindingOperation("setHeart.operation", () =>
+              database
+                .delete(schema.reactions)
+                .where(
+                  and(
+                    eq(schema.reactions.postId, post.id),
+                    eq(schema.reactions.userId, session.user.id),
+                  ),
+                ),
+            )
+          }
+          const aggregate = yield* bindingOperation("setHeart.aggregate", () =>
+            database
+              .select({ heartCount: count() })
+              .from(schema.reactions)
+              .where(eq(schema.reactions.postId, post.id))
+              .get(),
+          )
+          return { heartCount: aggregate?.heartCount ?? 0 }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 export const createComment = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -216,99 +268,130 @@ export const createComment = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const limited = await context.env.COMMENT_RATE_LIMITER.limit({ key: session.user.id })
-    if (!limited.success) throw rateLimitedFailure("The comment rate limit was reached.")
-    const post = await database
-      .select({ id: schema.posts.id, authorId: schema.posts.authorId })
-      .from(schema.posts)
-      .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
-      .get()
-    if (!post) throw notFoundFailure("The post was not found.")
-    const parent = data.parentCommentId
-      ? await database
-          .select({
-            id: schema.comments.id,
-            postId: schema.comments.postId,
-            authorId: schema.comments.authorId,
-            parentId: schema.comments.parentId,
-          })
-          .from(schema.comments)
-          .where(
-            and(
-              eq(schema.comments.id, data.parentCommentId),
-              eq(schema.comments.status, "published"),
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const limited = yield* bindingOperation("createComment.limited", () =>
+          context.env.COMMENT_RATE_LIMITER.limit({ key: session.user.id }),
+        )
+        if (!limited.success)
+          return yield* rateLimitedFailure("The comment rate limit was reached.")
+        const post = yield* bindingOperation("createComment.post", () =>
+          database
+            .select({ id: schema.posts.id, authorId: schema.posts.authorId })
+            .from(schema.posts)
+            .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+            .get(),
+        )
+        if (!post) return yield* notFoundFailure("The post was not found.")
+        const parentCommentId = data.parentCommentId
+        const parent = parentCommentId
+          ? yield* bindingOperation("createComment.operation", () =>
+              database
+                .select({
+                  id: schema.comments.id,
+                  postId: schema.comments.postId,
+                  authorId: schema.comments.authorId,
+                  parentId: schema.comments.parentId,
+                })
+                .from(schema.comments)
+                .where(
+                  and(
+                    eq(schema.comments.id, parentCommentId),
+                    eq(schema.comments.status, "published"),
+                  ),
+                )
+                .get(),
+            )
+          : null
+        if (data.parentCommentId && (!parent || parent.postId !== post.id)) {
+          return yield* notFoundFailure("The comment you are replying to was not found.")
+        }
+        if (parent?.parentId)
+          return yield* invalidInputFailure("Replies can only be one level deep.")
+        const id = crypto.randomUUID()
+        const jobs: Array<
+          ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob> | PushDeliveryJob
+        > = []
+        if (parent && parent.authorId !== session.user.id) {
+          jobs.push(replyEmailJob(parent.authorId, id))
+          const subscriptions = yield* bindingOperation("createComment.subscriptions", () =>
+            listActivePushSubscriptionIds(database, parent.authorId),
+          )
+          jobs.push(
+            ...subscriptions.map(({ subscriptionId }) =>
+              replyPushJob({ recipientUserId: parent.authorId, subscriptionId }, id),
             ),
           )
-          .get()
-      : null
-    if (data.parentCommentId && (!parent || parent.postId !== post.id)) {
-      throw notFoundFailure("The comment you are replying to was not found.")
-    }
-    if (parent?.parentId) throw invalidInputFailure("Replies can only be one level deep.")
-    const id = crypto.randomUUID()
-    const jobs: Array<
-      ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob> | PushDeliveryJob
-    > = []
-    if (parent && parent.authorId !== session.user.id) {
-      jobs.push(replyEmailJob(parent.authorId, id))
-      const subscriptions = await listActivePushSubscriptionIds(database, parent.authorId)
-      jobs.push(
-        ...subscriptions.map(({ subscriptionId }) =>
-          replyPushJob({ recipientUserId: parent.authorId, subscriptionId }, id),
-        ),
-      )
-    }
-    if (post.authorId !== session.user.id && (!parent || parent.authorId !== post.authorId)) {
-      jobs.push(commentEmailJob(post.authorId, id))
-      const subscriptions = await listActivePushSubscriptionIds(database, post.authorId)
-      jobs.push(
-        ...subscriptions.map(({ subscriptionId }) =>
-          commentPushJob({ recipientUserId: post.authorId, subscriptionId }, id),
-        ),
-      )
-    }
-    await database.batch([
-      database.insert(schema.comments).values({
-        id,
-        postId: post.id,
-        authorId: session.user.id,
-        parentId: parent?.id,
-        content: data.content,
+        }
+        if (post.authorId !== session.user.id && (!parent || parent.authorId !== post.authorId)) {
+          jobs.push(commentEmailJob(post.authorId, id))
+          const subscriptions = yield* bindingOperation("createComment.subscriptions", () =>
+            listActivePushSubscriptionIds(database, post.authorId),
+          )
+          jobs.push(
+            ...subscriptions.map(({ subscriptionId }) =>
+              commentPushJob({ recipientUserId: post.authorId, subscriptionId }, id),
+            ),
+          )
+        }
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("createComment.operation", () =>
+            database.batch([
+              database.insert(schema.comments).values({
+                id,
+                postId: post.id,
+                authorId: session.user.id,
+                parentId: parent?.id,
+                content: data.content,
+              }),
+              ...jobs.map((job) =>
+                database
+                  .insert(schema.outbox)
+                  .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+                  .onConflictDoNothing(),
+              ),
+            ]),
+          )
+          if (jobs.length > 0) {
+            context.executionContext.waitUntil(
+              context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
+            )
+          }
+          return { id, content: data.content, parentId: parent?.id ?? null, createdAt: new Date() }
+        }).pipe(Effect.uninterruptible)
       }),
-      ...jobs.map((job) =>
-        database
-          .insert(schema.outbox)
-          .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-          .onConflictDoNothing(),
-      ),
-    ])
-    if (jobs.length > 0) {
-      context.executionContext.waitUntil(
-        context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
-      )
-    }
-    return { id, content: data.content, parentId: parent?.id ?? null, createdAt: new Date() }
-  })
+    ),
+  )
 
 export const deleteComment = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const comment = await database
-      .select({ id: schema.comments.id, authorId: schema.comments.authorId })
-      .from(schema.comments)
-      .where(eq(schema.comments.id, data.id))
-      .get()
-    if (!comment) throw notFoundFailure("The comment was not found.")
-    if (comment.authorId !== session.user.id && session.user.role !== "admin") {
-      throw forbiddenFailure("You cannot delete this comment.")
-    }
-    await database
-      .update(schema.comments)
-      .set({ status: "deleted", deletedAt: new Date(), content: "[deleted]" })
-      .where(eq(schema.comments.id, comment.id))
-    return { id: comment.id }
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const comment = yield* bindingOperation("deleteComment.comment", () =>
+          database
+            .select({ id: schema.comments.id, authorId: schema.comments.authorId })
+            .from(schema.comments)
+            .where(eq(schema.comments.id, data.id))
+            .get(),
+        )
+        if (!comment) return yield* notFoundFailure("The comment was not found.")
+        if (comment.authorId !== session.user.id && session.user.role !== "admin") {
+          return yield* forbiddenFailure("You cannot delete this comment.")
+        }
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("deleteComment.operation", () =>
+            database
+              .update(schema.comments)
+              .set({ status: "deleted", deletedAt: new Date(), content: "[deleted]" })
+              .where(eq(schema.comments.id, comment.id)),
+          )
+          return { id: comment.id }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )

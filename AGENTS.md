@@ -82,6 +82,16 @@ Run commands from the repository root. The root package owns Vite, Wrangler, Dri
 - Use Activity only when hidden UI must preserve state and reduce work.
 - Do not add memo, useMemo, or useCallback without a measured or structurally clear reason.
 
+## Effect runtime
+
+- Compose fallible application workflows with native Effect programs and specific error channels. Keep pure helpers and framework rendering direct.
+- Use `runRequestEffect` at TanStack server-function boundaries. Programs inherit the request cancellation signal. Map failures to the existing public error contract.
+- Use `bindingOperation` for SDK and D1 operations that cannot cancel an executing call. Wait for the call to settle before cleanup.
+- Protect a submitted mutation and its durable settlement from interruption. Keep lookups interruptible before submission. Do not add automatic mutation retries.
+- Supply reusable services through `Context.Service` and `Layer`. Compose Effects inside programs. Run them at HTTP, SDK, Queue, scheduled-job, or Workflow-step boundaries.
+- Preserve Cloudflare Workflow step names, checkpoints, and retry policies. Effect owns the work inside each step.
+- Settle outbox work with the claiming attempt. A stale attempt cannot release or complete a successor's claim.
+
 ## TanStack conventions
 
 - TanStack Router owns route definitions, validation, loaders, pending states, and route-level errors.
