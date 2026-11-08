@@ -29,5 +29,12 @@ const results = await Promise.all(
   }),
 )
 
+const serviceWorker = await fetch(new URL("/push-sw.js", baseUrl), { redirect: "manual" })
+if (!serviceWorker.ok || !serviceWorker.headers.get("content-type")?.includes("javascript")) {
+  throw new Error(`Service worker is unavailable: ${serviceWorker.status.toString()}.`)
+}
+await serviceWorker.body?.cancel()
+results.push({ path: "/push-sw.js", status: serviceWorker.status })
+
 process.stdout.write(`${JSON.stringify({ origin: baseUrl.origin, results }, null, 2)}\n`)
 import process from "node:process"
