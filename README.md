@@ -110,13 +110,21 @@ personal override. The client uses memory-only persistence and sends anonymous r
 without dynamic post IDs, usernames, tag names, page titles, referrers, or query strings. Update
 `.env` and redeploy when either public value changes.
 
+Production builds upload source maps to PistonPost's EU PostHog project (`225703`).
+Set `POSTHOG_PERSONAL_API_KEY` as a secret in the GitHub `production` environment.
+Use a separate personal API key with error tracking write and organization read access.
+The build removes source maps after upload and uses the commit SHA as the release version.
+This key stays in the build environment and is never a Worker binding or browser variable.
+Local and pull-request builds skip uploads when the key is absent.
+To upload from a local build, set `POSTHOG_PERSONAL_API_KEY` in the command environment.
+
 See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before creating staging or production resources.
 The [email compliance controls](./docs/email-compliance.md) document records message classification,
 unsubscribe behavior, sender configuration, key rotation, and the live mailbox verification runbook.
 
 Production releases use the manually approved `Deploy production` GitHub Actions workflow. The
-workflow loads non-secret deployment configuration from `.env.production`, reads only the Cloudflare
-API token from the protected GitHub environment, builds the Worker with the production environment
+workflow loads non-secret deployment configuration from `.env.production`, reads the Cloudflare
+API token and PostHog upload key from the protected GitHub environment, builds the Worker with the production environment
 selected, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning
 and backup guides before triggering it.
 

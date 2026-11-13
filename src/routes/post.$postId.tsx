@@ -1,9 +1,9 @@
 import { useSession } from "@better-auth-ui/react"
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { Schema, SchemaGetter, Effect, SchemaIssue, Option } from "effect"
 import { Link2 } from "lucide-react"
 import { Suspense, useEffect, useRef } from "react"
-import { z } from "zod"
 
 import { authClient } from "@/auth/client"
 import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStates"
@@ -17,15 +17,35 @@ import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
 import { trackPostViews } from "@/server/posts"
 
-const postSearchSchema = z.object({
-  image: z.coerce.number().int().min(0).max(149).optional().catch(undefined),
-  layout: z.enum(galleryLayouts).optional().catch(undefined),
+const postSearchSchema = Schema.Struct({
+  image: Schema.optional(
+    Schema.Unknown.pipe(
+      Schema.decodeTo(Schema.Finite, {
+        decode: SchemaGetter.transformEffect((value) =>
+          Effect.try({
+            try: () => Number(value),
+            catch: () => new SchemaIssue.InvalidValue({ message: "Invalid number" }),
+          }),
+        ),
+        encode: SchemaGetter.passthrough(),
+      }),
+    )
+      .check(Schema.isInt())
+      .check(Schema.isGreaterThanOrEqualTo(0))
+      .check(Schema.isLessThanOrEqualTo(149)),
+  ).pipe(Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined)))),
+  layout: Schema.optional(Schema.Literals(galleryLayouts)).pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
+  ),
 })
 
 export const Route = createFileRoute("/post/$postId")({
-  validateSearch: postSearchSchema,
+  validateSearch: Schema.toStandardSchemaV1(postSearchSchema, { parseOptions: { errors: "all" } }),
   loader: async ({ context, params }) => {
-    const postId = z.string().trim().min(1).max(64).parse(params.postId)
+    const postId = Schema.decodeSync(
+      Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      { errors: "all" },
+    )(params.postId)
     const post = await context.queryClient.ensureQueryData(postQueryOptions(postId))
     if (!post) throw notFound()
     void context.queryClient.prefetchInfiniteQuery(discussionQueryOptions(postId))
@@ -36,7 +56,7 @@ export const Route = createFileRoute("/post/$postId")({
   }),
   head: ({ loaderData, match }) =>
     loaderData
-      ? createPostSeoHead(loaderData, match.search.image ?? 0)
+      ? createPostSeoHead(loaderData, match.search.image)
       : createSeoHead({
           title: "Post · PistonPost",
           description: "A post on PistonPost.",

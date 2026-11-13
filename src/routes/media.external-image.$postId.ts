@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Result } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -64,20 +64,23 @@ async function deliverExternalImage({
   context: AppRequestContext
   params: { postId: string }
 }) {
-  const input = z
-    .object({
-      postId: z.string().min(1).max(64),
-      source: z.string().url().max(2_048),
-    })
-    .safeParse({
-      postId: params.postId,
-      source: new URL(request.url).searchParams.get("source"),
-    })
-  if (!input.success || !isProxyableExternalImageUrl(input.data.source)) {
+  const input = Schema.decodeUnknownResult(
+    Schema.Struct({
+      postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      source: Schema.String.check(
+        Schema.makeFilter((value) => URL.canParse(value) || "Invalid URL"),
+      ).check(Schema.isMaxLength(2_048)),
+    }),
+    { errors: "all" },
+  )({
+    postId: params.postId,
+    source: new URL(request.url).searchParams.get("source"),
+  })
+  if (!Result.isSuccess(input) || !isProxyableExternalImageUrl(input.success.source)) {
     return new Response("Not found", { status: 404 })
   }
   const requestUrl = new URL(request.url)
-  const canonicalUrl = externalImageProxyUrl(input.data.postId, input.data.source)
+  const canonicalUrl = externalImageProxyUrl(input.success.postId, input.success.source)
   if (`${requestUrl.pathname}${requestUrl.search}` !== canonicalUrl) {
     return new Response(null, {
       status: 307,
@@ -92,13 +95,13 @@ async function deliverExternalImage({
       visibility: schema.posts.visibility,
     })
     .from(schema.posts)
-    .where(and(eq(schema.posts.id, input.data.postId), eq(schema.posts.status, "published")))
+    .where(and(eq(schema.posts.id, input.success.postId), eq(schema.posts.status, "published")))
     .get()
-  if (!post?.textContent || !markdownContainsImageUrl(post.textContent, input.data.source)) {
+  if (!post?.textContent || !markdownContainsImageUrl(post.textContent, input.success.source)) {
     return new Response("Not found", { status: 404 })
   }
 
-  const source = await fetchExternalImage(input.data.source)
+  const source = await fetchExternalImage(input.success.source)
   if (!source?.ok || !source.body) return new Response("Not found", { status: 404 })
   const contentType = source.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase()
   const contentLengthHeader = source.headers.get("content-length")
@@ -134,7 +137,7 @@ async function deliverExternalImage({
     )
     headers.set(
       "Cache-Tag",
-      cacheTagHeader([postCacheTag(input.data.postId), ownerCacheTag(post.authorId)]),
+      cacheTagHeader([postCacheTag(input.success.postId), ownerCacheTag(post.authorId)]),
     )
   }
   return new Response(response.body, { status: response.status, headers })

@@ -1,16 +1,16 @@
 import { describe, expect, mock, test } from "bun:test"
 
-import { Effect, Exit } from "effect"
-import { z } from "zod"
+import { Cause, Deferred, Effect, Exit, Fiber, Option, Schema } from "effect"
+import { TestClock } from "effect/testing"
 
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 
 import { allowedTurnstileHostnames, verifyTurnstile } from "./turnstile"
 
-const requestBodySchema = z.object({
-  secret: z.string(),
-  response: z.string(),
-  idempotency_key: z.string().uuid(),
+const requestBodySchema = Schema.Struct({
+  secret: Schema.String,
+  response: Schema.String,
+  idempotency_key: Schema.String.check(Schema.isUUID()),
 })
 
 const input = {
@@ -60,7 +60,9 @@ describe("Turnstile verification", () => {
     expect(new Headers(init?.headers).get("Content-Type")).toBe("application/json")
     expect(typeof init?.body).toBe("string")
     expect(
-      requestBodySchema.parse(JSON.parse(typeof init?.body === "string" ? init.body : "")),
+      Schema.decodeUnknownSync(requestBodySchema, { errors: "all" })(
+        JSON.parse(typeof init?.body === "string" ? init.body : ""),
+      ),
     ).toEqual({
       secret: input.secret,
       response: input.token,
@@ -137,4 +139,77 @@ describe("Turnstile verification", () => {
       expect(JSON.stringify(exit)).not.toContain(input.secret)
     }
   })
+})
+
+test("cancels a pending response body when its caller is interrupted", async () => {
+  const bodyRead = Deferred.makeUnsafe<void>()
+  let aborted = false
+  const controller = new AbortController()
+  const result = Effect.runPromiseExit(
+    verifyTurnstile({
+      ...input,
+      fetch: (_url, init) => {
+        const stream = new ReadableStream<Uint8Array>(
+          {
+            pull(body) {
+              init?.signal?.addEventListener(
+                "abort",
+                () => {
+                  aborted = true
+                  body.error(new Error("aborted"))
+                },
+                { once: true },
+              )
+              Effect.runSync(Deferred.succeed(bodyRead, undefined))
+            },
+          },
+          { highWaterMark: 0 },
+        )
+        return Promise.resolve(new Response(stream))
+      },
+    }),
+    { signal: controller.signal },
+  )
+  await Effect.runPromise(Deferred.await(bodyRead))
+  controller.abort()
+  const exit = await result
+  expect(aborted).toBe(true)
+  expect(Exit.isFailure(exit) && Cause.hasInterrupts(exit.cause)).toBe(true)
+})
+
+test("the provider deadline aborts the transport without retrying", async () => {
+  let attempts = 0
+  let aborted = false
+  const started = Deferred.makeUnsafe<void>()
+  const program = Effect.gen(function* () {
+    const fiber = yield* Effect.forkChild(
+      verifyTurnstile({
+        ...input,
+        fetch: (_url, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            attempts++
+            init?.signal?.addEventListener(
+              "abort",
+              () => {
+                aborted = true
+                reject(new Error("aborted"))
+              },
+              { once: true },
+            )
+            Deferred.doneUnsafe(started, Effect.void)
+          }),
+      }).pipe(Effect.exit),
+    )
+    yield* Deferred.await(started)
+    yield* TestClock.adjust("10 seconds")
+    return yield* Fiber.join(fiber)
+  })
+  const exit = await Effect.runPromise(program.pipe(Effect.provide(TestClock.layer())))
+  expect(Exit.isFailure(exit)).toBe(true)
+  if (Exit.isFailure(exit))
+    expect(Option.getOrThrow(Cause.findErrorOption(exit.cause))).toMatchObject({
+      reason: "provider",
+    })
+  expect(attempts).toBe(1)
+  expect(aborted).toBe(true)
 })

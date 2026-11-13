@@ -20,6 +20,7 @@ import { useStore } from "@tanstack/react-form"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { useSelector } from "@tanstack/react-store"
+import { Schema, SchemaIssue } from "effect"
 import {
   FileText,
   Globe2,
@@ -38,7 +39,6 @@ import {
 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { AppImage } from "@/components/AppImage"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
@@ -115,21 +115,18 @@ import {
   publishPost,
 } from "@/server/composer"
 
-const titleSchema = z
-  .string()
-  .trim()
-  .min(1, "Add a title.")
-  .max(100, "Use 100 characters or fewer.")
-const textSchema = z
-  .string()
-  .trim()
-  .min(1, "Write something before posting.")
-  .max(MAX_POST_MARKDOWN_LENGTH, "Use 10,000 characters or fewer.")
-const tagsSchema = z
-  .array(z.string())
-  .min(1, "Add at least one tag.")
-  .max(5, "Use at most five tags.")
-const imageMimeSchema = z.enum(IMAGE_UPLOAD_MIME_TYPES)
+const titleSchema = Schema.Trim.check(Schema.isMinLength(1, { message: "Add a title." })).check(
+  Schema.isMaxLength(100, { message: "Use 100 characters or fewer." }),
+)
+const textSchema = Schema.Trim.check(
+  Schema.isMinLength(1, { message: "Write something before posting." }),
+).check(
+  Schema.isMaxLength(MAX_POST_MARKDOWN_LENGTH, { message: "Use 10,000 characters or fewer." }),
+)
+const tagsSchema = Schema.mutable(Schema.Array(Schema.String))
+  .check(Schema.isMinLength(1, { message: "Add at least one tag." }))
+  .check(Schema.isMaxLength(5, { message: "Use at most five tags." }))
+const imageMimeSchema = Schema.Literals(IMAGE_UPLOAD_MIME_TYPES)
 
 const loadImageLightbox = () =>
   import("@/components/ImageLightbox").then((module) => ({
@@ -179,7 +176,11 @@ const composerMessages = new Set([
 ])
 
 function readableError(error: unknown) {
-  if (error instanceof z.ZodError) return error.issues[0]?.message ?? "Check the post details."
+  if (error instanceof Schema.SchemaError)
+    return (
+      SchemaIssue.makeFormatterStandardSchemaV1()(error.issue).issues[0]?.message ??
+      "Check the post details."
+    )
   if (error instanceof UploadClientError) return error.message
   if (error instanceof Error && composerMessages.has(error.message)) return error.message
   return "The post could not be posted. Try again."
@@ -246,7 +247,7 @@ export function PostComposer({
       const uploads = uploadStore.uploads.get()
       setSubmitError(null)
       try {
-        const draftInput = postDraftInputSchema.parse(
+        const draftInput = Schema.decodeUnknownSync(postDraftInputSchema, { errors: "all" })(
           value.type === "text"
             ? {
                 type: "text",
@@ -297,7 +298,9 @@ export function PostComposer({
                 postId: draft.id,
                 files: uploadBatch.map((item) => ({
                   filename: item.filename,
-                  mimeType: imageMimeSchema.parse(item.mimeType),
+                  mimeType: Schema.decodeUnknownSync(imageMimeSchema, { errors: "all" })(
+                    item.mimeType,
+                  ),
                   byteSize: item.file.size,
                   altText: item.altText,
                 })),
@@ -629,13 +632,25 @@ export function PostComposer({
                 />
               )}
             </form.AppField>
-            <form.AppField name="title" validators={{ onBlur: titleSchema }}>
+            <form.AppField
+              name="title"
+              validators={{
+                onBlur: Schema.toStandardSchemaV1(titleSchema, { parseOptions: { errors: "all" } }),
+              }}
+            >
               {(field) => <field.TextField label="Title" maxLength={100} />}
             </form.AppField>
             <form.Subscribe selector={(state) => state.values.type}>
               {(type) =>
                 type === "text" ? (
-                  <form.AppField name="textContent" validators={{ onBlur: textSchema }}>
+                  <form.AppField
+                    name="textContent"
+                    validators={{
+                      onBlur: Schema.toStandardSchemaV1(textSchema, {
+                        parseOptions: { errors: "all" },
+                      }),
+                    }}
+                  >
                     {(field) => (
                       <field.MarkdownField
                         label="Text"
@@ -674,7 +689,12 @@ export function PostComposer({
             Sharing
           </FieldLegend>
           <FieldGroup>
-            <form.AppField name="tags" validators={{ onBlur: tagsSchema }}>
+            <form.AppField
+              name="tags"
+              validators={{
+                onBlur: Schema.toStandardSchemaV1(tagsSchema, { parseOptions: { errors: "all" } }),
+              }}
+            >
               {(field) => (
                 <field.TagsField
                   label="Tags"

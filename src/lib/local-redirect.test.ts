@@ -1,8 +1,20 @@
 import { describe, expect, it } from "bun:test"
 
+import { Schema } from "effect"
+
 import { authSearchSchema, safeLocalRedirect } from "./local-redirect"
 
 describe("safeLocalRedirect", () => {
+  it("accepts auth pages without a redirect search parameter", async () => {
+    expect(Schema.decodeSync(authSearchSchema)({})).toEqual({})
+    expect(Schema.decodeSync(authSearchSchema)({ redirectTo: undefined })).toEqual({
+      redirectTo: undefined,
+    })
+
+    const validator = Schema.toStandardSchemaV1(authSearchSchema)
+    expect(await validator["~standard"].validate({})).toEqual({ value: {} })
+  })
+
   it("preserves local paths with search and hash values", () => {
     expect(safeLocalRedirect("/settings/security?panel=sessions#current")).toBe(
       "/settings/security?panel=sessions#current",
@@ -45,10 +57,18 @@ describe("safeLocalRedirect", () => {
   })
 
   it("drops invalid redirect search values", () => {
-    expect(authSearchSchema.parse({ redirectTo: "https://example.com" })).toEqual({
+    expect(
+      Schema.decodeSync(authSearchSchema, { errors: "all" })({
+        redirectTo: "https://example.com",
+      }),
+    ).toEqual({
       redirectTo: undefined,
     })
-    expect(authSearchSchema.parse({ redirectTo: ["/settings", "//example.com"] })).toEqual({
+    expect(
+      Schema.decodeSync(authSearchSchema, { errors: "all" })({
+        redirectTo: ["/settings", "//example.com"],
+      }),
+    ).toEqual({
       redirectTo: undefined,
     })
   })

@@ -1,56 +1,72 @@
-import { z } from "zod"
+import { Schema } from "effect"
 
 export const MAX_POST_MARKDOWN_LENGTH = 10_000
 export const MAX_IMAGES_PER_POST = 150
 
-export const postMarkdownSchema = z.string().trim().min(1).max(MAX_POST_MARKDOWN_LENGTH)
+export const postMarkdownSchema = Schema.Trim.check(Schema.isMinLength(1)).check(
+  Schema.isMaxLength(MAX_POST_MARKDOWN_LENGTH),
+)
 
-export const tagSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(64)
-  .regex(/^[A-Za-z0-9._~-]+$/, "Tags may use letters, numbers, hyphen, dot, underscore, and tilde")
+export const tagSchema = Schema.Trim.check(Schema.isMinLength(1))
+  .check(Schema.isMaxLength(64))
+  .check(
+    Schema.isPattern(/^[A-Za-z0-9._~-]+$/, {
+      message: "Tags may use letters, numbers, hyphen, dot, underscore, and tilde",
+    }),
+  )
 
-const basePostDraftSchema = z.object({
-  title: z.string().trim().min(1).max(100),
-  tags: z.array(tagSchema).min(1).max(5),
-  visibility: z.enum(["public", "unlisted"]),
+const basePostDraftSchema = Schema.Struct({
+  title: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(100)),
+  tags: Schema.mutable(Schema.Array(tagSchema))
+    .check(Schema.isMinLength(1))
+    .check(Schema.isMaxLength(5)),
+  visibility: Schema.Literals(["public", "unlisted"]),
 })
 
-export const postDraftInputSchema = z.discriminatedUnion("type", [
-  basePostDraftSchema.extend({
-    type: z.literal("text"),
-    textContent: postMarkdownSchema,
-  }),
-  basePostDraftSchema.extend({
-    type: z.literal("images"),
-    mediaIds: z.array(z.string().min(1)).max(MAX_IMAGES_PER_POST),
-  }),
-  basePostDraftSchema.extend({
-    type: z.literal("video"),
-    mediaId: z.string().min(1).nullable(),
-  }),
+export const postDraftInputSchema = Schema.Union([
+  basePostDraftSchema.pipe(
+    Schema.fieldsAssign({
+      type: Schema.Literal("text"),
+      textContent: postMarkdownSchema,
+    }),
+  ),
+  basePostDraftSchema.pipe(
+    Schema.fieldsAssign({
+      type: Schema.Literal("images"),
+      mediaIds: Schema.mutable(Schema.Array(Schema.String.check(Schema.isMinLength(1)))).check(
+        Schema.isMaxLength(MAX_IMAGES_PER_POST),
+      ),
+    }),
+  ),
+  basePostDraftSchema.pipe(
+    Schema.fieldsAssign({
+      type: Schema.Literal("video"),
+      mediaId: Schema.NullOr(Schema.String.check(Schema.isMinLength(1))),
+    }),
+  ),
 ])
 
-export const commentInputSchema = z.string().trim().min(1).max(250)
+export const commentInputSchema = Schema.Trim.check(Schema.isMinLength(1)).check(
+  Schema.isMaxLength(250),
+)
 export const emailNotificationPreferences = [
   "comment-email",
   "reply-email",
   "product-email",
 ] as const
-export const emailNotificationPreferenceSchema = z.enum(emailNotificationPreferences)
-export const notificationPreferenceSchema = z.enum([
+export const emailNotificationPreferenceSchema = Schema.Literals(emailNotificationPreferences)
+export const notificationPreferenceSchema = Schema.Literals([
   ...emailNotificationPreferences,
   "comment-push",
   "reply-push",
 ])
-export const usernameSchema = z
-  .string()
-  .trim()
-  .min(1)
-  .max(32)
-  .regex(/^[A-Za-z0-9._~-]+$/, "Use letters, numbers, hyphen, dot, underscore, or tilde")
+export const usernameSchema = Schema.Trim.check(Schema.isMinLength(1))
+  .check(Schema.isMaxLength(32))
+  .check(
+    Schema.isPattern(/^[A-Za-z0-9._~-]+$/, {
+      message: "Use letters, numbers, hyphen, dot, underscore, or tilde",
+    }),
+  )
 
-export type EmailNotificationPreference = z.infer<typeof emailNotificationPreferenceSchema>
-export type NotificationPreference = z.infer<typeof notificationPreferenceSchema>
+export type EmailNotificationPreference = (typeof emailNotificationPreferenceSchema)["Type"]
+export type NotificationPreference = (typeof notificationPreferenceSchema)["Type"]

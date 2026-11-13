@@ -1,3 +1,5 @@
+import { Schema } from "effect"
+
 import { getActiveAppWorker } from "@/lib/pwa/registration"
 import { pushSubscriptionInputSchema, type PushSubscriptionInput } from "@/push/subscription"
 
@@ -34,7 +36,7 @@ export async function createPushSubscription(vapidPublicKey: string) {
 
 export function serializePushSubscription(subscription: PushSubscription): PushSubscriptionInput {
   const value = subscription.toJSON()
-  return pushSubscriptionInputSchema.parse({
+  return Schema.decodeUnknownSync(pushSubscriptionInputSchema, { errors: "all" })({
     endpoint: value.endpoint,
     expirationTime: value.expirationTime ?? null,
     keys: value.keys,

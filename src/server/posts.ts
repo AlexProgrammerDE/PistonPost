@@ -1,7 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { Effect } from "effect"
-import { z } from "zod"
+import { Effect, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { incrementPostViewCount } from "@/db/post-view-repository"
@@ -14,86 +13,130 @@ import {
 } from "@/db/public-read-model"
 import { POST_VIEW_SURFACES, decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
 import { serverFunctionValidator } from "@/lib/server-function-error"
-import { runServerEffect } from "@/server/server-function-failure"
+import { bindingOperation } from "@/server/operation"
+import { runRequestEffect } from "@/server/request-effect"
 
 import { recordPostView } from "./post-view-tracking"
 
-const feedInput = z.object({
-  cursor: z.string().max(512).optional(),
-  limit: z.number().int().min(1).max(30).default(12),
-  tag: z.string().trim().min(1).max(64).optional(),
-  username: z.string().trim().min(1).max(32).optional(),
+const feedInput = Schema.Struct({
+  cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))),
+  limit: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(1))
+    .check(Schema.isLessThanOrEqualTo(30))
+    .pipe(Schema.withDecodingDefaultType(Effect.succeed(12))),
+  tag: Schema.optional(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
+  username: Schema.optional(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32))),
 })
 
-const postViewInput = z.object({
-  postIds: z.array(z.string().trim().min(1).max(64)).min(1).max(30),
-  surface: z.enum(POST_VIEW_SURFACES),
+const postViewInput = Schema.Struct({
+  postIds: Schema.mutable(
+    Schema.Array(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
+  )
+    .check(Schema.isMinLength(1))
+    .check(Schema.isMaxLength(30)),
+  surface: Schema.Literals(POST_VIEW_SURFACES),
 })
 
 export const getPublicFeed = createServerFn({ method: "GET" })
   .validator(serverFunctionValidator(feedInput))
-  .handler(async ({ context, data }) => {
-    const cursor = data.cursor ? await runServerEffect(decodePublicPostCursor(data.cursor)) : null
-    const page = await listPublicPostReads(createD1Database(context.env.DB), {
-      cursor,
-      limit: data.limit,
-      tag: data.tag?.toLocaleLowerCase("en-US"),
-      username: data.username?.toLocaleLowerCase("en-US"),
-    })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const cursor = data.cursor ? yield* decodePublicPostCursor(data.cursor) : null
+        const page = yield* bindingOperation("getPublicFeed.page", () =>
+          listPublicPostReads(createD1Database(context.env.DB), {
+            cursor,
+            limit: data.limit,
+            tag: data.tag?.toLocaleLowerCase("en-US"),
+            username: data.username?.toLocaleLowerCase("en-US"),
+          }),
+        )
 
-    return {
-      posts: page.posts,
-      nextCursor: page.nextCursor ? encodePublicPostCursor(page.nextCursor) : null,
-    }
-  })
+        return {
+          posts: page.posts,
+          nextCursor: page.nextCursor ? encodePublicPostCursor(page.nextCursor) : null,
+        }
+      }),
+    ),
+  )
 
 export const getPublishedPost = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ id: z.string().trim().min(1).max(64) })))
-  .handler(async ({ context, data }) =>
-    getPublishedPostRead(createD1Database(context.env.DB), data.id),
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({ id: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)) }),
+    ),
+  )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      bindingOperation("getPublishedPost.operation", () =>
+        getPublishedPostRead(createD1Database(context.env.DB), data.id),
+      ),
+    ),
   )
 
 export const trackPostViews = createServerFn({ method: "POST" })
   .validator(serverFunctionValidator(postViewInput))
-  .handler(async ({ context, data }) => {
-    const headers = getRequestHeaders()
-    const database = createD1Database(context.env.DB)
-    const address = headers.get("cf-connecting-ip") ?? "local"
-    const dependencies = {
-      analytics: context.env.ANALYTICS,
-      findPublishedPost: (postId: string) => getPublishedPostTrackingContext(database, postId),
-      incrementViewCount: (postId: string) => incrementPostViewCount(database, postId),
-      limiter: context.env.POST_VIEW_RATE_LIMITER,
-    }
-    const postIds = Array.from(new Set(data.postIds))
-    const results = await runServerEffect(
-      Effect.all(
-        postIds.map((postId) =>
-          recordPostView(dependencies, {
-            address,
-            postId,
-            surface: data.surface,
-          }).pipe(Effect.map((viewCount) => ({ postId, viewCount }))),
-        ),
-        { concurrency: 4 },
-      ),
-    )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const headers = getRequestHeaders()
+        const database = createD1Database(context.env.DB)
+        const address = headers.get("cf-connecting-ip") ?? "local"
+        const dependencies = {
+          analytics: context.env.ANALYTICS,
+          findPublishedPost: (postId: string) => getPublishedPostTrackingContext(database, postId),
+          incrementViewCount: (postId: string) => incrementPostViewCount(database, postId),
+          limiter: context.env.POST_VIEW_RATE_LIMITER,
+        }
+        const postIds = Array.from(new Set(data.postIds))
+        const results = yield* Effect.forEach(
+          postIds,
+          (postId) =>
+            recordPostView(dependencies, {
+              address,
+              postId,
+              surface: data.surface,
+            }).pipe(Effect.map((viewCount) => ({ postId, viewCount }))),
+          { concurrency: 4 },
+        )
 
-    return {
-      views: results.flatMap(({ postId, viewCount }) =>
-        viewCount === null ? [] : [{ postId, viewCount }],
-      ),
-    }
-  })
+        return {
+          views: results.flatMap(({ postId, viewCount }) =>
+            viewCount === null ? [] : [{ postId, viewCount }],
+          ),
+        }
+      }),
+    ),
+  )
 
 export const getPublicProfile = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ username: z.string().trim().min(1).max(32) })))
-  .handler(async ({ context, data }) =>
-    getPublicProfileRead(createD1Database(context.env.DB), data.username),
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        username: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32)),
+      }),
+    ),
+  )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      bindingOperation("getPublicProfile.operation", () =>
+        getPublicProfileRead(createD1Database(context.env.DB), data.username),
+      ),
+    ),
   )
 
 export const getPublicTag = createServerFn({ method: "GET" })
-  .validator(serverFunctionValidator(z.object({ tag: z.string().trim().min(1).max(64) })))
-  .handler(async ({ context, data }) =>
-    getPublicTagRead(createD1Database(context.env.DB), data.tag.toLocaleLowerCase("en-US")),
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        tag: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      }),
+    ),
+  )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      bindingOperation("getPublicTag.operation", () =>
+        getPublicTagRead(createD1Database(context.env.DB), data.tag.toLocaleLowerCase("en-US")),
+      ),
+    ),
   )

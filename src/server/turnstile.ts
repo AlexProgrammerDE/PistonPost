@@ -1,5 +1,4 @@
 import { Effect, Schema } from "effect"
-import { z } from "zod"
 
 import type { TurnstileAction } from "@/lib/turnstile"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE } from "@/lib/turnstile"
@@ -8,7 +7,9 @@ import type { AppRequestContext } from "@/server"
 const TURNSTILE_SITEVERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify"
 const TURNSTILE_ALWAYS_PASS_TEST_SECRET = "1x0000000000000000000000000000000AA"
 
-export const turnstileTokenSchema = z.string().min(1).max(2048)
+export const turnstileTokenSchema = Schema.String.check(Schema.isMinLength(1)).check(
+  Schema.isMaxLength(2048),
+)
 
 const turnstileResponseSchema = Schema.Struct({
   success: Schema.Boolean,
@@ -64,9 +65,9 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
     catch: () => verificationError("configuration"),
   })
   const requestFetch = input.fetch ?? globalThis.fetch
-  const response = yield* Effect.tryPromise({
-    try: () =>
-      requestFetch(TURNSTILE_SITEVERIFY_URL, {
+  const body = yield* Effect.tryPromise({
+    try: async (signal) => {
+      const response = await requestFetch(TURNSTILE_SITEVERIFY_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -74,15 +75,21 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
           response: input.token,
           idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
         }),
-      }),
+        signal,
+      })
+      if (!response.ok) {
+        await response.body?.cancel()
+        throw verificationError("provider")
+      }
+      return response.json()
+    },
     catch: () => verificationError("provider"),
-  })
-  if (!response.ok) return yield* verificationError("provider")
-
-  const body = yield* Effect.tryPromise({
-    try: () => response.json(),
-    catch: () => verificationError("provider"),
-  })
+  }).pipe(
+    Effect.timeoutOrElse({
+      duration: "10 seconds",
+      orElse: () => Effect.fail(verificationError("provider")),
+    }),
+  )
   const result = yield* Schema.decodeUnknownEffect(turnstileResponseSchema)(body).pipe(
     Effect.mapError(() => verificationError("provider")),
   )

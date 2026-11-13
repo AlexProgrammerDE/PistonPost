@@ -52,7 +52,7 @@ function queryFailure() {
 }
 
 function promiseQuery<T>(query: () => Promise<T>) {
-  return Effect.tryPromise({ try: query, catch: queryFailure })
+  return Effect.tryPromise({ try: query, catch: queryFailure }).pipe(Effect.uninterruptible)
 }
 
 function commentContent(

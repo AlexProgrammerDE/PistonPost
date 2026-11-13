@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { Schema } from "effect"
 import { FilePenLine, Globe2, Link2, Save, Trash2, TriangleAlert } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { FormPageSkeleton } from "@/components/LoadingStates"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -27,7 +27,10 @@ import { deletePost, getOwnedPostForEditing, updatePost } from "@/server/compose
 
 export const Route = createFileRoute("/post_/$postId/edit")({
   loader: async ({ params }) => {
-    const id = z.string().min(1).max(64).parse(params.postId)
+    const id = Schema.decodeSync(
+      Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      { errors: "all" },
+    )(params.postId)
     return getOwnedPostForEditing({ data: { id } })
   },
   head: () => ({
@@ -118,7 +121,14 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                 {(field) => <field.TextField label="Title" maxLength={100} />}
               </form.AppField>
               {post.type === "text" ? (
-                <form.AppField name="textContent" validators={{ onBlur: postMarkdownSchema }}>
+                <form.AppField
+                  name="textContent"
+                  validators={{
+                    onBlur: Schema.toStandardSchemaV1(postMarkdownSchema, {
+                      parseOptions: { errors: "all" },
+                    }),
+                  }}
+                >
                   {(field) => (
                     <field.MarkdownField
                       label="Text"

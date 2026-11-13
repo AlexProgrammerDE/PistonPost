@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { z } from "zod"
+import { Schema, Effect } from "effect"
 
 import {
   parseServerFunctionError,
@@ -39,12 +39,16 @@ describe("server function error contract", () => {
     expect(error?.message).toBe("The post changed in another session.")
   })
 
-  test("keeps Zod defaults and structured failures at the input boundary", () => {
+  test("keeps schema defaults and structured failures at the input boundary", () => {
     const validate = serverFunctionValidator(
-      z.object({ limit: z.number().int().min(1).default(12) }),
+      Schema.Struct({
+        limit: Schema.Finite.check(Schema.isInt())
+          .check(Schema.isGreaterThanOrEqualTo(1))
+          .pipe(Schema.withDecodingDefaultType(Effect.succeed(12))),
+      }),
     )
 
     expect(validate({})).toEqual({ limit: 12 })
-    expect(() => validate({ limit: 0 })).toThrow(z.ZodError)
+    expect(() => validate({ limit: 0 })).toThrow(Schema.SchemaError)
   })
 })

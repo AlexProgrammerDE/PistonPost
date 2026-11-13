@@ -19,13 +19,14 @@
     "format:check": "oxfmt --check .",
     "generated:check": "bun scripts/check-generated.ts",
     "knip": "knip",
-    "lint": "oxlint --type-aware --deny-warnings --report-unused-disable-directives .",
+    "lint": "bun run cf:typegen && oxlint --type-aware --deny-warnings --report-unused-disable-directives .",
     "load:test": "bun scripts/load-test.ts",
-    "prepare": "./scripts/prepare-effect.sh && lefthook install",
+    "prepare": "./scripts/prepare-effect.sh && lefthook install && effect-tsgo patch --no-typescript --oxlint",
     "preview": "cf dev --mode production",
     "smoke:production": "bun scripts/smoke-production.ts",
     "test": "bun test --path-ignore-patterns='tests/e2e/**'",
     "test:e2e": "playwright test",
+    "test:prepare-db": "wrangler d1 migrations apply DB --config tests/fixtures/wrangler.local.jsonc --local --persist-to .wrangler/state",
     "test:web": "bun test --path-ignore-patterns='tests/e2e/**'",
     "typecheck": "bun run cf:typegen && tsgo --noEmit",
     "typecheck:web": "bun run typecheck",
@@ -35,16 +36,16 @@
   },
   "dependencies": {
     "@base-ui/react": "1.8.0",
-    "@better-auth-ui/core": "^1.7.25",
-    "@better-auth-ui/react": "^1.7.25",
+    "@better-auth-ui/core": "^1.7.33",
+    "@better-auth-ui/react": "^1.7.33",
     "@better-auth/agent-auth": "^0.6.2",
-    "@better-auth/api-key": "1.7.7",
-    "@better-auth/core": "1.7.7",
-    "@better-auth/infra": "^0.4.7",
-    "@better-auth/oauth-provider": "^1.7.3",
-    "@better-auth/passkey": "1.7.7",
-    "@better-auth/scim": "1.7.7",
-    "@better-auth/sso": "1.7.7",
+    "@better-auth/api-key": "1.7.15",
+    "@better-auth/core": "1.7.15",
+    "@better-auth/infra": "^0.4.26",
+    "@better-auth/oauth-provider": "^1.7.15",
+    "@better-auth/passkey": "1.7.15",
+    "@better-auth/scim": "1.7.15",
+    "@better-auth/sso": "1.7.15",
     "@dnd-kit/core": "6.3.1",
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
@@ -63,13 +64,14 @@
     "@unpic/placeholder": "^0.1.2",
     "@unpic/react": "^1.0.2",
     "@vidstack/react": "1.15.7",
-    "better-auth": "1.7.7",
+    "better-auth": "1.7.15",
     "better-auth-harmony": "1.3.2",
     "bowser": "2.14.1",
     "class-variance-authority": "0.7.1",
     "cn": "0.4.0",
     "dashjs": "5.2.1",
     "date-fns": "4.4.0",
+    "discord-api-types": "^0.38.55",
     "drizzle-orm": "0.45.4",
     "effect": "4.0.2",
     "embla-carousel-react": "^8.6.0",
@@ -79,7 +81,7 @@
     "lucide-react": "1.53.0",
     "mdast-util-directive": "3.1.1",
     "mdast-util-to-string": "4.0.0",
-    "motion": "13.5.1",
+    "motion": "14.13.0",
     "next-themes": "0.4.6",
     "posthog-js": "^1.428.7",
     "react": "19.3.0",
@@ -100,14 +102,15 @@
     "unist-util-visit": "5.1.0",
     "unpic": "^4.2.2",
     "vanilla-cookieconsent": "^3.1.0",
-    "web-push": "^3.6.7",
-    "yet-another-react-lightbox": "3.32.2",
-    "zod": "4.6.5"
+    "web-push": "^4.0.0",
+    "yet-another-react-lightbox": "3.32.2"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@cloudflare/vite-plugin": "2.0.0-beta.sha-c82c3efb3",
+    "@cloudflare/vite-plugin": "2.0.0-beta.sha-ad79608dd",
+    "@effect/tsgo": "0.51.1",
     "@playwright/test": "1.64.0",
+    "@posthog/rollup-plugin": "^1.6.2",
     "@rolldown/plugin-babel": "0.2.4",
     "@shadcn/lint": "^0.2.0",
     "@tailwindcss/vite": "4.3.3",
@@ -124,7 +127,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "6.1.2",
     "babel-plugin-react-compiler": "1.0.0",
-    "cf": "1.0.0-beta.13",
+    "cf": "1.0.0-beta.7",
     "drizzle-kit": "0.31.11",
     "knip": "6.40.0",
     "lefthook": "2.2.1",
@@ -136,22 +139,24 @@
     "tailwindcss": "4.3.3",
     "typescript": "7.0.2",
     "vite": "8.3.4",
-    "vite-plugin-pwa": "^1.3.0",
-    "wasm-pack": "0.15.0"
+    "vite-plugin-pwa": "^2.0.0",
+    "wasm-pack": "0.15.0",
+    "wrangler": "4.130.0"
   },
   "overrides": {
-    "@cloudflare/build-output-utils": "0.8.6",
-    "@cloudflare/config": "0.24.0",
-    "@cloudflare/runtime-types": "0.1.8"
+    "@cloudflare/build-output-utils": "0.8.4",
+    "@cloudflare/config": "0.22.0",
+    "@cloudflare/runtime-types": "0.1.6"
   },
   "engines": {
     "node": ">=20"
   },
   "packageManager": "bun@1.4.2",
   "patchedDependencies": {
-    "@vidstack/react@1.15.6": "patches/@vidstack%2Freact@1.15.6.patch"
+    "@vidstack/react@1.15.7": "patches/@vidstack%2Freact@1.15.7.patch"
   },
   "trustedDependencies": [
+    "@posthog/cli",
     "wasm-pack"
   ]
 }

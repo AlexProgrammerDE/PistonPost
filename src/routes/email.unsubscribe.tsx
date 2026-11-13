@@ -3,8 +3,8 @@
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { createServerOnlyFn } from "@tanstack/react-start"
+import { Schema, Effect, Option } from "effect"
 import { CheckCircle2, MailX } from "lucide-react"
-import { z } from "zod"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,15 @@ const oneClickUnsubscribe = createServerOnlyFn(
 )
 
 export const Route = createFileRoute("/email/unsubscribe")({
-  validateSearch: z.object({ token: z.string().max(4096).catch("") }),
+  validateSearch: Schema.toStandardSchemaV1(
+    Schema.Struct({
+      token: Schema.String.check(Schema.isMaxLength(4096)).pipe(
+        Schema.catchDecoding(() => Effect.sync(() => Option.some(""))),
+        Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+      ),
+    }),
+    { parseOptions: { errors: "all" } },
+  ),
   head: () => ({
     meta: [
       { title: "Email preferences · PistonPost" },

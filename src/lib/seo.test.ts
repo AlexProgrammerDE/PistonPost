@@ -92,7 +92,7 @@ describe("SEO metadata", () => {
     const head = createPostSeoHead(post, 1)
 
     expect(metaContent(head.meta, "property", "og:image")).toBe(
-      `${SITE_URL}/media/image/second/og?v=2`,
+      `${SITE_URL}/media/image/second/og?v=3`,
     )
     expect(metaContent(head.meta, "property", "og:image:alt")).toBe("A sleepy fox")
     expect(metaContent(head.meta, "property", "og:image:type")).toBe("image/jpeg")
@@ -266,5 +266,124 @@ describe("SEO metadata", () => {
 
     expect(script?.children).not.toContain("</script>")
     expect(script?.children).toContain("\\u003c/script>")
+  })
+})
+
+describe("Discord post previews", () => {
+  const galleryPost: PublicPostRead = {
+    ...basePost,
+    type: "images",
+    textContent: null,
+    media: Array.from({ length: 70 }, (_, index) => ({
+      id: `image-${index}`,
+      kind: "image",
+      width: 3000,
+      height: 4000,
+      duration: null,
+      altText: `Artwork ${index + 1}`,
+    })),
+  }
+
+  it("previews each copied image link once without repeating the full post card", () => {
+    const links = createPostShareLinks(galleryPost.id, galleryPost.media.length)
+    for (const [index, url] of links.imageUrls.entries()) {
+      const head = createPostSeoHead(galleryPost, Number(new URL(url).searchParams.get("image")))
+      const script = head.scripts.find(
+        (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+      )
+      const payload = JSON.parse(script?.children ?? "")
+      expect(payload.component.components).toHaveLength(index === 0 ? 2 : 1)
+      expect(payload.component.components.at(-1)).toEqual({
+        type: 12,
+        items: [{ media: { url: `${SITE_URL}/media/image/image-${index}/og?v=3` } }],
+      })
+      if (index === 0) {
+        expect(payload.component.components[0].content).toBe(
+          `**[look at this](${url})**\n@Alex · Image 1 of 70`,
+        )
+      }
+      expect(head.links).toEqual([{ rel: "canonical", href: links.postUrl }])
+      expect(metaContent(head.meta, "property", "og:title")).toContain("look at this")
+      expect(metaContent(head.meta, "property", "og:image:width")).toBe("1800")
+      expect(metaContent(head.meta, "property", "og:image:height")).toBe("2400")
+      expect(new TextEncoder().encode(script?.children).byteLength).toBeLessThanOrEqual(3000)
+    }
+  })
+
+  it("keeps the original full card with up to four images on root post links", () => {
+    for (const count of [1, 2, 4, 70]) {
+      const head = createPostSeoHead({ ...galleryPost, media: galleryPost.media.slice(0, count) })
+      const script = head.scripts.find(
+        (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+      )
+      const payload = JSON.parse(script?.children ?? "")
+      expect(payload.component.components).toHaveLength(3)
+      expect(payload.component.components[0].content).toStartWith(
+        `## [look at this](${SITE_URL}/post/post%20one)\nAlex`,
+      )
+      expect(payload.component.components[0].content).toContain(
+        `${count} image${count === 1 ? "" : "s"} by Alex`,
+      )
+      expect(payload.component.components[0].content).toContain("0 hearts · 0 comments")
+      expect(payload.component.components[1].items).toEqual(
+        Array.from({ length: Math.min(4, count) }, (_, index) => ({
+          media: { url: `${SITE_URL}/media/image/image-${index}/og?v=3` },
+        })),
+      )
+      expect(payload.component.components[2]).toEqual({
+        type: 1,
+        components: [
+          { type: 2, style: 5, label: "View post", url: `${SITE_URL}/post/post%20one` },
+          { type: 2, style: 5, label: "Comments", url: `${SITE_URL}/post/post%20one#discussion` },
+          { type: 2, style: 5, label: "View author", url: `${SITE_URL}/user/alex` },
+        ],
+      })
+      expect(new TextEncoder().encode(script?.children).byteLength).toBeLessThanOrEqual(3000)
+    }
+  })
+
+  it("uses one image on selection links and clamps selection to the available gallery", () => {
+    for (const [selected, expected] of [
+      [0, 0],
+      [-1, 0],
+      [149, 69],
+      [NaN, 0],
+      [1.9, 1],
+    ]) {
+      const head = createPostSeoHead(galleryPost, selected)
+      const script = head.scripts.find(
+        (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+      )
+      const payload = JSON.parse(script?.children ?? "")
+      expect(payload.component.components.at(-1).items).toEqual([
+        { media: { url: `${SITE_URL}/media/image/image-${expected}/og?v=3` } },
+      ])
+    }
+  })
+
+  it("uses post content, counts and canonical actions while preserving structured data", () => {
+    const head = createPostSeoHead({
+      ...basePost,
+      title: "A fresh post",
+      heartCount: 17,
+      commentCount: 3,
+    })
+    const script = head.scripts.find(
+      (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+    )
+    const payload = JSON.parse(script?.children ?? "")
+    expect(payload.component.components[0].content).toContain("A fresh post")
+    expect(payload.component.components[0].content).toContain("17 hearts · 3 comments")
+    expect(payload.component.components.at(-1).components[1].url).toBe(
+      `${SITE_URL}/post/post%20one#discussion`,
+    )
+    expect(head.scripts[0]?.type).toBe("application/ld+json")
+  })
+
+  it("does not add a component preview to unlisted posts", () => {
+    const head = createPostSeoHead({ ...basePost, visibility: "unlisted" })
+    expect(
+      head.scripts.some((script) => "id" in script && script.id === "discord:component-embed"),
+    ).toBe(false)
   })
 })

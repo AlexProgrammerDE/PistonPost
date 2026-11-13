@@ -1,19 +1,35 @@
 import { createServerFn } from "@tanstack/react-start"
-import { z } from "zod"
+import { Effect, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { readUnsubscribeKeyring } from "@/server/email-config"
 import { applyUnsubscribeToken } from "@/server/email-preference-service"
-import { runServerEffect } from "@/server/server-function-failure"
+import { bindingOperation } from "@/server/operation"
+import { runRequestEffect } from "@/server/request-effect"
 
 export const unsubscribeFromEmail = createServerFn({ method: "POST" })
-  .validator(serverFunctionValidator(z.object({ token: z.string().min(1).max(4096) })))
-  .handler(async ({ context, data }) => {
-    const keyring = await readUnsubscribeKeyring(context.env.EMAIL_UNSUBSCRIBE_SECRET)
-    const database = createD1Database(context.env.DB)
-    const preference = await runServerEffect(
-      applyUnsubscribeToken(database, data.token, keyring.verificationKeys, "email-link"),
-    )
-    return { unsubscribed: true, preference }
-  })
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        token: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(4096)),
+      }),
+    ),
+  )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const keyring = yield* bindingOperation("unsubscribe.keyring", () =>
+          readUnsubscribeKeyring(context.env.EMAIL_UNSUBSCRIBE_SECRET),
+        )
+        const database = createD1Database(context.env.DB)
+        const preference = yield* applyUnsubscribeToken(
+          database,
+          data.token,
+          keyring.verificationKeys,
+          "email-link",
+        )
+        return { unsubscribed: true, preference }
+      }),
+    ),
+  )

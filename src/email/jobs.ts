@@ -65,11 +65,11 @@ export const EmailQueueJob = Schema.Union([EmailDeliveryJob, ProductEmailBatchJo
 export type EmailQueueJob = typeof EmailQueueJob.Type
 
 export function decodeEmailDeliveryJob(input: unknown) {
-  return Schema.decodeUnknownResult(EmailDeliveryJob)(input)
+  return Schema.decodeUnknownResult(EmailDeliveryJob, { errors: "all" })(input)
 }
 
 export function decodeEmailQueueJob(input: unknown) {
-  return Schema.decodeUnknownResult(EmailQueueJob)(input)
+  return Schema.decodeUnknownResult(EmailQueueJob, { errors: "all" })(input)
 }
 
 export function commentEmailJob(recipientUserId: string, commentId: string) {

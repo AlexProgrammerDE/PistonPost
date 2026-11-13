@@ -6,7 +6,7 @@ const claimsSchema = Schema.Struct({
   version: Schema.Literal(1),
   userId: Schema.String,
   preference: Schema.Literals(["comment-email", "reply-email", "product-email"]),
-  expiresAt: Schema.Number,
+  expiresAt: Schema.Finite,
 })
 
 export class UnsubscribeTokenError extends Schema.TaggedError<UnsubscribeTokenError>()(
@@ -65,11 +65,11 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
 ) {
   const parts = token.split(".")
   if (parts.length !== 2) {
-    return yield* Effect.fail(new UnsubscribeTokenError({ message: "The link is invalid." }))
+    return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
   }
   const [payload, signature] = parts
   if (!payload || !signature) {
-    return yield* Effect.fail(new UnsubscribeTokenError({ message: "The link is invalid." }))
+    return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
   }
   const key = yield* signingKey(secret)
   const valid = yield* Effect.tryPromise({
@@ -83,7 +83,7 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
     catch: () => new UnsubscribeTokenError({ message: "The link is invalid." }),
   })
   if (!valid) {
-    return yield* Effect.fail(new UnsubscribeTokenError({ message: "The link is invalid." }))
+    return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
   }
   const claims = yield* Effect.try({
     try: () => JSON.parse(new TextDecoder().decode(decodeBase64Url(payload))),
@@ -95,7 +95,7 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
     ),
   )
   if (claims.expiresAt <= now) {
-    return yield* Effect.fail(new UnsubscribeTokenError({ message: "The link has expired." }))
+    return yield* new UnsubscribeTokenError({ message: "The link has expired." })
   }
   return claims
 })

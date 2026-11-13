@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
-import { Effect, Result } from "effect"
-import { z } from "zod"
+import { Effect, Result, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -26,10 +25,12 @@ async function videoDownload({
   context: AppRequestContext
   params: { mediaId: string }
 }) {
-  const mediaId = z.string().uuid().safeParse(params.mediaId)
-  if (!mediaId.success) return new Response("Not found", { status: 404 })
+  const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
+    errors: "all",
+  })(params.mediaId)
+  if (!Result.isSuccess(mediaId)) return new Response("Not found", { status: 404 })
 
-  const video = await getDeliverableVideo(request, context, mediaId.data)
+  const video = await getDeliverableVideo(request, context, mediaId.success)
   if (!video) return new Response("Not found", { status: 404 })
 
   let metadata = video.providerMetadata
@@ -47,7 +48,7 @@ async function videoDownload({
       createD1Database(context.env.DB)
         .update(schema.mediaAssets)
         .set({ providerMetadata: metadata })
-        .where(eq(schema.mediaAssets.id, mediaId.data)),
+        .where(eq(schema.mediaAssets.id, mediaId.success)),
     )
   }
   if (!downloadUrl) return unavailableDownload()
@@ -60,7 +61,7 @@ async function videoDownload({
       ...(video.publiclyCacheable
         ? {
             "Cache-Tag": cacheTagHeader([
-              mediaCacheTag(mediaId.data),
+              mediaCacheTag(mediaId.success),
               ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
               ...(video.postId ? [postCacheTag(video.postId)] : []),
             ]),

@@ -1,12 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Effect } from "effect"
-import { z } from "zod"
+import { Effect, Schema, Result } from "effect"
 
 import type { AppRequestContext } from "@/server"
 import { getDeliverableVideo } from "@/server/video-delivery"
 import { resolveVideoPlaybackUrl } from "@/server/video-playback"
 
-const playbackFormatSchema = z.enum(["dash", "hls"])
+const playbackFormatSchema = Schema.Literals(["dash", "hls"])
 
 async function videoManifest({
   request,
@@ -17,19 +16,21 @@ async function videoManifest({
   context: AppRequestContext
   params: { mediaId: string }
 }) {
-  const mediaId = z.string().uuid().safeParse(params.mediaId)
-  if (!mediaId.success) return new Response("Not found", { status: 404 })
+  const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
+    errors: "all",
+  })(params.mediaId)
+  if (!Result.isSuccess(mediaId)) return new Response("Not found", { status: 404 })
 
-  const format = playbackFormatSchema.safeParse(
+  const format = Schema.decodeUnknownResult(playbackFormatSchema, { errors: "all" })(
     new URL(request.url).searchParams.get("format") ?? "dash",
   )
-  if (!format.success) return new Response("Invalid playback format", { status: 400 })
+  if (!Result.isSuccess(format)) return new Response("Invalid playback format", { status: 400 })
 
-  const video = await getDeliverableVideo(request, context, mediaId.data)
+  const video = await getDeliverableVideo(request, context, mediaId.success)
   if (!video) return new Response("Not found", { status: 404 })
 
   const playbackUrl = await Effect.runPromise(
-    resolveVideoPlaybackUrl(context.env.STREAM.video(video.streamUid), format.data).pipe(
+    resolveVideoPlaybackUrl(context.env.STREAM.video(video.streamUid), format.success).pipe(
       Effect.match({
         onFailure: () => null,
         onSuccess: (url) => url,

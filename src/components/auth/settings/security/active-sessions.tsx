@@ -1,6 +1,6 @@
 "use client"
 
-import { isReauthenticationRequiredError } from "@better-auth-ui/core"
+import { getAuthErrorMessage, isReauthenticationRequiredError } from "@better-auth-ui/core"
 import { useAuth, useListSessions, useSession } from "@better-auth-ui/react"
 import { Fragment } from "react"
 
@@ -47,7 +47,9 @@ export function ActiveSessions({ className }: ActiveSessionsProps) {
           {isReauthenticationRequiredError(error) ? (
             <ReauthenticationAction />
           ) : error ? (
-            <div className="p-4 text-sm text-destructive">{error.message}</div>
+            <div role="alert" className="p-4 text-sm text-destructive">
+              {getAuthErrorMessage(error, localization) ?? localization.errors.generic}
+            </div>
           ) : isPending ? (
             <SessionRowSkeleton />
           ) : (

@@ -1,11 +1,13 @@
 "use client"
 
 import {
+  getAuthLinkURL,
   getViewURL,
   isPasswordCompromisedError,
   validateMatchingValue,
   validateStringLength,
 } from "@better-auth-ui/core"
+import { emailOtpPlugin, type EmailOtpAuthClient } from "@better-auth-ui/core/plugins/email-otp"
 import {
   useAuth,
   useChangePassword,
@@ -14,6 +16,7 @@ import {
   useRequestPasswordReset,
   useSession,
 } from "@better-auth-ui/react"
+import { useRequestPasswordResetOtp } from "@better-auth-ui/react/plugins/email-otp"
 import { Eye, EyeOff } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -71,25 +74,54 @@ export function ChangePassword({ className }: ChangePasswordProps) {
 }
 
 function SetPassword({ className }: { className?: string }) {
-  const { authClient, basePaths, baseURL, localization, plugins, viewPaths } = useAuth()
+  const { authClient, basePaths, baseURL, localization, navigate, plugins, redirectTo, viewPaths } =
+    useAuth<EmailOtpAuthClient>()
+  const emailOtp = plugins.find(
+    (plugin): plugin is ReturnType<typeof emailOtpPlugin> => plugin.id === emailOtpPlugin.id,
+  )
+  const useOtp = Boolean(emailOtp?.passwordReset)
   const { data: session } = useSession(authClient)
   const { fetchOptions, resetFetchOptions } = useFetchOptions()
   const [sentEmail, setSentEmail] = useState("")
 
-  const { mutate: requestPasswordReset, isPending } = useRequestPasswordReset(authClient, {
-    onError: () => {
-      resetFetchOptions()
+  const { mutate: requestPasswordReset, isPending: isLinkPending } = useRequestPasswordReset(
+    authClient,
+    {
+      onError: () => {
+        resetFetchOptions()
+      },
+      onSuccess: (_data, { email }) => {
+        setSentEmail(email)
+      },
     },
-    onSuccess: (_data, { email }) => {
-      setSentEmail(email)
+  )
+
+  const { mutate: requestPasswordResetOtp, isPending: isOtpPending } = useRequestPasswordResetOtp(
+    authClient,
+    {
+      onError: () => resetFetchOptions(),
+      onSuccess: (_data, { email }) => {
+        sessionStorage.setItem("better-auth-ui.reset-password-otp", email)
+        navigate({
+          to: getAuthLinkURL(
+            getViewURL("", basePaths.auth, viewPaths.auth.resetPassword),
+            redirectTo,
+          ),
+        })
+      },
     },
-  })
+  )
+  const isPending = isLinkPending || isOtpPending
 
   const Captcha = plugins.find((plugin) => plugin.captchaComponent)?.captchaComponent
 
   const handleSetPassword = () => {
     if (!session) return
 
+    if (useOtp) {
+      requestPasswordResetOtp({ email: session.user.email, fetchOptions })
+      return
+    }
     requestPasswordReset({
       email: session.user.email,
       redirectTo: getViewURL(baseURL, basePaths.auth, viewPaths.auth.resetPassword),
@@ -130,7 +162,7 @@ function SetPassword({ className }: { className?: string }) {
               >
                 {isPending && <Spinner />}
 
-                {localization.auth.sendResetLink}
+                {useOtp ? emailOtp?.localization.sendCode : localization.auth.sendResetLink}
               </Button>
             </div>
           )}

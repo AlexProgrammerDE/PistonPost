@@ -1,5 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
+import { Result, Schema } from "effect"
+
 import {
   isShareAvailable,
   MAX_SHARED_FILES,
@@ -10,20 +12,29 @@ import {
 describe("shared content boundaries", () => {
   it("accepts supported images without trusting browser metadata as image validation", () => {
     const files = [new File([new Uint8Array(4)], "photo.png", { type: "image/png" })]
-    expect(sharedContentSchema.safeParse({ files }).success).toBe(true)
     expect(
-      sharedContentSchema.safeParse({ files: [new File([new Uint8Array(4)], "photo.png")] })
-        .success,
+      Result.isSuccess(Schema.decodeResult(sharedContentSchema, { errors: "all" })({ files })),
     ).toBe(true)
     expect(
-      sharedContentSchema.safeParse({
-        files: [new File([new Uint8Array(4)], "photo.svg", { type: "image/svg+xml" })],
-      }).success,
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          files: [new File([new Uint8Array(4)], "photo.png")],
+        }),
+      ),
+    ).toBe(true)
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          files: [new File([new Uint8Array(4)], "photo.svg", { type: "image/svg+xml" })],
+        }),
+      ),
     ).toBe(false)
     expect(
-      sharedContentSchema.safeParse({
-        files: Array.from({ length: MAX_SHARED_FILES + 1 }, () => files[0]),
-      }).success,
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          files: Array.from({ length: MAX_SHARED_FILES + 1 }, () => files[0]),
+        }),
+      ),
     ).toBe(false)
   })
 
@@ -31,17 +42,43 @@ describe("shared content boundaries", () => {
     const large = new File([new Uint8Array(15 * 1024 * 1024 + 1)], "photo.png", {
       type: "image/png",
     })
-    expect(sharedContentSchema.safeParse({ files: [large] }).success).toBe(false)
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({ files: [large] }),
+      ),
+    ).toBe(false)
     const medium = new File([new Uint8Array(13 * 1024 * 1024)], "photo.png", { type: "image/png" })
-    expect(sharedContentSchema.safeParse({ files: [medium, medium, medium, medium] }).success).toBe(
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          files: [medium, medium, medium, medium],
+        }),
+      ),
+    ).toBe(false)
+    expect(Result.isSuccess(Schema.decodeResult(sharedContentSchema, { errors: "all" })({}))).toBe(
       false,
     )
-    expect(sharedContentSchema.safeParse({}).success).toBe(false)
-    expect(sharedContentSchema.safeParse({ url: "javascript:alert(1)" }).success).toBe(false)
-    expect(sharedContentSchema.safeParse({ url: "https://example.com/" }).success).toBe(true)
     expect(
-      sharedContentSchema.safeParse({ text: "x".repeat(10_000), url: "https://example.com/" })
-        .success,
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          url: "javascript:alert(1)",
+        }),
+      ),
+    ).toBe(false)
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          url: "https://example.com/",
+        }),
+      ),
+    ).toBe(true)
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({
+          text: "x".repeat(10_000),
+          url: "https://example.com/",
+        }),
+      ),
     ).toBe(false)
   })
 
@@ -51,7 +88,7 @@ describe("shared content boundaries", () => {
       id: crypto.randomUUID(),
       ownerId: "first",
       createdAt: now,
-      content: sharedContentSchema.parse({ text: "hello" }),
+      content: Schema.decodeSync(sharedContentSchema, { errors: "all" })({ text: "hello" }),
     }
     expect(isShareAvailable(share, "first", now)).toBe(true)
     expect(isShareAvailable(share, "second", now)).toBe(false)

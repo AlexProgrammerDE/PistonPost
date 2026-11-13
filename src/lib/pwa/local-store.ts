@@ -1,4 +1,7 @@
-import { z } from "zod"
+import * as Effect from "effect/Effect"
+import * as Option from "effect/Option"
+import * as Result from "effect/Result"
+import * as Schema from "effect/Schema"
 
 import {
   isShareAvailable,
@@ -63,17 +66,19 @@ async function cleanShares(store: IDBObjectStore, userId?: string | null) {
         resolve()
         return
       }
-      const parsed = pendingShareSchema.safeParse(cursor.value)
+      const parsed = Schema.decodeUnknownResult(pendingShareSchema, { errors: "all" })(cursor.value)
       if (
-        !parsed.success ||
-        parsed.data.createdAt > Date.now() ||
-        Date.now() - parsed.data.createdAt >= SHARE_RETENTION_MS ||
-        (userId !== undefined && parsed.data.ownerId !== null && parsed.data.ownerId !== userId)
+        !Result.isSuccess(parsed) ||
+        parsed.success.createdAt > Date.now() ||
+        Date.now() - parsed.success.createdAt >= SHARE_RETENTION_MS ||
+        (userId !== undefined &&
+          parsed.success.ownerId !== null &&
+          parsed.success.ownerId !== userId)
       ) {
         cursor.delete()
-      } else if (userId && parsed.data.ownerId === null) {
+      } else if (userId && parsed.success.ownerId === null) {
         // An anonymous share follows its first sign-in, then obeys account-switch cleanup.
-        cursor.update({ ...parsed.data, ownerId: userId })
+        cursor.update({ ...parsed.success, ownerId: userId })
       }
       cursor.continue()
     })
@@ -88,7 +93,7 @@ export async function reconcileLocalAccount(userId: string | null) {
 }
 
 export async function stageSharedContent(input: SharedContent) {
-  const content = sharedContentSchema.parse(input)
+  const content = Schema.decodeSync(sharedContentSchema, { errors: "all" })(input)
   return transaction(async (shares, meta) => {
     await cleanShares(shares)
     if ((await result(shares.count())) >= MAX_PENDING_SHARES) {
@@ -97,7 +102,13 @@ export async function stageSharedContent(input: SharedContent) {
     const owner: unknown = await result(meta.get("account"))
     const share = {
       id: crypto.randomUUID(),
-      ownerId: z.string().nullable().catch(null).parse(owner),
+      ownerId: Schema.decodeUnknownSync(
+        Schema.NullOr(Schema.String).pipe(
+          Schema.catchDecoding(() => Effect.sync(() => Option.some(null))),
+          Schema.withDecodingDefaultType(Effect.succeed(null)),
+        ),
+        { errors: "all" },
+      )(owner),
       createdAt: Date.now(),
       content,
     }
@@ -110,8 +121,10 @@ export async function readSharedContent(id: string, userId: string | null) {
   return transaction(async (shares) => {
     await cleanShares(shares)
     const record: unknown = await result(shares.get(id))
-    const parsed = pendingShareSchema.safeParse(record)
-    return parsed.success && isShareAvailable(parsed.data, userId) ? parsed.data : null
+    const parsed = Schema.decodeUnknownResult(pendingShareSchema, { errors: "all" })(record)
+    return Result.isSuccess(parsed) && isShareAvailable(parsed.success, userId)
+      ? parsed.success
+      : null
   })
 }
 

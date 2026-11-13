@@ -4,7 +4,7 @@ import { InvalidCursorError } from "./errors"
 import type { PublicPostCursor } from "./model"
 
 const encodedCursorSchema = Schema.Struct({
-  publishedAt: Schema.Number,
+  publishedAt: Schema.Finite,
   id: Schema.String,
 })
 

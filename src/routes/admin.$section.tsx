@@ -1,9 +1,9 @@
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query"
 import { Link, createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router"
+import { Schema, Effect, Option, Result } from "effect"
 import { Search } from "lucide-react"
 import { useDeferredValue, useEffect, useState } from "react"
 import { toast } from "sonner"
-import { z } from "zod"
 
 import { AdminSectionNav } from "@/components/AdminSectionNav"
 import { AdminTablePageSkeleton } from "@/components/LoadingStates"
@@ -43,15 +43,33 @@ import {
 import { resolveContentReport } from "@/server/reports"
 import { cleanupAdminMedia, getAdminRows, moderateEntity, retryAdminJob } from "@/server/tables"
 
-const sectionSchema = z.enum(adminTableSections.map((section) => section.value))
+const sectionSchema = Schema.Literals(adminTableSections.map((section) => section.value))
 const MAX_MODERATION_REASON_LENGTH = 500
-const searchSchema = z.object({
-  q: z.string().catch(""),
-  sort: z.string().catch("createdAt"),
-  direction: z.enum(["asc", "desc"]).catch("desc"),
-  cursor: z.string().catch(""),
-  trail: z.string().catch(""),
-  hidden: z.string().catch(""),
+const searchSchema = Schema.Struct({
+  q: Schema.String.pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(""))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+  ),
+  sort: Schema.String.pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some("createdAt"))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "createdAt" as const)),
+  ),
+  direction: Schema.Literals(["asc", "desc"]).pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some("desc"))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "desc" as const)),
+  ),
+  cursor: Schema.String.pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(""))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+  ),
+  trail: Schema.String.pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(""))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+  ),
+  hidden: Schema.String.pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(""))),
+    Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
+  ),
 })
 type AdminRow = Awaited<ReturnType<typeof getAdminRows>>["rows"][number]
 const column = createAppColumnHelper<AdminRow>()
@@ -283,11 +301,11 @@ function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
 }
 
 export const Route = createFileRoute("/admin/$section")({
-  validateSearch: searchSchema,
+  validateSearch: Schema.toStandardSchemaV1(searchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
     const input = {
-      section: sectionSchema.parse(params.section),
+      section: Schema.decodeUnknownSync(sectionSchema, { errors: "all" })(params.section),
       query: deps.q,
       cursor: deps.cursor || undefined,
       direction: deps.direction,
@@ -310,16 +328,16 @@ function AdminTable() {
   })
   const { section } = Route.useParams()
   const search = Route.useSearch()
-  const parsedSection = sectionSchema.safeParse(section)
-  if (!parsedSection.success) throw notFound()
+  const parsedSection = Schema.decodeUnknownResult(sectionSchema, { errors: "all" })(section)
+  if (!Result.isSuccess(parsedSection)) throw notFound()
   if (result.error) throw result.error
   if (!result.data) return <AdminTablePageSkeleton />
   return (
     <AdminTableView
-      key={parsedSection.data}
+      key={parsedSection.success}
       result={result.data}
       refreshing={result.isFetching}
-      section={parsedSection.data}
+      section={parsedSection.success}
       search={search}
     />
   )
@@ -334,7 +352,7 @@ function AdminTableView({
   result: Awaited<ReturnType<typeof getAdminRows>>
   refreshing: boolean
   section: AdminSection
-  search: z.infer<typeof searchSchema>
+  search: (typeof searchSchema)["Type"]
 }) {
   const details = getAdminSection(section)
   if (!details) throw notFound()

@@ -1,8 +1,8 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { Schema, Effect, Option } from "effect"
 import { ExternalLink, MapPin } from "lucide-react"
 import { lazy, Suspense } from "react"
-import { z } from "zod"
 
 import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { FilteredFeed } from "@/components/filtered-feed"
@@ -23,21 +23,20 @@ const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
 )
 
-const feedSearchSchema = z.object({
-  cursor: z.string().max(512).optional().catch(undefined),
+const feedSearchSchema = Schema.Struct({
+  cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))).pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
+  ),
 })
 
 export const Route = createFileRoute("/user/$username")({
-  validateSearch: feedSearchSchema,
+  validateSearch: Schema.toStandardSchemaV1(feedSearchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => ({ cursor: search.cursor }),
   loader: async ({ context, params, deps }) => {
-    const username = z
-      .string()
-      .trim()
-      .min(1)
-      .max(32)
-      .parse(params.username)
-      .toLocaleLowerCase("en-US")
+    const username = Schema.decodeSync(
+      Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32)),
+      { errors: "all" },
+    )(params.username).toLocaleLowerCase("en-US")
     const profilePromise = context.queryClient.ensureQueryData(profileQueryOptions(username))
     void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ username }, deps.cursor))
     const profile = await profilePromise
@@ -58,6 +57,15 @@ export const Route = createFileRoute("/user/$username")({
     const profileIdentityUrl = absoluteUrl(pagePath)
     const website = safeWebsite(loaderData?.website ?? null)
     return createSeoHead({
+      discord: loaderData
+        ? {
+            title: `${name} (@${username})`,
+            description,
+            url: profileIdentityUrl,
+            label: "View profile",
+            thumbnail: loaderData.image ? absoluteUrl(loaderData.image) : undefined,
+          }
+        : false,
       title: `${name} (@${username}) · ${SITE_NAME}`,
       description,
       path,

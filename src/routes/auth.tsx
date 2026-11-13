@@ -1,10 +1,11 @@
 import { Outlet, createFileRoute, redirect } from "@tanstack/react-router"
+import { Schema } from "effect"
 
 import { AuthPageSkeleton } from "@/components/LoadingStates"
 import { authSearchSchema } from "@/lib/local-redirect"
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: authSearchSchema,
+  validateSearch: Schema.toStandardSchemaV1(authSearchSchema, { parseOptions: { errors: "all" } }),
   beforeLoad: ({ location, search }) => {
     const requestedRedirect = new URLSearchParams(location.searchStr).get("redirectTo")
     if (requestedRedirect !== null && search.redirectTo === undefined) {

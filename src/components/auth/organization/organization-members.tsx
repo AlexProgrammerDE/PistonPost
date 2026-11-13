@@ -16,6 +16,7 @@ import {
 import { keepPreviousData } from "@tanstack/react-query"
 import type { Member, User } from "better-auth/client"
 import { Filter, Search, X } from "lucide-react"
+import type { ReactNode } from "react"
 import { type ComponentProps, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
@@ -36,7 +37,6 @@ import { cn } from "@/lib/utils"
 
 import { InviteMemberDialog } from "./invite-member-dialog"
 import { OrganizationMemberRow } from "./organization-member-row"
-import { OrganizationMemberRowSkeleton } from "./organization-member-row-skeleton"
 import { OrganizationSortableTableHead } from "./organization-sortable-table-head"
 import {
   createOrganizationColumnHelper,
@@ -45,6 +45,7 @@ import {
 } from "./organization-table"
 import { OrganizationTableBulkAction } from "./organization-table-bulk-action"
 import { OrganizationTablePagination } from "./organization-table-pagination"
+import { OrganizationTableRowSkeleton } from "./organization-table-row-skeleton"
 import { OrganizationTableSelectAll } from "./organization-table-selection"
 import { useOrganizationTableState } from "./organization-table-state"
 import { OrganizationTableViewOptions } from "./organization-table-view-options"
@@ -278,6 +279,45 @@ export function OrganizationMembers({
 
   const atMembershipLimit = membershipLimit !== undefined && total >= membershipLimit
 
+  const columnIds = [
+    ...(showSelection ? ["select"] : []),
+    ...table.getVisibleLeafColumns().map((column) => column.id),
+    "actions",
+  ]
+
+  const headerCells: Record<string, ReactNode> = {
+    select: (
+      <TableHead key="select" className="w-10">
+        <OrganizationTableSelectAll
+          allSelected={table.getIsAllPageRowsSelected()}
+          disabled={isPending}
+          localization={organizationLocalization}
+          onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
+          someSelected={table.getIsSomePageRowsSelected()}
+        />
+      </TableHead>
+    ),
+    // list-members cannot sort by fields on the joined user.
+    user: paged ? (
+      <TableHead key="user">{organizationLocalization.member}</TableHead>
+    ) : (
+      <OrganizationSortableTableHead key="user" column={table.getColumn("user")}>
+        {organizationLocalization.member}
+      </OrganizationSortableTableHead>
+    ),
+    role: (
+      <OrganizationSortableTableHead key="role" column={table.getColumn("role")}>
+        {organizationLocalization.role}
+      </OrganizationSortableTableHead>
+    ),
+    teams: <TableHead key="teams">{organizationLocalization.teams}</TableHead>,
+    actions: (
+      <TableHead key="actions" className="text-end">
+        {organizationLocalization.actions}
+      </TableHead>
+    ),
+  }
+
   return (
     <div className={cn("flex flex-col gap-3", className)} {...props}>
       <div className="flex items-end justify-between gap-3">
@@ -410,60 +450,25 @@ export function OrganizationMembers({
         <Card className="p-0">
           <Table aria-label={organizationLocalization.members}>
             <TableHeader>
-              <TableRow>
-                {showSelection && (
-                  <TableHead className="w-10">
-                    <OrganizationTableSelectAll
-                      allSelected={table.getIsAllPageRowsSelected()}
-                      disabled={isPending}
-                      localization={organizationLocalization}
-                      onCheckedChange={(checked) => table.toggleAllPageRowsSelected(checked)}
-                      someSelected={table.getIsSomePageRowsSelected()}
-                    />
-                  </TableHead>
-                )}
-
-                {/* Name and email live on the joined user row, which
-                    list-members cannot sort by. */}
-                {paged ? (
-                  <TableHead>{organizationLocalization.member}</TableHead>
-                ) : (
-                  <OrganizationSortableTableHead column={table.getColumn("user")}>
-                    {organizationLocalization.member}
-                  </OrganizationSortableTableHead>
-                )}
-
-                {table.getColumn("role")?.getIsVisible() && (
-                  <OrganizationSortableTableHead column={table.getColumn("role")}>
-                    {organizationLocalization.role}
-                  </OrganizationSortableTableHead>
-                )}
-
-                {showTeams && table.getColumn("teams")?.getIsVisible() && (
-                  <TableHead>{organizationLocalization.teams}</TableHead>
-                )}
-
-                <TableHead className="text-end">{organizationLocalization.actions}</TableHead>
-              </TableRow>
+              <TableRow>{columnIds.map((id) => headerCells[id])}</TableRow>
             </TableHeader>
 
             <TableBody>
               {isPending ? (
-                <OrganizationMemberRowSkeleton showTeams={showTeams} />
+                <OrganizationTableRowSkeleton columnIds={columnIds} />
               ) : (
                 !!activeOrganization &&
                 table
                   .getRowModel()
                   .rows.map((row) => (
                     <OrganizationMemberRow
+                      columnIds={columnIds}
                       key={row.original.id}
                       member={row.original}
                       isOwner={isOwner}
                       ownerCount={ownerCount}
                       organization={activeOrganization}
                       selectableRow={showSelection ? row : undefined}
-                      showRole={table.getColumn("role")?.getIsVisible()}
-                      showTeams={showTeams && table.getColumn("teams")?.getIsVisible() === true}
                     />
                   ))
               )}

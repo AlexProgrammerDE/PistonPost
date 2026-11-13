@@ -130,7 +130,7 @@ These can be proposed later. They must not complicate the initial data model or 
 - TanStack Start owns routing, SSR, server functions, document metadata, and Cloudflare deployment.
 - React 19 is the UI runtime.
 - TanStack Query owns server state and hydration.
-- TanStack Form owns complex forms with shared Zod validation.
+- TanStack Form owns complex forms with shared Effect Schema validation.
 - TanStack Table v9 owns administrator data grids.
 - Tailwind CSS v4 and shadcn/ui provide the UI system.
 - Base UI is the primitive layer. Do not mix Radix APIs into generated components.
@@ -508,7 +508,7 @@ use bounded queue concurrency and delayed outbox retries.
 - /admin/media: failed, orphaned, and reported media.
 - /admin/audit: audit event table.
 
-Validate route params and search params with Zod. Keep filters, pagination, sorting, and table view state in the URL when users benefit from sharing or restoring the view.
+Validate route params and search params with Effect Schema. Keep filters, pagination, sorting, and table view state in the URL when users benefit from sharing or restoring the view.
 
 ## Product query and mutation boundaries
 
@@ -632,7 +632,7 @@ Do not put every section inside a Card. Use borders, separators, typography, and
 
 - Use TanStack Form for composer, profile, structured settings, and admin mutation forms.
 - Save independent binary preferences immediately through one-setting mutations.
-- Share Zod schemas with server boundaries.
+- Share Effect schemas with server boundaries.
 - Validate files separately because browser File objects and server streams differ.
 - Use field metadata for accessible errors.
 - Preserve drafts locally only after privacy and stale-data behavior are defined.
@@ -996,6 +996,12 @@ The rewrite is complete when:
 - There are no unexplained orphaned production objects.
 
 ## Decisions and deviations
+
+- 2026-11-07: Use native Effect programs across request services, authentication hooks, queue jobs, scheduled maintenance, and account-deletion steps. Run programs at TanStack, HTTP, Better Auth, Queue, and Workflow boundaries. Keep pure helpers, Drizzle statements, React rendering, and SDK contracts direct.
+  Request programs inherit the request cancellation signal. Once a mutation starts, finish its publication and durable settlement before interruption returns. Wait for executing D1 and binding operations before cleanup. Guard outbox release and completion with the claiming attempt. Read the attempt from the claim statement.
+  Independent maintenance tasks finish after a sibling failure or defect. Preserve their causes for operators. Cloudflare still owns durable Workflow checkpoints and retry policies. Keep the three account-deletion step names and their work unchanged. Never add an in-memory retry around an external mutation.
+
+- 2026-11-07: Replace application-owned Zod validation with Effect v4 Schema, as requested by the owner. Keep TanStack integration on Standard Schema. Preserve input normalization, defaults, error paths, and the public error response. This replaces the earlier Zod choice for server-function inputs.
 
 - 2026-10-01: Pin Effect to the stable 4.0.0 release. Use `Context.Service`, `Result`, and v4 Schema
   APIs at the existing boundaries. Preserve URL decoding, typed unsubscribe errors, email retries,

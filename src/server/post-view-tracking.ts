@@ -97,7 +97,7 @@ export const recordPostView = Effect.fn("PostView.record")(
       ? yield* Effect.tryPromise({
           try: () => dependencies.incrementViewCount(post.id),
           catch: (cause) => trackingError("increment", cause),
-        }).pipe(Effect.catch(() => Effect.succeed(null)))
+        }).pipe(Effect.orElseSucceed(() => null))
       : null
     if (viewCount !== null) {
       yield* writeAnalyticsEvent(dependencies, post, "post.impression", input.surface)

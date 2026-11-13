@@ -1,6 +1,6 @@
 import { createFileRoute, notFound } from "@tanstack/react-router"
+import { Schema, Effect, Option } from "effect"
 import { lazy, Suspense } from "react"
-import { z } from "zod"
 
 import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
@@ -14,15 +14,20 @@ const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
 )
 
-const feedSearchSchema = z.object({
-  cursor: z.string().max(512).optional().catch(undefined),
+const feedSearchSchema = Schema.Struct({
+  cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))).pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
+  ),
 })
 
 export const Route = createFileRoute("/tag/$tag")({
-  validateSearch: feedSearchSchema,
+  validateSearch: Schema.toStandardSchemaV1(feedSearchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => ({ cursor: search.cursor }),
   loader: async ({ context, params, deps }) => {
-    const tag = z.string().trim().min(1).max(64).parse(params.tag).toLocaleLowerCase("en-US")
+    const tag = Schema.decodeSync(
+      Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+      { errors: "all" },
+    )(params.tag).toLocaleLowerCase("en-US")
     const tagPromise = context.queryClient.ensureQueryData(tagQueryOptions(tag))
     const feedPromise = context.queryClient.prefetchInfiniteQuery(
       feedQueryOptions({ tag }, deps.cursor),

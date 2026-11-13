@@ -5,15 +5,12 @@ import { eq } from "drizzle-orm"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import {
-  serverFunctionErrorSchema,
-  serverFunctionErrorStatus,
-  toServerFunctionClientError,
-} from "@/lib/server-function-error"
+import { serverFunctionErrorStatus, toServerFunctionClientError } from "@/lib/server-function-error"
 import { findRequestSession, isActiveAdministrator } from "@/server/request-session"
 import {
   forbiddenFailure,
   normalizeServerFunctionFailure,
+  publicServerFunctionError,
   unauthenticatedFailure,
 } from "@/server/server-function-failure"
 
@@ -38,7 +35,7 @@ export const serverFunctionErrorMiddleware = createMiddleware({ type: "function"
     } catch (cause) {
       if (cause instanceof Response || isRedirect(cause) || isNotFound(cause)) throw cause
       const failure = normalizeServerFunctionFailure(cause)
-      const error = serverFunctionErrorSchema.parse(failure.error)
+      const error = publicServerFunctionError(failure)
       setResponseStatus(serverFunctionErrorStatus(error))
       if (error.code === "RATE_LIMITED") {
         setResponseHeader("Retry-After", error.retryAfterSeconds.toString())

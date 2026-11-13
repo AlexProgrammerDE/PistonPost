@@ -1,4 +1,4 @@
-import { Effect, Schema } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
 
 export type OwnedMediaForDeletion = {
   id: string
@@ -14,11 +14,20 @@ export type AccountMediaPurgeServices = {
 
 export class AccountMediaPurgeError extends Schema.TaggedError<AccountMediaPurgeError>()(
   "AccountMediaPurgeError",
-  {
-    assetId: Schema.String,
-    operation: Schema.Literals(["r2", "stream", "database"]),
-  },
+  { assetId: Schema.String, operation: Schema.Literals(["r2", "stream", "database"]) },
 ) {}
+
+class AccountMediaPurge extends Context.Service<
+  AccountMediaPurge,
+  {
+    readonly deleteR2: (assetId: string, key: string) => Effect.Effect<void, AccountMediaPurgeError>
+    readonly deleteStream: (
+      assetId: string,
+      uid: string,
+    ) => Effect.Effect<void, AccountMediaPurgeError>
+    readonly deleteRecord: (id: string) => Effect.Effect<void, AccountMediaPurgeError>
+  }
+>()("@pistonpost/media/AccountMediaPurge") {}
 
 function missingProviderObject(cause: unknown) {
   if (!cause || typeof cause !== "object") return false
@@ -31,28 +40,40 @@ function providerDelete(assetId: string, operation: "r2" | "stream", task: () =>
     try: task,
     catch: (cause) =>
       missingProviderObject(cause) ? null : new AccountMediaPurgeError({ assetId, operation }),
-  }).pipe(Effect.catch((error) => (error === null ? Effect.void : Effect.fail(error))))
+  }).pipe(
+    Effect.catchIf(
+      (error) => error === null,
+      () => Effect.void,
+    ),
+    Effect.uninterruptible,
+  )
 }
 
-export function purgeAccountMedia(
-  assets: OwnedMediaForDeletion[],
-  services: AccountMediaPurgeServices,
+export function accountMediaPurgeLayer(services: AccountMediaPurgeServices) {
+  return Layer.succeed(AccountMediaPurge, {
+    deleteR2: (assetId, key) => providerDelete(assetId, "r2", () => services.deleteR2(key)),
+    deleteStream: (assetId, uid) =>
+      providerDelete(assetId, "stream", () => services.deleteStream(uid)),
+    deleteRecord: (assetId) =>
+      Effect.tryPromise({
+        try: () => services.deleteRecord(assetId),
+        catch: () => new AccountMediaPurgeError({ assetId, operation: "database" }),
+      }).pipe(Effect.uninterruptible),
+  })
+}
+
+export const purgeAccountMedia = Effect.fn("AccountDeletion.purgeMedia")(function* (
+  assets: ReadonlyArray<OwnedMediaForDeletion>,
 ) {
-  return Effect.forEach(
+  const services = yield* AccountMediaPurge
+  yield* Effect.forEach(
     assets,
     (asset) =>
       Effect.gen(function* () {
-        const r2Key = asset.r2Key
-        if (r2Key) yield* providerDelete(asset.id, "r2", () => services.deleteR2(r2Key))
-        const streamUid = asset.streamUid
-        if (streamUid) {
-          yield* providerDelete(asset.id, "stream", () => services.deleteStream(streamUid))
-        }
-        yield* Effect.tryPromise({
-          try: () => services.deleteRecord(asset.id),
-          catch: () => new AccountMediaPurgeError({ assetId: asset.id, operation: "database" }),
-        })
-      }),
+        if (asset.r2Key) yield* services.deleteR2(asset.id, asset.r2Key)
+        if (asset.streamUid) yield* services.deleteStream(asset.id, asset.streamUid)
+        yield* services.deleteRecord(asset.id)
+      }).pipe(Effect.uninterruptible),
     { concurrency: 5 },
   )
-}
+})

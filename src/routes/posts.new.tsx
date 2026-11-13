@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { z } from "zod"
+import { Schema, Effect, Option } from "effect"
 
 import { FormPageSkeleton } from "@/components/LoadingStates"
 import { PostComposer } from "@/components/post-composer"
@@ -8,10 +8,17 @@ import { getComposerViewer } from "@/server/composer-viewer"
 import { getPublicRuntimeConfig } from "@/server/public-config"
 
 export const Route = createFileRoute("/posts/new")({
-  validateSearch: z.object({
-    shareId: z.string().uuid().optional().catch(undefined),
-    shareError: z.literal("unavailable").optional().catch(undefined),
-  }),
+  validateSearch: Schema.toStandardSchemaV1(
+    Schema.Struct({
+      shareId: Schema.optional(Schema.String.check(Schema.isUUID())).pipe(
+        Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
+      ),
+      shareError: Schema.optional(Schema.Literal("unavailable")).pipe(
+        Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
+      ),
+    }),
+    { parseOptions: { errors: "all" } },
+  ),
   loader: async () => {
     const [viewer, config] = await Promise.all([getComposerViewer(), getPublicRuntimeConfig()])
     return { viewer, turnstileSiteKey: config.turnstileSiteKey }

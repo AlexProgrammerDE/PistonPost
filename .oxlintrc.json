@@ -1,5 +1,5 @@
 {
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "$schema": "./node_modules/@effect/tsgo/oxlint-schema.json",
   "plugins": [
     "typescript",
     "unicorn",
@@ -8,7 +8,8 @@
     "react",
     "react-perf",
     "jsx-a11y",
-    "vitest"
+    "vitest",
+    "effecttsgo"
   ],
   "jsPlugins": ["@shadcn/lint"],
   "categories": {
@@ -247,7 +248,10 @@
           "pascalCase": true
         }
       }
-    ]
+    ],
+    "effecttsgo/any-unknown-in-error-context": "off",
+    "effecttsgo/unsafe-effect-type-assertion": "off",
+    "effecttsgo/strict-effect-provide": "off"
   },
   "overrides": [
     {
@@ -293,5 +297,9 @@
     "builtin": true,
     "browser": true,
     "node": true
+  },
+  "extends": ["./node_modules/@effect/tsgo/oxlint-presets/recommended.json"],
+  "options": {
+    "typeAware": true
   }
 }

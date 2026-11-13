@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Result } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -37,13 +37,13 @@ const variants = {
     width: SOCIAL_MEDIA_IMAGE_MAX_SIZE,
     height: SOCIAL_MEDIA_IMAGE_MAX_SIZE,
     fit: "scale-down" as const,
-    quality: 84,
+    quality: 95,
   },
 } as const
 
-const routeInput = z.object({
-  mediaId: z.string().uuid(),
-  variant: z.enum(["avatar", "feed", "detail", "thumbnail", "og"]),
+const routeInput = Schema.Struct({
+  mediaId: Schema.String.check(Schema.isUUID()),
+  variant: Schema.Literals(["avatar", "feed", "detail", "thumbnail", "og"]),
 })
 
 type ImageHandlerArguments = {
@@ -67,16 +67,16 @@ async function resolveImageRequest({
   context,
   params,
 }: ImageHandlerArguments): Promise<ResolvedImageRequest | Response> {
-  const input = routeInput.safeParse(params)
-  if (!input.success) return new Response("Not found", { status: 404 })
+  const input = Schema.decodeUnknownResult(routeInput, { errors: "all" })(params)
+  if (!Result.isSuccess(input)) return new Response("Not found", { status: 404 })
   const searchParams = new URL(request.url).searchParams
   const requestedWidth = parseResponsiveMediaWidth(searchParams.get("width"))
   if (requestedWidth === null) return new Response("Not found", { status: 404 })
   const animation = parseMediaImageAnimation(searchParams.get("animation"))
   if (animation === null) return new Response("Not found", { status: 404 })
   const canonicalUrl = mediaImageUrl(
-    input.data.mediaId,
-    input.data.variant,
+    input.success.mediaId,
+    input.success.variant,
     requestedWidth,
     animation,
   )
@@ -102,23 +102,23 @@ async function resolveImageRequest({
     .leftJoin(schema.posts, eq(schema.posts.id, schema.postMedia.postId))
     .leftJoin(schema.profiles, eq(schema.profiles.avatarMediaId, schema.mediaAssets.id))
     .where(
-      and(eq(schema.mediaAssets.id, input.data.mediaId), eq(schema.mediaAssets.status, "ready")),
+      and(eq(schema.mediaAssets.id, input.success.mediaId), eq(schema.mediaAssets.status, "ready")),
     )
   const row = rows[0]
   if (!row?.asset.r2Key) return new Response("Not found", { status: 404 })
-  const avatarRequest = input.data.variant === "avatar"
+  const avatarRequest = input.success.variant === "avatar"
   if (
-    !isMediaImageVariantAllowed(row.asset.kind, input.data.variant) ||
+    !isMediaImageVariantAllowed(row.asset.kind, input.success.variant) ||
     (avatarRequest && !row.avatarOwnerId)
   ) {
     return new Response("Not found", { status: 404 })
   }
 
   if (requestedWidth !== undefined) {
-    if (!isResponsiveMediaImageVariant(input.data.variant)) {
+    if (!isResponsiveMediaImageVariant(input.success.variant)) {
       return new Response("Not found", { status: 404 })
     }
-    const maxWidth = responsiveMediaImageMaxWidth(row.asset, input.data.variant)
+    const maxWidth = responsiveMediaImageMaxWidth(row.asset, input.success.variant)
     if (requestedWidth > maxWidth) return new Response("Not found", { status: 404 })
   }
 
@@ -136,7 +136,7 @@ async function resolveImageRequest({
     publiclyCacheable: (isPublished && row.visibility === "public") || row.asset.kind === "avatar",
     requestedWidth,
     r2Key: row.asset.r2Key,
-    variant: input.data.variant,
+    variant: input.success.variant,
   }
 }
 

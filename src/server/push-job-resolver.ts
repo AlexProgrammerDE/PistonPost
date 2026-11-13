@@ -36,7 +36,7 @@ function queryFailure() {
 }
 
 function query<T>(run: () => Promise<T>) {
-  return Effect.tryPromise({ try: run, catch: queryFailure })
+  return Effect.tryPromise({ try: run, catch: queryFailure }).pipe(Effect.uninterruptible)
 }
 
 function skip(reason: string): ResolvedPush {

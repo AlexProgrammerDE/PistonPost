@@ -1,5 +1,6 @@
 "use client"
 
+import { useSession } from "@better-auth-ui/react"
 import { useEffect } from "react"
 
 import { authClient } from "@/auth/client"
@@ -11,7 +12,7 @@ import {
 import { upsertPushSubscription } from "@/server/push-subscriptions"
 
 export function PushSubscriptionSync({ vapidPublicKey }: { vapidPublicKey: string | null }) {
-  const { data: session, isPending } = authClient.useSession()
+  const { data: session, isPending } = useSession(authClient)
   const sessionId = session?.session.id
 
   useEffect(() => {

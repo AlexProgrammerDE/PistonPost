@@ -1,3 +1,4 @@
+import * as Schema from "effect/Schema"
 /// <reference lib="webworker" />
 
 import { stageSharedContent } from "./local-store"
@@ -55,7 +56,7 @@ async function receiveShare(request: Request) {
       chunks.push(new Uint8Array(value))
     }
     const form = await new Response(new Blob(chunks), { headers: request.headers }).formData()
-    const content = sharedContentSchema.parse({
+    const content = Schema.decodeUnknownSync(sharedContentSchema, { errors: "all" })({
       title: form.get("title") ?? "",
       text: form.get("text") ?? "",
       url: form.get("url") ?? "",

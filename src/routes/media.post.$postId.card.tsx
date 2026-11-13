@@ -1,8 +1,8 @@
 import outfitFontSource from "@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?inline"
 import { createFileRoute } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
+import { Schema, Result } from "effect"
 import { ImageResponse } from "takumi-js/response"
-import { z } from "zod"
 
 import { TextPostSocialCard } from "@/components/TextPostSocialCard"
 import { createD1Database } from "@/db/d1-database"
@@ -22,11 +22,14 @@ async function textPostCard({
   context: AppRequestContext
   params: { postId: string }
 }) {
-  const postId = z.string().trim().min(1).max(64).safeParse(params.postId)
-  if (!postId.success) return new Response("Not found", { status: 404 })
+  const postId = Schema.decodeResult(
+    Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+    { errors: "all" },
+  )(params.postId)
+  if (!Result.isSuccess(postId)) return new Response("Not found", { status: 404 })
 
   const database = createD1Database(context.env.DB)
-  const post = await getPublishedPostRead(database, postId.data)
+  const post = await getPublishedPostRead(database, postId.success)
   if (!post || post.type !== "text") return new Response("Not found", { status: 404 })
   const owner = await database
     .select({ id: schema.posts.authorId })

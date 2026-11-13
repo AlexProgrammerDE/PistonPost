@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { z } from "zod"
+import { Schema, Result } from "effect"
 
 import { VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
@@ -15,16 +15,18 @@ async function videoPlayer({
   context: AppRequestContext
   params: { mediaId: string }
 }) {
-  const mediaId = z.string().uuid().safeParse(params.mediaId)
-  if (!mediaId.success) return new Response("Not found", { status: 404 })
+  const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
+    errors: "all",
+  })(params.mediaId)
+  if (!Result.isSuccess(mediaId)) return new Response("Not found", { status: 404 })
 
-  const video = await getDeliverableVideo(request, context, mediaId.data)
+  const video = await getDeliverableVideo(request, context, mediaId.success)
   if (!video) return new Response("Not found", { status: 404 })
   const player = new URL(`https://iframe.videodelivery.net/${video.streamUid}`)
   player.searchParams.set(
     "poster",
     new URL(
-      `/media/video/${mediaId.data}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`,
+      `/media/video/${mediaId.success}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`,
       context.runtime.config.PUBLIC_APP_URL,
     ).toString(),
   )
@@ -37,7 +39,7 @@ async function videoPlayer({
       ...(video.publiclyCacheable
         ? {
             "Cache-Tag": cacheTagHeader([
-              mediaCacheTag(mediaId.data),
+              mediaCacheTag(mediaId.success),
               ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
               ...(video.postId ? [postCacheTag(video.postId)] : []),
             ]),

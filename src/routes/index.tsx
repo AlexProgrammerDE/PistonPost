@@ -1,8 +1,8 @@
 import { useQueryErrorResetBoundary, useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
+import { Schema, Effect, Option } from "effect"
 import { Newspaper, Plus, RotateCcw, TriangleAlert } from "lucide-react"
 import { Suspense, useEffect } from "react"
-import { z } from "zod"
 
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
@@ -21,12 +21,14 @@ import { feedPageHref } from "@/lib/feed-pagination"
 import { feedQueryOptions } from "@/lib/queries/posts"
 import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, createSeoHead } from "@/lib/seo"
 
-const feedSearchSchema = z.object({
-  cursor: z.string().max(512).optional().catch(undefined),
+const feedSearchSchema = Schema.Struct({
+  cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))).pipe(
+    Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
+  ),
 })
 
 export const Route = createFileRoute("/")({
-  validateSearch: feedSearchSchema,
+  validateSearch: Schema.toStandardSchemaV1(feedSearchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => ({ cursor: search.cursor }),
   loader: ({ context, deps }) => {
     void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({}, deps.cursor))

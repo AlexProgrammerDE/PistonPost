@@ -6,33 +6,35 @@ import { join } from "node:path"
 
 import { drizzle } from "drizzle-orm/bun-sqlite"
 import { migrate } from "drizzle-orm/bun-sqlite/migrator"
-import { z } from "zod"
+import { Schema } from "effect"
 
 const migrationsFolder = new URL("../../drizzle", import.meta.url).pathname
-const journalSchema = z.object({
-  version: z.string(),
-  dialect: z.literal("sqlite"),
-  entries: z.array(
-    z.object({
-      idx: z.number(),
-      version: z.string(),
-      when: z.number(),
-      tag: z.string(),
-      breakpoints: z.boolean(),
-    }),
+const journalSchema = Schema.Struct({
+  version: Schema.String,
+  dialect: Schema.Literal("sqlite"),
+  entries: Schema.mutable(
+    Schema.Array(
+      Schema.Struct({
+        idx: Schema.Finite,
+        version: Schema.String,
+        when: Schema.Finite,
+        tag: Schema.String,
+        breakpoints: Schema.Boolean,
+      }),
+    ),
   ),
 })
-const migratedAccountSchema = z.object({
-  issuer: z.string(),
-  account_id: z.string(),
+const migratedAccountSchema = Schema.Struct({
+  issuer: Schema.String,
+  account_id: Schema.String,
 })
-const tableColumnSchema = z.object({
-  name: z.string(),
-  notnull: z.number(),
+const tableColumnSchema = Schema.Struct({
+  name: Schema.String,
+  notnull: Schema.Finite,
 })
-const tableIndexSchema = z.object({
-  name: z.string(),
-  unique: z.number(),
+const tableIndexSchema = Schema.Struct({
+  name: Schema.String,
+  unique: Schema.Finite,
 })
 
 async function copyMigrations(targetFolder: string) {
@@ -45,7 +47,9 @@ async function copyMigrations(targetFolder: string) {
   )
 
   const journalPath = join(migrationsFolder, "meta", "_journal.json")
-  const journal = journalSchema.parse(JSON.parse(await readFile(journalPath, "utf8")))
+  const journal = Schema.decodeUnknownSync(journalSchema, { errors: "all" })(
+    JSON.parse(await readFile(journalPath, "utf8")),
+  )
   return journal
 }
 
@@ -84,17 +88,20 @@ describe("Better Auth account issuer migration", () => {
       )
       migrate(database, { migrationsFolder: temporaryFolder })
 
-      const account = migratedAccountSchema.parse(
+      const account = Schema.decodeUnknownSync(migratedAccountSchema, { errors: "all" })(
         client.query("SELECT issuer, account_id FROM account WHERE id = 'account-1'").get(),
       )
-      const issuerColumn = z
-        .array(tableColumnSchema)
-        .parse(client.query("PRAGMA table_info('account')").all())
-        .find((column) => column.name === "issuer")
-      const issuerIndex = z
-        .array(tableIndexSchema)
-        .parse(client.query("PRAGMA index_list('account')").all())
-        .find((index) => index.name === "account_issuer_accountId_uidx")
+      const issuerColumn = Schema.decodeUnknownSync(
+        Schema.mutable(Schema.Array(tableColumnSchema)),
+        { errors: "all" },
+      )(client.query("PRAGMA table_info('account')").all()).find(
+        (column) => column.name === "issuer",
+      )
+      const issuerIndex = Schema.decodeUnknownSync(Schema.mutable(Schema.Array(tableIndexSchema)), {
+        errors: "all",
+      })(client.query("PRAGMA index_list('account')").all()).find(
+        (index) => index.name === "account_issuer_accountId_uidx",
+      )
 
       expect(account).toEqual({ issuer: "local:credential", account_id: "user-1" })
       expect(issuerColumn?.notnull).toBe(1)
@@ -114,7 +121,9 @@ describe("Better Auth account issuer migration", () => {
         password: "hash",
       })
       expect(
-        z.array(tableColumnSchema).parse(client.query("PRAGMA table_info('account')").all()),
+        Schema.decodeUnknownSync(Schema.mutable(Schema.Array(tableColumnSchema)), {
+          errors: "all",
+        })(client.query("PRAGMA table_info('account')").all()),
       ).not.toContainEqual(expect.objectContaining({ name: "issuer" }))
       client.run(
         `INSERT INTO account

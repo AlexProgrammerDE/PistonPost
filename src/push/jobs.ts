@@ -41,7 +41,7 @@ export const PushDeliveryJob = Schema.Union([
 export type PushDeliveryJob = typeof PushDeliveryJob.Type
 
 export function decodePushDeliveryJob(input: unknown) {
-  return Schema.decodeUnknownResult(PushDeliveryJob)(input)
+  return Schema.decodeUnknownResult(PushDeliveryJob, { errors: "all" })(input)
 }
 
 type PushJobIdentity = Readonly<{

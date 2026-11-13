@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Result } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -33,8 +33,10 @@ async function uploadImage({
   context: AppRequestContext
   params: { mediaId: string }
 }) {
-  const mediaId = z.string().uuid().safeParse(params.mediaId)
-  if (!mediaId.success) return jsonError("The upload intent is invalid.", 400)
+  const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
+    errors: "all",
+  })(params.mediaId)
+  if (!Result.isSuccess(mediaId)) return jsonError("The upload intent is invalid.", 400)
 
   const expectedOrigin = new URL(context.runtime.config.PUBLIC_APP_URL).origin
   if (request.headers.get("origin") !== expectedOrigin)
@@ -68,7 +70,10 @@ async function uploadImage({
     })
     .from(schema.mediaAssets)
     .where(
-      and(eq(schema.mediaAssets.id, mediaId.data), eq(schema.mediaAssets.ownerId, session.user.id)),
+      and(
+        eq(schema.mediaAssets.id, mediaId.success),
+        eq(schema.mediaAssets.ownerId, session.user.id),
+      ),
     )
     .get()
   if (!asset) return jsonError("The upload intent was not found.", 404)

@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { z } from "zod"
+import { Schema, Effect } from "effect"
 
 import type { D1DatabaseClient } from "@/db"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
@@ -11,89 +11,124 @@ import {
   pushSubscriptionInputSchema,
   type PushSubscriptionInput,
 } from "@/push/subscription"
+import { bindingOperation } from "@/server/operation"
+import { runRequestEffect } from "@/server/request-effect"
 import { conflictFailure, invalidInputFailure } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const maxSubscriptionsPerUser = 10
 
-async function activeSubscriptionCount(database: D1DatabaseClient, userId: string) {
-  return (await listActivePushSubscriptionIds(database, userId)).length
-}
+const activeSubscriptionCount = Effect.fn("activeSubscriptionCount")(function* (
+  database: D1DatabaseClient,
+  userId: string,
+) {
+  return (yield* bindingOperation("activeSubscriptionCount.operation", () =>
+    listActivePushSubscriptionIds(database, userId),
+  )).length
+})
 
-async function saveSubscription(
+const saveSubscription = Effect.fn("saveSubscription")(function* (
   database: D1DatabaseClient,
   userId: string,
   sessionId: string,
   input: PushSubscriptionInput,
 ) {
   if (input.expirationTime !== null && input.expirationTime <= Date.now()) {
-    throw invalidInputFailure("This push subscription has already expired.")
+    return yield* invalidInputFailure("This push subscription has already expired.")
   }
-  const endpointHash = await hashPushEndpoint(input.endpoint)
-  const existing = await database
-    .select({ id: schema.pushSubscriptions.id, userId: schema.pushSubscriptions.userId })
-    .from(schema.pushSubscriptions)
-    .where(eq(schema.pushSubscriptions.endpointHash, endpointHash))
-    .get()
+  const endpointHash = yield* bindingOperation("saveSubscription.endpointHash", () =>
+    hashPushEndpoint(input.endpoint),
+  )
+  const existing = yield* bindingOperation("saveSubscription.existing", () =>
+    database
+      .select({ id: schema.pushSubscriptions.id, userId: schema.pushSubscriptions.userId })
+      .from(schema.pushSubscriptions)
+      .where(eq(schema.pushSubscriptions.endpointHash, endpointHash))
+      .get(),
+  )
   if (
     (!existing || existing.userId !== userId) &&
-    (await activeSubscriptionCount(database, userId)) >= maxSubscriptionsPerUser
+    (yield* activeSubscriptionCount(database, userId)) >= maxSubscriptionsPerUser
   ) {
-    throw conflictFailure("Remove another push-enabled device before adding this one.")
+    return yield* conflictFailure("Remove another push-enabled device before adding this one.")
   }
 
   const now = new Date()
-  await database
-    .insert(schema.pushSubscriptions)
-    .values({
-      id: existing?.id ?? crypto.randomUUID(),
-      userId,
-      sessionId,
-      endpoint: input.endpoint,
-      endpointHash,
-      p256dh: input.keys.p256dh,
-      auth: input.keys.auth,
-      expirationTime: input.expirationTime === null ? null : new Date(input.expirationTime),
-    })
-    .onConflictDoUpdate({
-      target: schema.pushSubscriptions.endpointHash,
-      set: {
+  yield* bindingOperation("saveSubscription.operation", () =>
+    database
+      .insert(schema.pushSubscriptions)
+      .values({
+        id: existing?.id ?? crypto.randomUUID(),
         userId,
         sessionId,
         endpoint: input.endpoint,
+        endpointHash,
         p256dh: input.keys.p256dh,
         auth: input.keys.auth,
         expirationTime: input.expirationTime === null ? null : new Date(input.expirationTime),
-        lastSuccessAt: null,
-        disabledAt: null,
-        createdAt: now,
-        updatedAt: now,
-      },
-    })
+      })
+      .onConflictDoUpdate({
+        target: schema.pushSubscriptions.endpointHash,
+        set: {
+          userId,
+          sessionId,
+          endpoint: input.endpoint,
+          p256dh: input.keys.p256dh,
+          auth: input.keys.auth,
+          expirationTime: input.expirationTime === null ? null : new Date(input.expirationTime),
+          lastSuccessAt: null,
+          disabledAt: null,
+          createdAt: now,
+          updatedAt: now,
+        },
+      }),
+  )
   return { enabled: true as const }
-}
+})
 
 export const upsertPushSubscription = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(pushSubscriptionInputSchema))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    return saveSubscription(database, session.user.id, session.session.id, data)
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        return yield* saveSubscription(database, session.user.id, session.session.id, data).pipe(
+          Effect.uninterruptible,
+        )
+      }),
+    ),
+  )
 
 export const removePushSubscription = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
-  .validator(serverFunctionValidator(z.object({ endpoint: z.string().trim().min(1).max(2048) })))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const endpointHash = await hashPushEndpoint(data.endpoint)
-    await database
-      .delete(schema.pushSubscriptions)
-      .where(
-        and(
-          eq(schema.pushSubscriptions.userId, session.user.id),
-          eq(schema.pushSubscriptions.endpointHash, endpointHash),
-        ),
-      )
-    return { enabled: false as const }
-  })
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({
+        endpoint: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(2048)),
+      }),
+    ),
+  )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const endpointHash = yield* bindingOperation("removePushSubscription.endpointHash", () =>
+          hashPushEndpoint(data.endpoint),
+        )
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("removePushSubscription.operation", () =>
+            database
+              .delete(schema.pushSubscriptions)
+              .where(
+                and(
+                  eq(schema.pushSubscriptions.userId, session.user.id),
+                  eq(schema.pushSubscriptions.endpointHash, endpointHash),
+                ),
+              ),
+          )
+          return { enabled: false as const }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )

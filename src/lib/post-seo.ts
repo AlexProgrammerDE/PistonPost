@@ -16,6 +16,7 @@ import {
 } from "./seo"
 import {
   normalizeStreamThumbnailDimensions,
+  SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
   VIDEO_PLAYER_CACHE_VERSION,
   VIDEO_THUMBNAIL_CACHE_VERSION,
 } from "./video-thumbnail"
@@ -98,15 +99,6 @@ function structuredPostImages(
     })
 }
 
-function selectedPostImage(
-  images: ReadonlyArray<SeoImage>,
-  selectedImageIndex: number,
-): SeoImage | undefined {
-  if (images.length === 0) return undefined
-  const index = Math.min(Math.max(selectedImageIndex, 0), images.length - 1)
-  return images[index]
-}
-
 function postVideo(post: PublicPostRead, postTitle: string) {
   const media = post.media.find((entry) => entry.kind === "video")
   if (!media) return undefined
@@ -114,8 +106,8 @@ function postVideo(post: PublicPostRead, postTitle: string) {
   const height = media.height ?? 720
   const fittedThumbnailDimensions = fitMediaDimensions(
     media,
-    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
-    SOCIAL_MEDIA_IMAGE_MAX_SIZE,
+    SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
+    SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
   )
   const thumbnailDimensions = fittedThumbnailDimensions
     ? normalizeStreamThumbnailDimensions(fittedThumbnailDimensions)
@@ -178,7 +170,7 @@ function postInteractionStatistics(post: PublicPostRead): ReadonlyArray<JsonLdOb
   ]
 }
 
-export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) {
+export function createPostSeoHead(post: PublicPostRead, selectedImageIndex?: number) {
   const path = `/post/${encodeURIComponent(post.id)}`
   const authorUrl = absoluteUrl(`/user/${encodeURIComponent(post.author.normalizedUsername)}`)
   const postTitle = truncateTitle(post.title, 64)
@@ -186,10 +178,16 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   const description = postDescription(post, authorName)
   const video = post.type === "video" ? postVideo(post, postTitle) : undefined
   const galleryImages = post.type === "images" ? postImages(post, postTitle) : []
+  const hasSelectedImage = post.type === "images" && selectedImageIndex !== undefined
+  const requestedImageIndex = selectedImageIndex ?? 0
+  const imageIndex = Math.min(
+    Math.max(Number.isFinite(requestedImageIndex) ? Math.trunc(requestedImageIndex) : 0, 0),
+    Math.max(0, galleryImages.length - 1),
+  )
   const structuredImages = post.type === "images" ? structuredPostImages(post, postTitle) : []
   const image =
     post.type === "images"
-      ? selectedPostImage(galleryImages, selectedImageIndex)
+      ? galleryImages[imageIndex]
       : post.type === "text"
         ? textPostImage(post, postTitle, authorName)
         : video?.image
@@ -261,6 +259,31 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex = 0) 
   }
 
   return createSeoHead({
+    discord:
+      post.visibility === "public"
+        ? {
+            title: post.title,
+            description: hasSelectedImage
+              ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
+              : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
+            url: hasSelectedImage ? `${canonical}?image=${imageIndex}` : canonical,
+            layout: hasSelectedImage ? (imageIndex > 0 ? "media" : "compact") : "default",
+            label: "View post",
+            images:
+              post.type === "images"
+                ? (hasSelectedImage
+                    ? galleryImages.slice(imageIndex, imageIndex + 1)
+                    : galleryImages.slice(0, 4)
+                  ).map((entry) => absoluteUrl(entry.url))
+                : video
+                  ? [absoluteUrl(video.download.url)]
+                  : [],
+            links: [
+              { label: "Comments", url: `${canonical}#discussion` },
+              { label: "View author", url: authorUrl },
+            ],
+          }
+        : false,
     title:
       post.type === "video"
         ? `${truncateTitle(post.title, 40)} · ${authorName} · ${SITE_NAME}`

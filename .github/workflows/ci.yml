@@ -1,6 +1,7 @@
 name: CI
 
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -18,9 +19,9 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: 26
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -47,8 +48,9 @@ jobs:
             'STREAM_WEBHOOK_SECRET=ci-only-stream-webhook-secret' \
             'STREAM_ACCOUNT_ID=ci-only-stream-account-id' \
             'STREAM_API_TOKEN=ci-only-stream-api-token' \
+            'VAPID_PRIVATE_KEY=ci-only-vapid-private-key' \
             > .dev.vars
-          bun cf d1 migrations apply 5e735af4-a49f-44b7-aedf-45a5a4391291 --dir drizzle --local --persist-to .wrangler/state
+          bun run test:prepare-db
 
       - name: Install Playwright browser
         run: bunx playwright install --with-deps chromium
