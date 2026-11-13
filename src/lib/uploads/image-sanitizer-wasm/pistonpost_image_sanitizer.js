@@ -30,7 +30,7 @@ export function sanitize_image(input, mime_type) {
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg_Error_67e7344beaa85059: function(arg0, arg1) {
+        __wbg_Error_30c8987f7c2ed4e2: function(arg0, arg1) {
             const ret = Error(getStringFromWasm0(arg0, arg1));
             return addHeapObject(ret);
         },
