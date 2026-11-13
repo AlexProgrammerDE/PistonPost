@@ -64,7 +64,8 @@ const config = defineConfig(({ command, mode }) => ({
       strategies: "injectManifest",
       srcDir: "src/lib/pwa",
       filename: "push-sw.ts",
-      outDir: "dist/client",
+      // Publish the worker alongside the Cloudflare deployment's static assets.
+      outDir: ".cloudflare/output/v0/workers/default/assets",
       scope: "/",
       injectRegister: false,
       registerType: "autoUpdate",
