@@ -102,7 +102,7 @@
     "unist-util-visit": "5.1.0",
     "unpic": "^4.2.2",
     "vanilla-cookieconsent": "^3.1.0",
-    "web-push": "^3.6.7",
+    "web-push": "^4.0.0",
     "yet-another-react-lightbox": "3.32.2"
   },
   "devDependencies": {
