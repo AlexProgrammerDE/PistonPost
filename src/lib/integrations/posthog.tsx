@@ -69,10 +69,14 @@ export function usePostHogClient() {
 async function initializePostHog() {
   if (typeof window === "undefined" || !POSTHOG_KEY) return null
 
-  const { ToolbarExtensions } = await import("posthog-js/dist/extension-bundles")
+  const { AnalyticsExtensions, ToolbarExtensions } =
+    await import("posthog-js/dist/extension-bundles")
 
   posthog.init(POSTHOG_KEY, {
-    __extensionClasses: ToolbarExtensions,
+    __extensionClasses: {
+      ...ToolbarExtensions,
+      historyAutocapture: AnalyticsExtensions.historyAutocapture,
+    },
     api_host: POSTHOG_HOST,
     ui_host: POSTHOG_UI_HOST,
     defaults: "2026-01-30",

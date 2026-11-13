@@ -1,4 +1,4 @@
-import { Schema } from "effect"
+import * as Schema from "effect/Schema"
 /// <reference lib="webworker" />
 
 import { stageSharedContent } from "./local-store"

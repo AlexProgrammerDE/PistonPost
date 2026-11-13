@@ -21,13 +21,14 @@ import {
   MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
   MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
 } from "@/lib/video-thumbnail"
+import { bindingOperation } from "@/server/operation"
+import { runRequestEffect } from "@/server/request-effect"
 import {
   conflictFailure,
   forbiddenFailure,
   invalidInputFailure,
   notFoundFailure,
   rateLimitedFailure,
-  runServerEffect,
 } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 import { createStreamDirectUpload } from "@/server/stream-direct-upload"
@@ -57,12 +58,14 @@ function nextPublicId() {
   return crypto.randomUUID().replaceAll("-", "").slice(0, 16)
 }
 
-async function tagId(normalized: string) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized))
+const tagId = Effect.fn("tagId")(function* (normalized: string) {
+  const digest = yield* bindingOperation("tagId.digest", () =>
+    crypto.subtle.digest("SHA-256", new TextEncoder().encode(normalized)),
+  )
   return `tag_${Array.from(new Uint8Array(digest).slice(0, 10), (byte) =>
     byte.toString(16).padStart(2, "0"),
   ).join("")}`
-}
+})
 
 export const createPostDraft = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -71,67 +74,82 @@ export const createPostDraft = createServerFn({ method: "POST" })
       Schema.Struct({ draft: postDraftInputSchema, turnstileToken: turnstileTokenSchema }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { session } = context
-    const limited = await context.env.USER_RATE_LIMITER.limit({
-      key: `draft:${session.user.id}`,
-    })
-    if (!limited.success) throw rateLimitedFailure("Too many posts were started at once.")
-    await runServerEffect(
-      verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createPost),
-    )
-    const input = data.draft
-    const id = nextPublicId()
-    const normalizedTags = [...new Set(input.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
-    const tagsWithIds = await Promise.all(
-      normalizedTags.map(async (normalized, ordinal) => ({
-        id: await tagId(normalized),
-        normalized,
-        display:
-          input.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ?? normalized,
-        ordinal,
-      })),
-    )
-    const statements: Array<D1PreparedStatement> = [
-      context.database.$client
-        .prepare(
-          `insert into posts
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { session } = context
+        const limited = yield* bindingOperation("createPostDraft.limited", () =>
+          context.env.USER_RATE_LIMITER.limit({
+            key: `draft:${session.user.id}`,
+          }),
+        )
+        if (!limited.success)
+          return yield* rateLimitedFailure("Too many posts were started at once.")
+        yield* verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createPost)
+        const input = data.draft
+        const id = nextPublicId()
+        const normalizedTags = [...new Set(input.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
+        const tagsWithIds = yield* Effect.forEach(
+          normalizedTags,
+          (normalized, ordinal) =>
+            Effect.gen(function* () {
+              return {
+                id: yield* tagId(normalized),
+                normalized,
+                display:
+                  input.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ??
+                  normalized,
+                ordinal,
+              }
+            }),
+          { concurrency: 4 },
+        )
+        const statements: Array<D1PreparedStatement> = [
+          context.database.$client
+            .prepare(
+              `insert into posts
           (id, author_id, type, status, visibility, title, text_content, created_at, updated_at, version)
          values (?, ?, ?, 'draft', ?, ?, ?, ?, ?, 1)`,
-        )
-        .bind(
-          id,
-          session.user.id,
-          input.type,
-          input.visibility,
-          input.title,
-          input.type === "text" ? input.textContent : null,
-          Date.now(),
-          Date.now(),
-        ),
-    ]
+            )
+            .bind(
+              id,
+              session.user.id,
+              input.type,
+              input.visibility,
+              input.title,
+              input.type === "text" ? input.textContent : null,
+              Date.now(),
+              Date.now(),
+            ),
+        ]
 
-    for (const tag of tagsWithIds) {
-      statements.push(
-        context.database.$client
-          .prepare(
-            `insert into tags (id, display_name, normalized_name, created_at)
+        for (const tag of tagsWithIds) {
+          statements.push(
+            context.database.$client
+              .prepare(
+                `insert into tags (id, display_name, normalized_name, created_at)
            values (?, ?, ?, ?)
            on conflict(normalized_name) do update set display_name = excluded.display_name`,
-          )
-          .bind(tag.id, tag.display, tag.normalized, Date.now()),
-        context.database.$client
-          .prepare(
-            `insert into post_tags (post_id, tag_id, ordinal)
+              )
+              .bind(tag.id, tag.display, tag.normalized, Date.now()),
+            context.database.$client
+              .prepare(
+                `insert into post_tags (post_id, tag_id, ordinal)
            select ?, id, ? from tags where normalized_name = ?`,
+              )
+              .bind(id, tag.ordinal, tag.normalized),
           )
-          .bind(id, tag.ordinal, tag.normalized),
-      )
-    }
+        }
 
-    await context.database.$client.batch(statements)
-    return { id, version: 1 }
-  })
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("createPostDraft.operation", () =>
+            context.database.$client.batch(statements),
+          )
+          return { id, version: 1 }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 const imageIntentInput = Schema.Struct({
   postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
@@ -155,86 +173,102 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
-      key: `intent:${session.user.id}`,
-    })
-    if (!rateLimit.success) {
-      throw rateLimitedFailure(
-        "Too many uploads were started at once. Wait a minute and try again.",
-      )
-    }
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const rateLimit = yield* bindingOperation("createImageUploadIntents.rateLimit", () =>
+          context.env.UPLOAD_RATE_LIMITER.limit({
+            key: `intent:${session.user.id}`,
+          }),
+        )
+        if (!rateLimit.success) {
+          return yield* rateLimitedFailure(
+            "Too many uploads were started at once. Wait a minute and try again.",
+          )
+        }
 
-    const draft = await database
-      .select({ id: schema.posts.id, type: schema.posts.type })
-      .from(schema.posts)
-      .where(
-        and(
-          eq(schema.posts.id, data.postId),
-          eq(schema.posts.authorId, session.user.id),
-          eq(schema.posts.status, "draft"),
-        ),
-      )
-      .get()
-    if (!draft || draft.type !== "images") {
-      throw notFoundFailure("The image draft was not found.")
-    }
+        const draft = yield* bindingOperation("createImageUploadIntents.draft", () =>
+          database
+            .select({ id: schema.posts.id, type: schema.posts.type })
+            .from(schema.posts)
+            .where(
+              and(
+                eq(schema.posts.id, data.postId),
+                eq(schema.posts.authorId, session.user.id),
+                eq(schema.posts.status, "draft"),
+              ),
+            )
+            .get(),
+        )
+        if (!draft || draft.type !== "images") {
+          return yield* notFoundFailure("The image draft was not found.")
+        }
 
-    const postAssetCount = await context.database.$client
-      .prepare(
-        `select count(*) as count from media_assets
+        const postAssetCount = yield* bindingOperation(
+          "createImageUploadIntents.postAssetCount",
+          () =>
+            context.database.$client
+              .prepare(
+                `select count(*) as count from media_assets
        where json_extract(provider_metadata, '$.postId') = ?
          and status not in ('failed', 'deleted')`,
-      )
-      .bind(data.postId)
-      .first<{ count: number }>()
-    const firstOrdinal = postAssetCount?.count ?? 0
-    if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST) {
-      throw invalidInputFailure(
-        `A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`,
-      )
-    }
+              )
+              .bind(data.postId)
+              .first<{ count: number }>(),
+        )
+        const firstOrdinal = postAssetCount?.count ?? 0
+        if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST) {
+          return yield* invalidInputFailure(
+            `A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`,
+          )
+        }
 
-    const expiresAt = Date.now() + 15 * 60 * 1000
-    const intents = data.files.map((file, index) => {
-      const assetId = crypto.randomUUID()
-      return {
-        assetId,
-        uploadUrl: `/media/upload/${assetId}`,
-        expiresInSeconds: 900,
-        values: {
-          id: assetId,
-          ownerId: session.user.id,
-          kind: "image",
-          provider: "r2",
-          status: "pending",
-          originalFilename: file.filename,
-          mimeType: file.mimeType,
-          byteSize: file.byteSize,
-          altText: file.altText || null,
-          providerMetadata: {
-            postId: data.postId,
-            expiresAt,
-            ordinal: firstOrdinal + index,
-          },
-        } satisfies typeof schema.mediaAssets.$inferInsert,
-      }
-    })
-    const [firstIntent, ...remainingIntents] = intents
-    if (!firstIntent) throw invalidInputFailure("Choose at least one image.")
-    await database.batch([
-      database.insert(schema.mediaAssets).values(firstIntent.values),
-      ...remainingIntents.map((intent) =>
-        database.insert(schema.mediaAssets).values(intent.values),
-      ),
-    ])
-    return intents.map(({ assetId, uploadUrl, expiresInSeconds }) => ({
-      assetId,
-      uploadUrl,
-      expiresInSeconds,
-    }))
-  })
+        const expiresAt = Date.now() + 15 * 60 * 1000
+        const intents = data.files.map((file, index) => {
+          const assetId = crypto.randomUUID()
+          return {
+            assetId,
+            uploadUrl: `/media/upload/${assetId}`,
+            expiresInSeconds: 900,
+            values: {
+              id: assetId,
+              ownerId: session.user.id,
+              kind: "image",
+              provider: "r2",
+              status: "pending",
+              originalFilename: file.filename,
+              mimeType: file.mimeType,
+              byteSize: file.byteSize,
+              altText: file.altText || null,
+              providerMetadata: {
+                postId: data.postId,
+                expiresAt,
+                ordinal: firstOrdinal + index,
+              },
+            } satisfies typeof schema.mediaAssets.$inferInsert,
+          }
+        })
+        const [firstIntent, ...remainingIntents] = intents
+        if (!firstIntent) return yield* invalidInputFailure("Choose at least one image.")
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("createImageUploadIntents.operation", () =>
+            database.batch([
+              database.insert(schema.mediaAssets).values(firstIntent.values),
+              ...remainingIntents.map((intent) =>
+                database.insert(schema.mediaAssets).values(intent.values),
+              ),
+            ]),
+          )
+          return intents.map(({ assetId, uploadUrl, expiresInSeconds }) => ({
+            assetId,
+            uploadUrl,
+            expiresInSeconds,
+          }))
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 const videoIntentInput = Schema.Struct({
   postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
@@ -250,128 +284,151 @@ const videoIntentInput = Schema.Struct({
     .pipe(Schema.withDecodingDefaultType(Effect.sync(() => DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT))),
 })
 
-async function readOptionalSecret(secret: string | SecretsStoreSecret | undefined) {
-  const value = typeof secret === "string" ? secret : await secret?.get()
+const readOptionalSecret = Effect.fn("readOptionalSecret")(function* (
+  secret: string | SecretsStoreSecret | undefined,
+) {
+  const value =
+    typeof secret === "string"
+      ? secret
+      : yield* bindingOperation("readOptionalSecret.operation", () => secret?.get())
   return value?.trim() || null
-}
+})
 
 export const createVideoUploadIntent = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(videoIntentInput))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const rateLimit = await context.env.UPLOAD_RATE_LIMITER.limit({
-      key: `intent:${session.user.id}`,
-    })
-    if (!rateLimit.success) {
-      throw rateLimitedFailure(
-        "Too many uploads were started at once. Wait a minute and try again.",
-      )
-    }
-
-    const draft = await database
-      .select({ id: schema.posts.id })
-      .from(schema.posts)
-      .where(
-        and(
-          eq(schema.posts.id, data.postId),
-          eq(schema.posts.authorId, session.user.id),
-          eq(schema.posts.type, "video"),
-          eq(schema.posts.status, "draft"),
-        ),
-      )
-      .get()
-    if (!draft) throw notFoundFailure("The video draft was not found.")
-
-    const existing = await database
-      .select({ id: schema.postMedia.mediaId })
-      .from(schema.postMedia)
-      .where(eq(schema.postMedia.postId, data.postId))
-      .get()
-    if (existing) throw conflictFailure("A video draft can contain one video.")
-
-    const assetId = crypto.randomUUID()
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-    const scheduledDeletion = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
-    const [accountId, apiToken] = await Promise.all([
-      readOptionalSecret(context.env.STREAM_ACCOUNT_ID),
-      readOptionalSecret(context.env.STREAM_API_TOKEN),
-    ])
-    let upload: { id: string; uploadURL: string; protocol: "multipart" | "tus" }
-
-    if (accountId && apiToken) {
-      const directUpload = await runServerEffect(
-        createStreamDirectUpload({
-          accountId,
-          apiToken,
-          byteSize: data.byteSize,
-          creator: session.user.id,
-          filename: data.filename,
-          expiresAt,
-          scheduledDeletion,
-          thumbnailTimestampPct: data.thumbnailTimestampPct,
-        }),
-      )
-      upload = {
-        id: directUpload.streamUid,
-        uploadURL: directUpload.uploadUrl,
-        protocol: "tus",
-      }
-    } else {
-      if (data.byteSize >= BASIC_STREAM_UPLOAD_MAX_BYTES) {
-        throw invalidInputFailure(
-          "This video is too large to upload right now. Try a video under 200 MB.",
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const rateLimit = yield* bindingOperation("createVideoUploadIntent.rateLimit", () =>
+          context.env.UPLOAD_RATE_LIMITER.limit({
+            key: `intent:${session.user.id}`,
+          }),
         )
-      }
-      const directUpload = await context.env.STREAM.createDirectUpload({
-        maxDurationSeconds: MAX_VIDEO_DURATION_SECONDS,
-        expiry: expiresAt.toISOString(),
-        creator: session.user.id,
-        allowedOrigins: [],
-        requireSignedURLs: false,
-        meta: { assetId, postId: data.postId },
-        scheduledDeletion: scheduledDeletion.toISOString(),
-        thumbnailTimestampPct: data.thumbnailTimestampPct,
-      })
-      upload = {
-        id: directUpload.id,
-        uploadURL: directUpload.uploadURL,
-        protocol: "multipart",
-      }
-    }
+        if (!rateLimit.success) {
+          return yield* rateLimitedFailure(
+            "Too many uploads were started at once. Wait a minute and try again.",
+          )
+        }
 
-    try {
-      await database.batch([
-        database.insert(schema.mediaAssets).values({
-          id: assetId,
-          ownerId: session.user.id,
-          kind: "video",
-          provider: "stream",
-          status: "uploading",
-          streamUid: upload.id,
-          originalFilename: data.filename,
-          mimeType: data.mimeType,
-          byteSize: data.byteSize,
-          providerMetadata: { thumbnailTimestampPct: data.thumbnailTimestampPct },
-        }),
-        database
-          .insert(schema.postMedia)
-          .values({ postId: data.postId, mediaId: assetId, ordinal: 0 }),
-      ])
-    } catch (cause) {
-      await context.env.STREAM.video(upload.id)
-        .delete()
-        .catch(() => undefined)
-      throw cause
-    }
+        const draft = yield* bindingOperation("createVideoUploadIntent.draft", () =>
+          database
+            .select({ id: schema.posts.id })
+            .from(schema.posts)
+            .where(
+              and(
+                eq(schema.posts.id, data.postId),
+                eq(schema.posts.authorId, session.user.id),
+                eq(schema.posts.type, "video"),
+                eq(schema.posts.status, "draft"),
+              ),
+            )
+            .get(),
+        )
+        if (!draft) return yield* notFoundFailure("The video draft was not found.")
 
-    return {
-      assetId,
-      uploadUrl: upload.uploadURL,
-      uploadProtocol: upload.protocol,
-      streamUid: upload.id,
-    }
-  })
+        const existing = yield* bindingOperation("createVideoUploadIntent.existing", () =>
+          database
+            .select({ id: schema.postMedia.mediaId })
+            .from(schema.postMedia)
+            .where(eq(schema.postMedia.postId, data.postId))
+            .get(),
+        )
+        if (existing) return yield* conflictFailure("A video draft can contain one video.")
+
+        const assetId = crypto.randomUUID()
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
+        const scheduledDeletion = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
+        const [accountId, apiToken] = yield* Effect.all(
+          [
+            readOptionalSecret(context.env.STREAM_ACCOUNT_ID),
+            readOptionalSecret(context.env.STREAM_API_TOKEN),
+          ],
+          { concurrency: 4 },
+        )
+        let upload: { id: string; uploadURL: string; protocol: "multipart" | "tus" }
+
+        return yield* Effect.gen(function* () {
+          if (accountId && apiToken) {
+            const directUpload = yield* createStreamDirectUpload({
+              accountId,
+              apiToken,
+              byteSize: data.byteSize,
+              creator: session.user.id,
+              filename: data.filename,
+              expiresAt,
+              scheduledDeletion,
+              thumbnailTimestampPct: data.thumbnailTimestampPct,
+            })
+            upload = {
+              id: directUpload.streamUid,
+              uploadURL: directUpload.uploadUrl,
+              protocol: "tus",
+            }
+          } else {
+            if (data.byteSize >= BASIC_STREAM_UPLOAD_MAX_BYTES) {
+              return yield* invalidInputFailure(
+                "This video is too large to upload right now. Try a video under 200 MB.",
+              )
+            }
+            const directUpload = yield* bindingOperation(
+              "createVideoUploadIntent.directUpload",
+              () =>
+                context.env.STREAM.createDirectUpload({
+                  maxDurationSeconds: MAX_VIDEO_DURATION_SECONDS,
+                  expiry: expiresAt.toISOString(),
+                  creator: session.user.id,
+                  allowedOrigins: [],
+                  requireSignedURLs: false,
+                  meta: { assetId, postId: data.postId },
+                  scheduledDeletion: scheduledDeletion.toISOString(),
+                  thumbnailTimestampPct: data.thumbnailTimestampPct,
+                }),
+            )
+            upload = {
+              id: directUpload.id,
+              uploadURL: directUpload.uploadURL,
+              protocol: "multipart",
+            }
+          }
+
+          yield* bindingOperation("video-upload.persist", () =>
+            database.batch([
+              database.insert(schema.mediaAssets).values({
+                id: assetId,
+                ownerId: session.user.id,
+                kind: "video",
+                provider: "stream",
+                status: "uploading",
+                streamUid: upload.id,
+                originalFilename: data.filename,
+                mimeType: data.mimeType,
+                byteSize: data.byteSize,
+                providerMetadata: { thumbnailTimestampPct: data.thumbnailTimestampPct },
+              }),
+              database
+                .insert(schema.postMedia)
+                .values({ postId: data.postId, mediaId: assetId, ordinal: 0 }),
+            ]),
+          ).pipe(
+            Effect.tapError(() =>
+              bindingOperation("video-upload.cleanup", () =>
+                context.env.STREAM.video(upload.id).delete(),
+              ).pipe(Effect.ignore),
+            ),
+          )
+
+          return {
+            assetId,
+            uploadUrl: upload.uploadURL,
+            uploadProtocol: upload.protocol,
+            streamUid: upload.id,
+          }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 export const getOwnedMediaStatus = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -384,35 +441,54 @@ export const getOwnedMediaStatus = createServerFn({ method: "GET" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    return ownedMediaStatusQuery(database, session.user.id, data.ids)
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        return yield* bindingOperation("getOwnedMediaStatus.operation", () =>
+          ownedMediaStatusQuery(database, session.user.id, data.ids),
+        )
+      }),
+    ),
+  )
 
 export const abortMediaUpload = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const asset = await database
-      .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
-      .from(schema.mediaAssets)
-      .where(
-        and(eq(schema.mediaAssets.id, data.id), eq(schema.mediaAssets.ownerId, session.user.id)),
-      )
-      .get()
-    if (!asset) throw notFoundFailure("The upload was not found.")
-    if (asset.status === "ready" || asset.status === "deleted") {
-      throw conflictFailure("A finalized upload cannot be aborted.")
-    }
-    const job = mediaCleanupJob(asset.id)
-    await database
-      .insert(schema.outbox)
-      .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-      .onConflictDoNothing()
-    context.executionContext.waitUntil(context.env.JOBS.send(job))
-    return { id: asset.id, status: "cancelled" as const }
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const asset = yield* bindingOperation("abortMediaUpload.asset", () =>
+          database
+            .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
+            .from(schema.mediaAssets)
+            .where(
+              and(
+                eq(schema.mediaAssets.id, data.id),
+                eq(schema.mediaAssets.ownerId, session.user.id),
+              ),
+            )
+            .get(),
+        )
+        if (!asset) return yield* notFoundFailure("The upload was not found.")
+        if (asset.status === "ready" || asset.status === "deleted") {
+          return yield* conflictFailure("A finalized upload cannot be aborted.")
+        }
+        const job = mediaCleanupJob(asset.id)
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("abortMediaUpload.operation", () =>
+            database
+              .insert(schema.outbox)
+              .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+              .onConflictDoNothing(),
+          )
+          context.executionContext.waitUntil(context.env.JOBS.send(job))
+          return { id: asset.id, status: "cancelled" as const }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 export const publishPost = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -424,93 +500,119 @@ export const publishPost = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const limited = await context.env.USER_RATE_LIMITER.limit({
-      key: `publish:${session.user.id}`,
-    })
-    if (!limited.success) throw rateLimitedFailure("Too many posts were published at once.")
-    const recentWindow = new Date(Date.now() - 10 * 60 * 1_000)
-    const recentPublishes = await database
-      .select({ value: count() })
-      .from(schema.posts)
-      .where(
-        and(
-          eq(schema.posts.authorId, session.user.id),
-          eq(schema.posts.status, "published"),
-          gte(schema.posts.publishedAt, recentWindow),
-        ),
-      )
-      .get()
-    if ((recentPublishes?.value ?? 0) >= 10) {
-      throw rateLimitedFailure("You can publish up to 10 posts every 10 minutes.", 600)
-    }
-    const post = await database
-      .select(postColumns)
-      .from(schema.posts)
-      .where(and(eq(schema.posts.id, data.id), eq(schema.posts.authorId, session.user.id)))
-      .get()
-    if (!post || post.status !== "draft") throw notFoundFailure("The draft was not found.")
-    if (post.version !== data.version) {
-      throw conflictFailure("The draft changed in another session.")
-    }
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const limited = yield* bindingOperation("publishPost.limited", () =>
+          context.env.USER_RATE_LIMITER.limit({
+            key: `publish:${session.user.id}`,
+          }),
+        )
+        if (!limited.success)
+          return yield* rateLimitedFailure("Too many posts were published at once.")
+        const recentWindow = new Date(Date.now() - 10 * 60 * 1_000)
+        const recentPublishes = yield* bindingOperation("publishPost.recentPublishes", () =>
+          database
+            .select({ value: count() })
+            .from(schema.posts)
+            .where(
+              and(
+                eq(schema.posts.authorId, session.user.id),
+                eq(schema.posts.status, "published"),
+                gte(schema.posts.publishedAt, recentWindow),
+              ),
+            )
+            .get(),
+        )
+        if ((recentPublishes?.value ?? 0) >= 10) {
+          return yield* rateLimitedFailure("You can publish up to 10 posts every 10 minutes.", 600)
+        }
+        const post = yield* bindingOperation("publishPost.post", () =>
+          database
+            .select(postColumns)
+            .from(schema.posts)
+            .where(and(eq(schema.posts.id, data.id), eq(schema.posts.authorId, session.user.id)))
+            .get(),
+        )
+        if (!post || post.status !== "draft")
+          return yield* notFoundFailure("The draft was not found.")
+        if (post.version !== data.version) {
+          return yield* conflictFailure("The draft changed in another session.")
+        }
 
-    const media = await database
-      .select({
-        status: schema.mediaAssets.status,
-        kind: schema.mediaAssets.kind,
-        streamUid: schema.mediaAssets.streamUid,
-      })
-      .from(schema.postMedia)
-      .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
-      .where(
-        and(eq(schema.postMedia.postId, post.id), eq(schema.mediaAssets.ownerId, session.user.id)),
-      )
-    if (post.type === "images" && (media.length < 1 || media.length > MAX_IMAGES_PER_POST)) {
-      throw invalidInputFailure(
-        `An image post needs between 1 and ${MAX_IMAGES_PER_POST.toString()} ready images.`,
-      )
-    }
-    if (post.type === "video" && media.length !== 1) {
-      throw invalidInputFailure("A video post needs one ready video.")
-    }
-    if (media.some((asset) => asset.status !== "ready")) {
-      throw conflictFailure("Media is still processing.")
-    }
-    const video = media.find((asset) => asset.kind === "video")
-    if (video?.streamUid) {
-      await context.env.STREAM.video(video.streamUid).update({ scheduledDeletion: null })
-    }
+        const media = yield* bindingOperation("publishPost.media", () =>
+          database
+            .select({
+              status: schema.mediaAssets.status,
+              kind: schema.mediaAssets.kind,
+              streamUid: schema.mediaAssets.streamUid,
+            })
+            .from(schema.postMedia)
+            .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
+            .where(
+              and(
+                eq(schema.postMedia.postId, post.id),
+                eq(schema.mediaAssets.ownerId, session.user.id),
+              ),
+            ),
+        )
+        if (post.type === "images" && (media.length < 1 || media.length > MAX_IMAGES_PER_POST)) {
+          return yield* invalidInputFailure(
+            `An image post needs between 1 and ${MAX_IMAGES_PER_POST.toString()} ready images.`,
+          )
+        }
+        if (post.type === "video" && media.length !== 1) {
+          return yield* invalidInputFailure("A video post needs one ready video.")
+        }
+        if (media.some((asset) => asset.status !== "ready")) {
+          return yield* conflictFailure("Media is still processing.")
+        }
+        const video = media.find((asset) => asset.kind === "video")
+        const streamUid = video?.streamUid
+        return yield* Effect.gen(function* () {
+          if (streamUid) {
+            yield* bindingOperation("publishPost.operation", () =>
+              context.env.STREAM.video(streamUid).update({ scheduledDeletion: null }),
+            )
+          }
 
-    const result = await database
-      .update(schema.posts)
-      .set({
-        status: "published",
-        publishedAt: new Date(),
-        updatedAt: new Date(),
-        version: data.version + 1,
-      })
-      .where(
-        and(
-          eq(schema.posts.id, data.id),
-          eq(schema.posts.authorId, session.user.id),
-          eq(schema.posts.version, data.version),
-        ),
-      )
-      .run()
-    if (result.meta.changes !== 1) {
-      throw conflictFailure("The draft changed in another session.")
-    }
+          const result = yield* bindingOperation("publishPost.result", () =>
+            database
+              .update(schema.posts)
+              .set({
+                status: "published",
+                publishedAt: new Date(),
+                updatedAt: new Date(),
+                version: data.version + 1,
+              })
+              .where(
+                and(
+                  eq(schema.posts.id, data.id),
+                  eq(schema.posts.authorId, session.user.id),
+                  eq(schema.posts.version, data.version),
+                ),
+              )
+              .run(),
+          )
+          if (result.meta.changes !== 1) {
+            return yield* conflictFailure("The draft changed in another session.")
+          }
 
-    const invalidate = cacheInvalidationJob(post.id)
-    await database.insert(schema.outbox).values({
-      id: invalidate.idempotencyKey,
-      kind: invalidate.type,
-      payload: invalidate,
-    })
-    context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
-    return { id: post.id, version: data.version + 1 }
-  })
+          const invalidate = cacheInvalidationJob(post.id)
+          yield* bindingOperation("publishPost.operation", () =>
+            database.insert(schema.outbox).values({
+              id: invalidate.idempotencyKey,
+              kind: invalidate.type,
+              payload: invalidate,
+            }),
+          )
+          context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
+          return { id: post.id, version: data.version + 1 }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 export const getOwnedPostForEditing = createServerFn({ method: "GET" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -521,25 +623,30 @@ export const getOwnedPostForEditing = createServerFn({ method: "GET" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const post = await database
-      .select(postColumns)
-      .from(schema.posts)
-      .where(eq(schema.posts.id, data.id))
-      .get()
-    if (!post || post.status === "deleted") throw notFoundFailure("The post was not found.")
-    if (post.authorId !== session.user.id && session.user.role !== "admin") {
-      throw notFoundFailure("The post was not found.")
-    }
-    const tags = await database
-      .select({ name: schema.tags.displayName })
-      .from(schema.postTags)
-      .innerJoin(schema.tags, eq(schema.tags.id, schema.postTags.tagId))
-      .where(eq(schema.postTags.postId, post.id))
-      .orderBy(schema.postTags.ordinal)
-    return { ...post, tags: tags.map(({ name }) => name) }
-  })
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const post = yield* bindingOperation("getOwnedPostForEditing.post", () =>
+          database.select(postColumns).from(schema.posts).where(eq(schema.posts.id, data.id)).get(),
+        )
+        if (!post || post.status === "deleted")
+          return yield* notFoundFailure("The post was not found.")
+        if (post.authorId !== session.user.id && session.user.role !== "admin") {
+          return yield* notFoundFailure("The post was not found.")
+        }
+        const tags = yield* bindingOperation("getOwnedPostForEditing.tags", () =>
+          database
+            .select({ name: schema.tags.displayName })
+            .from(schema.postTags)
+            .innerJoin(schema.tags, eq(schema.tags.id, schema.postTags.tagId))
+            .where(eq(schema.postTags.postId, post.id))
+            .orderBy(schema.postTags.ordinal),
+        )
+        return { ...post, tags: tags.map(({ name }) => name) }
+      }),
+    ),
+  )
 
 const updatePostInput = Schema.Struct({
   id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
@@ -559,84 +666,109 @@ const updatePostInput = Schema.Struct({
 export const updatePost = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
   .validator(serverFunctionValidator(updatePostInput))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const post = await database
-      .select({
-        id: schema.posts.id,
-        type: schema.posts.type,
-        status: schema.posts.status,
-        authorId: schema.posts.authorId,
-      })
-      .from(schema.posts)
-      .where(eq(schema.posts.id, data.id))
-      .get()
-    if (!post || post.status === "deleted") throw notFoundFailure("The post was not found.")
-    if (post.authorId !== session.user.id && session.user.role !== "admin") {
-      throw forbiddenFailure("You cannot edit this post.")
-    }
-    if (post.type === "text" && !data.textContent) {
-      throw invalidInputFailure("Text posts need text content.")
-    }
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const post = yield* bindingOperation("updatePost.post", () =>
+          database
+            .select({
+              id: schema.posts.id,
+              type: schema.posts.type,
+              status: schema.posts.status,
+              authorId: schema.posts.authorId,
+            })
+            .from(schema.posts)
+            .where(eq(schema.posts.id, data.id))
+            .get(),
+        )
+        if (!post || post.status === "deleted")
+          return yield* notFoundFailure("The post was not found.")
+        if (post.authorId !== session.user.id && session.user.role !== "admin") {
+          return yield* forbiddenFailure("You cannot edit this post.")
+        }
+        if (post.type === "text" && !data.textContent) {
+          return yield* invalidInputFailure("Text posts need text content.")
+        }
 
-    const update = await database
-      .update(schema.posts)
-      .set({
-        title: data.title,
-        textContent: post.type === "text" ? data.textContent : null,
-        visibility: data.visibility,
-        updatedAt: new Date(),
-        version: data.version + 1,
-      })
-      .where(and(eq(schema.posts.id, post.id), eq(schema.posts.version, data.version)))
-      .run()
-    if (update.meta.changes !== 1) {
-      throw conflictFailure("The post changed in another session.")
-    }
+        return yield* Effect.gen(function* () {
+          const update = yield* bindingOperation("updatePost.update", () =>
+            database
+              .update(schema.posts)
+              .set({
+                title: data.title,
+                textContent: post.type === "text" ? data.textContent : null,
+                visibility: data.visibility,
+                updatedAt: new Date(),
+                version: data.version + 1,
+              })
+              .where(and(eq(schema.posts.id, post.id), eq(schema.posts.version, data.version)))
+              .run(),
+          )
+          if (update.meta.changes !== 1) {
+            return yield* conflictFailure("The post changed in another session.")
+          }
 
-    const normalizedTags = [...new Set(data.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
-    const tagsWithIds = await Promise.all(
-      normalizedTags.map(async (normalized, ordinal) => ({
-        id: await tagId(normalized),
-        normalized,
-        display:
-          data.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ?? normalized,
-        ordinal,
-      })),
-    )
-    const statements: D1PreparedStatement[] = [
-      context.database.$client.prepare("delete from post_tags where post_id = ?").bind(post.id),
-    ]
-    for (const tag of tagsWithIds) {
-      statements.push(
-        context.database.$client
-          .prepare(
-            `insert into tags (id, display_name, normalized_name, created_at)
+          const normalizedTags = [
+            ...new Set(data.tags.map((tag) => tag.toLocaleLowerCase("en-US"))),
+          ]
+          const tagsWithIds = yield* Effect.forEach(
+            normalizedTags,
+            (normalized, ordinal) =>
+              Effect.gen(function* () {
+                return {
+                  id: yield* tagId(normalized),
+                  normalized,
+                  display:
+                    data.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ??
+                    normalized,
+                  ordinal,
+                }
+              }),
+            { concurrency: 4 },
+          )
+          const statements: D1PreparedStatement[] = [
+            context.database.$client
+              .prepare("delete from post_tags where post_id = ?")
+              .bind(post.id),
+          ]
+          for (const tag of tagsWithIds) {
+            statements.push(
+              context.database.$client
+                .prepare(
+                  `insert into tags (id, display_name, normalized_name, created_at)
            values (?, ?, ?, ?)
            on conflict(normalized_name) do update set display_name = excluded.display_name`,
-          )
-          .bind(tag.id, tag.display, tag.normalized, Date.now()),
-        context.database.$client
-          .prepare(
-            `insert into post_tags (post_id, tag_id, ordinal)
+                )
+                .bind(tag.id, tag.display, tag.normalized, Date.now()),
+              context.database.$client
+                .prepare(
+                  `insert into post_tags (post_id, tag_id, ordinal)
            select ?, id, ? from tags where normalized_name = ?`,
+                )
+                .bind(post.id, tag.ordinal, tag.normalized),
+            )
+          }
+          yield* bindingOperation("updatePost.operation", () =>
+            context.database.$client.batch(statements),
           )
-          .bind(post.id, tag.ordinal, tag.normalized),
-      )
-    }
-    await context.database.$client.batch(statements)
 
-    if (post.status === "published") {
-      const invalidate = cacheInvalidationJob(post.id)
-      await database.insert(schema.outbox).values({
-        id: invalidate.idempotencyKey,
-        kind: invalidate.type,
-        payload: invalidate,
-      })
-      context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
-    }
-    return { id: post.id, version: data.version + 1 }
-  })
+          if (post.status === "published") {
+            const invalidate = cacheInvalidationJob(post.id)
+            yield* bindingOperation("updatePost.operation", () =>
+              database.insert(schema.outbox).values({
+                id: invalidate.idempotencyKey,
+                kind: invalidate.type,
+                payload: invalidate,
+              }),
+            )
+            context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
+          }
+          return { id: post.id, version: data.version + 1 }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )
 
 export const deletePost = createServerFn({ method: "POST" })
   .middleware([authenticatedServerFunctionMiddleware])
@@ -648,74 +780,95 @@ export const deletePost = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const post = await database
-      .select({ authorId: schema.posts.authorId, status: schema.posts.status })
-      .from(schema.posts)
-      .where(eq(schema.posts.id, data.id))
-      .get()
-    if (!post || post.status === "deleted") throw notFoundFailure("The post was not found.")
-    if (post.authorId !== session.user.id && session.user.role !== "admin") {
-      throw forbiddenFailure("You cannot delete this post.")
-    }
-    const media = await database
-      .select({ id: schema.mediaAssets.id })
-      .from(schema.postMedia)
-      .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
-      .where(eq(schema.postMedia.postId, data.id))
-    const cleanupJobs = media.map(({ id }) => mediaCleanupJob(id))
-    const invalidate = cacheInvalidationJob(data.id)
-    const deleted = await database
-      .update(schema.posts)
-      .set({
-        status: "deleted",
-        deletedAt: new Date(),
-        updatedAt: new Date(),
-        version: data.version + 1,
-      })
-      .where(
-        and(
-          eq(schema.posts.id, data.id),
-          eq(schema.posts.version, data.version),
-          ne(schema.posts.status, "deleted"),
-        ),
-      )
-      .run()
-    if (deleted.meta.changes !== 1) {
-      throw conflictFailure("The post changed in another session.")
-    }
-
-    const statements: D1PreparedStatement[] = [
-      context.database.$client.prepare("delete from comments where post_id = ?").bind(data.id),
-      context.database.$client.prepare("delete from reactions where post_id = ?").bind(data.id),
-      context.database.$client.prepare("delete from post_tags where post_id = ?").bind(data.id),
-      ...cleanupJobs.map((job) =>
-        context.database.$client
-          .prepare(
-            `insert into outbox (id, kind, payload, attempts, available_at, created_at)
-           values (?, ?, ?, 0, ?, ?) on conflict(id) do nothing`,
-          )
-          .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now()),
-      ),
-      context.database.$client
-        .prepare(
-          `insert into outbox (id, kind, payload, attempts, available_at, created_at)
-         values (?, ?, ?, 0, ?, ?)`,
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const post = yield* bindingOperation("deletePost.post", () =>
+          database
+            .select({ authorId: schema.posts.authorId, status: schema.posts.status })
+            .from(schema.posts)
+            .where(eq(schema.posts.id, data.id))
+            .get(),
         )
-        .bind(
-          invalidate.idempotencyKey,
-          invalidate.type,
-          JSON.stringify(invalidate),
-          Date.now(),
-          Date.now(),
-        ),
-    ]
-    await context.database.$client.batch(statements)
-    context.executionContext.waitUntil(
-      Promise.all([...cleanupJobs, invalidate].map((job) => context.env.JOBS.send(job))).then(
-        () => undefined,
-      ),
-    )
-    return { id: data.id }
-  })
+        if (!post || post.status === "deleted")
+          return yield* notFoundFailure("The post was not found.")
+        if (post.authorId !== session.user.id && session.user.role !== "admin") {
+          return yield* forbiddenFailure("You cannot delete this post.")
+        }
+        const media = yield* bindingOperation("deletePost.media", () =>
+          database
+            .select({ id: schema.mediaAssets.id })
+            .from(schema.postMedia)
+            .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
+            .where(eq(schema.postMedia.postId, data.id)),
+        )
+        const cleanupJobs = media.map(({ id }) => mediaCleanupJob(id))
+        const invalidate = cacheInvalidationJob(data.id)
+        return yield* Effect.gen(function* () {
+          const deleted = yield* bindingOperation("deletePost.deleted", () =>
+            database
+              .update(schema.posts)
+              .set({
+                status: "deleted",
+                deletedAt: new Date(),
+                updatedAt: new Date(),
+                version: data.version + 1,
+              })
+              .where(
+                and(
+                  eq(schema.posts.id, data.id),
+                  eq(schema.posts.version, data.version),
+                  ne(schema.posts.status, "deleted"),
+                ),
+              )
+              .run(),
+          )
+          if (deleted.meta.changes !== 1) {
+            return yield* conflictFailure("The post changed in another session.")
+          }
+
+          const statements: D1PreparedStatement[] = [
+            context.database.$client
+              .prepare("delete from comments where post_id = ?")
+              .bind(data.id),
+            context.database.$client
+              .prepare("delete from reactions where post_id = ?")
+              .bind(data.id),
+            context.database.$client
+              .prepare("delete from post_tags where post_id = ?")
+              .bind(data.id),
+            ...cleanupJobs.map((job) =>
+              context.database.$client
+                .prepare(
+                  `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+           values (?, ?, ?, 0, ?, ?) on conflict(id) do nothing`,
+                )
+                .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now()),
+            ),
+            context.database.$client
+              .prepare(
+                `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+         values (?, ?, ?, 0, ?, ?)`,
+              )
+              .bind(
+                invalidate.idempotencyKey,
+                invalidate.type,
+                JSON.stringify(invalidate),
+                Date.now(),
+                Date.now(),
+              ),
+          ]
+          yield* bindingOperation("deletePost.operation", () =>
+            context.database.$client.batch(statements),
+          )
+          context.executionContext.waitUntil(
+            Promise.all([...cleanupJobs, invalidate].map((job) => context.env.JOBS.send(job))).then(
+              () => undefined,
+            ),
+          )
+          return { id: data.id }
+        }).pipe(Effect.uninterruptible)
+      }),
+    ),
+  )

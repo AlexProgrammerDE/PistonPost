@@ -1,4 +1,5 @@
-import { Schema, Effect } from "effect"
+import * as Effect from "effect/Effect"
+import * as Schema from "effect/Schema"
 
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 

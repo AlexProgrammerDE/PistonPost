@@ -9,6 +9,7 @@ import {
 import { UnsubscribeTokenError } from "@/email/unsubscribe"
 import {
   parseServerFunctionError,
+  serverFunctionErrorSchema,
   ServerFunctionClientError,
   type ServerFunctionError,
 } from "@/lib/server-function-error"
@@ -85,7 +86,14 @@ export function normalizeServerFunctionFailure(cause: unknown) {
   return internalFailure(cause)
 }
 
+/** Project only declared public fields before TanStack serializes a thrown failure. */
+export function publicServerFunctionError(cause: unknown) {
+  const normalized = normalizeServerFunctionFailure(cause)
+  return Schema.decodeSync(serverFunctionErrorSchema, { errors: "all" })(normalized.error)
+}
+
 export function mapEffectFailure(cause: unknown) {
+  if (cause instanceof ServerFunctionFailure) return cause
   if (cause instanceof AuthorizationError) {
     return cause.reason === "Authentication is required for this action."
       ? unauthenticatedFailure()
@@ -116,8 +124,11 @@ export function mapEffectFailure(cause: unknown) {
   return internalFailure(cause)
 }
 
-export async function runServerEffect<Success, Failure>(effect: Effect.Effect<Success, Failure>) {
-  const result = await Effect.runPromise(Effect.result(effect))
+export async function runServerEffect<Success, Failure>(
+  effect: Effect.Effect<Success, Failure>,
+  options?: { readonly signal?: AbortSignal },
+) {
+  const result = await Effect.runPromise(Effect.result(effect), options)
   if (Result.isFailure(result)) throw mapEffectFailure(result.failure)
   return result.success
 }

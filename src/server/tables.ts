@@ -8,6 +8,8 @@ import * as schema from "@/db/schema"
 import { moderationEmailJob } from "@/email"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { moderationPushJob, type PushDeliveryJob } from "@/push/jobs"
+import { bindingOperation } from "@/server/operation"
+import { runRequestEffect } from "@/server/request-effect"
 import {
   conflictFailure,
   invalidInputFailure,
@@ -94,71 +96,78 @@ export const getAdminRows = createServerFn({ method: "GET" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database } = context
-    const search = `%${data.query}%`
-    const cursor = decodeAdminCursor(data.cursor)
-    const order = data.direction === "desc" ? desc : asc
-    switch (data.section) {
-      case "posts":
-        return adminPage(
-          await database
-            .select({
-              id: schema.posts.id,
-              primary: schema.posts.title,
-              secondary: schema.user.name,
-              status: schema.posts.status,
-              createdAt: schema.posts.createdAt,
-            })
-            .from(schema.posts)
-            .innerJoin(schema.user, eq(schema.user.id, schema.posts.authorId))
-            .where(
-              and(
-                data.query ? like(schema.posts.title, search) : undefined,
-                adminCursorCondition(
-                  schema.posts.createdAt,
-                  schema.posts.id,
-                  cursor,
-                  data.direction,
-                ),
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database } = context
+        const search = `%${data.query}%`
+        const cursor = decodeAdminCursor(data.cursor)
+        const order = data.direction === "desc" ? desc : asc
+        switch (data.section) {
+          case "posts":
+            return adminPage(
+              yield* bindingOperation("getAdminRows.operation", () =>
+                database
+                  .select({
+                    id: schema.posts.id,
+                    primary: schema.posts.title,
+                    secondary: schema.user.name,
+                    status: schema.posts.status,
+                    createdAt: schema.posts.createdAt,
+                  })
+                  .from(schema.posts)
+                  .innerJoin(schema.user, eq(schema.user.id, schema.posts.authorId))
+                  .where(
+                    and(
+                      data.query ? like(schema.posts.title, search) : undefined,
+                      adminCursorCondition(
+                        schema.posts.createdAt,
+                        schema.posts.id,
+                        cursor,
+                        data.direction,
+                      ),
+                    ),
+                  )
+                  .orderBy(order(schema.posts.createdAt), order(schema.posts.id))
+                  .limit(adminPageSize + 1),
               ),
             )
-            .orderBy(order(schema.posts.createdAt), order(schema.posts.id))
-            .limit(adminPageSize + 1),
-        )
-      case "comments":
-        return adminPage(
-          await database
-            .select({
-              id: schema.comments.id,
-              primary: schema.comments.content,
-              secondary: schema.user.name,
-              status: schema.comments.status,
-              createdAt: schema.comments.createdAt,
-            })
-            .from(schema.comments)
-            .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
-            .where(
-              and(
-                data.query ? like(schema.comments.content, search) : undefined,
-                adminCursorCondition(
-                  schema.comments.createdAt,
-                  schema.comments.id,
-                  cursor,
-                  data.direction,
-                ),
+          case "comments":
+            return adminPage(
+              yield* bindingOperation("getAdminRows.operation", () =>
+                database
+                  .select({
+                    id: schema.comments.id,
+                    primary: schema.comments.content,
+                    secondary: schema.user.name,
+                    status: schema.comments.status,
+                    createdAt: schema.comments.createdAt,
+                  })
+                  .from(schema.comments)
+                  .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
+                  .where(
+                    and(
+                      data.query ? like(schema.comments.content, search) : undefined,
+                      adminCursorCondition(
+                        schema.comments.createdAt,
+                        schema.comments.id,
+                        cursor,
+                        data.direction,
+                      ),
+                    ),
+                  )
+                  .orderBy(order(schema.comments.createdAt), order(schema.comments.id))
+                  .limit(adminPageSize + 1),
               ),
             )
-            .orderBy(order(schema.comments.createdAt), order(schema.comments.id))
-            .limit(adminPageSize + 1),
-        )
-      case "reports":
-        return adminPage(
-          await database
-            .select({
-              id: schema.contentReports.id,
-              primary: sql<string>`${schema.contentReports.reason} || case when ${schema.contentReports.details} is null then '' else ': ' || ${schema.contentReports.details} end`,
-              secondary: sql<string>`case
+          case "reports":
+            return adminPage(
+              yield* bindingOperation("getAdminRows.operation", () =>
+                database
+                  .select({
+                    id: schema.contentReports.id,
+                    primary: sql<string>`${schema.contentReports.reason} || case when ${schema.contentReports.details} is null then '' else ': ' || ${schema.contentReports.details} end`,
+                    secondary: sql<string>`case
                 when ${schema.contentReports.targetType} = 'post'
                   then '/post/' || ${schema.contentReports.targetId}
                 when ${schema.contentReports.targetType} = 'profile'
@@ -168,148 +177,178 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   ''
                 ) || '#discussion'
               end`,
-              status: schema.contentReports.status,
-              createdAt: schema.contentReports.createdAt,
-            })
-            .from(schema.contentReports)
-            .where(
-              and(
-                data.query
-                  ? or(
-                      like(schema.contentReports.reason, search),
-                      like(schema.contentReports.details, search),
-                      like(schema.contentReports.targetId, search),
-                    )
-                  : undefined,
-                adminCursorCondition(
-                  schema.contentReports.createdAt,
-                  schema.contentReports.id,
-                  cursor,
-                  data.direction,
-                ),
+                    status: schema.contentReports.status,
+                    createdAt: schema.contentReports.createdAt,
+                  })
+                  .from(schema.contentReports)
+                  .where(
+                    and(
+                      data.query
+                        ? or(
+                            like(schema.contentReports.reason, search),
+                            like(schema.contentReports.details, search),
+                            like(schema.contentReports.targetId, search),
+                          )
+                        : undefined,
+                      adminCursorCondition(
+                        schema.contentReports.createdAt,
+                        schema.contentReports.id,
+                        cursor,
+                        data.direction,
+                      ),
+                    ),
+                  )
+                  .orderBy(order(schema.contentReports.createdAt), order(schema.contentReports.id))
+                  .limit(adminPageSize + 1),
               ),
             )
-            .orderBy(order(schema.contentReports.createdAt), order(schema.contentReports.id))
-            .limit(adminPageSize + 1),
-        )
-      case "media":
-        return adminPage(
-          await database
-            .select({
-              id: schema.mediaAssets.id,
-              primary: schema.mediaAssets.originalFilename,
-              secondary: schema.mediaAssets.kind,
-              status: schema.mediaAssets.status,
-              createdAt: schema.mediaAssets.createdAt,
-            })
-            .from(schema.mediaAssets)
-            .where(
-              and(
-                data.query ? like(schema.mediaAssets.originalFilename, search) : undefined,
-                adminCursorCondition(
-                  schema.mediaAssets.createdAt,
-                  schema.mediaAssets.id,
-                  cursor,
-                  data.direction,
-                ),
+          case "media":
+            return adminPage(
+              yield* bindingOperation("getAdminRows.operation", () =>
+                database
+                  .select({
+                    id: schema.mediaAssets.id,
+                    primary: schema.mediaAssets.originalFilename,
+                    secondary: schema.mediaAssets.kind,
+                    status: schema.mediaAssets.status,
+                    createdAt: schema.mediaAssets.createdAt,
+                  })
+                  .from(schema.mediaAssets)
+                  .where(
+                    and(
+                      data.query ? like(schema.mediaAssets.originalFilename, search) : undefined,
+                      adminCursorCondition(
+                        schema.mediaAssets.createdAt,
+                        schema.mediaAssets.id,
+                        cursor,
+                        data.direction,
+                      ),
+                    ),
+                  )
+                  .orderBy(order(schema.mediaAssets.createdAt), order(schema.mediaAssets.id))
+                  .limit(adminPageSize + 1),
               ),
             )
-            .orderBy(order(schema.mediaAssets.createdAt), order(schema.mediaAssets.id))
-            .limit(adminPageSize + 1),
-        )
-      case "audit":
-        return adminPage(
-          await database
-            .select({
-              id: schema.auditEvents.id,
-              primary: schema.auditEvents.action,
-              secondary: schema.auditEvents.entityType,
-              status: schema.auditEvents.entityId,
-              createdAt: schema.auditEvents.createdAt,
-            })
-            .from(schema.auditEvents)
-            .where(
-              and(
-                data.query ? like(schema.auditEvents.action, search) : undefined,
-                adminCursorCondition(
-                  schema.auditEvents.createdAt,
-                  schema.auditEvents.id,
-                  cursor,
-                  data.direction,
-                ),
+          case "audit":
+            return adminPage(
+              yield* bindingOperation("getAdminRows.operation", () =>
+                database
+                  .select({
+                    id: schema.auditEvents.id,
+                    primary: schema.auditEvents.action,
+                    secondary: schema.auditEvents.entityType,
+                    status: schema.auditEvents.entityId,
+                    createdAt: schema.auditEvents.createdAt,
+                  })
+                  .from(schema.auditEvents)
+                  .where(
+                    and(
+                      data.query ? like(schema.auditEvents.action, search) : undefined,
+                      adminCursorCondition(
+                        schema.auditEvents.createdAt,
+                        schema.auditEvents.id,
+                        cursor,
+                        data.direction,
+                      ),
+                    ),
+                  )
+                  .orderBy(order(schema.auditEvents.createdAt), order(schema.auditEvents.id))
+                  .limit(adminPageSize + 1),
               ),
             )
-            .orderBy(order(schema.auditEvents.createdAt), order(schema.auditEvents.id))
-            .limit(adminPageSize + 1),
-        )
-      case "jobs":
-        return adminPage(
-          await database
-            .select({
-              id: schema.outbox.id,
-              primary: schema.outbox.kind,
-              secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
-              status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
-              createdAt: schema.outbox.createdAt,
-            })
-            .from(schema.outbox)
-            .where(
-              and(
-                data.query ? like(schema.outbox.kind, search) : undefined,
-                adminCursorCondition(
-                  schema.outbox.createdAt,
-                  schema.outbox.id,
-                  cursor,
-                  data.direction,
-                ),
+          case "jobs":
+            return adminPage(
+              yield* bindingOperation("getAdminRows.operation", () =>
+                database
+                  .select({
+                    id: schema.outbox.id,
+                    primary: schema.outbox.kind,
+                    secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
+                    status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
+                    createdAt: schema.outbox.createdAt,
+                  })
+                  .from(schema.outbox)
+                  .where(
+                    and(
+                      data.query ? like(schema.outbox.kind, search) : undefined,
+                      adminCursorCondition(
+                        schema.outbox.createdAt,
+                        schema.outbox.id,
+                        cursor,
+                        data.direction,
+                      ),
+                    ),
+                  )
+                  .orderBy(order(schema.outbox.createdAt), order(schema.outbox.id))
+                  .limit(adminPageSize + 1),
               ),
             )
-            .orderBy(order(schema.outbox.createdAt), order(schema.outbox.id))
-            .limit(adminPageSize + 1),
-        )
-    }
-    throw invalidInputFailure("Unsupported administration section.")
-  })
+        }
+        return yield* invalidInputFailure("Unsupported administration section.")
+      }),
+    ),
+  )
 
 export const getAdminOverview = createServerFn({ method: "GET" })
   .middleware([administratorServerFunctionMiddleware])
-  .handler(async ({ context }) => {
-    // Administrator authorization has already run against the primary.
-    // These display counts can lag; action handlers still read current state.
-    const database = createD1Database(context.env.DB, "first-unconstrained")
-    const [posts, comments, reports, users, failedMedia, pendingJobs, auditEvents] =
-      await Promise.all([
-        database.select({ value: count() }).from(schema.posts).get(),
-        database.select({ value: count() }).from(schema.comments).get(),
-        database
-          .select({ value: count() })
-          .from(schema.contentReports)
-          .where(eq(schema.contentReports.status, "open"))
-          .get(),
-        database.select({ value: count() }).from(schema.user).get(),
-        database
-          .select({ value: count() })
-          .from(schema.mediaAssets)
-          .where(eq(schema.mediaAssets.status, "failed"))
-          .get(),
-        database
-          .select({ value: count() })
-          .from(schema.outbox)
-          .where(isNull(schema.outbox.processedAt))
-          .get(),
-        database.select({ value: count() }).from(schema.auditEvents).get(),
-      ])
+  .handler(({ context }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        // Administrator authorization has already run against the primary.
+        // These display counts can lag; action handlers still read current state.
+        const database = createD1Database(context.env.DB, "first-unconstrained")
+        const [posts, comments, reports, users, failedMedia, pendingJobs, auditEvents] =
+          yield* Effect.all(
+            [
+              bindingOperation("getAdminOverview.operation", () =>
+                database.select({ value: count() }).from(schema.posts).get(),
+              ),
+              bindingOperation("getAdminOverview.operation", () =>
+                database.select({ value: count() }).from(schema.comments).get(),
+              ),
+              bindingOperation("getAdminOverview.operation", () =>
+                database
+                  .select({ value: count() })
+                  .from(schema.contentReports)
+                  .where(eq(schema.contentReports.status, "open"))
+                  .get(),
+              ),
+              bindingOperation("getAdminOverview.operation", () =>
+                database.select({ value: count() }).from(schema.user).get(),
+              ),
+              bindingOperation("getAdminOverview.operation", () =>
+                database
+                  .select({ value: count() })
+                  .from(schema.mediaAssets)
+                  .where(eq(schema.mediaAssets.status, "failed"))
+                  .get(),
+              ),
+              bindingOperation("getAdminOverview.operation", () =>
+                database
+                  .select({ value: count() })
+                  .from(schema.outbox)
+                  .where(isNull(schema.outbox.processedAt))
+                  .get(),
+              ),
+              bindingOperation("getAdminOverview.operation", () =>
+                database.select({ value: count() }).from(schema.auditEvents).get(),
+              ),
+            ],
+            { concurrency: 4 },
+          )
 
-    return {
-      posts: posts?.value ?? 0,
-      comments: comments?.value ?? 0,
-      reports: reports?.value ?? 0,
-      users: users?.value ?? 0,
-      media: failedMedia?.value ?? 0,
-      jobs: pendingJobs?.value ?? 0,
-      audit: auditEvents?.value ?? 0,
-    }
-  })
+        return {
+          posts: posts?.value ?? 0,
+          comments: comments?.value ?? 0,
+          reports: reports?.value ?? 0,
+          users: users?.value ?? 0,
+          media: failedMedia?.value ?? 0,
+          jobs: pendingJobs?.value ?? 0,
+          audit: auditEvents?.value ?? 0,
+        }
+      }),
+    ),
+  )
 
 export const retryAdminJob = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
@@ -320,80 +359,100 @@ export const retryAdminJob = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const job = await database
-      .select({ payload: schema.outbox.payload, processedAt: schema.outbox.processedAt })
-      .from(schema.outbox)
-      .where(eq(schema.outbox.id, data.id))
-      .get()
-    if (!job) throw notFoundFailure("The job was not found.")
-    if (job.processedAt) throw conflictFailure("This job has already completed.")
-    await database.batch([
-      database
-        .update(schema.outbox)
-        .set({
-          availableAt: new Date(),
-          leaseExpiresAt: null,
-          deadLetteredAt: null,
-          completedReason: null,
-          lastError: null,
-        })
-        .where(eq(schema.outbox.id, data.id)),
-      database
-        .update(schema.emailCampaignDeliveries)
-        .set({ status: "queued", skipReason: null, completedAt: null })
-        .where(eq(schema.emailCampaignDeliveries.id, data.id)),
-      database.insert(schema.auditEvents).values({
-        id: crypto.randomUUID(),
-        actorId: session.user.id,
-        action: "job.retry",
-        entityType: "outbox",
-        entityId: data.id,
-        metadata: {},
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const job = yield* bindingOperation("retryAdminJob.job", () =>
+          database
+            .select({ payload: schema.outbox.payload, processedAt: schema.outbox.processedAt })
+            .from(schema.outbox)
+            .where(eq(schema.outbox.id, data.id))
+            .get(),
+        )
+        if (!job) return yield* notFoundFailure("The job was not found.")
+        if (job.processedAt) return yield* conflictFailure("This job has already completed.")
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("retryAdminJob.operation", () =>
+            database.batch([
+              database
+                .update(schema.outbox)
+                .set({
+                  availableAt: new Date(),
+                  leaseExpiresAt: null,
+                  deadLetteredAt: null,
+                  completedReason: null,
+                  lastError: null,
+                })
+                .where(eq(schema.outbox.id, data.id)),
+              database
+                .update(schema.emailCampaignDeliveries)
+                .set({ status: "queued", skipReason: null, completedAt: null })
+                .where(eq(schema.emailCampaignDeliveries.id, data.id)),
+              database.insert(schema.auditEvents).values({
+                id: crypto.randomUUID(),
+                actorId: session.user.id,
+                action: "job.retry",
+                entityType: "outbox",
+                entityId: data.id,
+                metadata: {},
+              }),
+            ]),
+          )
+          context.executionContext.waitUntil(context.env.JOBS.send(job.payload))
+          return { id: data.id }
+        }).pipe(Effect.uninterruptible)
       }),
-    ])
-    context.executionContext.waitUntil(context.env.JOBS.send(job.payload))
-    return { id: data.id }
-  })
+    ),
+  )
 
 export const cleanupAdminMedia = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
   .validator(serverFunctionValidator(Schema.Struct({ id: Schema.String.check(Schema.isUUID()) })))
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const asset = await database
-      .select({ status: schema.mediaAssets.status })
-      .from(schema.mediaAssets)
-      .where(eq(schema.mediaAssets.id, data.id))
-      .get()
-    if (!asset) throw notFoundFailure("The media item was not found.")
-    if (
-      asset.status !== "pending" &&
-      asset.status !== "uploading" &&
-      asset.status !== "processing" &&
-      asset.status !== "failed"
-    ) {
-      throw conflictFailure("Only unfinished or failed media can be removed here.")
-    }
-    const job = mediaCleanupJob(data.id)
-    await database.batch([
-      database
-        .insert(schema.outbox)
-        .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-        .onConflictDoNothing(),
-      database.insert(schema.auditEvents).values({
-        id: crypto.randomUUID(),
-        actorId: session.user.id,
-        action: "media.cleanup",
-        entityType: "media",
-        entityId: data.id,
-        metadata: {},
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const asset = yield* bindingOperation("cleanupAdminMedia.asset", () =>
+          database
+            .select({ status: schema.mediaAssets.status })
+            .from(schema.mediaAssets)
+            .where(eq(schema.mediaAssets.id, data.id))
+            .get(),
+        )
+        if (!asset) return yield* notFoundFailure("The media item was not found.")
+        if (
+          asset.status !== "pending" &&
+          asset.status !== "uploading" &&
+          asset.status !== "processing" &&
+          asset.status !== "failed"
+        ) {
+          return yield* conflictFailure("Only unfinished or failed media can be removed here.")
+        }
+        const job = mediaCleanupJob(data.id)
+        return yield* Effect.gen(function* () {
+          yield* bindingOperation("cleanupAdminMedia.operation", () =>
+            database.batch([
+              database
+                .insert(schema.outbox)
+                .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+                .onConflictDoNothing(),
+              database.insert(schema.auditEvents).values({
+                id: crypto.randomUUID(),
+                actorId: session.user.id,
+                action: "media.cleanup",
+                entityType: "media",
+                entityId: data.id,
+                metadata: {},
+              }),
+            ]),
+          )
+          context.executionContext.waitUntil(context.env.JOBS.send(job))
+          return { id: data.id }
+        }).pipe(Effect.uninterruptible)
       }),
-    ])
-    context.executionContext.waitUntil(context.env.JOBS.send(job))
-    return { id: data.id }
-  })
+    ),
+  )
 
 export const moderateEntity = createServerFn({ method: "POST" })
   .middleware([administratorServerFunctionMiddleware])
@@ -407,98 +466,117 @@ export const moderateEntity = createServerFn({ method: "POST" })
       }),
     ),
   )
-  .handler(async ({ context, data }) => {
-    const { database, session } = context
-    const target =
-      data.target === "post"
-        ? await database
-            .select({
-              id: schema.posts.id,
-              postId: schema.posts.id,
-              status: schema.posts.status,
-              authorId: schema.posts.authorId,
-              authorUsername: schema.profiles.username,
-            })
-            .from(schema.posts)
-            .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
-            .where(eq(schema.posts.id, data.id))
-            .get()
-        : await database
-            .select({
-              id: schema.comments.id,
-              postId: schema.comments.postId,
-              status: schema.comments.status,
-              authorId: schema.comments.authorId,
-              authorUsername: schema.profiles.username,
-            })
-            .from(schema.comments)
-            .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
-            .where(eq(schema.comments.id, data.id))
-            .get()
-    if (!target) throw notFoundFailure("The moderation target was not found.")
-    const nextStatus = resolveModerationTransition(target.status, data.action)
-    if (!nextStatus) {
-      throw conflictFailure(
-        "The content changed since this table was loaded. Refresh and try again.",
-      )
-    }
-    const expectedStatus = data.action === "hide" ? "published" : "moderated"
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const { database, session } = context
+        const target =
+          data.target === "post"
+            ? yield* bindingOperation("moderateEntity.operation", () =>
+                database
+                  .select({
+                    id: schema.posts.id,
+                    postId: schema.posts.id,
+                    status: schema.posts.status,
+                    authorId: schema.posts.authorId,
+                    authorUsername: schema.profiles.username,
+                  })
+                  .from(schema.posts)
+                  .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.posts.authorId))
+                  .where(eq(schema.posts.id, data.id))
+                  .get(),
+              )
+            : yield* bindingOperation("moderateEntity.operation", () =>
+                database
+                  .select({
+                    id: schema.comments.id,
+                    postId: schema.comments.postId,
+                    status: schema.comments.status,
+                    authorId: schema.comments.authorId,
+                    authorUsername: schema.profiles.username,
+                  })
+                  .from(schema.comments)
+                  .innerJoin(schema.profiles, eq(schema.profiles.userId, schema.comments.authorId))
+                  .where(eq(schema.comments.id, data.id))
+                  .get(),
+              )
+        if (!target) return yield* notFoundFailure("The moderation target was not found.")
+        const nextStatus = resolveModerationTransition(target.status, data.action)
+        if (!nextStatus) {
+          return yield* conflictFailure(
+            "The content changed since this table was loaded. Refresh and try again.",
+          )
+        }
+        const expectedStatus = data.action === "hide" ? "published" : "moderated"
 
-    const updateTarget =
-      data.target === "post"
-        ? database
-            .update(schema.posts)
-            .set({
-              status: nextStatus,
-              moderationReason: data.action === "hide" ? data.reason : null,
-              updatedAt: new Date(),
-            })
-            .where(and(eq(schema.posts.id, data.id), eq(schema.posts.status, expectedStatus)))
-        : database
-            .update(schema.comments)
-            .set({
-              status: nextStatus,
-              moderationReason: data.action === "hide" ? data.reason : null,
-              updatedAt: new Date(),
-            })
-            .where(and(eq(schema.comments.id, data.id), eq(schema.comments.status, expectedStatus)))
-    const moderationEventId = crypto.randomUUID()
-    const jobs: Array<
-      | ReturnType<typeof moderationEmailJob>
-      | ReturnType<typeof cacheInvalidationJob>
-      | PushDeliveryJob
-    > = [cacheInvalidationJob(target.postId)]
-    if (target.authorId !== session.user.id) {
-      jobs.push(moderationEmailJob(target.authorId, moderationEventId))
-      const subscriptions = await listActivePushSubscriptionIds(database, target.authorId)
-      jobs.push(
-        ...subscriptions.map(({ subscriptionId }) =>
-          moderationPushJob(
-            { recipientUserId: target.authorId, subscriptionId },
-            moderationEventId,
-          ),
-        ),
-      )
-    }
-    await database.batch([
-      updateTarget,
-      database.insert(schema.auditEvents).values({
-        id: moderationEventId,
-        actorId: session.user.id,
-        action: `${data.target}.${data.action}`,
-        entityType: data.target,
-        entityId: data.id,
-        metadata: { reason: data.reason },
+        return yield* Effect.gen(function* () {
+          const updateTarget =
+            data.target === "post"
+              ? database
+                  .update(schema.posts)
+                  .set({
+                    status: nextStatus,
+                    moderationReason: data.action === "hide" ? data.reason : null,
+                    updatedAt: new Date(),
+                  })
+                  .where(and(eq(schema.posts.id, data.id), eq(schema.posts.status, expectedStatus)))
+              : database
+                  .update(schema.comments)
+                  .set({
+                    status: nextStatus,
+                    moderationReason: data.action === "hide" ? data.reason : null,
+                    updatedAt: new Date(),
+                  })
+                  .where(
+                    and(
+                      eq(schema.comments.id, data.id),
+                      eq(schema.comments.status, expectedStatus),
+                    ),
+                  )
+          const moderationEventId = crypto.randomUUID()
+          const jobs: Array<
+            | ReturnType<typeof moderationEmailJob>
+            | ReturnType<typeof cacheInvalidationJob>
+            | PushDeliveryJob
+          > = [cacheInvalidationJob(target.postId)]
+          if (target.authorId !== session.user.id) {
+            jobs.push(moderationEmailJob(target.authorId, moderationEventId))
+            const subscriptions = yield* bindingOperation("moderateEntity.subscriptions", () =>
+              listActivePushSubscriptionIds(database, target.authorId),
+            )
+            jobs.push(
+              ...subscriptions.map(({ subscriptionId }) =>
+                moderationPushJob(
+                  { recipientUserId: target.authorId, subscriptionId },
+                  moderationEventId,
+                ),
+              ),
+            )
+          }
+          yield* bindingOperation("moderateEntity.operation", () =>
+            database.batch([
+              updateTarget,
+              database.insert(schema.auditEvents).values({
+                id: moderationEventId,
+                actorId: session.user.id,
+                action: `${data.target}.${data.action}`,
+                entityType: data.target,
+                entityId: data.id,
+                metadata: { reason: data.reason },
+              }),
+              ...jobs.map((job) =>
+                database
+                  .insert(schema.outbox)
+                  .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+                  .onConflictDoNothing(),
+              ),
+            ]),
+          )
+          context.executionContext.waitUntil(
+            context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
+          )
+          return { id: data.id }
+        }).pipe(Effect.uninterruptible)
       }),
-      ...jobs.map((job) =>
-        database
-          .insert(schema.outbox)
-          .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-          .onConflictDoNothing(),
-      ),
-    ])
-    context.executionContext.waitUntil(
-      context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
-    )
-    return { id: data.id }
-  })
+    ),
+  )

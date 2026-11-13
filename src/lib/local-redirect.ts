@@ -39,10 +39,12 @@ export function safeLocalRedirect(value: unknown) {
 }
 
 export const authSearchSchema = Schema.Struct({
-  redirectTo: Schema.optional(Schema.Unknown).pipe(
-    Schema.decodeTo(Schema.UndefinedOr(Schema.String), {
-      decode: SchemaGetter.transform(safeLocalRedirect),
-      encode: SchemaGetter.passthrough(),
-    }),
+  redirectTo: Schema.optional(
+    Schema.Unknown.pipe(
+      Schema.decodeTo(Schema.UndefinedOr(Schema.String), {
+        decode: SchemaGetter.transform(safeLocalRedirect),
+        encode: SchemaGetter.passthrough(),
+      }),
+    ),
   ),
 })

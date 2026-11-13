@@ -1,85 +1,52 @@
 import { WorkflowEntrypoint, type WorkflowEvent, type WorkflowStep } from "cloudflare:workers"
 import { inArray } from "drizzle-orm"
-import { Effect } from "effect"
+import { Effect, Layer } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 
-import { purgeAccountMedia } from "./account-media-purge"
-import { FEED_CACHE_TAG, ownerCacheTag, SITEMAP_CACHE_TAG } from "./cache-tags"
-import { cacheInvalidationTagsJob } from "./jobs"
-
-export type AccountDeletionParams = {
-  userId: string
-  mediaIds: string[]
-}
+import {
+  accountDeletionStoreLayer,
+  deleteOwnedAccountMedia,
+  scheduleAccountCachePurge,
+  verifyAccountPurge,
+  type AccountDeletionParams,
+} from "./account-deletion-steps"
+import { accountMediaPurgeLayer } from "./account-media-purge"
 
 export class AccountDeletionWorkflow extends WorkflowEntrypoint<
   Cloudflare.Env,
   AccountDeletionParams
 > {
+  private services() {
+    const database = createD1Database(this.env.DB)
+    return Layer.mergeAll(
+      accountDeletionStoreLayer(database, (job) => this.env.JOBS.send(job)),
+      accountMediaPurgeLayer({
+        deleteR2: (key) => this.env.MEDIA.delete(key),
+        deleteStream: (uid) => this.env.STREAM.video(uid).delete(),
+        deleteRecord: async (id) => {
+          await database.delete(schema.mediaAssets).where(inArray(schema.mediaAssets.id, [id]))
+        },
+      }),
+    )
+  }
+
   async run(event: Readonly<WorkflowEvent<AccountDeletionParams>>, step: WorkflowStep) {
-    const { mediaIds, userId } = event.payload
+    const input = event.payload
     await step.do(
       "delete owned media",
       { retries: { limit: 8, delay: "10 seconds", backoff: "exponential" } },
-      async () => {
-        if (mediaIds.length === 0) return { deleted: 0 }
-        const database = createD1Database(this.env.DB)
-        const assets = await database
-          .select({
-            id: schema.mediaAssets.id,
-            r2Key: schema.mediaAssets.r2Key,
-            streamUid: schema.mediaAssets.streamUid,
-          })
-          .from(schema.mediaAssets)
-          .where(inArray(schema.mediaAssets.id, mediaIds))
-
-        await Effect.runPromise(
-          purgeAccountMedia(assets, {
-            deleteR2: (key) => this.env.MEDIA.delete(key),
-            deleteStream: (uid) => this.env.STREAM.video(uid).delete(),
-            deleteRecord: async (id) => {
-              await database.delete(schema.mediaAssets).where(inArray(schema.mediaAssets.id, [id]))
-            },
-          }),
-        )
-        return { deleted: assets.length }
-      },
+      () => Effect.runPromise(deleteOwnedAccountMedia(input).pipe(Effect.provide(this.services()))),
     )
-
     await step.do(
       "schedule cached media purge",
       { retries: { limit: 8, delay: "10 seconds", backoff: "exponential" } },
-      async () => {
-        const job = cacheInvalidationTagsJob(
-          `account:${userId}`,
-          [ownerCacheTag(userId), FEED_CACHE_TAG, SITEMAP_CACHE_TAG],
-          `cache.invalidate:account:${userId}`,
-        )
-        await this.env.JOBS.send(job)
-        return { scheduled: mediaIds.length }
-      },
+      () =>
+        Effect.runPromise(scheduleAccountCachePurge(input).pipe(Effect.provide(this.services()))),
     )
-
-    await step.do("verify account purge", async () => {
-      const database = createD1Database(this.env.DB)
-      if (mediaIds.length > 0) {
-        const remaining = await database
-          .select({ id: schema.mediaAssets.id })
-          .from(schema.mediaAssets)
-          .where(inArray(schema.mediaAssets.id, mediaIds))
-        if (remaining.length > 0) throw new Error("Owned media still requires deletion.")
-      }
-      await database.insert(schema.auditEvents).values({
-        id: crypto.randomUUID(),
-        actorId: null,
-        action: "account.deletion-complete",
-        entityType: "user",
-        entityId: userId,
-        metadata: { mediaCount: mediaIds.length },
-      })
-      return { complete: true }
-    })
+    await step.do("verify account purge", () =>
+      Effect.runPromise(verifyAccountPurge(input).pipe(Effect.provide(this.services()))),
+    )
   }
 }

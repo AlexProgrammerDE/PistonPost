@@ -54,14 +54,18 @@ const config = defineConfig(({ command, mode }) => ({
   },
   plugins: [
     ...(mode === "development" ? [devtools()] : []),
-    cloudflare({ viteEnvironment: { name: "ssr" } }),
+    cloudflare({
+      viteEnvironment: { name: "ssr" },
+      persistState: { path: ".wrangler/state" },
+    }),
     tailwindcss(),
     tanstackStart(),
     VitePWA({
       strategies: "injectManifest",
       srcDir: "src/lib/pwa",
       filename: "push-sw.ts",
-      outDir: "dist/client",
+      // Publish the worker alongside the Cloudflare deployment's static assets.
+      outDir: ".cloudflare/output/v0/workers/default/assets",
       scope: "/",
       injectRegister: false,
       registerType: "autoUpdate",

@@ -65,9 +65,9 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
     catch: () => verificationError("configuration"),
   })
   const requestFetch = input.fetch ?? globalThis.fetch
-  const response = yield* Effect.tryPromise({
-    try: () =>
-      requestFetch(TURNSTILE_SITEVERIFY_URL, {
+  const body = yield* Effect.tryPromise({
+    try: async (signal) => {
+      const response = await requestFetch(TURNSTILE_SITEVERIFY_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -75,15 +75,21 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
           response: input.token,
           idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
         }),
-      }),
+        signal,
+      })
+      if (!response.ok) {
+        await response.body?.cancel()
+        throw verificationError("provider")
+      }
+      return response.json()
+    },
     catch: () => verificationError("provider"),
-  })
-  if (!response.ok) return yield* verificationError("provider")
-
-  const body = yield* Effect.tryPromise({
-    try: () => response.json(),
-    catch: () => verificationError("provider"),
-  })
+  }).pipe(
+    Effect.timeoutOrElse({
+      duration: "10 seconds",
+      orElse: () => Effect.fail(verificationError("provider")),
+    }),
+  )
   const result = yield* Schema.decodeUnknownEffect(turnstileResponseSchema)(body).pipe(
     Effect.mapError(() => verificationError("provider")),
   )
