@@ -9,12 +9,12 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 gif = { version = "=0.14.2", default-features = false, features = ["std"] }
-img-parts = { version = "=0.4.0", default-features = false }
-libjpeg-turbo-rs = { version = "=0.8.0", default-features = false }
-wasm-bindgen = "=0.2.129"
+img-parts = { version = "=0.4.2", default-features = false }
+libjpeg-turbo-rs = { version = "=0.9.0", default-features = false }
+wasm-bindgen = "=0.2.130"
 
 [dev-dependencies]
-crc32fast = "=1.5.2"
+crc32fast = "=1.5.5"
 
 [profile.release]
 codegen-units = 1
