@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { and, eq } from "drizzle-orm"
+import { and, eq, ne } from "drizzle-orm"
 import { Schema, Result } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
@@ -196,31 +196,39 @@ async function uploadImage({
       ])
       if (cleanup) context.executionContext.waitUntil(context.env.JOBS.send(cleanup))
     } else {
-      const postId = asset.providerMetadata.postId
+      const editing = typeof asset.providerMetadata.editPostId === "string"
+      const postId = editing ? asset.providerMetadata.editPostId : asset.providerMetadata.postId
       const ordinal = asset.providerMetadata.ordinal
       if (typeof postId !== "string" || typeof ordinal !== "number") {
         throw new Error("Image draft metadata missing")
       }
       const post = await database
-        .select({ postId: schema.posts.id })
+        .select({ postId: schema.posts.id, authorId: schema.posts.authorId })
         .from(schema.posts)
         .where(
           and(
             eq(schema.posts.id, postId),
-            eq(schema.posts.authorId, session.user.id),
             eq(schema.posts.type, "images"),
-            eq(schema.posts.status, "draft"),
+            editing ? ne(schema.posts.status, "deleted") : eq(schema.posts.status, "draft"),
           ),
         )
         .get()
-      if (!post) throw new Error("Image draft missing")
+      if (
+        !post ||
+        (post.authorId !== session.user.id && !(editing && session.user.role === "admin"))
+      )
+        throw new Error("Image draft missing")
 
       await database.batch([
         readyAsset,
-        database
-          .insert(schema.postMedia)
-          .values({ postId: post.postId, mediaId: asset.id, ordinal })
-          .onConflictDoNothing(),
+        ...(editing
+          ? []
+          : [
+              database
+                .insert(schema.postMedia)
+                .values({ postId: post.postId, mediaId: asset.id, ordinal })
+                .onConflictDoNothing(),
+            ]),
       ])
     }
 

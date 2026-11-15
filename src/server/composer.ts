@@ -3,6 +3,7 @@ import { and, count, eq, gte, ne } from "drizzle-orm"
 import { Schema, Struct, Effect } from "effect"
 
 import { ownedMediaStatusQuery } from "@/db/media-read-model"
+import { postEditStatements } from "@/db/post-edit-statements"
 import * as schema from "@/db/schema"
 import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -167,6 +168,7 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
     serverFunctionValidator(
       Schema.Struct({
         postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+        editing: Schema.optional(Schema.Boolean),
         files: Schema.mutable(Schema.Array(imageIntentInput.mapFields(Struct.omit(["postId"]))))
           .check(Schema.isMinLength(1))
           .check(Schema.isMaxLength(MAX_IMAGE_UPLOAD_INTENT_BATCH_SIZE)),
@@ -190,18 +192,23 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
 
         const draft = yield* bindingOperation("createImageUploadIntents.draft", () =>
           database
-            .select({ id: schema.posts.id, type: schema.posts.type })
+            .select({
+              id: schema.posts.id,
+              type: schema.posts.type,
+              authorId: schema.posts.authorId,
+              status: schema.posts.status,
+            })
             .from(schema.posts)
-            .where(
-              and(
-                eq(schema.posts.id, data.postId),
-                eq(schema.posts.authorId, session.user.id),
-                eq(schema.posts.status, "draft"),
-              ),
-            )
+            .where(and(eq(schema.posts.id, data.postId), ne(schema.posts.status, "deleted")))
             .get(),
         )
-        if (!draft || draft.type !== "images") {
+        if (
+          !draft ||
+          draft.type !== "images" ||
+          (draft.authorId !== session.user.id &&
+            !(data.editing && session.user.role === "admin")) ||
+          (!data.editing && draft.status !== "draft")
+        ) {
           return yield* notFoundFailure("The image draft was not found.")
         }
 
@@ -211,14 +218,15 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
             context.database.$client
               .prepare(
                 `select count(*) as count from media_assets
-       where json_extract(provider_metadata, '$.postId') = ?
-         and status not in ('failed', 'deleted')`,
+       where (json_extract(provider_metadata, '$.postId') = ?
+           or json_extract(provider_metadata, '$.editPostId') = ?)
+         and owner_id = ? and status not in ('failed', 'deleted')`,
               )
-              .bind(data.postId)
+              .bind(data.postId, data.postId, session.user.id)
               .first<{ count: number }>(),
         )
         const firstOrdinal = postAssetCount?.count ?? 0
-        if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST) {
+        if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST * (data.editing ? 2 : 1)) {
           return yield* invalidInputFailure(
             `A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`,
           )
@@ -242,7 +250,7 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
               byteSize: file.byteSize,
               altText: file.altText || null,
               providerMetadata: {
-                postId: data.postId,
+                ...(data.editing ? { editPostId: data.postId } : { postId: data.postId }),
                 expiresAt,
                 ordinal: firstOrdinal + index,
               },
@@ -643,7 +651,19 @@ export const getOwnedPostForEditing = createServerFn({ method: "GET" })
             .where(eq(schema.postTags.postId, post.id))
             .orderBy(schema.postTags.ordinal),
         )
-        return { ...post, tags: tags.map(({ name }) => name) }
+        const images = yield* bindingOperation("getOwnedPostForEditing.images", () =>
+          database
+            .select({
+              id: schema.mediaAssets.id,
+              filename: schema.mediaAssets.originalFilename,
+              altText: schema.mediaAssets.altText,
+            })
+            .from(schema.postMedia)
+            .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
+            .where(and(eq(schema.postMedia.postId, post.id), eq(schema.mediaAssets.kind, "image")))
+            .orderBy(schema.postMedia.ordinal),
+        )
+        return { ...post, tags: tags.map(({ name }) => name), images }
       }),
     ),
   )
@@ -661,6 +681,21 @@ const updatePostInput = Schema.Struct({
     .check(Schema.isMinLength(1))
     .check(Schema.isMaxLength(5)),
   visibility: Schema.Literals(["public", "unlisted"]),
+  images: Schema.optional(
+    Schema.mutable(
+      Schema.Array(
+        Schema.Struct({
+          id: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+          altText: Schema.Trim.check(Schema.isMaxLength(300)),
+        }),
+      ),
+    )
+      .check(Schema.isMinLength(1))
+      .check(Schema.isMaxLength(MAX_IMAGES_PER_POST))
+      .check(
+        Schema.makeFilter((images) => new Set(images.map(({ id }) => id)).size === images.length),
+      ),
+  ),
 })
 
 export const updatePost = createServerFn({ method: "POST" })
@@ -691,79 +726,46 @@ export const updatePost = createServerFn({ method: "POST" })
           return yield* invalidInputFailure("Text posts need text content.")
         }
 
-        return yield* Effect.gen(function* () {
-          const update = yield* bindingOperation("updatePost.update", () =>
-            database
-              .update(schema.posts)
-              .set({
-                title: data.title,
-                textContent: post.type === "text" ? data.textContent : null,
-                visibility: data.visibility,
-                updatedAt: new Date(),
-                version: data.version + 1,
-              })
-              .where(and(eq(schema.posts.id, post.id), eq(schema.posts.version, data.version)))
-              .run(),
-          )
-          if (update.meta.changes !== 1) {
-            return yield* conflictFailure("The post changed in another session.")
-          }
-
-          const normalizedTags = [
-            ...new Set(data.tags.map((tag) => tag.toLocaleLowerCase("en-US"))),
-          ]
-          const tagsWithIds = yield* Effect.forEach(
-            normalizedTags,
-            (normalized, ordinal) =>
-              Effect.gen(function* () {
-                return {
-                  id: yield* tagId(normalized),
+        if (data.images && post.type !== "images") {
+          return yield* invalidInputFailure("Only image posts can contain a gallery.")
+        }
+        const normalizedTags = [...new Set(data.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
+        const tagsWithIds = yield* Effect.forEach(
+          normalizedTags,
+          (normalized, ordinal) =>
+            Effect.gen(function* () {
+              return {
+                id: yield* tagId(normalized),
+                normalized,
+                ordinal,
+                display:
+                  data.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ??
                   normalized,
-                  display:
-                    data.tags.find((tag) => tag.toLocaleLowerCase("en-US") === normalized) ??
-                    normalized,
-                  ordinal,
-                }
-              }),
-            { concurrency: 4 },
+              }
+            }),
+          { concurrency: 4 },
+        )
+        const invalidate = cacheInvalidationJob(post.id)
+        const statements = postEditStatements(
+          {
+            ...data,
+            actorId: session.user.id,
+            textContent: post.type === "text" ? data.textContent : null,
+            tags: tagsWithIds,
+          },
+          invalidate,
+        ).map(({ sql, params }) => database.$client.prepare(sql).bind(...params))
+        return yield* Effect.gen(function* () {
+          const results = yield* bindingOperation("updatePost.persist", () =>
+            database.$client.batch(statements),
           )
-          const statements: D1PreparedStatement[] = [
-            context.database.$client
-              .prepare("delete from post_tags where post_id = ?")
-              .bind(post.id),
-          ]
-          for (const tag of tagsWithIds) {
-            statements.push(
-              context.database.$client
-                .prepare(
-                  `insert into tags (id, display_name, normalized_name, created_at)
-           values (?, ?, ?, ?)
-           on conflict(normalized_name) do update set display_name = excluded.display_name`,
-                )
-                .bind(tag.id, tag.display, tag.normalized, Date.now()),
-              context.database.$client
-                .prepare(
-                  `insert into post_tags (post_id, tag_id, ordinal)
-           select ?, id, ? from tags where normalized_name = ?`,
-                )
-                .bind(post.id, tag.ordinal, tag.normalized),
+          if (results.at(-1)?.meta.changes !== 1) {
+            return yield* conflictFailure(
+              "The post changed or an image is unavailable. Reload the page and try again.",
             )
           }
-          yield* bindingOperation("updatePost.operation", () =>
-            context.database.$client.batch(statements),
-          )
-
-          if (post.status === "published") {
-            const invalidate = cacheInvalidationJob(post.id)
-            yield* bindingOperation("updatePost.operation", () =>
-              database.insert(schema.outbox).values({
-                id: invalidate.idempotencyKey,
-                kind: invalidate.type,
-                payload: invalidate,
-              }),
-            )
-            context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
-          }
+          // Cleanup jobs for removed images are in the same durable outbox batch.
+          context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
           return { id: post.id, version: data.version + 1 }
         }).pipe(Effect.uninterruptible)
       }),

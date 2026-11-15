@@ -2,6 +2,7 @@ import { readdir, readFile, stat } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 
+import { AxeBuilder } from "@axe-core/playwright"
 import { expect, test, type BrowserContext, type Dialog, type Page } from "@playwright/test"
 
 import { generateN } from "../../src/lib/generate-n"
@@ -446,6 +447,80 @@ Markdown still works **inside** this callout.
     await page.goto("/posts")
     await expect(page).toHaveURL(new RegExp(`/user/${username}$`, "u"))
     await expect(page.getByRole("heading", { name: "My posts" })).toHaveCount(0)
+  })
+
+  test("edits image galleries and retries an upload without changing the saved post", async ({
+    context,
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await createVerifiedSession(context)
+    await page.goto("/posts/new")
+    await selectFormat(page, "Images")
+    await fillPost(page, "cats to edit", "cats")
+    await page.getByLabel("Choose images to upload").setInputFiles([
+      { name: "first.png", mimeType: "image/png", buffer: VALID_PNG },
+      { name: "second.png", mimeType: "image/png", buffer: VALID_PNG },
+    ])
+    await expect(page.getByLabel("Alt text")).toHaveCount(2)
+    await page.getByLabel("Alt text").nth(0).fill("First cat")
+    await page.getByLabel("Alt text").nth(1).fill("Second cat")
+    await page.getByRole("button", { name: "Post it" }).click()
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    const postUrl = page.url()
+    await page.locator('article a[href$="/edit"]').first().click()
+    await expect(page.getByLabel("Alt text")).toHaveCount(2)
+    await expect(page.getByLabel("Alt text").nth(0)).toHaveValue("First cat")
+    expect(
+      (await new AxeBuilder({ page }).include('[aria-label="Post images"]').analyze()).violations,
+    ).toEqual([])
+    const firstAltId = await page.getByLabel("Alt text").nth(0).getAttribute("id")
+    const firstImageId = firstAltId?.replace("edit-alt-", "")
+    const secondHandle = page.getByRole("button", { name: "Reorder second.png", exact: true })
+    await secondHandle.focus()
+    await page.keyboard.press("Space")
+    await expect(secondHandle).toHaveAttribute("aria-pressed", "true")
+    await page.keyboard.press("ArrowUp")
+    await expect(
+      page.getByRole("status").filter({ hasText: "was moved over droppable area" }),
+    ).toContainText(`droppable area ${firstImageId}`)
+    await page.keyboard.press("Space")
+    await expect(page.getByLabel("Alt text").nth(0)).toHaveValue("Second cat")
+    await page.getByRole("button", { name: "Remove first.png", exact: true }).click()
+    await page.getByLabel("Alt text").fill("Second cat, updated")
+    await page
+      .getByLabel("Choose images to add")
+      .setInputFiles({ name: "third.png", mimeType: "image/png", buffer: VALID_PNG })
+    await expect(page.getByLabel("Alt text")).toHaveCount(2)
+    await page.getByLabel("Alt text").nth(1).fill("Third cat")
+    await page.route("**/media/upload/*", (route) => route.abort("connectionfailed"))
+    await page.getByRole("button", { name: "Save changes" }).click()
+    await expect(page.getByRole("alert").getByText("Change not saved")).toBeVisible()
+    const saved = await context.newPage()
+    await saved.goto(postUrl)
+    await expect(saved.getByRole("img", { name: "First cat", exact: true })).toBeVisible()
+    await expect(saved.getByRole("img", { name: "Second cat", exact: true })).toBeVisible()
+    await saved.close()
+    await page.unroute("**/media/upload/*")
+    await page.getByRole("button", { name: "Save changes" }).click()
+    await expect(page).toHaveURL(postUrl)
+    await expect(page.getByRole("dialog", { name: "Discard your unsaved changes?" })).toHaveCount(0)
+    const gallery = page.getByRole("list", { name: "cats to edit image collection" })
+    await expect(gallery.getByRole("img").nth(0)).toHaveAttribute("alt", "Second cat, updated")
+    await expect(gallery.getByRole("img").nth(1)).toHaveAttribute("alt", "Third cat")
+    await page.reload()
+    await expect(gallery.getByRole("img")).toHaveCount(2)
+    await expect(gallery.getByRole("img").nth(0)).toHaveAttribute("alt", "Second cat, updated")
+    await page.locator('article a[href$="/edit"]').first().click()
+    await page.getByRole("button", { name: "Remove second.png", exact: true }).click()
+    await page.getByRole("button", { name: "Remove third.png", exact: true }).click()
+    await page.getByRole("button", { name: "Save changes" }).click()
+    await expect(page.getByRole("alert")).toContainText("Keep at least one image before saving.")
+    await page.getByRole("link", { name: "Timeline", exact: true }).click()
+    const discard = page.getByRole("dialog", { name: "Discard your unsaved changes?" })
+    await expect(discard).toBeVisible()
+    await discard.getByRole("button", { name: "Discard changes", exact: true }).click()
+    await expect(page).toHaveURL("/")
   })
 
   test("guards user-provided profile websites", async ({ context, page }) => {

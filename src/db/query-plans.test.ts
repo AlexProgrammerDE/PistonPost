@@ -71,4 +71,10 @@ describe("hot D1 query plans", () => {
     expect(followingPlan).toContain("sqlite_autoindex_user_follows_1")
     expect(followingPlan).toContain("sqlite_autoindex_tag_follows_1")
   })
+
+  test("looks up image attachments through the media index", () => {
+    expect(plan("SELECT post_id FROM post_media WHERE media_id = 'image'")).toContain(
+      "SEARCH post_media USING INDEX post_media_media_idx",
+    )
+  })
 })

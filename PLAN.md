@@ -856,6 +856,9 @@ Exit criteria:
 - [x] Add alt text and upload progress.
 - [x] Add publish validation and optimistic-concurrency edit flow.
 - [x] Add owner and admin edit/delete behavior.
+- [x] Let owners and admins add, remove, reorder, and update alt text in image posts.
+      Keep new uploads separate until Save succeeds. Save the gallery, post details, tags,
+      and cleanup jobs in one batch. Preserve the 150-image limit and reject stale edits.
 - [x] Add Queue cleanup and Cron reconciliation.
 - [x] Add Cloudflare-backed media upload rate limits and provider-enforced capacity boundaries.
 - [x] Strip private image metadata in client-side Rust WASM and reject unsanitized bytes before R2.

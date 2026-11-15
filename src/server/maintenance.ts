@@ -105,7 +105,14 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
       .from(schema.mediaAssets)
       .where(
         and(
-          inArray(schema.mediaAssets.status, ["pending", "uploading"]),
+          or(
+            inArray(schema.mediaAssets.status, ["pending", "uploading"]),
+            and(
+              inArray(schema.mediaAssets.status, ["ready", "failed"]),
+              sql`json_type(${schema.mediaAssets.providerMetadata}, '$.editPostId') = 'text'`,
+              sql`not exists (select 1 from post_media where media_id = ${schema.mediaAssets.id})`,
+            ),
+          ),
           lt(schema.mediaAssets.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1_000)),
         ),
       )
@@ -115,15 +122,20 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
   const [firstJob, ...remainingJobs] = jobs
   if (!firstJob) return
   const insertJob = (job: (typeof jobs)[number]) =>
-    database
-      .insert(schema.outbox)
-      .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-      .onConflictDoNothing()
-  yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
-    database.batch([insertJob(firstJob), ...remainingJobs.map(insertJob)]),
+    database.$client
+      .prepare(
+        `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+     select ?, ?, ?, 0, ?, ? from media_assets m where m.id = ?
+       and (json_type(m.provider_metadata, '$.editPostId') is not 'text'
+         or not exists (select 1 from post_media where media_id = m.id))
+     on conflict(id) do nothing`,
+      )
+      .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now(), job.mediaId)
+  const inserted = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
+    database.$client.batch([insertJob(firstJob), ...remainingJobs.map(insertJob)]),
   )
   yield* Effect.forEach(
-    jobs,
+    jobs.filter((_, index) => (inserted[index]?.meta.changes ?? 0) > 0),
     (job) => bindingOperation("maintenance.queueAbandonedMedia", () => env.JOBS.send(job)),
     { concurrency: 4 },
   )

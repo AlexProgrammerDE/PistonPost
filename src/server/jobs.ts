@@ -22,7 +22,7 @@ export const internalJobSchema = Schema.Union([mediaCleanupJobSchema, cacheInval
 
 export type InternalJob = (typeof internalJobSchema)["Type"]
 
-export function mediaCleanupJob(mediaId: string): InternalJob {
+export function mediaCleanupJob(mediaId: string): Extract<InternalJob, { type: "media.cleanup" }> {
   return {
     type: "media.cleanup",
     idempotencyKey: `media.cleanup:${mediaId}`,

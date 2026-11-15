@@ -74,6 +74,7 @@ export const postMedia = sqliteTable(
   },
   (table) => [
     primaryKey({ columns: [table.postId, table.mediaId] }),
+    index("post_media_media_idx").on(table.mediaId),
     uniqueIndex("post_media_post_ordinal_idx").on(table.postId, table.ordinal),
     check("post_media_ordinal_check", sql`${table.ordinal} >= 0`),
   ],
