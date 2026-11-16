@@ -60,7 +60,7 @@ test.describe("authentication", () => {
     await expect(accountAccess.getByLabel("Email")).toBeVisible()
     await expect(accountAccess.getByLabel("Password", { exact: true })).toBeVisible()
     await expect(accountAccess.getByLabel(/confirm password/i)).toBeVisible()
-    await expect(accountAccess.getByRole("group", { name: "CAPTCHA verification" })).toBeVisible()
+    await expect(accountAccess.getByRole("group", { name: "Human verification" })).toBeVisible()
     await expect(accountAccess.getByRole("button", { name: "Sign up" })).toBeVisible()
   })
 

@@ -427,7 +427,7 @@ function MarkdownSpoiler({ label }: { label: string }) {
       )}
       onClick={() => setRevealed((current) => !current)}
     >
-      <span className="sr-only">Spoiler{revealed ? ": " : ""}</span>
+      <span className="sr-only">{revealed ? "Spoiler: " : "Reveal spoiler"}</span>
       {revealed ? (
         label
       ) : (

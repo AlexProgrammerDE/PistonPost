@@ -5,11 +5,11 @@ import { renderToStaticMarkup } from "react-dom/server"
 import { MarkdownContent } from "./MarkdownContent"
 
 describe("MarkdownContent", () => {
-  test("keeps a spoiler button named without overriding its revealed text", () => {
+  test("names a hidden spoiler by its action without overriding its revealed text", () => {
     const html = renderToStaticMarkup(<MarkdownContent>{":spoiler[the ending]"}</MarkdownContent>)
 
     expect(html).toContain('aria-pressed="false"')
-    expect(html).toContain('<span class="sr-only">Spoiler</span>')
+    expect(html).toContain('<span class="sr-only">Reveal spoiler</span>')
     expect(html).not.toContain("aria-label")
   })
 
