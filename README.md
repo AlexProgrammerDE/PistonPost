@@ -122,11 +122,12 @@ See [Cloudflare resource provisioning](./docs/cloudflare-resources.md) before cr
 The [email compliance controls](./docs/email-compliance.md) document records message classification,
 unsubscribe behavior, sender configuration, key rotation, and the live mailbox verification runbook.
 
-Production releases use the manually approved `Deploy production` GitHub Actions workflow. The
-workflow loads non-secret deployment configuration from `.env.production`, reads the Cloudflare
-API token and PostHog upload key from the protected GitHub environment, builds the Worker with the production environment
-selected, applies D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning
-and backup guides before triggering it.
+Production releases use the `Deploy production` GitHub Actions workflow. It runs after CI succeeds
+for a push to `main` and deploys the commit that CI tested. The workflow loads non-secret deployment
+configuration from `.env.production`, reads the Cloudflare API token and PostHog upload key from the
+protected GitHub environment, builds the Worker with the production environment selected, applies
+D1 migrations, deploys the Worker, and runs smoke tests. Complete the provisioning and backup guides
+before merging the first change that should reach production.
 
 ## Installed app and sharing
 

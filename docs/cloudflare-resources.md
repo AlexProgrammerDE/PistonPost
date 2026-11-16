@@ -193,17 +193,27 @@ the Content Security Policy also permits `https://*.posthog.com` for toolbar scr
 images, styles, fonts, and media. Update the SDK configuration, deployment workflow, and policy
 together before changing the proxy origin or enabled extensions.
 
-The production workflow performs these steps in order:
+The `Deploy production` workflow starts after the `CI` workflow succeeds for a push to `main`. It
+checks out the exact commit that CI tested. Failed, cancelled, pull request, and manually started CI
+runs never deploy. The workflow performs these steps in order:
 
 1. Run the complete repository CI gate.
 2. Run `bun run build:production` to select the `prod` mode.
 3. Supply the resource IDs and public keys through `.env.production`. The configuration validates them before building.
 4. Run `bun cf deploy --prebuilt --mode prod --dry-run` and stop if the build still points at local or placeholder resources.
-5. Record a D1 Time Travel bookmark and apply generated migrations.
-6. Deploy the Worker with commit metadata.
-7. Run the production smoke tests and publish the rollback checkpoint.
+5. Record the Worker version that currently serves production and its commit tag.
+6. Record a D1 Time Travel bookmark and apply generated migrations.
+7. Deploy the Worker with commit metadata.
+8. Run the production smoke tests.
+9. Publish the rollback checkpoint. This step runs even when an earlier step fails. It lists the
+   previous Worker version, the previous commit, and the D1 bookmark taken before migration.
 
-After the cutover checklist is approved, open **Actions**, select **Deploy production**, choose **Run workflow**, and enter `deploy-production` as the confirmation value. Deploy only committed code from the reviewed branch.
+Only the Cloudflare CLI steps receive `CLOUDFLARE_API_TOKEN`. Dependency installation, tests, and
+builds run without it.
+
+To redeploy by hand, open **Actions**, select **Deploy production**, choose **Run workflow** on
+`main`, and enter `deploy-production` as the confirmation value. The manual run deploys the current
+`main` commit and stops unless CI already succeeded for that commit.
 
 ## Validate the environment
 

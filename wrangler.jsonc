@@ -1,3 +1,7 @@
+// Legacy reference only. Builds, local development, type generation, and deploys
+// read cloudflare.config.ts, which takes precedence over this file. The preview and
+// production blocks below contain placeholder values and are never deployed.
+// Do not deploy with this file. Change bindings in cloudflare.config.ts instead.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "pistonpost-local",

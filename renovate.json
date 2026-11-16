@@ -11,6 +11,12 @@
       "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
       "automerge": true,
       "automergeType": "branch"
+    },
+    {
+      "description": "TanStack Table v9 is beta. Review every update deliberately.",
+      "matchPackageNames": ["@tanstack/react-table"],
+      "groupName": "TanStack Table",
+      "automerge": false
     }
   ]
 }
