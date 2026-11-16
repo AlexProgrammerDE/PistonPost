@@ -151,7 +151,7 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
           queryClient.invalidateQueries({ queryKey: ["profiles"] }),
           queryClient.invalidateQueries({ queryKey: authQueryKeys.session }),
         ])
-        toast.success("Profile saved")
+        toast.success("Profile updated")
       } catch (saveError) {
         setError(profileSaveErrorMessage(saveError))
       }
