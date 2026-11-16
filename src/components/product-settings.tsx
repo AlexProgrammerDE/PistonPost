@@ -2,6 +2,7 @@
 
 import { authQueryKeys } from "@better-auth-ui/core"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRouter } from "@tanstack/react-router"
 import { Bell, Save, TriangleAlert, UserRound } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -57,20 +58,16 @@ function NotificationPreferenceSwitch({
   label: string
   initialChecked: boolean
 }) {
-  const [checked, setChecked] = useState(initialChecked)
+  const router = useRouter()
   const mutation = useMutation({
     mutationFn: (enabled: boolean) =>
       updateNotificationPreference({ data: { preference, enabled } }),
+    // Reload the settings loader so later visits do not start from the old value.
+    onSuccess: () => router.invalidate(),
   })
+  // Show the requested value while saving. Afterwards the loader value is the source of truth.
+  const checked = mutation.isPending ? mutation.variables : initialChecked
   const feedbackId = `${preference}-feedback`
-
-  function savePreference(enabled: boolean) {
-    const previous = checked
-    setChecked(enabled)
-    mutation.mutate(enabled, {
-      onError: () => setChecked(previous),
-    })
-  }
 
   return (
     <div
@@ -83,7 +80,7 @@ function NotificationPreferenceSwitch({
         name={preference}
         checked={checked}
         disabled={mutation.isPending}
-        onCheckedChange={savePreference}
+        onCheckedChange={(enabled) => mutation.mutate(enabled)}
         aria-label={label}
         aria-describedby={mutation.isError ? feedbackId : undefined}
         aria-invalid={mutation.isError || undefined}
@@ -147,6 +144,8 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
         await updateProfile({ data: value })
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: ["profiles"] }),
+          // Feed cards link to the author's username, which a rename changes.
+          queryClient.invalidateQueries({ queryKey: ["posts"] }),
           queryClient.invalidateQueries({ queryKey: authQueryKeys.session }),
         ])
         toast.success("Profile updated")

@@ -104,6 +104,21 @@ describe("SEO metadata", () => {
     )
   })
 
+  it("points social crawlers at the versioned avatar URL", () => {
+    const avatarPath = "/media/image/0b6b0a52-1e8f-4d7b-9a8a-2d0f6c8e4b11/avatar"
+    const head = createSeoHead({
+      title: "Alex",
+      description: "Profile.",
+      path: "/user/alex",
+      type: "profile",
+      image: { url: avatarPath, alt: "Avatar" },
+      twitterCard: "summary",
+    })
+
+    expect(metaContent(head.meta, "property", "og:image")).toBe(`${SITE_URL}${avatarPath}?v=1`)
+    expect(metaContent(head.meta, "name", "twitter:image")).toBe(`${SITE_URL}${avatarPath}?v=1`)
+  })
+
   it("preserves author and tag context in post metadata", () => {
     const textHead = createPostSeoHead(basePost)
     const videoHead = createPostSeoHead({
@@ -126,8 +141,8 @@ describe("SEO metadata", () => {
       "By Alex · A tiny post with enough personality for a useful description. · #friends",
     )
     expect(metaContent(textHead.meta, "name", "twitter:card")).toBe("summary_large_image")
-    expect(metaContent(textHead.meta, "property", "og:image")).toBe(
-      `${SITE_URL}/media/post/post%20one/card?v=${basePost.updatedAt.getTime().toString()}`,
+    expect(metaContent(textHead.meta, "property", "og:image")).toStartWith(
+      `${SITE_URL}/media/post/post%20one/card?v=${basePost.updatedAt.getTime().toString()}-`,
     )
     expect(metaContent(textHead.meta, "property", "og:image:type")).toBe("image/png")
     expect(metaContent(textHead.meta, "property", "og:image:width")).toBe("1200")
@@ -135,7 +150,8 @@ describe("SEO metadata", () => {
     expect(metaContent(textHead.meta, "property", "article:modified_time")).toBe(
       "2026-07-16T12:00:00.000Z",
     )
-    expect(metaContent(textHead.meta, "property", "article:tag")).toBe("friends")
+    // The post route renders repeated tag metas because head() keeps one per property.
+    expect(metaContent(textHead.meta, "property", "article:tag")).toBeUndefined()
     expect(textHead.scripts[0]?.children).toContain(
       '"text":"A tiny post with enough personality for a useful description."',
     )
@@ -205,7 +221,7 @@ describe("SEO metadata", () => {
     expect(metaContent(head.meta, "property", "video:release_date")).toBe(
       "2026-07-15T12:00:00.000Z",
     )
-    expect(metaContent(head.meta, "property", "video:tag")).toBe("friends")
+    expect(metaContent(head.meta, "property", "video:tag")).toBeUndefined()
     expect(metaContent(head.meta, "property", "article:published_time")).toBeUndefined()
     expect(metaContent(head.meta, "property", "article:tag")).toBeUndefined()
     expect(metaContent(head.meta, "property", "og:image")).toBe(
@@ -389,6 +405,26 @@ describe("Discord post previews", () => {
       `${SITE_URL}/post/post%20one#discussion`,
     )
     expect(head.scripts[0]?.type).toBe("application/ld+json")
+  })
+
+  it("uses singular counts for one heart and one comment", () => {
+    const head = createPostSeoHead({ ...basePost, heartCount: 1, commentCount: 1 })
+    const script = head.scripts.find(
+      (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
+    )
+    const payload = JSON.parse(script?.children ?? "")
+    expect(payload.component.components[0].content).toContain("1 heart · 1 comment")
+    expect(payload.component.components[0].content).not.toContain("1 hearts")
+  })
+
+  it("describes structured images with the dimensions of the listed variant", () => {
+    const head = createPostSeoHead(galleryPost)
+    const jsonLd = JSON.parse(head.scripts[0]?.children ?? "")
+    expect(jsonLd.image[0]).toMatchObject({
+      url: `${SITE_URL}/media/image/image-0/feed?v=1`,
+      width: 960,
+      height: 1280,
+    })
   })
 
   it("does not add a component preview to unlisted posts", () => {

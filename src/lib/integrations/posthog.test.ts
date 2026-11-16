@@ -44,6 +44,7 @@ describe("PostHog privacy boundary", () => {
         $current_url: "https://post.pistonmaster.net/__route/profile",
         $pathname: "/__route/profile",
         route: "profile",
+        $geoip_disable: true,
       },
     })
   })

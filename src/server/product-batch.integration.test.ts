@@ -52,6 +52,7 @@ describe("product campaign batch workflow", () => {
     const { db, services, job } = setup(101)
     const sent: Array<Array<{ type: string; idempotencyKey: string }>> = []
     const dispatch = productBatchDispatchLayer(async (jobs) => {
+      if (jobs.length > 100) throw new Error("Queues accepts at most 100 messages per batch.")
       for (const next of jobs)
         expect(
           db.select().from(schema.outbox).where(eq(schema.outbox.id, next.idempotencyKey)).get(),
@@ -63,14 +64,15 @@ describe("product campaign batch workflow", () => {
     expect(db.select().from(schema.emailCampaignDeliveries).all()).toHaveLength(100)
     expect(db.select().from(schema.emailCampaigns).get()?.status).toBe("sending")
     const next = productEmailBatchJob("campaign", "user-099")
-    expect(sent[0]?.at(-1)).toEqual(next)
+    expect(sent.map((jobs) => jobs.length)).toEqual([100, 1])
+    expect(sent[1]).toEqual([next])
     await Effect.runPromise(deliverProductBatch(next).pipe(Effect.provide(layer)))
     expect(db.select().from(schema.emailCampaignDeliveries).all()).toHaveLength(101)
     expect(db.select().from(schema.emailCampaigns).get()).toMatchObject({
       status: "sent",
       sentAt: expect.any(Date),
     })
-    expect(sent[1]?.map(({ idempotencyKey }) => idempotencyKey)).toEqual([
+    expect(sent[2]?.map(({ idempotencyKey }) => idempotencyKey)).toEqual([
       productEmailJob("user-100", "campaign").idempotencyKey,
     ])
   })

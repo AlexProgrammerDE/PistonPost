@@ -1,15 +1,14 @@
 import outfitLatinExtendedFontSource from "@fontsource-variable/outfit/files/outfit-latin-ext-wght-normal.woff2?inline"
 import outfitLatinFontSource from "@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?inline"
 import { createFileRoute } from "@tanstack/react-router"
-import { eq } from "drizzle-orm"
 import { Schema, Result } from "effect"
 import { ImageResponse } from "takumi-js/response"
 
 import { TextPostSocialCard } from "@/components/TextPostSocialCard"
 import { createD1Database } from "@/db/d1-database"
 import { getPublishedPostRead } from "@/db/public-read-model"
-import * as schema from "@/db/schema"
 import { postMarkdownToPlainText } from "@/lib/markdown"
+import { textPostCardUrl } from "@/lib/post-seo"
 import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
 import { socialCardFallbackFonts } from "@/lib/social-card-fonts"
 import type { AppRequestContext } from "@/server"
@@ -56,12 +55,29 @@ async function textPostCard({
   const database = createD1Database(context.env.DB)
   const post = await getPublishedPostRead(database, postId.success)
   if (!post || post.type !== "text") return new Response("Not found", { status: 404 })
-  const owner = await database
-    .select({ id: schema.posts.authorId })
-    .from(schema.posts)
-    .where(eq(schema.posts.id, post.id))
-    .get()
-  if (!owner) return new Response("Not found", { status: 404 })
+
+  // Only the current versioned URL may render. Other query strings would each fill
+  // the cache with an immutable copy.
+  const canonicalUrl = textPostCardUrl(post)
+  const requestUrl = new URL(request.url)
+  if (`${requestUrl.pathname}${requestUrl.search}` !== canonicalUrl) {
+    return new Response(null, {
+      status: 307,
+      headers: { "Cache-Control": "no-store", Location: canonicalUrl },
+    })
+  }
+
+  const headers = {
+    "Cache-Control":
+      post.visibility === "public" ? "public, max-age=31536000, immutable" : "private, no-store",
+    ...(post.visibility === "public"
+      ? { "Cache-Tag": cacheTagHeader([postCacheTag(post.id), ownerCacheTag(post.author.id)]) }
+      : {}),
+    "X-Content-Type-Options": "nosniff",
+  }
+  if (request.method === "HEAD") {
+    return new Response(null, { status: 200, headers: { ...headers, "Content-Type": "image/png" } })
+  }
 
   const response = new ImageResponse(
     <TextPostSocialCard
@@ -76,18 +92,7 @@ async function textPostCard({
       height: SOCIAL_IMAGE_HEIGHT,
       format: "png",
       fonts: cardFonts,
-      headers: {
-        "Cache-Control":
-          post.visibility === "public"
-            ? "public, max-age=31536000, immutable"
-            : "private, no-store",
-        ...(post.visibility === "public"
-          ? {
-              "Cache-Tag": cacheTagHeader([postCacheTag(post.id), ownerCacheTag(owner.id)]),
-            }
-          : {}),
-        "X-Content-Type-Options": "nosniff",
-      },
+      headers,
     },
   )
 
@@ -97,9 +102,7 @@ async function textPostCard({
     return new Response("Failed to generate image", { status: 500 })
   }
 
-  return request.method === "HEAD"
-    ? new Response(null, { status: response.status, headers: response.headers })
-    : response
+  return response
 }
 
 export const Route = createFileRoute("/media/post/$postId/card")({

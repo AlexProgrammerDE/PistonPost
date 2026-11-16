@@ -74,7 +74,7 @@ export function VidstackVideoPlayer({
       streamType="on-demand"
       // Wait for Play before fetching video. The poster still loads right away, and dash.js ignores
       // preload, so an eager load would buffer several megabytes nobody asked for.
-      load={detail ? "play" : "visible"}
+      load="play"
       posterLoad={detail ? "eager" : "visible"}
       preload={detail ? "metadata" : "none"}
       playsInline

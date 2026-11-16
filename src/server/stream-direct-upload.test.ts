@@ -2,7 +2,11 @@ import { describe, expect, mock, test } from "bun:test"
 
 import { Effect, Exit } from "effect"
 
-import { createStreamDirectUpload, streamUploadMetadata } from "./stream-direct-upload"
+import {
+  createStreamDirectUpload,
+  isStreamNotFoundError,
+  streamUploadMetadata,
+} from "./stream-direct-upload"
 
 const input = {
   accountId: "0123456789abcdef0123456789abcdef",
@@ -47,6 +51,8 @@ describe("Stream direct uploads", () => {
     expect(new Headers(init?.headers).get("Upload-Length")).toBe(input.byteSize.toString())
     expect(new Headers(init?.headers).get("Upload-Metadata")).toBe(streamUploadMetadata(input))
     expect(JSON.stringify(result)).not.toContain(input.apiToken)
+    expect(init?.signal).toBeInstanceOf(AbortSignal)
+    expect(init?.signal?.aborted).toBeFalse()
   })
 
   test("rejects provider errors and untrusted upload locations", async () => {
@@ -71,5 +77,15 @@ describe("Stream direct uploads", () => {
 
     expect(Exit.isFailure(providerFailure)).toBeTrue()
     expect(Exit.isFailure(untrustedLocation)).toBeTrue()
+  })
+
+  test("recognizes a missing Stream video", () => {
+    expect(isStreamNotFoundError(Object.assign(new Error("gone"), { statusCode: 404 }))).toBeTrue()
+    expect(
+      isStreamNotFoundError(Object.assign(new Error("gone"), { name: "NotFoundError" })),
+    ).toBeTrue()
+    expect(isStreamNotFoundError(Object.assign(new Error("busy"), { statusCode: 500 }))).toBeFalse()
+    expect(isStreamNotFoundError("NotFoundError")).toBeFalse()
+    expect(isStreamNotFoundError(null)).toBeFalse()
   })
 })

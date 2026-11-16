@@ -209,6 +209,14 @@ async function deliverImage(arguments_: ImageHandlerArguments) {
       quality: selected.quality,
       anim: shouldPreserveMediaImageAnimation(image.asset.mimeType, image.variant, image.animation),
     })
+    .catch(() => null)
+  if (!transformed) {
+    // Keep the failure short-lived so a fixed transform or replacement image recovers quickly.
+    return new Response("Unsupported image", {
+      status: 415,
+      headers: { "Cache-Control": "private, max-age=60", "X-Content-Type-Options": "nosniff" },
+    })
+  }
   const response = transformed.response()
   const headers = imageResponseHeaders(image, object, response.headers)
   headers.set("Content-Type", transformed.contentType())

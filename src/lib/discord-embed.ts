@@ -12,9 +12,15 @@ export interface DiscordEmbedOptions {
   layout?: "default" | "compact" | "media"
 }
 
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" })
+
+function graphemes(value: string) {
+  return Array.from(graphemeSegmenter.segment(value), ({ segment }) => segment)
+}
+
 function shorten(value: string, length: number) {
   if (length <= 0) return ""
-  const characters = Array.from(value)
+  const characters = graphemes(value)
   return characters.length > length ? `${characters.slice(0, length - 1).join("")}…` : value
 }
 
@@ -110,8 +116,8 @@ export function createDiscordEmbed(
     if (images.length) images.pop()
     else if (links.length > 1) links.pop()
     else if (description.length)
-      description = shorten(description, Math.floor(Array.from(description).length / 2))
-    else if (Array.from(title).length > 16) title = shorten(title, 16)
+      description = shorten(description, Math.floor(graphemes(description).length / 2))
+    else if (graphemes(title).length > 16) title = shorten(title, 16)
     else return undefined
   }
 }

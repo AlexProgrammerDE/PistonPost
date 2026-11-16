@@ -28,7 +28,7 @@ function PrivacyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Privacy Policy</h1>
-        <p>Last updated: August 31, 2026.</p>
+        <p>Last updated: November 16, 2026.</p>
         <p>
           This policy explains what PistonPost currently handles when you use the service, why it is
           handled, which providers are involved, and the choices available to you.
@@ -151,7 +151,9 @@ function PrivacyPage() {
           generic comment, reply, moderation, and account security alerts. The alert can appear on a
           lock screen, so its text avoids post titles, comment text, usernames, and moderation
           reasons. A supported installed app can show a dot for activity received while PistonPost
-          is not visible. The dot clears when you return; it is not an unread count.
+          is not visible. The dot clears when you return; it is not an unread count. Push on a
+          device belongs to the account that turned it on. If a different account signs in on that
+          browser, PistonPost turns push off there.
         </p>
         <p>
           Your browser routes encrypted alerts through its push provider. Depending on the browser
@@ -164,7 +166,8 @@ function PrivacyPage() {
           pseudonymous page-view events using broad route categories such as post, tag, or profile.
           Temporary identifiers and standard browser or device properties added by the PostHog SDK
           may be included. Dynamic post IDs, tag names, usernames, page titles, referrers, query
-          strings, and page content are removed before an event is sent.
+          strings, and page content are removed before an event is sent. Events ask PostHog to skip
+          location lookup from the network address.
         </p>
         <p>
           PostHog identifiers use memory-only persistence and are not saved as persistent analytics

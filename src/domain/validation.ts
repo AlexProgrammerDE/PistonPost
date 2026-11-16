@@ -7,6 +7,12 @@ export const postMarkdownSchema = Schema.Trim.check(Schema.isMinLength(1)).check
   Schema.isMaxLength(MAX_POST_MARKDOWN_LENGTH),
 )
 
+/** Names made only of dots become "." or ".." path segments and break their URLs. */
+const notOnlyDots = Schema.makeFilter(
+  (value: string) =>
+    !/^\.+$/.test(value) || "Use at least one letter, number, or symbol other than a dot",
+)
+
 export const tagSchema = Schema.Trim.check(Schema.isMinLength(1))
   .check(Schema.isMaxLength(64))
   .check(
@@ -14,6 +20,7 @@ export const tagSchema = Schema.Trim.check(Schema.isMinLength(1))
       message: "Tags may use letters, numbers, hyphen, dot, underscore, and tilde",
     }),
   )
+  .check(notOnlyDots)
 
 const basePostDraftSchema = Schema.Struct({
   title: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(100)),
@@ -60,13 +67,41 @@ export const notificationPreferenceSchema = Schema.Literals([
   "comment-push",
   "reply-push",
 ])
+export const MAX_USERNAME_LENGTH = 32
+const USERNAME_PATTERN = /^[A-Za-z0-9._~-]+$/
+
 export const usernameSchema = Schema.Trim.check(Schema.isMinLength(1))
-  .check(Schema.isMaxLength(32))
+  .check(Schema.isMaxLength(MAX_USERNAME_LENGTH))
   .check(
-    Schema.isPattern(/^[A-Za-z0-9._~-]+$/, {
+    Schema.isPattern(USERNAME_PATTERN, {
       message: "Use letters, numbers, hyphen, dot, underscore, or tilde",
     }),
   )
+  .check(notOnlyDots)
+
+/** Check an already-trimmed username with the same rules as `usernameSchema`. */
+export function isValidUsername(value: string) {
+  return (
+    value.length >= 1 &&
+    value.length <= MAX_USERNAME_LENGTH &&
+    USERNAME_PATTERN.test(value) &&
+    !/^\.+$/.test(value)
+  )
+}
 
 export type EmailNotificationPreference = (typeof emailNotificationPreferenceSchema)["Type"]
 export type NotificationPreference = (typeof notificationPreferenceSchema)["Type"]
+
+function isWebLink(value: string) {
+  if (!URL.canParse(value)) return false
+  const { protocol } = new URL(value)
+  return protocol === "http:" || protocol === "https:"
+}
+
+/** An empty string clears the website. Other values must be http or https links. */
+export const profileWebsiteSchema = Schema.Union([
+  Schema.Literal(""),
+  Schema.String.check(
+    Schema.makeFilter((value: string) => isWebLink(value) || "Use an http or https link"),
+  ).check(Schema.isMaxLength(500)),
+])

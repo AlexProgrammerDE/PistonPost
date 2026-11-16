@@ -26,6 +26,9 @@ describe("safeLocalRedirect", () => {
     expect(safeLocalRedirect("https://example.com/settings")).toBeUndefined()
     expect(safeLocalRedirect("//example.com/settings")).toBeUndefined()
     expect(safeLocalRedirect("/\\example.com/settings")).toBeUndefined()
+    expect(safeLocalRedirect("/.//evil.com")).toBeUndefined()
+    expect(safeLocalRedirect("/..//evil.com/settings")).toBeUndefined()
+    expect(safeLocalRedirect("/posts/..//evil.com")).toBeUndefined()
   })
 
   it("rejects auth loops and malformed values", () => {

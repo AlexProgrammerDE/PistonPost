@@ -403,7 +403,7 @@
     }
 
     /* Blocks inside list items keep the list's tighter rhythm. */
-    &:where(li > blockquote, li > table, li > figure) {
+    &:where(li > blockquote, li > table, li > .typeset-scroll, li > figure) {
       margin-block-start: 0.5em;
     }
     &:where(li > pre) {

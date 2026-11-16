@@ -3,7 +3,7 @@ import { describe, expect, it } from "bun:test"
 import type { PublicPostSitemapRecord } from "@/db/public-read-model"
 
 import {
-  SITEMAP_PAGE_SIZE,
+  SITEMAP_PAGE_SIZES,
   buildPostSitemapXml,
   buildRobotsTxt,
   buildSitemapIndexXml,
@@ -26,12 +26,13 @@ const post: PublicPostSitemapRecord = {
 describe("SEO discovery documents", () => {
   it("splits discovery into bounded sitemap pages", () => {
     const xml = buildSitemapIndexXml("https://post.pistonmaster.net", {
-      posts: SITEMAP_PAGE_SIZE + 1,
-      profiles: 1,
+      posts: SITEMAP_PAGE_SIZES.posts + 1,
+      profiles: SITEMAP_PAGE_SIZES.posts + 1,
       tags: 0,
     })
 
-    expect(sitemapPageCount(SITEMAP_PAGE_SIZE + 1)).toBe(2)
+    expect(sitemapPageCount("posts", SITEMAP_PAGE_SIZES.posts + 1)).toBe(2)
+    expect(sitemapPageCount("profiles", SITEMAP_PAGE_SIZES.posts + 1)).toBe(1)
     expect(xml.match(/\/sitemaps\/posts\//g)).toHaveLength(2)
     expect(xml).toContain("<loc>https://post.pistonmaster.net/sitemaps/profiles/1</loc>")
     expect(xml).not.toContain("/sitemaps/tags/")
@@ -52,6 +53,32 @@ describe("SEO discovery documents", () => {
     expect(xml).toContain(
       '<video:player_loc allow_embed="yes">https://post.pistonmaster.net/media/video/video-one/player?v=3</video:player_loc>',
     )
+  })
+
+  it("keeps a full page of posts with maximum images under the 50 MB sitemap limit", () => {
+    const records = Array.from({ length: SITEMAP_PAGE_SIZES.posts }, (_, index) => ({
+      ...post,
+      id: `post-${index.toString().padStart(8, "0")}`,
+      type: "images" as const,
+      media: Array.from({ length: 150 }, (__, imageIndex) => ({
+        id: `00000000-0000-4000-8000-${index.toString().padStart(6, "0")}${imageIndex.toString().padStart(6, "0")}`,
+        kind: "image" as const,
+        duration: null,
+      })),
+    }))
+    const xml = buildPostSitemapXml("https://post.pistonmaster.net", records)
+
+    expect(new TextEncoder().encode(xml).byteLength).toBeLessThan(50 * 1024 * 1024)
+  })
+
+  it("removes characters that XML 1.0 does not allow", () => {
+    const xml = buildPostSitemapXml("https://post.pistonmaster.net", [
+      { ...post, title: "Cats\u0001 \uFFFE& dogs" },
+    ])
+
+    expect(xml).toContain("<video:title>Cats &amp; dogs</video:title>")
+    expect(xml).not.toContain("\u0001")
+    expect(xml).not.toContain("\uFFFE")
   })
 
   it("keeps static pages in their own sitemap", () => {

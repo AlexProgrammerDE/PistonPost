@@ -35,6 +35,13 @@ export function withOutboxClaim<A, E, R>(
         })
       }
       if (!Predicate.isTagged(claim, "Claimed")) return undefined
+      // The outbox row and the queue message must wait the same time, or the queue spends its
+      // retries while the row is still unavailable and dead-letters the job early.
+      const retryDelayMs = (error: unknown) =>
+        Math.max(
+          outboxRetryDelayMs(claim.attempt),
+          error instanceof QueueDeliveryError ? error.retryAfterSeconds * 1_000 : 0,
+        )
       return yield* restore(use(claim)).pipe(
         Effect.onExit((exit) => {
           if (Exit.isSuccess(exit)) return Effect.void
@@ -43,16 +50,15 @@ export function withOutboxClaim<A, E, R>(
             job.idempotencyKey,
             claim.attempt,
             errorCode(error),
-            error instanceof QueueDeliveryError ? error.retryAfterSeconds * 1_000 : undefined,
+            retryDelayMs(error),
           )
         }),
-        Effect.mapError((error) =>
-          error instanceof QueueDeliveryError
-            ? error
-            : new QueueDeliveryError({
-                operation: errorCode(error),
-                retryAfterSeconds: Math.ceil(outboxRetryDelayMs(claim.attempt) / 1_000),
-              }),
+        Effect.mapError(
+          (error) =>
+            new QueueDeliveryError({
+              operation: error instanceof QueueDeliveryError ? error.operation : errorCode(error),
+              retryAfterSeconds: Math.ceil(retryDelayMs(error) / 1_000),
+            }),
         ),
       )
     }),

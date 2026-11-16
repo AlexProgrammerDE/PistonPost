@@ -35,6 +35,19 @@ describe("hot D1 query plans", () => {
     ).toContain("posts_discovery_idx")
   })
 
+  test("uses the author feed index for a profile feed cursor without sorting", () => {
+    const profilePlan = plan(`SELECT posts.id FROM posts
+      INNER JOIN user ON user.id = posts.author_id
+      INNER JOIN profiles ON profiles.user_id = posts.author_id
+      WHERE posts.status = 'published' AND posts.visibility = 'public'
+        AND profiles.normalized_username = 'author'
+        AND (posts.published_at < 1000 OR (posts.published_at = 1000 AND posts.id < 'cursor'))
+      ORDER BY posts.published_at DESC, posts.id DESC LIMIT 21`)
+
+    expect(profilePlan).toContain("posts_author_feed_idx")
+    expect(profilePlan).not.toContain("TEMP B-TREE")
+  })
+
   test("uses relationship indexes for comments, hearts, and owner media", () => {
     expect(
       plan(`SELECT id FROM comments

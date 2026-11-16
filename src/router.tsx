@@ -1,15 +1,15 @@
-import { QueryClient } from "@tanstack/react-query"
 import { createRouter as createTanStackRouter } from "@tanstack/react-router"
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
 
 import { RouteError } from "@/components/RouteError"
+import { RouterQueryClient } from "@/lib/queries/router-query-client"
 import { shouldRetryQuery } from "@/lib/server-function-error"
 import { getActiveSharedViewTransition, resolveRouteTransitionTypes } from "@/lib/view-transitions"
 
 import { routeTree } from "./routeTree.gen"
 
 export function getRouter() {
-  const queryClient = new QueryClient({
+  const queryClient = new RouterQueryClient({
     defaultOptions: {
       queries: { staleTime: 15_000, retry: shouldRetryQuery },
       mutations: { retry: false },

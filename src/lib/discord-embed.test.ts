@@ -105,6 +105,22 @@ describe("Discord component embeds", () => {
       expect(gallery.items.length).toBeLessThanOrEqual(4)
   })
 
+  test("shortens text at grapheme boundaries", () => {
+    const family = "👨‍👩‍👧"
+    const card = createDiscordEmbed({
+      title: family.repeat(130),
+      description: `${family}é`.repeat(400),
+      url: "https://example.com",
+      layout: "compact",
+    })
+    const text = card?.components[0]
+    const content = text?.type === ComponentType.TextDisplay ? text.content : ""
+    const [heading = "", description = ""] = content.split("\n")
+
+    expect(heading).toBe(`**[${family.repeat(119)}…](https://example.com/)**`)
+    expect(description).toMatch(/^(?:👨‍👩‍👧|é)+…$/u)
+  })
+
   test("rejects unsafe URLs and omits invalid media and buttons", () => {
     expect(discordEmbedScript({ title: "Private", url: "javascript:alert(1)" })).toEqual([])
     expect(

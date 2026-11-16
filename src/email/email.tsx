@@ -12,7 +12,6 @@ import {
   Text,
 } from "react-email"
 
-import { ChangeEmailConfirmationEmail } from "@/components/auth/email/change-email-confirmation"
 import { DeleteAccountVerificationEmail } from "@/components/auth/email/delete-account-verification"
 import type { EmailColors } from "@/components/auth/email/email-styles"
 import { EmailVerificationEmail } from "@/components/auth/email/email-verification"
@@ -45,13 +44,6 @@ type LinkAuthenticationEmailContent =
       email: string
       url: string
       expirationHours: number
-    }>
-  | Readonly<{
-      template: "email-change-approval"
-      currentEmail: string
-      newEmail: string
-      url: string
-      expirationMinutes: number
     }>
 
 export type EmailOtpPurpose =
@@ -319,16 +311,6 @@ function AuthenticationEmail({ content }: { readonly content: EmailContent }) {
           {...authenticationTemplateProps}
           email={content.email}
           expirationHours={content.expirationHours}
-          url={content.url}
-        />
-      )
-    case "email-change-approval":
-      return (
-        <ChangeEmailConfirmationEmail
-          {...authenticationTemplateProps}
-          currentEmail={content.currentEmail}
-          expirationMinutes={content.expirationMinutes}
-          newEmail={content.newEmail}
           url={content.url}
         />
       )

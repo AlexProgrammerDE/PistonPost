@@ -104,6 +104,23 @@ describe("outbox job lifetime", () => {
     expect(row?.lastError).toBe("QueueDeliveryError")
   })
 
+  test("asks the queue to wait as long as the released outbox row", async () => {
+    const { db, layer, job } = setup()
+    const now = Date.now()
+    const failure = await Effect.runPromise(
+      withOutboxClaim(job, () =>
+        Effect.fail(new QueueDeliveryError({ operation: "provider-busy", retryAfterSeconds: 5 })),
+      ).pipe(Effect.flip, Effect.provide(layer)),
+    )
+    expect(failure).toMatchObject({
+      operation: "provider-busy",
+      retryAfterSeconds: 30,
+    })
+    const row = db.select().from(schema.outbox).get()
+    expect(row?.availableAt.getTime()).toBeGreaterThanOrEqual(now + 30_000)
+    expect(row?.availableAt.getTime()).toBeLessThan(now + 32_000)
+  })
+
   test("does not execute completed or deferred work", async () => {
     const { db, layer, job } = setup()
     const repository = createOutboxRepository(db)

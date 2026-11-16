@@ -2,10 +2,16 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, count, eq, gte, ne } from "drizzle-orm"
 import { Schema, Struct, Effect } from "effect"
 
+import type { D1DatabaseClient } from "@/db/d1-database"
 import { ownedMediaStatusQuery } from "@/db/media-read-model"
 import { postEditStatements } from "@/db/post-edit-statements"
 import * as schema from "@/db/schema"
-import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import {
+  MAX_IMAGES_PER_POST,
+  MAX_POST_MARKDOWN_LENGTH,
+  postDraftInputSchema,
+  tagSchema,
+} from "@/domain"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import {
@@ -32,12 +38,22 @@ import {
   rateLimitedFailure,
 } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
-import { createStreamDirectUpload } from "@/server/stream-direct-upload"
+import { createStreamDirectUpload, isStreamNotFoundError } from "@/server/stream-direct-upload"
 import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
 
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
+import {
+  guardedAuditStatement,
+  postDeleteStatements,
+  postPublishStatements,
+  type Statement,
+} from "./post-lifecycle-statements"
 
 const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
+// One intent batch holds up to 20 images. Slow connections need time to send all of them.
+const IMAGE_UPLOAD_INTENT_TTL_SECONDS = 60 * 60
+const RECENT_POST_LIMIT = 10
+const RECENT_POST_WINDOW_MS = 10 * 60 * 1_000
 
 const postColumns = {
   id: schema.posts.id,
@@ -57,6 +73,48 @@ const postColumns = {
 
 function nextPublicId() {
   return crypto.randomUUID().replaceAll("-", "").slice(0, 16)
+}
+
+function userRateLimit(limiter: RateLimit, key: string, message: string) {
+  return bindingOperation(`userRateLimit.${key.split(":", 1)[0] ?? "action"}`, () =>
+    limiter.limit({ key }),
+  ).pipe(
+    Effect.flatMap((limited) =>
+      limited.success ? Effect.void : Effect.fail(rateLimitedFailure(message)),
+    ),
+  )
+}
+
+function enforceRecentPostLimit(database: D1DatabaseClient, userId: string) {
+  const recentWindow = new Date(Date.now() - RECENT_POST_WINDOW_MS)
+  return bindingOperation("recentPostLimit.count", () =>
+    database
+      .select({ value: count() })
+      .from(schema.posts)
+      .where(
+        and(
+          eq(schema.posts.authorId, userId),
+          eq(schema.posts.status, "published"),
+          gte(schema.posts.publishedAt, recentWindow),
+        ),
+      )
+      .get(),
+  ).pipe(
+    Effect.flatMap((recentPublishes) =>
+      (recentPublishes?.value ?? 0) < RECENT_POST_LIMIT
+        ? Effect.void
+        : Effect.fail(
+            rateLimitedFailure(
+              "You can post up to 10 times every 10 minutes. Try again in a bit.",
+              RECENT_POST_WINDOW_MS / 1_000,
+            ),
+          ),
+    ),
+  )
+}
+
+function prepareStatements(database: D1DatabaseClient, statements: readonly Statement[]) {
+  return statements.map(({ sql, params }) => database.$client.prepare(sql).bind(...params))
 }
 
 const tagId = Effect.fn("tagId")(function* (normalized: string) {
@@ -86,6 +144,8 @@ export const createPostDraft = createServerFn({ method: "POST" })
         )
         if (!limited.success)
           return yield* rateLimitedFailure("Too many posts were started at once.")
+        // Check before uploads start so people do not send a full gallery that cannot be posted.
+        yield* enforceRecentPostLimit(context.database, session.user.id)
         yield* verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createPost)
         const input = data.draft
         const id = nextPublicId()
@@ -232,13 +292,13 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
           )
         }
 
-        const expiresAt = Date.now() + 15 * 60 * 1000
+        const expiresAt = Date.now() + IMAGE_UPLOAD_INTENT_TTL_SECONDS * 1_000
         const intents = data.files.map((file, index) => {
           const assetId = crypto.randomUUID()
           return {
             assetId,
             uploadUrl: `/media/upload/${assetId}`,
-            expiresInSeconds: 900,
+            expiresInSeconds: IMAGE_UPLOAD_INTENT_TTL_SECONDS,
             values: {
               id: assetId,
               ownerId: session.user.id,
@@ -467,6 +527,11 @@ export const abortMediaUpload = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        yield* userRateLimit(
+          context.env.USER_RATE_LIMITER,
+          `abort-upload:${session.user.id}`,
+          "Too many uploads were cancelled at once. Wait a minute and try again.",
+        )
         const asset = yield* bindingOperation("abortMediaUpload.asset", () =>
           database
             .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
@@ -521,26 +586,7 @@ export const publishPost = createServerFn({ method: "POST" })
           return yield* rateLimitedFailure(
             "Too many posts were sent at once. Wait a minute and try again.",
           )
-        const recentWindow = new Date(Date.now() - 10 * 60 * 1_000)
-        const recentPublishes = yield* bindingOperation("publishPost.recentPublishes", () =>
-          database
-            .select({ value: count() })
-            .from(schema.posts)
-            .where(
-              and(
-                eq(schema.posts.authorId, session.user.id),
-                eq(schema.posts.status, "published"),
-                gte(schema.posts.publishedAt, recentWindow),
-              ),
-            )
-            .get(),
-        )
-        if ((recentPublishes?.value ?? 0) >= 10) {
-          return yield* rateLimitedFailure(
-            "You can post up to 10 times every 10 minutes. Try again in a bit.",
-            600,
-          )
-        }
+        yield* enforceRecentPostLimit(database, session.user.id)
         const post = yield* bindingOperation("publishPost.post", () =>
           database
             .select(postColumns)
@@ -587,43 +633,34 @@ export const publishPost = createServerFn({ method: "POST" })
         const streamUid = video?.streamUid
         return yield* Effect.gen(function* () {
           if (streamUid) {
-            yield* bindingOperation("publishPost.operation", () =>
+            yield* bindingOperation("publishPost.keepVideo", () =>
               context.env.STREAM.video(streamUid).update({ scheduledDeletion: null }),
-            )
-          }
-
-          const result = yield* bindingOperation("publishPost.result", () =>
-            database
-              .update(schema.posts)
-              .set({
-                status: "published",
-                publishedAt: new Date(),
-                updatedAt: new Date(),
-                version: data.version + 1,
-              })
-              .where(
-                and(
-                  eq(schema.posts.id, data.id),
-                  eq(schema.posts.authorId, session.user.id),
-                  eq(schema.posts.version, data.version),
-                ),
-              )
-              .run(),
-          )
-          if (result.meta.changes !== 1) {
-            return yield* conflictFailure(
-              "This draft was changed in another tab or device. Reload the page and try again.",
+            ).pipe(
+              // Stream deletes unposted draft videos after 31 days.
+              Effect.catchIf(
+                (error) => isStreamNotFoundError(error.cause),
+                () => conflictFailure("This video expired. Upload it again."),
+              ),
             )
           }
 
           const invalidate = cacheInvalidationJob(post.id)
-          yield* bindingOperation("publishPost.operation", () =>
-            database.insert(schema.outbox).values({
-              id: invalidate.idempotencyKey,
-              kind: invalidate.type,
-              payload: invalidate,
-            }),
+          const results = yield* bindingOperation("publishPost.persist", () =>
+            database.$client.batch(
+              prepareStatements(
+                database,
+                postPublishStatements(
+                  { id: post.id, version: data.version, authorId: session.user.id },
+                  invalidate,
+                ),
+              ),
+            ),
           )
+          if (results.at(-1)?.meta.changes !== 1) {
+            return yield* conflictFailure(
+              "This draft was changed in another tab or device. Reload the page and try again.",
+            )
+          }
           context.executionContext.waitUntil(context.env.JOBS.send(invalidate))
           return { id: post.id, version: data.version + 1 }
         }).pipe(Effect.uninterruptible)
@@ -684,9 +721,7 @@ const updatePostInput = Schema.Struct({
   textContent: Schema.NullOr(
     Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(MAX_POST_MARKDOWN_LENGTH)),
   ),
-  tags: Schema.mutable(
-    Schema.Array(Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64))),
-  )
+  tags: Schema.mutable(Schema.Array(tagSchema))
     .check(Schema.isMinLength(1))
     .check(Schema.isMaxLength(5)),
   visibility: Schema.Literals(["public", "unlisted"]),
@@ -714,6 +749,12 @@ export const updatePost = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        // Each save purges the post and feed caches.
+        yield* userRateLimit(
+          context.env.USER_RATE_LIMITER,
+          `edit-post:${session.user.id}`,
+          "You're editing too fast. Wait a minute and try again.",
+        )
         const post = yield* bindingOperation("updatePost.post", () =>
           database
             .select({
@@ -755,7 +796,7 @@ export const updatePost = createServerFn({ method: "POST" })
           { concurrency: 4 },
         )
         const invalidate = cacheInvalidationJob(post.id)
-        const statements = postEditStatements(
+        const editStatements = postEditStatements(
           {
             ...data,
             actorId: session.user.id,
@@ -763,12 +804,31 @@ export const updatePost = createServerFn({ method: "POST" })
             tags: tagsWithIds,
           },
           invalidate,
-        ).map(({ sql, params }) => database.$client.prepare(sql).bind(...params))
+        )
+        const statements = prepareStatements(database, [
+          ...editStatements,
+          ...(post.authorId === session.user.id
+            ? []
+            : [
+                guardedAuditStatement(
+                  {
+                    id: crypto.randomUUID(),
+                    actorId: session.user.id,
+                    action: "post.edit",
+                    entityType: "post",
+                    entityId: post.id,
+                    metadata: { authorId: post.authorId },
+                  },
+                  invalidate.idempotencyKey,
+                ),
+              ]),
+        ])
         return yield* Effect.gen(function* () {
           const results = yield* bindingOperation("updatePost.persist", () =>
             database.$client.batch(statements),
           )
-          if (results.at(-1)?.meta.changes !== 1) {
+          // The post update is the last edit statement.
+          if (results[editStatements.length - 1]?.meta.changes !== 1) {
             return yield* conflictFailure(
               "The post changed or an image is unavailable. Reload the page and try again.",
             )
@@ -795,6 +855,11 @@ export const deletePost = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        yield* userRateLimit(
+          context.env.USER_RATE_LIMITER,
+          `delete-post:${session.user.id}`,
+          "You're deleting posts too fast. Wait a minute and try again.",
+        )
         const post = yield* bindingOperation("deletePost.post", () =>
           database
             .select({ authorId: schema.posts.authorId, status: schema.posts.status })
@@ -809,72 +874,44 @@ export const deletePost = createServerFn({ method: "POST" })
         }
         const media = yield* bindingOperation("deletePost.media", () =>
           database
-            .select({ id: schema.mediaAssets.id })
+            .select({ id: schema.postMedia.mediaId })
             .from(schema.postMedia)
-            .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
             .where(eq(schema.postMedia.postId, data.id)),
         )
         const cleanupJobs = media.map(({ id }) => mediaCleanupJob(id))
         const invalidate = cacheInvalidationJob(data.id)
+        const statements = prepareStatements(
+          database,
+          postDeleteStatements(
+            {
+              id: data.id,
+              version: data.version,
+              actorId: session.user.id,
+              mediaIds: media.map(({ id }) => id),
+              audit:
+                post.authorId === session.user.id
+                  ? null
+                  : {
+                      id: crypto.randomUUID(),
+                      actorId: session.user.id,
+                      action: "post.delete",
+                      entityType: "post",
+                      entityId: data.id,
+                      metadata: { authorId: post.authorId },
+                    },
+            },
+            invalidate,
+          ),
+        )
         return yield* Effect.gen(function* () {
-          const deleted = yield* bindingOperation("deletePost.deleted", () =>
-            database
-              .update(schema.posts)
-              .set({
-                status: "deleted",
-                deletedAt: new Date(),
-                updatedAt: new Date(),
-                version: data.version + 1,
-              })
-              .where(
-                and(
-                  eq(schema.posts.id, data.id),
-                  eq(schema.posts.version, data.version),
-                  ne(schema.posts.status, "deleted"),
-                ),
-              )
-              .run(),
+          const results = yield* bindingOperation("deletePost.persist", () =>
+            database.$client.batch(statements),
           )
-          if (deleted.meta.changes !== 1) {
+          if (results.at(-1)?.meta.changes !== 1) {
             return yield* conflictFailure(
               "This post was changed in another tab or device. Reload the page to get the latest version.",
             )
           }
-
-          const statements: D1PreparedStatement[] = [
-            context.database.$client
-              .prepare("delete from comments where post_id = ?")
-              .bind(data.id),
-            context.database.$client
-              .prepare("delete from reactions where post_id = ?")
-              .bind(data.id),
-            context.database.$client
-              .prepare("delete from post_tags where post_id = ?")
-              .bind(data.id),
-            ...cleanupJobs.map((job) =>
-              context.database.$client
-                .prepare(
-                  `insert into outbox (id, kind, payload, attempts, available_at, created_at)
-           values (?, ?, ?, 0, ?, ?) on conflict(id) do nothing`,
-                )
-                .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now()),
-            ),
-            context.database.$client
-              .prepare(
-                `insert into outbox (id, kind, payload, attempts, available_at, created_at)
-         values (?, ?, ?, 0, ?, ?)`,
-              )
-              .bind(
-                invalidate.idempotencyKey,
-                invalidate.type,
-                JSON.stringify(invalidate),
-                Date.now(),
-                Date.now(),
-              ),
-          ]
-          yield* bindingOperation("deletePost.operation", () =>
-            context.database.$client.batch(statements),
-          )
           context.executionContext.waitUntil(
             Promise.all([...cleanupJobs, invalidate].map((job) => context.env.JOBS.send(job))).then(
               () => undefined,

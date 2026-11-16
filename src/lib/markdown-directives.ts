@@ -53,15 +53,10 @@ export const postMarkdownSanitizeSchema: SanitizeSchema = {
     ...defaultSchema.attributes,
     div: [
       ...(defaultSchema.attributes?.div ?? []),
-      ["dataPostDirective", "details", "callout"],
-      "dataLabel",
-      ["dataKind", ...CALLOUT_KINDS],
-    ],
-    p: [
-      ...(defaultSchema.attributes?.p ?? []),
-      ["dataPostDirective", "embed", "card"],
+      ["dataPostDirective", "details", "callout", "embed", "card"],
       "dataUrl",
       "dataLabel",
+      ["dataKind", ...CALLOUT_KINDS],
     ],
     span: [
       ...(defaultSchema.attributes?.span ?? []),
@@ -164,16 +159,22 @@ function parsePostInlineDirective(directive: Directives): ParsedPostInlineDirect
   return { kind: "spoiler", label }
 }
 
-function directiveContainerLabel(directive: ContainerDirective) {
+function directiveLabelChild(directive: ContainerDirective) {
   const firstChild = directive.children[0]
-  if (firstChild?.type !== "paragraph" || firstChild.data?.directiveLabel !== true) return null
-  return normalizeDirectiveLabel(toString(firstChild)) || null
+  return firstChild?.type === "paragraph" && firstChild.data?.directiveLabel === true
+    ? firstChild
+    : null
+}
+
+function directiveContainerLabel(directive: ContainerDirective) {
+  const labelChild = directiveLabelChild(directive)
+  return labelChild ? normalizeDirectiveLabel(toString(labelChild)) || null : null
 }
 
 function parsePostContainerDirective(directive: Directives): ParsedPostContainerDirective | null {
   if (directive.type !== "containerDirective") return null
   const label = directiveContainerLabel(directive)
-  const bodyStart = label ? 1 : 0
+  const bodyStart = directiveLabelChild(directive) ? 1 : 0
   if (directive.children.length <= bodyStart) return null
 
   if (directive.name === "details") {
@@ -193,12 +194,18 @@ function parsePostContainerDirective(directive: Directives): ParsedPostContainer
   return { kind: "callout", calloutKind, label }
 }
 
-function directiveParagraph(directive: LeafDirective, parsed: ParsedPostLeafDirective): Paragraph {
+// The node stays a leaf directive rendered as a div. Tight list items unwrap paragraphs,
+// which would drop the directive properties.
+function directiveElement(
+  directive: LeafDirective,
+  parsed: ParsedPostLeafDirective,
+): LeafDirective {
   const fallbackText: Text = { type: "text", value: parsed.url }
   return {
-    type: "paragraph",
+    ...directive,
     children: directive.children.length > 0 ? directive.children : [fallbackText],
     data: {
+      hName: "div",
       hProperties: {
         dataPostDirective: parsed.kind,
         dataUrl: parsed.url,
@@ -223,8 +230,7 @@ function directiveSpan(directive: TextDirective, parsed: ParsedPostInlineDirecti
 }
 
 function directiveContainer(directive: ContainerDirective, parsed: ParsedPostContainerDirective) {
-  const hasLabel = directiveContainerLabel(directive) !== null
-  directive.children = hasLabel ? directive.children.slice(1) : directive.children
+  if (directiveLabelChild(directive)) directive.children = directive.children.slice(1)
   directive.data = {
     hName: "div",
     hProperties: {
@@ -297,7 +303,7 @@ export function remarkPostDirectives() {
 
       const leaf = parsePostLeafDirective(node)
       if (leaf && node.type === "leafDirective") {
-        parent.children[index] = directiveParagraph(node, leaf)
+        parent.children[index] = directiveElement(node, leaf)
         return SKIP
       }
 

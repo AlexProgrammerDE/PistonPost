@@ -14,6 +14,7 @@ import {
   type SeoImage,
   type SeoVideo,
 } from "./seo"
+import { heartCountLabel } from "./social-state"
 import {
   normalizeStreamThumbnailDimensions,
   SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
@@ -80,6 +81,9 @@ function postImages(post: PublicPostRead, postTitle: string): ReadonlyArray<SeoI
     })
 }
 
+// The feed variant scales images down to fit 1280 x 1280. Sitemaps list the same variant.
+const STRUCTURED_IMAGE_MAX_SIZE = 1280
+
 function structuredPostImages(
   post: PublicPostRead,
   postTitle: string,
@@ -88,13 +92,18 @@ function structuredPostImages(
     .filter((media) => media.kind === "image")
     .map((image) => {
       const url = absoluteUrl(mediaImageUrl(image.id, "feed"))
+      const dimensions = fitMediaDimensions(
+        image,
+        STRUCTURED_IMAGE_MAX_SIZE,
+        STRUCTURED_IMAGE_MAX_SIZE,
+      )
       return {
         "@type": "ImageObject",
         url,
         contentUrl: url,
         caption: image.altText ?? postTitle,
-        width: image.width ?? undefined,
-        height: image.height ?? undefined,
+        width: dimensions?.width,
+        height: dimensions?.height,
       }
     })
 }
@@ -140,9 +149,29 @@ function postVideo(post: PublicPostRead, postTitle: string) {
   }
 }
 
+// FNV-1a keeps the card version short and stable without async hashing.
+function shortHash(value: string) {
+  let hash = 0x811c9dc5
+  for (const character of value) {
+    hash ^= character.codePointAt(0) ?? 0
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return (hash >>> 0).toString(36)
+}
+
+/**
+ * The card shows the author's name and username, which can change without
+ * touching the post. Both are part of the version so a rename gets a new URL.
+ */
+export function textPostCardUrl(post: Pick<PublicPostRead, "id" | "updatedAt" | "author">) {
+  const authorVersion = shortHash(`${post.author.name}\n${post.author.username}`)
+  const version = `${post.updatedAt.getTime().toString()}-${authorVersion}`
+  return `/media/post/${encodeURIComponent(post.id)}/card?v=${version}`
+}
+
 function textPostImage(post: PublicPostRead, postTitle: string, authorName: string): SeoImage {
   return {
-    url: `/media/post/${encodeURIComponent(post.id)}/card?v=${post.updatedAt.getTime().toString()}`,
+    url: textPostCardUrl(post),
     alt: truncateDescription(`${postTitle} by ${authorName}`),
     type: "image/png",
     width: SOCIAL_IMAGE_WIDTH,
@@ -265,7 +294,7 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex?: num
             title: post.title,
             description: hasSelectedImage
               ? `@${post.author.username} · Image ${imageIndex + 1} of ${galleryImages.length}`
-              : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${post.heartCount} hearts · ${post.commentCount} comments`,
+              : `${authorName} (@${post.author.username})\n${post.type === "text" && post.textContent ? postMarkdownToPlainText(post.textContent) : description}\n${heartCountLabel(post.heartCount)} · ${post.commentCount === 1 ? "1 comment" : `${post.commentCount} comments`}`,
             url: hasSelectedImage ? `${canonical}?image=${imageIndex}` : canonical,
             layout: hasSelectedImage ? (imageIndex > 0 ? "media" : "compact") : "default",
             label: "View post",
@@ -300,7 +329,6 @@ export function createPostSeoHead(post: PublicPostRead, selectedImageIndex?: num
     publishedAt,
     modifiedAt,
     authorUrl,
-    tags: post.tags.map((tag) => tag.name),
     jsonLd,
   })
 }

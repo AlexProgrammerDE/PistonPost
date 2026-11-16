@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
-import { createMigratedTestDatabase, schema } from "@/db"
+import { eq } from "drizzle-orm"
 
+import { createMigratedTestDatabase, schema } from "@/db"
+import { isValidUsername } from "@/domain/validation"
+
+import { initializeUserProfile } from "./profile"
 import { createAuth, type AuthenticationEmail } from "./server"
 
 const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
@@ -15,6 +19,7 @@ afterEach(() => {
 
 function setup(
   isManagedUserAvatar: (userId: string, image: string) => Promise<boolean> = async () => false,
+  options: { readonly production?: boolean } = {},
 ) {
   const database = createMigratedTestDatabase()
   const emails: Array<AuthenticationEmail> = []
@@ -25,15 +30,58 @@ function setup(
     betterAuthApiKey: "test-only-better-auth-api-key",
     secret: "test-only-auth-secret-at-least-32-characters",
     trustedOrigins: ["http://localhost:3000"],
-    turnstileSecret: "not-used-in-this-test",
-    production: false,
+    turnstileSecret: options.production ? "1x0000000000000000000000000000000AA" : "unused",
+    production: options.production ?? false,
     infraEnabled: false,
     isManagedUserAvatar,
+    initializeProfile: (user) => initializeUserProfile(database, user),
     sendEmail: async (email) => {
       emails.push(email)
     },
   })
   return { auth, database, emails }
+}
+
+type TestAuth = ReturnType<typeof setup>
+
+async function signUpAndSignIn(
+  { auth, database, emails }: TestAuth,
+  account: { readonly email: string; readonly username?: string },
+) {
+  const signUp = await auth.handler(
+    authRequest("/sign-up/email", {
+      name: "Test User",
+      ...(account.username === undefined ? {} : { username: account.username }),
+      email: account.email,
+      password: "correct-horse-battery-staple",
+    }),
+  )
+  if (!signUp.ok) throw new Error(`Sign-up failed with ${signUp.status.toString()}.`)
+  database
+    .update(schema.user)
+    .set({ emailVerified: true })
+    .where(eq(schema.user.email, account.email.toLowerCase()))
+    .run()
+  const signIn = await auth.handler(
+    authRequest("/sign-in/email", {
+      email: account.email,
+      password: "correct-horse-battery-staple",
+    }),
+  )
+  emails.length = 0
+  return responseCookie(signIn)
+}
+
+function lastEmailCode(emails: ReadonlyArray<AuthenticationEmail>, to: string) {
+  const content = emails.findLast((email) => email.to === to)?.content
+  if (content?.template !== "email-otp") throw new Error(`No email code was sent to ${to}.`)
+  return content
+}
+
+async function sessionBody(auth: TestAuth["auth"], cookie: string) {
+  const response = await auth.handler(sessionRequest(cookie))
+  const body: unknown = await response.json()
+  return body
 }
 
 function authRequest(path: string, body: unknown, cookie?: string) {
@@ -390,44 +438,83 @@ describe("request-scoped Better Auth", () => {
     expect(database.select().from(schema.user).all()).toHaveLength(0)
   })
 
-  it("asks the current address to approve an email change", async () => {
-    const { auth, database, emails } = setup()
-    await auth.handler(
-      authRequest("/sign-up/email", {
-        name: "Email Change Tester",
-        username: "email-change-tester",
-        email: "current@example.com",
-        password: "correct-horse-battery-staple",
-      }),
+  it("changes the email with codes sent to the current and the new address", async () => {
+    const context = setup()
+    const { auth, database, emails } = context
+    const cookie = await signUpAndSignIn(context, {
+      email: "current@example.com",
+      username: "email-change-tester",
+    })
+
+    // The settings card asks for a "change-email" code for the current address.
+    const currentCodeResponse = await auth.handler(
+      authRequest(
+        "/email-otp/send-verification-otp",
+        { email: "current@example.com", type: "change-email" },
+        cookie,
+      ),
     )
-    database.update(schema.user).set({ emailVerified: true }).run()
-    const signInResponse = await auth.handler(
-      authRequest("/sign-in/email", {
-        email: "current@example.com",
-        password: "correct-horse-battery-staple",
-      }),
+    expect(currentCodeResponse.status).toBe(200)
+    const currentCode = lastEmailCode(emails, "current@example.com")
+
+    const requestResponse = await auth.handler(
+      authRequest(
+        "/email-otp/request-email-change",
+        { newEmail: "next@example.com", otp: currentCode.code },
+        cookie,
+      ),
     )
-    const cookie = signInResponse.headers
-      .getSetCookie()
-      .map((value) => value.split(";", 1)[0])
-      .join("; ")
-    emails.length = 0
+    expect(requestResponse.status).toBe(200)
+    const newCode = lastEmailCode(emails, "next@example.com")
+    expect(newCode.purpose).toBe("change-email")
+
+    const changeResponse = await auth.handler(
+      authRequest(
+        "/email-otp/change-email",
+        { newEmail: "next@example.com", otp: newCode.code },
+        cookie,
+      ),
+    )
+    expect(changeResponse.status).toBe(200)
+    expect(database.select().from(schema.user).get()).toMatchObject({
+      email: "next@example.com",
+      emailVerified: true,
+    })
+    expect(await sessionBody(auth, cookie)).toMatchObject({
+      user: { email: "next@example.com" },
+    })
+  })
+
+  it("requires the current address code before it sends a code to the new address", async () => {
+    const context = setup()
+    const { auth, database, emails } = context
+    const cookie = await signUpAndSignIn(context, { email: "owner@example.com" })
 
     const response = await auth.handler(
-      authRequest("/change-email", { newEmail: "next@example.com" }, cookie),
+      authRequest("/email-otp/request-email-change", { newEmail: "thief@example.com" }, cookie),
     )
 
-    expect(response.status).toBe(200)
-    expect(emails).toHaveLength(1)
-    expect(emails[0]?.to).toBe("current@example.com")
-    expect(emails[0]?.content.template).toBe("email-change-approval")
-    const changeApprovalEmail = emails[0]?.content
-    if (changeApprovalEmail?.template !== "email-change-approval") {
-      throw new Error("The email change approval did not include a confirmation link.")
-    }
-    expect(changeApprovalEmail.currentEmail).toBe("current@example.com")
-    expect(changeApprovalEmail.newEmail).toBe("next@example.com")
-    expect(changeApprovalEmail.url).toContain("/api/auth/verify-email")
+    expect(response.status).toBe(400)
+    expect(emails).toHaveLength(0)
+    expect(database.select().from(schema.user).get()?.email).toBe("owner@example.com")
+  })
+
+  it("does not send a change-email code for another account's address", async () => {
+    const context = setup()
+    const { auth, emails } = context
+    await signUpAndSignIn(context, { email: "victim@example.com" })
+    const cookie = await signUpAndSignIn(context, { email: "attacker@example.com" })
+
+    const response = await auth.handler(
+      authRequest(
+        "/email-otp/send-verification-otp",
+        { email: "victim@example.com", type: "change-email" },
+        cookie,
+      ),
+    )
+
+    expect(response.status).toBe(400)
+    expect(emails).toHaveLength(0)
   })
 
   it("routes account deletion confirmation through the authenticated redirect view", async () => {
@@ -520,5 +607,245 @@ describe("request-scoped Better Auth", () => {
     )
     expect(accepted.status).toBe(200)
     expect(database.select().from(schema.user).get()?.image).toBe(managedImage)
+  })
+
+  it("asks a two-factor user for the second factor after an email code sign-in", async () => {
+    const context = setup()
+    const { auth, database, emails } = context
+    await signUpAndSignIn(context, { email: "guarded@example.com" })
+    database.delete(schema.session).run()
+    database.update(schema.user).set({ twoFactorEnabled: true }).run()
+
+    await auth.handler(
+      authRequest("/email-otp/send-verification-otp", {
+        email: "guarded@example.com",
+        type: "sign-in",
+      }),
+    )
+    const signInCode = lastEmailCode(emails, "guarded@example.com")
+    const signInResponse = await auth.handler(
+      authRequest("/sign-in/email-otp", { email: "guarded@example.com", otp: signInCode.code }),
+    )
+    const challengeCookie = responseCookie(signInResponse)
+
+    expect(await signInResponse.clone().json()).toMatchObject({
+      twoFactorRedirect: true,
+      twoFactorMethods: ["otp"],
+    })
+    expect(challengeCookie).toContain("pistonpost.session_token=;")
+    expect(challengeCookie).toContain("pistonpost.two_factor=")
+    expect(database.select().from(schema.session).all()).toHaveLength(0)
+    expect(await sessionBody(auth, challengeCookie)).toBeNull()
+
+    emails.length = 0
+    await auth.handler(authRequest("/two-factor/send-otp", { trustDevice: false }, challengeCookie))
+    const secondFactor = emails[0]?.content
+    if (secondFactor?.template !== "two-factor-otp") {
+      throw new Error("The two-factor challenge did not dispatch an email code.")
+    }
+    const verifyResponse = await auth.handler(
+      authRequest(
+        "/two-factor/verify-otp",
+        { code: secondFactor.code, trustDevice: false },
+        challengeCookie,
+      ),
+    )
+    expect(verifyResponse.status).toBe(200)
+    expect(await sessionBody(auth, responseCookie(verifyResponse))).toMatchObject({
+      user: { email: "guarded@example.com" },
+    })
+  })
+
+  it("does not sign a two-factor user in through email verification codes", async () => {
+    const context = setup()
+    const { auth, database, emails } = context
+    await signUpAndSignIn(context, { email: "verified-guard@example.com" })
+    database.delete(schema.session).run()
+    database.update(schema.user).set({ twoFactorEnabled: true }).run()
+
+    await auth.handler(
+      authRequest("/email-otp/send-verification-otp", {
+        email: "verified-guard@example.com",
+        type: "email-verification",
+      }),
+    )
+    const code = lastEmailCode(emails, "verified-guard@example.com")
+    const response = await auth.handler(
+      authRequest("/email-otp/verify-email", {
+        email: "verified-guard@example.com",
+        otp: code.code,
+      }),
+    )
+
+    expect(await response.clone().json()).toMatchObject({ twoFactorRedirect: true })
+    expect(database.select().from(schema.session).all()).toHaveLength(0)
+  })
+
+  it("applies revoked sessions, bans, and role changes on the next session read", async () => {
+    const context = setup()
+    const { auth, database } = context
+    const cookie = await signUpAndSignIn(context, { email: "fresh@example.com" })
+    const headers = new Headers({ cookie })
+
+    expect(await auth.api.getSession({ headers })).toMatchObject({ user: { role: "user" } })
+
+    database.update(schema.user).set({ role: "admin" }).run()
+    expect(await auth.api.getSession({ headers })).toMatchObject({ user: { role: "admin" } })
+
+    database.update(schema.user).set({ banned: true }).run()
+    expect(await auth.api.getSession({ headers })).toMatchObject({ user: { banned: true } })
+
+    database.delete(schema.session).run()
+    expect(await auth.api.getSession({ headers })).toBeNull()
+    expect(await sessionBody(auth, cookie)).toBeNull()
+  })
+
+  it("keeps the profile username in step with Better Auth username changes", async () => {
+    const context = setup()
+    const { auth, database } = context
+    const cookie = await signUpAndSignIn(context, { email: "rename@example.com", username: "Old" })
+    const userId = database.select().from(schema.user).get()?.id
+    if (!userId) throw new Error("The user was not created.")
+
+    expect(
+      database.select().from(schema.profiles).where(eq(schema.profiles.userId, userId)).get(),
+    ).toMatchObject({ username: "Old", normalizedUsername: "old" })
+
+    const response = await auth.handler(
+      authRequest("/update-user", { username: "NewName", displayUsername: "NewName" }, cookie),
+    )
+
+    expect(response.status).toBe(200)
+    expect(database.select().from(schema.user).get()).toMatchObject({
+      username: "newname",
+      displayUsername: "NewName",
+    })
+    expect(
+      database.select().from(schema.profiles).where(eq(schema.profiles.userId, userId)).get(),
+    ).toMatchObject({ username: "NewName", normalizedUsername: "newname" })
+  })
+
+  it("rejects a username change that collides with another profile", async () => {
+    const context = setup()
+    const { auth, database } = context
+    await signUpAndSignIn(context, { email: "first@example.com", username: "taken" })
+    // A profile can own a name that no Better Auth user row carries.
+    database
+      .update(schema.user)
+      .set({ username: "renamed", displayUsername: "renamed" })
+      .where(eq(schema.user.email, "first@example.com"))
+      .run()
+    const cookie = await signUpAndSignIn(context, {
+      email: "second@example.com",
+      username: "other",
+    })
+
+    const response = await auth.handler(authRequest("/update-user", { username: "Taken" }, cookie))
+
+    expect(response.status).toBe(400)
+    expect(
+      database
+        .select({ username: schema.user.username })
+        .from(schema.user)
+        .where(eq(schema.user.email, "second@example.com"))
+        .get(),
+    ).toEqual({ username: "other" })
+    expect(
+      database
+        .select({ username: schema.profiles.normalizedUsername })
+        .from(schema.profiles)
+        .all()
+        .map(({ username }) => username)
+        .toSorted(),
+    ).toEqual(["other", "taken"])
+  })
+
+  it("rejects a sign-up whose username another profile owns", async () => {
+    const context = setup()
+    const { auth, database } = context
+    await signUpAndSignIn(context, { email: "owner@example.com", username: "claimed" })
+    database
+      .update(schema.user)
+      .set({ username: null, displayUsername: null })
+      .where(eq(schema.user.email, "owner@example.com"))
+      .run()
+
+    const response = await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Late User",
+        username: "Claimed",
+        email: "late@example.com",
+        password: "correct-horse-battery-staple",
+      }),
+    )
+
+    expect(response.status).toBe(400)
+    expect(database.select().from(schema.user).all()).toHaveLength(1)
+  })
+
+  it("gives every new account a valid, unique profile username", async () => {
+    const context = setup()
+    const { database } = context
+    await signUpAndSignIn(context, { email: "Same.Name+tag@example.com" })
+    await signUpAndSignIn(context, { email: "same.name+tag@example.org" })
+    await signUpAndSignIn(context, { email: "+@example.net" })
+
+    const usernames = database
+      .select({
+        username: schema.profiles.username,
+        normalized: schema.profiles.normalizedUsername,
+      })
+      .from(schema.profiles)
+      .all()
+
+    expect(database.select().from(schema.user).all()).toHaveLength(3)
+    expect(usernames).toHaveLength(3)
+    expect(new Set(usernames.map(({ normalized }) => normalized)).size).toBe(3)
+    expect(usernames.map(({ username }) => username)).toContain("same.name-tag")
+    expect(usernames.some(({ username }) => /^same\.name-tag-[0-9a-f]{6}$/.test(username))).toBe(
+      true,
+    )
+    expect(usernames.map(({ username }) => username)).toContain("user")
+    for (const { username } of usernames) expect(isValidUsername(username)).toBe(true)
+  })
+
+  it("requires a captcha on every sign-in, sign-up, and recovery entry point", async () => {
+    const { auth, database, emails } = setup(async () => false, { production: true })
+    const protectedRequests = [
+      ["/sign-up/email", { name: "Bot", email: "bot@example.com", password: "long-password-1" }],
+      ["/sign-in/email", { email: "bot@example.com", password: "long-password-1" }],
+      ["/sign-in/username", { username: "bot", password: "long-password-1" }],
+      ["/request-password-reset", { email: "bot@example.com" }],
+      ["/email-otp/send-verification-otp", { email: "bot@example.com", type: "sign-in" }],
+      ["/email-otp/send-verification-otp", { email: "bot@example.com", type: "forget-password" }],
+      ["/email-otp/request-password-reset", { email: "bot@example.com" }],
+      ["/forget-password/email-otp", { email: "bot@example.com" }],
+    ] as const
+
+    const responses = await Promise.all(
+      protectedRequests.map(async ([path, body]) => {
+        const response = await auth.handler(authRequest(path, body))
+        const responseBody: unknown = await response.json()
+        return { path, status: response.status, body: responseBody }
+      }),
+    )
+    for (const response of responses) {
+      expect(response).toMatchObject({ status: 400, body: { code: "MISSING_RESPONSE" } })
+    }
+    expect(database.select().from(schema.user).all()).toHaveLength(0)
+    expect(emails).toHaveLength(0)
+  })
+
+  it("lets verification codes through without a captcha", async () => {
+    const { auth } = setup(async () => false, { production: true })
+
+    const response = await auth.handler(
+      authRequest("/email-otp/send-verification-otp", {
+        email: "nobody@example.com",
+        type: "email-verification",
+      }),
+    )
+
+    expect(response.status).toBe(200)
   })
 })

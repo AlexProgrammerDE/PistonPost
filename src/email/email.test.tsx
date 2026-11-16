@@ -67,18 +67,8 @@ describe("transactional email", () => {
   })
 
   it("renders account approval and security mail with the Better Auth UI templates", async () => {
-    const approvalUrl = "https://post.pistonmaster.net/api/auth/verify-email?token=redacted"
     const securityUrl = "https://post.pistonmaster.net/settings/security"
-    const [emailChange, accountDeletion, newDevice] = await Promise.all([
-      renderEmail(
-        authenticationMessage({
-          template: "email-change-approval",
-          currentEmail: "old@example.com",
-          newEmail: "new@example.com",
-          url: approvalUrl,
-          expirationMinutes: 60,
-        }),
-      ),
+    const [accountDeletion, newDevice] = await Promise.all([
       renderEmail(
         authenticationMessage({
           template: "account-deletion",
@@ -97,15 +87,12 @@ describe("transactional email", () => {
       ),
     ])
 
-    expect(emailChange.html).toContain(approvalUrl.replaceAll("&", "&amp;"))
-    expect(emailChange.text).toContain("old@example.com")
-    expect(emailChange.text).toContain("new@example.com")
     expect(accountDeletion.text).toContain("24 hours")
     expect(newDevice.html).toContain(securityUrl)
     expect(newDevice.text).not.toContain("IP Address")
   })
 
-  it("bounds immediate authentication delivery retries", async () => {
+  it("sends immediate authentication email once without automatic retries", async () => {
     let attempts = 0
     const transportLayer = Layer.succeed(EmailTransport, {
       send: () =>
@@ -123,7 +110,7 @@ describe("transactional email", () => {
         }),
     })
 
-    await Effect.runPromise(
+    const failure = await Effect.runPromise(
       deliverImmediateEmail({
         content: authenticationMessage({
           template: "password-reset",
@@ -134,10 +121,14 @@ describe("transactional email", () => {
         to: "recipient@example.com",
         from: "auth@example.com",
         idempotencyKey: "password-reset:test",
-      }).pipe(Effect.provide(Layer.mergeAll(EmailRenderer.layer, transportLayer))),
+      }).pipe(Effect.flip, Effect.provide(Layer.mergeAll(EmailRenderer.layer, transportLayer))),
     )
 
-    expect(attempts).toBe(3)
+    expect(failure).toMatchObject({
+      _tag: "EmailDeliveryError",
+      code: "E_INTERNAL_SERVER_ERROR",
+    })
+    expect(attempts).toBe(1)
   })
 
   it("decodes ID-only durable notification jobs", () => {

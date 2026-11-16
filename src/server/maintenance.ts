@@ -44,6 +44,7 @@ const redactProcessedLegacyEmailJobs = Effect.fn("Maintenance.redactProcessedLeg
             isNotNull(schema.outbox.processedAt),
             sql`json_extract(${schema.outbox.payload}, '$.version') = 1`,
             sql`${schema.outbox.kind} like 'email.%'`,
+            sql`coalesce(json_extract(${schema.outbox.payload}, '$.type'), '') <> 'redacted'`,
           ),
         )
         .limit(100),
@@ -139,6 +140,77 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
     (job) => bindingOperation("maintenance.queueAbandonedMedia", () => env.JOBS.send(job)),
     { concurrency: 4 },
   )
+})
+
+export type MaintenanceStatement = { sql: string; params: (string | number | null)[] }
+
+const ABANDONED_DRAFT_AGE_MS = 24 * 60 * 60 * 1_000
+
+/**
+ * Deletes one draft that nobody touched for a day and queues cleanup for its uploads. Both
+ * statements re-check the draft, so a draft that was edited or posted meanwhile stays intact.
+ * The first statement returns the queued media IDs. The last statement deletes the post.
+ */
+export function abandonedDraftStatements(postId: string, now: number): MaintenanceStatement[] {
+  const cutoff = now - ABANDONED_DRAFT_AGE_MS
+  const abandoned =
+    "exists (select 1 from posts where id = ? and status = 'draft' and updated_at < ?)"
+  return [
+    {
+      sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+        select 'media.cleanup:' || m.id, 'media.cleanup',
+          json_object('type', 'media.cleanup', 'idempotencyKey', 'media.cleanup:' || m.id, 'mediaId', m.id),
+          0, ?, ?
+        from media_assets m
+        where m.status <> 'deleted'
+          and (m.id in (select media_id from post_media where post_id = ?)
+            or json_extract(m.provider_metadata, '$.postId') = ?)
+          and ${abandoned}
+        on conflict(id) do nothing
+        returning json_extract(payload, '$.mediaId') as mediaId`,
+      params: [now, now, postId, postId, postId, cutoff],
+    },
+    {
+      sql: `delete from posts where id = ? and status = 'draft' and updated_at < ?`,
+      params: [postId, cutoff],
+    },
+  ]
+}
+
+const removeAbandonedDrafts = Effect.fn("Maintenance.removeAbandonedDrafts")(function* (
+  env: Cloudflare.Env,
+) {
+  const database = createD1Database(env.DB)
+  const now = Date.now()
+  const drafts = yield* bindingOperation("maintenance.removeAbandonedDrafts", () =>
+    database
+      .select({ id: schema.posts.id })
+      .from(schema.posts)
+      .where(
+        and(
+          eq(schema.posts.status, "draft"),
+          lt(schema.posts.updatedAt, new Date(now - ABANDONED_DRAFT_AGE_MS)),
+        ),
+      )
+      .limit(25),
+  )
+  const [first, ...rest] = drafts
+    .flatMap(({ id }) => abandonedDraftStatements(id, now))
+    .map(({ sql: query, params }) => database.$client.prepare(query).bind(...params))
+  if (!first) return
+  const results = yield* bindingOperation("maintenance.removeAbandonedDrafts", () =>
+    database.$client.batch<{ mediaId: string }>([first, ...rest]),
+  )
+  const jobs = results.flatMap(({ results: rows }) =>
+    rows.map(({ mediaId }) => mediaCleanupJob(mediaId)),
+  )
+  // Queues accepts at most 100 messages per batch. Unsent rows stay pending for the outbox drain.
+  for (let offset = 0; offset < jobs.length; offset += 100) {
+    const batch = jobs.slice(offset, offset + 100)
+    yield* bindingOperation("maintenance.removeAbandonedDrafts", () =>
+      env.JOBS.sendBatch(batch.map((job) => ({ body: job }))),
+    )
+  }
 })
 
 const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env: Cloudflare.Env) {
@@ -278,6 +350,7 @@ const runMaintenance = Effect.fn("Maintenance.runMaintenance")(function* (env: C
     { name: "legacy-email", run: redactProcessedLegacyEmailJobs(env) },
     { name: "push-subscriptions", run: cleanExpiredPushSubscriptions(env) },
     { name: "abandoned-media", run: queueAbandonedMedia(env) },
+    { name: "abandoned-drafts", run: removeAbandonedDrafts(env) },
     { name: "stream", run: reconcileStream(env) },
     { name: "video-downloads", run: reconcileVideoDownloads(env) },
     { name: "staging", run: cleanStagingObjects(env) },

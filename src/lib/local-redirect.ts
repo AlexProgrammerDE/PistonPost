@@ -28,6 +28,10 @@ function normalizeLocalRedirect(value: unknown, allowAuthRedirect: boolean): str
       if (normalizeLocalRedirect(nestedRedirect, false) === undefined) return undefined
     }
 
+    // Dot segments can collapse "/.//host" into "//host", which a browser reads
+    // as a protocol-relative URL to another origin.
+    if (destination.pathname.startsWith("//")) return undefined
+
     return `${destination.pathname}${destination.search}${destination.hash}`
   } catch {
     return undefined

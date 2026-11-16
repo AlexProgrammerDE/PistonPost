@@ -1,6 +1,7 @@
 import type { ComponentProps } from "react"
 
 import { discordEmbedScript, type DiscordEmbedOptions } from "./discord-embed"
+import { mediaImageUrl, parseManagedAvatarMediaId } from "./media-image"
 
 export const SITE_NAME = "PistonPost"
 export const SITE_URL = "https://post.pistonmaster.net"
@@ -53,7 +54,6 @@ type SeoOptions = {
   readonly publishedAt?: string
   readonly modifiedAt?: string
   readonly authorUrl?: string
-  readonly tags?: ReadonlyArray<string>
   readonly profileUsername?: string
   readonly twitterCreator?: string
   readonly jsonLd?: JsonLdObject
@@ -110,12 +110,19 @@ export function truncateDescription(value: string, maximumLength = 160) {
   return truncateSeoText(value, maximumLength, SEO_DESCRIPTION_CODE_POINT_LIMIT)
 }
 
+// Older avatar URLs lack the cache version, and the avatar route redirects them.
+// Social crawlers should get the final image URL directly.
+export function socialImagePath(url: string) {
+  const avatarMediaId = parseManagedAvatarMediaId(url)
+  return avatarMediaId ? mediaImageUrl(avatarMediaId, "avatar") : url
+}
+
 export function createSeoHead(options: SeoOptions) {
   const title = truncateTitle(options.title)
   const description = truncateDescription(options.description)
   const canonical = absoluteUrl(options.path)
   const image = options.image ?? defaultImage
-  const imageUrl = absoluteUrl(image.url)
+  const imageUrl = absoluteUrl(socialImagePath(image.url))
   const imageAlt = truncateDescription(image.alt)
   const imageMeta: Array<ComponentProps<"meta">> = [
     { property: "og:image", content: imageUrl },
@@ -160,9 +167,6 @@ export function createSeoHead(options: SeoOptions) {
     if (options.videoDuration) {
       meta.push({ property: "video:duration", content: options.videoDuration.toString() })
     }
-    for (const tag of options.tags ?? []) {
-      meta.push({ property: "video:tag", content: tag })
-    }
   } else if (options.type === "article") {
     if (options.publishedAt) {
       meta.push({ property: "article:published_time", content: options.publishedAt })
@@ -171,9 +175,6 @@ export function createSeoHead(options: SeoOptions) {
       meta.push({ property: "article:modified_time", content: options.modifiedAt })
     }
     if (options.authorUrl) meta.push({ property: "article:author", content: options.authorUrl })
-    for (const tag of options.tags ?? []) {
-      meta.push({ property: "article:tag", content: tag })
-    }
   }
   if (options.profileUsername) {
     meta.push({ property: "profile:username", content: options.profileUsername })

@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, asc, count, desc, eq, gt, isNull, like, lt, or, sql, type SQL } from "drizzle-orm"
 import { Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
 
-import { createD1Database } from "@/db/d1-database"
+import { createD1Database, type D1DatabaseClient } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { moderationEmailJob } from "@/email"
@@ -17,7 +17,7 @@ import {
 } from "@/server/server-function-failure"
 import { administratorServerFunctionMiddleware } from "@/server/server-function-middleware"
 
-import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
+import { cacheInvalidationJob, mediaCleanupJob, videoAccessJob } from "./jobs"
 import { resolveModerationTransition } from "./moderation-state"
 
 const adminSection = Schema.Literals(["posts", "comments", "reports", "media", "jobs", "audit"])
@@ -78,6 +78,186 @@ function adminPage<T extends { createdAt: Date; id: string }>(rows: T[]) {
         ? encodeAdminCursor({ createdAt: last.createdAt, id: last.id })
         : null,
   }
+}
+
+export type AdminStatement = { sql: string; params: (string | number | null)[] }
+
+type AdminAudit = {
+  id: string
+  actorId: string
+  action: string
+  entityType: string
+  entityId: string
+  metadata: Record<string, string>
+}
+
+type AdminOutboxJob = { idempotencyKey: string; type: string }
+
+function auditStatement(event: AdminAudit, guard: string, guardParams: AdminStatement["params"]) {
+  return {
+    sql: `insert into audit_events (id, actor_id, action, entity_type, entity_id, metadata, created_at)
+      select ?, ?, ?, ?, ?, ?, ? where ${guard}`,
+    params: [
+      event.id,
+      event.actorId,
+      event.action,
+      event.entityType,
+      event.entityId,
+      JSON.stringify(event.metadata),
+      Date.now(),
+      ...guardParams,
+    ],
+  } satisfies AdminStatement
+}
+
+function runAdminStatements(database: D1DatabaseClient, statements: readonly AdminStatement[]) {
+  const [first, ...rest] = statements.map(({ sql: query, params }) =>
+    database.$client.prepare(query).bind(...params),
+  )
+  if (!first) return Promise.resolve([])
+  return database.$client.batch([first, ...rest])
+}
+
+const retryableJob =
+  "exists (select 1 from outbox where id = ? and processed_at is null and (lease_expires_at is null or lease_expires_at <= ?))"
+
+/**
+ * Resets an unfinished job that no worker holds. The delivery receipt and audit event depend
+ * on the same condition in the same batch. The last statement is the outbox reset.
+ */
+export function retryJobStatements(
+  input: { id: string; actorId: string; auditId: string },
+  now: number,
+): AdminStatement[] {
+  return [
+    {
+      sql: `update email_campaign_deliveries set status = 'queued', skip_reason = null, completed_at = null
+        where id = ? and ${retryableJob}`,
+      params: [input.id, input.id, now],
+    },
+    auditStatement(
+      {
+        id: input.auditId,
+        actorId: input.actorId,
+        action: "job.retry",
+        entityType: "outbox",
+        entityId: input.id,
+        metadata: {},
+      },
+      retryableJob,
+      [input.id, now],
+    ),
+    {
+      sql: `update outbox set available_at = ?, lease_expires_at = null, dead_lettered_at = null,
+          completed_reason = null, last_error = null
+        where id = ? and processed_at is null and (lease_expires_at is null or lease_expires_at <= ?)`,
+      params: [now, input.id, now],
+    },
+  ]
+}
+
+/**
+ * Queues media cleanup, or resets an earlier cleanup that finished, failed, or dead-lettered.
+ * A cleanup that a worker currently holds is left alone. The first statement is the claim.
+ */
+export function adminMediaCleanupStatements(
+  input: { mediaId: string; actorId: string; auditId: string },
+  now: number,
+): AdminStatement[] {
+  const job = mediaCleanupJob(input.mediaId)
+  return [
+    {
+      sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+        values (?, ?, ?, 0, ?, ?)
+        on conflict(id) do update set available_at = excluded.available_at, processed_at = null,
+          lease_expires_at = null, dead_lettered_at = null, completed_reason = null, last_error = null
+        where outbox.lease_expires_at is null or outbox.lease_expires_at <= ?`,
+      params: [job.idempotencyKey, job.type, JSON.stringify(job), now, now, now],
+    },
+    auditStatement(
+      {
+        id: input.auditId,
+        actorId: input.actorId,
+        action: "media.cleanup",
+        entityType: "media",
+        entityId: input.mediaId,
+        metadata: {},
+      },
+      "exists (select 1 from outbox where id = ? and processed_at is null and lease_expires_at is null)",
+      [job.idempotencyKey],
+    ),
+  ]
+}
+
+type Moderation = {
+  target: "post" | "comment"
+  id: string
+  action: "hide" | "restore"
+  reason: string
+  actorId: string
+  eventId: string
+  expectedStatus: "published" | "moderated"
+  nextStatus: string
+}
+
+const moderationTables = { post: "posts", comment: "comments" } as const
+
+/**
+ * The first job claims its outbox row only while the target still has the expected status.
+ * The audit event, the remaining jobs, and the status change depend on that claim.
+ * The last statement is the status change.
+ */
+export function moderationStatements(
+  input: Moderation,
+  [claim, ...jobs]: readonly [AdminOutboxJob, ...AdminOutboxJob[]],
+  now: number,
+): AdminStatement[] {
+  const table = moderationTables[input.target]
+  const guard = "exists (select 1 from outbox where id = ?)"
+  const outboxValues = (job: AdminOutboxJob) => [
+    job.idempotencyKey,
+    job.type,
+    JSON.stringify(job),
+    now,
+    now,
+  ]
+  return [
+    {
+      sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+        select ?, ?, ?, 0, ?, ? from ${table} t where t.id = ? and t.status = ?`,
+      params: [...outboxValues(claim), input.id, input.expectedStatus],
+    },
+    ...jobs.map((job) => ({
+      sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+        select ?, ?, ?, 0, ?, ? where ${guard}
+        on conflict(id) do nothing`,
+      params: [...outboxValues(job), claim.idempotencyKey],
+    })),
+    auditStatement(
+      {
+        id: input.eventId,
+        actorId: input.actorId,
+        action: `${input.target}.${input.action}`,
+        entityType: input.target,
+        entityId: input.id,
+        metadata: { reason: input.reason },
+      },
+      guard,
+      [claim.idempotencyKey],
+    ),
+    {
+      sql: `update ${table} set status = ?, moderation_reason = ?, updated_at = ?
+        where id = ? and status = ? and ${guard}`,
+      params: [
+        input.nextStatus,
+        input.action === "hide" ? input.reason : null,
+        now,
+        input.id,
+        input.expectedStatus,
+        claim.idempotencyKey,
+      ],
+    },
+  ]
 }
 
 export const getAdminRows = createServerFn({ method: "GET" })
@@ -272,7 +452,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                     href: sql<string | null>`null`,
                     primary: schema.outbox.kind,
                     secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
-                    status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
+                    status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.leaseExpiresAt} > (unixepoch() * 1000) then 'running' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
                     createdAt: schema.outbox.createdAt,
                   })
                   .from(schema.outbox)
@@ -335,7 +515,9 @@ export const getAdminOverview = createServerFn({ method: "GET" })
                 database
                   .select({ value: count() })
                   .from(schema.outbox)
-                  .where(isNull(schema.outbox.processedAt))
+                  .where(
+                    and(isNull(schema.outbox.processedAt), isNull(schema.outbox.deadLetteredAt)),
+                  )
                   .get(),
               ),
               bindingOperation("getAdminOverview.operation", () =>
@@ -381,32 +563,20 @@ export const retryAdminJob = createServerFn({ method: "POST" })
         if (!job) return yield* notFoundFailure("The job was not found.")
         if (job.processedAt) return yield* conflictFailure("This job has already completed.")
         return yield* Effect.gen(function* () {
-          yield* bindingOperation("retryAdminJob.operation", () =>
-            database.batch([
-              database
-                .update(schema.outbox)
-                .set({
-                  availableAt: new Date(),
-                  leaseExpiresAt: null,
-                  deadLetteredAt: null,
-                  completedReason: null,
-                  lastError: null,
-                })
-                .where(eq(schema.outbox.id, data.id)),
-              database
-                .update(schema.emailCampaignDeliveries)
-                .set({ status: "queued", skipReason: null, completedAt: null })
-                .where(eq(schema.emailCampaignDeliveries.id, data.id)),
-              database.insert(schema.auditEvents).values({
-                id: crypto.randomUUID(),
-                actorId: session.user.id,
-                action: "job.retry",
-                entityType: "outbox",
-                entityId: data.id,
-                metadata: {},
-              }),
-            ]),
+          const results = yield* bindingOperation("retryAdminJob.operation", () =>
+            runAdminStatements(
+              database,
+              retryJobStatements(
+                { id: data.id, actorId: session.user.id, auditId: crypto.randomUUID() },
+                Date.now(),
+              ),
+            ),
           )
+          if (results.at(-1)?.meta.changes !== 1) {
+            return yield* conflictFailure(
+              "This job is running or has already completed. Refresh and try again.",
+            )
+          }
           context.executionContext.waitUntil(context.env.JOBS.send(job.payload))
           return { id: data.id }
         }).pipe(Effect.uninterruptible)
@@ -439,22 +609,18 @@ export const cleanupAdminMedia = createServerFn({ method: "POST" })
         }
         const job = mediaCleanupJob(data.id)
         return yield* Effect.gen(function* () {
-          yield* bindingOperation("cleanupAdminMedia.operation", () =>
-            database.batch([
-              database
-                .insert(schema.outbox)
-                .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-                .onConflictDoNothing(),
-              database.insert(schema.auditEvents).values({
-                id: crypto.randomUUID(),
-                actorId: session.user.id,
-                action: "media.cleanup",
-                entityType: "media",
-                entityId: data.id,
-                metadata: {},
-              }),
-            ]),
+          const results = yield* bindingOperation("cleanupAdminMedia.operation", () =>
+            runAdminStatements(
+              database,
+              adminMediaCleanupStatements(
+                { mediaId: data.id, actorId: session.user.id, auditId: crypto.randomUUID() },
+                Date.now(),
+              ),
+            ),
           )
+          if (results[0]?.meta.changes !== 1) {
+            return yield* conflictFailure("This media item is already being removed.")
+          }
           context.executionContext.waitUntil(context.env.JOBS.send(job))
           return { id: data.id }
         }).pipe(Effect.uninterruptible)
@@ -485,6 +651,7 @@ export const moderateEntity = createServerFn({ method: "POST" })
                   .select({
                     id: schema.posts.id,
                     postId: schema.posts.id,
+                    type: schema.posts.type,
                     status: schema.posts.status,
                     authorId: schema.posts.authorId,
                     authorUsername: schema.profiles.username,
@@ -518,35 +685,18 @@ export const moderateEntity = createServerFn({ method: "POST" })
         const expectedStatus = data.action === "hide" ? "published" : "moderated"
 
         return yield* Effect.gen(function* () {
-          const updateTarget =
-            data.target === "post"
-              ? database
-                  .update(schema.posts)
-                  .set({
-                    status: nextStatus,
-                    moderationReason: data.action === "hide" ? data.reason : null,
-                    updatedAt: new Date(),
-                  })
-                  .where(and(eq(schema.posts.id, data.id), eq(schema.posts.status, expectedStatus)))
-              : database
-                  .update(schema.comments)
-                  .set({
-                    status: nextStatus,
-                    moderationReason: data.action === "hide" ? data.reason : null,
-                    updatedAt: new Date(),
-                  })
-                  .where(
-                    and(
-                      eq(schema.comments.id, data.id),
-                      eq(schema.comments.status, expectedStatus),
-                    ),
-                  )
           const moderationEventId = crypto.randomUUID()
-          const jobs: Array<
-            | ReturnType<typeof moderationEmailJob>
-            | ReturnType<typeof cacheInvalidationJob>
-            | PushDeliveryJob
-          > = [cacheInvalidationJob(target.postId)]
+          const jobs: [
+            ReturnType<typeof cacheInvalidationJob>,
+            ...Array<
+              | ReturnType<typeof moderationEmailJob>
+              | ReturnType<typeof videoAccessJob>
+              | PushDeliveryJob
+            >,
+          ] = [cacheInvalidationJob(target.postId)]
+          // Stream videos are uploaded without signed URLs. Hiding a post must also stop playback.
+          if ("type" in target && target.type === "video")
+            jobs.push(videoAccessJob(target.postId, moderationEventId))
           if (target.authorId !== session.user.id) {
             jobs.push(moderationEmailJob(target.authorId, moderationEventId))
             const subscriptions = yield* bindingOperation("moderateEntity.subscriptions", () =>
@@ -561,25 +711,30 @@ export const moderateEntity = createServerFn({ method: "POST" })
               ),
             )
           }
-          yield* bindingOperation("moderateEntity.operation", () =>
-            database.batch([
-              updateTarget,
-              database.insert(schema.auditEvents).values({
-                id: moderationEventId,
-                actorId: session.user.id,
-                action: `${data.target}.${data.action}`,
-                entityType: data.target,
-                entityId: data.id,
-                metadata: { reason: data.reason },
-              }),
-              ...jobs.map((job) =>
-                database
-                  .insert(schema.outbox)
-                  .values({ id: job.idempotencyKey, kind: job.type, payload: job })
-                  .onConflictDoNothing(),
+          const results = yield* bindingOperation("moderateEntity.operation", () =>
+            runAdminStatements(
+              database,
+              moderationStatements(
+                {
+                  target: data.target,
+                  id: data.id,
+                  action: data.action,
+                  reason: data.reason,
+                  actorId: session.user.id,
+                  eventId: moderationEventId,
+                  expectedStatus,
+                  nextStatus,
+                },
+                jobs,
+                Date.now(),
               ),
-            ]),
+            ),
           )
+          if (results.at(-1)?.meta.changes !== 1) {
+            return yield* conflictFailure(
+              "The content changed since this table was loaded. Refresh and try again.",
+            )
+          }
           context.executionContext.waitUntil(
             context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
           )

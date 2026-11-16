@@ -40,6 +40,13 @@ export const posts = sqliteTable(
   (table) => [
     index("posts_discovery_idx").on(table.status, table.visibility, table.publishedAt, table.id),
     index("posts_author_status_created_idx").on(table.authorId, table.status, table.createdAt),
+    index("posts_author_feed_idx").on(
+      table.authorId,
+      table.status,
+      table.visibility,
+      table.publishedAt,
+      table.id,
+    ),
     check("posts_type_check", sql`${table.type} in ('text', 'images', 'video')`),
     check(
       "posts_status_check",

@@ -1,9 +1,12 @@
 "use client"
 
+import { useSession } from "@better-auth-ui/react"
 import { BellOff, BellRing, TriangleAlert } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
+import { authClient } from "@/auth/client"
+import { replaceOutdatedSubscription } from "@/components/push-subscription-sync"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldDescription, FieldTitle } from "@/components/ui/field"
@@ -11,6 +14,9 @@ import { Spinner } from "@/components/ui/spinner"
 import {
   createPushSubscription,
   getExistingPushSubscription,
+  getOwnedPushSubscription,
+  pushSubscriptionUsesKey,
+  recordPushOwner,
   serializePushSubscription,
   supportsPushNotifications,
 } from "@/lib/push-notifications"
@@ -19,6 +25,8 @@ import { removePushSubscription, upsertPushSubscription } from "@/server/push-su
 type DeviceState = "checking" | "disabled" | "enabled" | "denied" | "unsupported" | "not-configured"
 
 export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string | null }) {
+  const { data: session } = useSession(authClient)
+  const userId = session?.user.id ?? null
   const [state, setState] = useState<DeviceState>("checking")
   const [isUpdating, setIsUpdating] = useState(false)
   const updatingRef = useRef(false)
@@ -33,7 +41,8 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
       if (!vapidPublicKey) return apply("not-configured")
       if (!supportsPushNotifications()) return apply("unsupported")
       if (Notification.permission === "denied") return apply("denied")
-      const subscription = await getExistingPushSubscription()
+      if (!userId) return apply("checking")
+      const subscription = await getOwnedPushSubscription(userId)
       apply(subscription ? "enabled" : "disabled")
     }
     const refresh = () => {
@@ -61,7 +70,7 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
       document.removeEventListener("visibilitychange", refreshWhenVisible)
       permissionStatus?.removeEventListener("change", refresh)
     }
-  }, [vapidPublicKey])
+  }, [userId, vapidPublicKey])
 
   function startUpdate() {
     updatingRef.current = true
@@ -74,7 +83,7 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
   }
 
   async function enable() {
-    if (!vapidPublicKey) return
+    if (!vapidPublicKey || !userId) return
     startUpdate()
     try {
       const permission = await Notification.requestPermission()
@@ -87,9 +96,14 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
         toast.info("Push stays off. Turn it on again when you want notifications on this device.")
         return
       }
-      const existing = await getExistingPushSubscription()
-      const subscription = existing ?? (await createPushSubscription(vapidPublicKey))
+      const existing = await getOwnedPushSubscription(userId)
+      const subscription = !existing
+        ? await createPushSubscription(vapidPublicKey)
+        : pushSubscriptionUsesKey(existing, vapidPublicKey)
+          ? existing
+          : await replaceOutdatedSubscription(existing, vapidPublicKey)
       await upsertPushSubscription({ data: serializePushSubscription(subscription) })
+      await recordPushOwner(userId)
       setState("enabled")
       toast.success("Push notifications are on for this device")
     } catch {
@@ -107,6 +121,7 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
         await removePushSubscription({ data: { endpoint: subscription.endpoint } })
         await subscription.unsubscribe()
       }
+      await recordPushOwner(null)
       setState("disabled")
       toast.success("Push notifications are off for this device")
     } catch {

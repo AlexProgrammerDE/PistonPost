@@ -3,7 +3,7 @@ import * as Schema from "effect/Schema"
 
 import { stageSharedContent } from "./local-store"
 import { safeNotificationPayload } from "./notification"
-import { MAX_SHARED_BYTES, sharedContentSchema } from "./share-intake"
+import { MAX_SHARED_BYTES, sharedContentSchema, truncateSharedTitle } from "./share-intake"
 
 declare const self: ServiceWorkerGlobalScope
 
@@ -42,6 +42,10 @@ self.addEventListener("activate", (event) => {
           .filter((key) => key.startsWith("pistonpost-offline-") && key !== OFFLINE_CACHE)
           .map((key) => caches.delete(key)),
       )
+      // Start navigation requests while the worker boots instead of after it.
+      if ("navigationPreload" in self.registration) {
+        await self.registration.navigationPreload.enable().catch(() => undefined)
+      }
       await self.clients.claim()
     })(),
   )
@@ -69,8 +73,9 @@ async function receiveShare(request: Request) {
       chunks.push(new Uint8Array(value))
     }
     const form = await new Response(new Blob(chunks), { headers: request.headers }).formData()
+    const title = form.get("title") ?? ""
     const content = Schema.decodeUnknownSync(sharedContentSchema, { errors: "all" })({
-      title: form.get("title") ?? "",
+      title: typeof title === "string" ? truncateSharedTitle(title) : title,
       text: form.get("text") ?? "",
       url: form.get("url") ?? "",
       files: form.getAll("files").filter((value) => value instanceof File && value.size > 0),
@@ -101,7 +106,10 @@ self.addEventListener("fetch", (event) => {
     )
   } else if (event.request.mode === "navigate") {
     event.respondWith(
-      fetch(event.request).catch(async () => {
+      (async () => {
+        const preloaded: unknown = await event.preloadResponse
+        return preloaded instanceof Response ? preloaded : fetch(event.request)
+      })().catch(async () => {
         const fallback = await caches.match(OFFLINE_PAGE, { cacheName: OFFLINE_CACHE })
         return (
           fallback ?? new Response("You are offline. Reconnect and try again.", { status: 503 })
@@ -137,6 +145,20 @@ self.addEventListener("push", (event) => {
       else if ("setAppBadge" in self.navigator)
         await self.navigator.setAppBadge().catch(() => undefined)
     })(),
+  )
+})
+
+// The push service can rotate or expire a subscription. Resubscribe with the same server key so
+// push keeps working. The open app syncs the new endpoint to the account on its next load, because
+// the server only accepts subscription changes from an authenticated page.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil(
+    (async () => {
+      const applicationServerKey = event.oldSubscription?.options.applicationServerKey
+      if (!applicationServerKey || event.newSubscription) return
+      if ((await self.registration.pushManager.getSubscription()) !== null) return
+      await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey })
+    })().catch(() => undefined),
   )
 })
 

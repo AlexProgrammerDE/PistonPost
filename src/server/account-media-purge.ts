@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Schema } from "effect"
+import { Context, Effect, Exit, Layer, Schema } from "effect"
 
 export type OwnedMediaForDeletion = {
   id: string
@@ -29,10 +29,17 @@ class AccountMediaPurge extends Context.Service<
   }
 >()("@pistonpost/media/AccountMediaPurge") {}
 
-function missingProviderObject(cause: unknown) {
+/** Stream bindings throw `NotFoundError` with `statusCode: 404` once a video is gone. */
+export function missingProviderObject(cause: unknown) {
   if (!cause || typeof cause !== "object") return false
-  const value = cause as { status?: unknown; code?: unknown }
-  return value.status === 404 || value.code === 404 || value.code === "NOT_FOUND"
+  const value = cause as { name?: unknown; status?: unknown; statusCode?: unknown; code?: unknown }
+  return (
+    value.name === "NotFoundError" ||
+    value.statusCode === 404 ||
+    value.status === 404 ||
+    value.code === 404 ||
+    value.code === "NOT_FOUND"
+  )
 }
 
 function providerDelete(assetId: string, operation: "r2" | "stream", task: () => Promise<void>) {
@@ -66,14 +73,18 @@ export const purgeAccountMedia = Effect.fn("AccountDeletion.purgeMedia")(functio
   assets: ReadonlyArray<OwnedMediaForDeletion>,
 ) {
   const services = yield* AccountMediaPurge
-  yield* Effect.forEach(
+  // One failed asset must not block the others. The workflow step retries the remainder.
+  const exits = yield* Effect.forEach(
     assets,
     (asset) =>
       Effect.gen(function* () {
         if (asset.r2Key) yield* services.deleteR2(asset.id, asset.r2Key)
         if (asset.streamUid) yield* services.deleteStream(asset.id, asset.streamUid)
         yield* services.deleteRecord(asset.id)
-      }).pipe(Effect.uninterruptible),
+      }).pipe(Effect.uninterruptible, Effect.exit),
     { concurrency: 5 },
   )
+  const failure = exits.find(Exit.isFailure)
+  if (failure) return yield* Effect.failCause(failure.cause)
+  return undefined
 })

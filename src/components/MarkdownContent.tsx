@@ -1,5 +1,6 @@
 "use client"
 
+import type { Root as HastRoot } from "hast"
 import {
   ExternalLink,
   EyeOff,
@@ -15,16 +16,18 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
   type ComponentProps,
 } from "react"
-import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown"
-import rehypeSanitize from "rehype-sanitize"
+import ReactMarkdown, { type Components, type ExtraProps, type Options } from "react-markdown"
+import rehypeSanitize, { defaultSchema } from "rehype-sanitize"
 import remarkDirective from "remark-directive"
 import remarkGfm from "remark-gfm"
 import type { PluggableList } from "unified"
+import { visit } from "unist-util-visit"
 
 import { AppImage } from "@/components/AppImage"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -42,8 +45,8 @@ import { Spinner } from "@/components/ui/spinner"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
 import { externalImageProxyUrl, isProxyableExternalImageUrl } from "@/lib/markdown"
 import {
-  parseRenderedPostDirective,
   parseRenderedPostContainerDirective,
+  parseRenderedPostDirective,
   parseRenderedPostInlineDirective,
   postMarkdownSanitizeSchema,
   remarkPostDirectives,
@@ -62,10 +65,31 @@ type MarkdownContextValue = {
 type MarkdownVariant = "post" | "comment"
 
 const MarkdownContext = createContext<MarkdownContextValue | null>(null)
+// Phrasing content inside a link must not add another link or button.
+const InsideLinkContext = createContext(false)
 const postMarkdownPlugins = [remarkGfm, remarkDirective, remarkPostDirectives]
 const commentMarkdownPlugins = [remarkGfm]
-const postHtmlPlugins: PluggableList = [[rehypeSanitize, postMarkdownSanitizeSchema]]
-const commentHtmlPlugins: PluggableList = [rehypeSanitize]
+// remark-rehype already prefixes generated IDs with a per-render scope, so the sanitizer
+// must not add a second prefix. Raw HTML is skipped, so users cannot write other IDs.
+const postSanitizeSchema = { ...postMarkdownSanitizeSchema, clobberPrefix: "" }
+const commentSanitizeSchema = { ...defaultSchema, clobberPrefix: "" }
+const FOOTNOTE_LABEL_ID = "footnote-label"
+
+// remark-rehype always names the footnote heading "footnote-label", without its prefix.
+function rehypeScopeFootnoteLabel(options: { readonly prefix: string }) {
+  const scopedId = `${options.prefix}${FOOTNOTE_LABEL_ID}`
+  return (tree: HastRoot) => {
+    visit(tree, "element", (element) => {
+      if (element.properties.id === FOOTNOTE_LABEL_ID) element.properties.id = scopedId
+      const describedBy = element.properties.ariaDescribedBy
+      if (Array.isArray(describedBy)) {
+        element.properties.ariaDescribedBy = describedBy.map((id) =>
+          id === FOOTNOTE_LABEL_ID ? scopedId : id,
+        )
+      }
+    })
+  }
+}
 
 let xScriptPromise: Promise<void> | null = null
 
@@ -93,7 +117,7 @@ function MarkdownLink({ href, children, node, ...props }: ComponentProps<"a"> & 
   if (!href) return <span>{children}</span>
   return (
     <UserGeneratedLink {...props} href={href}>
-      {children}
+      <InsideLinkContext value={true}>{children}</InsideLinkContext>
     </UserGeneratedLink>
   )
 }
@@ -392,23 +416,16 @@ function ExternalLinkCard({ href, label }: { href: string; label: string }) {
   )
 }
 
-function MarkdownParagraph({ node, children, ...props }: ComponentProps<"p"> & ExtraProps) {
-  const { variant } = useMarkdownContext()
-  const directive = variant === "post" && node ? parseRenderedPostDirective(node.properties) : null
-  if (directive?.kind === "embed") {
-    return <EmbedConsent embed={directive.embed} label={directive.label} />
-  }
-  if (directive?.kind === "card") {
-    return <ExternalLinkCard href={directive.url} label={directive.label ?? ""} />
-  }
-  return <p {...props}>{children}</p>
-}
-
 function MarkdownSpan({ node, children, ...props }: ComponentProps<"span"> & ExtraProps) {
   const { variant } = useMarkdownContext()
+  const insideLink = useContext(InsideLinkContext)
   const directive =
     variant === "post" && node ? parseRenderedPostInlineDirective(node.properties) : null
-  if (directive?.kind === "spoiler") return <MarkdownSpoiler label={directive.label} />
+  if (directive?.kind === "spoiler") {
+    // A button cannot sit inside a link, and a click would also open the link. Keep the spoiler
+    // covered there instead of revealing it as plain text.
+    return insideLink ? <MaskedSpoiler /> : <MarkdownSpoiler label={directive.label} />
+  }
   return <span {...props}>{children}</span>
 }
 
@@ -437,6 +454,15 @@ function MarkdownSpoiler({ label }: { label: string }) {
   )
 }
 
+function MaskedSpoiler() {
+  return (
+    <span className="inline border border-foreground/70 bg-foreground px-1 text-background">
+      <span className="sr-only">Hidden spoiler</span>
+      <EyeOff aria-hidden="true" className="inline size-[1em] align-[-0.125em]" />
+    </span>
+  )
+}
+
 const calloutPresentation = {
   note: { icon: Info, label: "Note" },
   tip: { icon: Lightbulb, label: "Tip" },
@@ -445,6 +471,14 @@ const calloutPresentation = {
 
 function MarkdownDiv({ node, children, ...props }: ComponentProps<"div"> & ExtraProps) {
   const { variant } = useMarkdownContext()
+  const leafDirective =
+    variant === "post" && node ? parseRenderedPostDirective(node.properties) : null
+  if (leafDirective?.kind === "embed") {
+    return <EmbedConsent embed={leafDirective.embed} label={leafDirective.label} />
+  }
+  if (leafDirective?.kind === "card") {
+    return <ExternalLinkCard href={leafDirective.url} label={leafDirective.label ?? ""} />
+  }
   const directive =
     variant === "post" && node ? parseRenderedPostContainerDirective(node.properties) : null
   if (directive?.kind === "details") {
@@ -479,10 +513,16 @@ function MarkdownDiv({ node, children, ...props }: ComponentProps<"div"> & Extra
   return <div {...props}>{children}</div>
 }
 
+// Images are phrasing content, so every fallback uses inline elements and never nests a
+// link inside the link that may already wrap the image.
 function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
   const { postId, variant } = useMarkdownContext()
+  const insideLink = useContext(InsideLinkContext)
   if (!src) return alt ? <span>{alt}</span> : null
 
+  if (variant === "comment" && insideLink) {
+    return <span>{alt ? `Image: ${alt}` : "Image"}</span>
+  }
   if (variant === "comment") {
     return (
       <UserGeneratedLink
@@ -502,46 +542,50 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
     return <AppImage src={imageSource} alt={alt ?? ""} loading="lazy" decoding="async" />
   }
 
-  return (
-    <Item
-      render={<UserGeneratedLink href={src} />}
-      className="not-typeset my-2 inline-flex bg-muted/15 no-underline"
-      size="sm"
-      variant="outline"
-    >
-      <ItemMedia variant="icon">
-        <ImageIcon aria-hidden="true" className="text-muted-foreground" />
-      </ItemMedia>
-      <ItemContent className="min-w-0">
-        <ItemTitle className="line-clamp-2 wrap-anywhere">{alt || "External image"}</ItemTitle>
-        <ItemDescription className="text-xs">
+  const title = alt || "External image"
+  const content = (
+    <>
+      <ImageIcon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
+      <span className="flex min-w-0 flex-col gap-1">
+        <span className="line-clamp-2 leading-snug font-medium wrap-anywhere">{title}</span>
+        <span className="text-xs text-muted-foreground">
           {!postId && isProxyableExternalImageUrl(src)
             ? "The image will be proxied after this post is saved."
             : `Opens an image on ${externalLinkDestination(src)}.`}
-        </ItemDescription>
-      </ItemContent>
-    </Item>
+        </span>
+      </span>
+    </>
+  )
+  const cardClassName =
+    "not-typeset my-2 inline-flex max-w-full items-center gap-3.5 rounded-2xl border border-border bg-muted/15 px-3.5 py-3 align-middle text-sm no-underline"
+
+  if (insideLink) return <span className={cardClassName}>{content}</span>
+  return (
+    <UserGeneratedLink
+      href={src}
+      className={cn(
+        cardClassName,
+        "transition-colors outline-none hover:bg-muted focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50",
+      )}
+    >
+      {content}
+    </UserGeneratedLink>
   )
 }
 
 function MarkdownTable({ node, ...props }: ComponentProps<"table"> & ExtraProps) {
-  const { variant } = useMarkdownContext()
   void node
-  if (variant === "comment") {
-    return (
-      <div className="typeset-scroll">
-        <table {...props} />
-      </div>
-    )
-  }
-  return <table {...props} />
+  return (
+    <div className="typeset-scroll">
+      <table {...props} />
+    </div>
+  )
 }
 
 const markdownComponents: Components = {
   a: MarkdownLink,
   div: MarkdownDiv,
   img: MarkdownImage,
-  p: MarkdownParagraph,
   span: MarkdownSpan,
   table: MarkdownTable,
 }
@@ -561,6 +605,14 @@ export function MarkdownContent({
     () => (postId ? { postId, variant } : { variant }),
     [postId, variant],
   )
+  // Footnote IDs need a scope per rendered document, so several posts or comments on one
+  // page do not share targets. useId is stable between the server and hydration.
+  const idPrefix = `user-content-${useId().replaceAll(/[^\w-]/gu, "")}-`
+  const remarkRehypeOptions: Options["remarkRehypeOptions"] = { clobberPrefix: idPrefix }
+  const rehypePlugins: PluggableList = [
+    [rehypeSanitize, variant === "post" ? postSanitizeSchema : commentSanitizeSchema],
+    [rehypeScopeFootnoteLabel, { prefix: idPrefix }],
+  ]
 
   return (
     <UserGeneratedLinkProvider>
@@ -575,8 +627,9 @@ export function MarkdownContent({
         >
           <ReactMarkdown
             remarkPlugins={variant === "post" ? postMarkdownPlugins : commentMarkdownPlugins}
-            rehypePlugins={variant === "post" ? postHtmlPlugins : commentHtmlPlugins}
+            rehypePlugins={rehypePlugins}
             components={markdownComponents}
+            remarkRehypeOptions={remarkRehypeOptions}
             skipHtml
             urlTransform={safeUserGeneratedUrl}
           >

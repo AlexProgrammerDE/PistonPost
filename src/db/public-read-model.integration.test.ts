@@ -6,6 +6,7 @@ import {
   getPublicTagRead,
   listPublicPostReads,
   listPublicPostSitemapRecords,
+  listPublicProfileSitemapRecords,
   listViewerFeedHeartPostIds,
 } from "./public-read-model"
 import {
@@ -167,6 +168,59 @@ describe("following feed read model", () => {
     expect(page.nextCursor).toBeNull()
   })
 
+  it("leaves the viewer's own posts out of the following feed", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => database.$client.close()
+    database
+      .insert(user)
+      .values([
+        createUser({ id: "viewer", email: "viewer@example.com" }),
+        createUser({ id: "tag-author", email: "tag@example.com" }),
+      ])
+      .run()
+    database
+      .insert(profiles)
+      .values([
+        { userId: "viewer", username: "viewer", normalizedUsername: "viewer" },
+        { userId: "tag-author", username: "tag-author", normalizedUsername: "tag-author" },
+      ])
+      .run()
+    database
+      .insert(posts)
+      .values([
+        createPost({
+          id: "own-tagged",
+          authorId: "viewer",
+          status: "published",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+        }),
+        createPost({
+          id: "other-tagged",
+          authorId: "tag-author",
+          status: "published",
+          publishedAt: new Date("2026-01-01T00:00:00.000Z"),
+        }),
+      ])
+      .run()
+    database.insert(tags).values({ id: "art", displayName: "Art", normalizedName: "art" }).run()
+    database
+      .insert(postTags)
+      .values([
+        { postId: "own-tagged", tagId: "art", ordinal: 0 },
+        { postId: "other-tagged", tagId: "art", ordinal: 0 },
+      ])
+      .run()
+    database.insert(tagFollows).values({ userId: "viewer", tagId: "art" }).run()
+
+    const page = await listPublicPostReads(database, {
+      cursor: null,
+      followingUserId: "viewer",
+      limit: 12,
+    })
+
+    expect(page.posts.map((post) => post.id)).toEqual(["other-tagged"])
+  })
+
   it("distinguishes empty tags and probationary content for search discovery", async () => {
     const database = createMigratedTestDatabase()
     close = () => database.$client.close()
@@ -296,5 +350,69 @@ describe("public sitemap read model", () => {
       "sitemap-post-114-media-0",
       "sitemap-post-114-media-1",
     ])
+  })
+
+  it("dates profiles by their latest public post and skips dot-only usernames", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => database.$client.close()
+    const profileUpdatedAt = new Date("2026-01-01T00:00:00.000Z")
+    database
+      .insert(user)
+      .values([
+        createUser({ id: "author", email: "author@example.com" }),
+        createUser({ id: "dot", email: "dot@example.com" }),
+        createUser({ id: "dots", email: "dots@example.com" }),
+      ])
+      .run()
+    database
+      .insert(profiles)
+      .values([
+        {
+          userId: "author",
+          username: "author",
+          normalizedUsername: "author",
+          updatedAt: profileUpdatedAt,
+        },
+        { userId: "dot", username: ".", normalizedUsername: ".", updatedAt: profileUpdatedAt },
+        { userId: "dots", username: "..", normalizedUsername: "..", updatedAt: profileUpdatedAt },
+      ])
+      .run()
+    database
+      .insert(posts)
+      .values([
+        createPost({
+          id: "public-post",
+          authorId: "author",
+          status: "published",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-03T00:00:00.000Z"),
+        }),
+        createPost({
+          id: "unlisted-post",
+          authorId: "author",
+          status: "published",
+          visibility: "unlisted",
+          publishedAt: new Date("2026-01-04T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-05T00:00:00.000Z"),
+        }),
+        createPost({
+          id: "dot-post",
+          authorId: "dot",
+          status: "published",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+        }),
+        createPost({
+          id: "dots-post",
+          authorId: "dots",
+          status: "published",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+        }),
+      ])
+      .run()
+
+    expect(await listPublicProfileSitemapRecords(database, 0, 10)).toEqual([
+      { username: "author", updatedAt: new Date("2026-01-03T00:00:00.000Z") },
+    ])
+    expect((await getPublicSitemapCounts(database)).profiles).toBe(1)
   })
 })

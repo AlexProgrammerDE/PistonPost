@@ -92,6 +92,31 @@ describe("Markdown boundaries", () => {
     expect(markdownContainsImageUrl(`![Another image](${source}-different)`, source)).toBe(false)
   })
 
+  test("matches the normalized image source that the renderer emits", () => {
+    const accented = "https://images.example.com/Caf%C3%A9.jpg"
+    expect(
+      markdownContainsImageUrl("![Coffee](https://images.example.com/Café.jpg)", accented),
+    ).toBe(true)
+    expect(
+      markdownContainsImageUrl(
+        "![Coffee][cafe]\n\n[cafe]: https://images.example.com/Café.jpg",
+        accented,
+      ),
+    ).toBe(true)
+    expect(
+      markdownContainsImageUrl(
+        "![Spaced](<https://images.example.com/my cat.png>)",
+        "https://images.example.com/my%20cat.png",
+      ),
+    ).toBe(true)
+    expect(
+      markdownContainsImageUrl(
+        "![Spaced](<https://images.example.com/my cat.png>)",
+        "https://images.example.com/my%20dog.png",
+      ),
+    ).toBe(false)
+  })
+
   test("derives readable plain text for metadata", () => {
     expect(
       postMarkdownToPlainText(

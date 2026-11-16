@@ -4,6 +4,7 @@ import { MAX_VIDEO_DURATION_SECONDS } from "@/lib/uploads/video-upload-policy"
 
 const STREAM_API_ORIGIN = "https://api.cloudflare.com"
 const STREAM_UPLOAD_HOSTS = new Set(["upload.cloudflarestream.com", "upload.videodelivery.net"])
+const STREAM_API_TIMEOUT_MS = 15_000
 
 export class StreamDirectUploadError extends Schema.TaggedError<StreamDirectUploadError>()(
   "StreamDirectUploadError",
@@ -29,6 +30,15 @@ type StreamDirectUploadInput = {
   readonly scheduledDeletion: Date
   readonly thumbnailTimestampPct: number
   readonly fetch?: (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>
+}
+
+/** Matches the Stream binding error for a video that no longer exists. */
+export function isStreamNotFoundError(cause: unknown) {
+  if (typeof cause !== "object" || cause === null) return false
+  return (
+    ("statusCode" in cause && cause.statusCode === 404) ||
+    ("name" in cause && cause.name === "NotFoundError")
+  )
 }
 
 function encodeMetadataValue(value: string) {
@@ -74,9 +84,10 @@ export const createStreamDirectUpload = Effect.fn("createStreamDirectUpload")(fu
   endpoint.searchParams.set("direct_user", "true")
 
   const response = yield* Effect.tryPromise({
-    try: () =>
+    try: (signal) =>
       requestFetch(endpoint, {
         method: "POST",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(STREAM_API_TIMEOUT_MS)]),
         headers: {
           Authorization: `Bearer ${input.apiToken}`,
           "Tus-Resumable": "1.0.0",

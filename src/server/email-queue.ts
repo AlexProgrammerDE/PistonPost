@@ -14,12 +14,14 @@ import {
 import { decodePushDeliveryJob, type PushDeliveryJob } from "@/push/jobs"
 import { PushTransport, webPushTransportLayer } from "@/push/transport"
 
+import { missingProviderObject } from "./account-media-purge"
 import { mediaCacheTag } from "./cache-tags"
 import { deadLetterMetadata } from "./dead-letter"
 import { requireEmailBinding } from "./email-binding"
 import { readUnsubscribeKeyring } from "./email-config"
 import { EmailJobResolver, emailJobResolverLayer } from "./email-job-resolver"
 import { internalJobSchema, type InternalJob } from "./jobs"
+import { mediaAttachedToLivePost, syncPostVideoAccess } from "./media-jobs"
 import { bindingOperation } from "./operation"
 import { writeOperationalEvent } from "./operational-events"
 import { OutboxRepository, outboxRepositoryLayer } from "./outbox-repository"
@@ -80,15 +82,26 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
             retryAfterSeconds: 30,
           })
       }
+      if (job.type === "media.cleanup" && asset && asset.status !== "deleted") {
+        if (yield* mediaAttachedToLivePost(database, asset.id)) {
+          yield* outbox.complete(job.idempotencyKey, claim.attempt, "media-in-use")
+          return undefined
+        }
+      }
       return yield* Effect.gen(function* () {
         if (job.type === "media.cleanup") {
           if (asset && asset.status !== "deleted") {
             const { r2Key, streamUid } = asset
             if (r2Key) yield* bindingOperation("media-cleanup.r2", () => env.MEDIA.delete(r2Key))
             if (streamUid)
-              yield* bindingOperation("media-cleanup.stream", () =>
-                env.STREAM.video(streamUid).delete(),
-              )
+              yield* bindingOperation("media-cleanup.stream", async () => {
+                try {
+                  await env.STREAM.video(streamUid).delete()
+                } catch (cause) {
+                  // A replay after Stream accepted the delete finds the video already gone.
+                  if (!missingProviderObject(cause)) throw cause
+                }
+              })
             yield* bindingOperation("media-cleanup.delete-record", () =>
               database.batch([
                 database.delete(schema.postMedia).where(eq(schema.postMedia.mediaId, asset.id)),
@@ -102,10 +115,16 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
           yield* bindingOperation("media-cleanup.cache", () =>
             purgeCacheTags([mediaCacheTag(job.mediaId)]),
           )
+          yield* outbox.complete(job.idempotencyKey, claim.attempt, "delivered")
+        } else if (job.type === "media.video-access") {
+          const reason = yield* syncPostVideoAccess(database, job.postId, (uid, required) =>
+            env.STREAM.video(uid).update({ requireSignedURLs: required }),
+          )
+          yield* outbox.complete(job.idempotencyKey, claim.attempt, reason)
         } else {
           yield* bindingOperation("cache-invalidation.purge", () => purgeCacheTags(job.tags))
+          yield* outbox.complete(job.idempotencyKey, claim.attempt, "delivered")
         }
-        yield* outbox.complete(job.idempotencyKey, claim.attempt, "delivered")
       }).pipe(Effect.uninterruptible)
     }),
   )

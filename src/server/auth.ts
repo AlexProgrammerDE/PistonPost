@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm"
 import { Cause, Data, Effect, Layer, Option } from "effect"
 
+import { initializeUserProfile } from "@/auth/profile"
 import { createAuth } from "@/auth/server"
 import { createD1Database } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
@@ -95,17 +96,22 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
         .where(eq(schema.mediaAssets.ownerId, userId)),
     )
     const id = `account-delete-${userId}`
-    const instance = yield* bindingOperation("auth.deletion-instance", () =>
-      env.ACCOUNT_DELETION.get(id),
-    )
-    const existing = yield* bindingOperation("auth.deletion-status", () => instance.status())
-    if (existing.status === "unknown")
-      yield* bindingOperation("auth.create-deletion", () =>
-        env.ACCOUNT_DELETION.create({
+    // get() throws for an unknown instance, so create directly and treat a duplicate ID as an
+    // earlier deletion request for the same account.
+    yield* bindingOperation("auth.create-deletion", async () => {
+      try {
+        await env.ACCOUNT_DELETION.create({
           id,
           params: { userId, mediaIds: mediaIds.map(({ id: mediaId }) => mediaId) },
-        }),
-      )
+        })
+      } catch (error) {
+        if (!(error instanceof Error) || !/already.?exists/iu.test(error.message)) throw error
+        const instance = await env.ACCOUNT_DELETION.get(id)
+        const { status } = await instance.status()
+        // An earlier attempt whose user row was never deleted stopped waiting, so run it again.
+        if (status === "errored" || status === "terminated") await instance.restart()
+      }
+    })
   })
 
   return createAuth({
@@ -159,24 +165,10 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
         ),
       )
     },
-    initializeProfile: (user) => {
-      const username = user.username ?? user.email.split("@", 1)[0] ?? user.id
-      return runAuthEffect(
-        bindingOperation("auth.initialize-profile", () =>
-          database.batch([
-            database
-              .insert(schema.profiles)
-              .values({
-                userId: user.id,
-                username,
-                normalizedUsername: username.toLocaleLowerCase("en-US"),
-              })
-              .onConflictDoNothing(),
-            database.insert(schema.userSettings).values({ userId: user.id }).onConflictDoNothing(),
-          ]),
-        ).pipe(Effect.asVoid),
-      )
-    },
+    initializeProfile: (user) =>
+      runAuthEffect(
+        bindingOperation("auth.initialize-profile", () => initializeUserProfile(database, user)),
+      ),
     beforeDeleteUser: (userId) => runAuthEffect(beforeDeleteUser(userId)),
   })
 })

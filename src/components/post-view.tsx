@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button"
 import { ButtonGroup, ButtonGroupText } from "@/components/ui/button-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { PublicPostRead } from "@/db/public-read-model"
+import { avatarInitials } from "@/lib/avatar-initials"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
@@ -677,13 +678,18 @@ export function PostAuthorAvatar({
   className,
   displaySize = "large",
   sizes = "2.5rem",
+  tabIndex,
+  "aria-hidden": ariaHidden,
 }: {
   readonly post: PublicPostRead
   readonly className?: string
   readonly displaySize?: "large" | "responsive"
   readonly sizes?: string
+  /** Set to -1 with aria-hidden when another link in the post already opens the profile. */
+  readonly tabIndex?: number
+  readonly "aria-hidden"?: boolean
 }) {
-  const initials = post.author.name.slice(0, 2).toLocaleUpperCase("en-US")
+  const initials = avatarInitials(post.author.name)
 
   function openProfile(event: MouseEvent<HTMLAnchorElement>) {
     activateSharedViewTransition(
@@ -702,6 +708,8 @@ export function PostAuthorAvatar({
       to="/user/$username"
       params={{ username: post.author.normalizedUsername }}
       aria-label={`View ${post.author.name}'s profile`}
+      tabIndex={tabIndex}
+      aria-hidden={ariaHidden}
       onClick={openProfile}
       className={cn(
         "rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

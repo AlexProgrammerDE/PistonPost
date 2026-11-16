@@ -162,6 +162,34 @@
       "when": 1794783053479,
       "tag": "0022_index-post-media-assets",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1794849250634,
+      "tag": "0023_author-feed-index",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1794849250832,
+      "tag": "0024_stash-comment-parents",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "6",
+      "when": 1794849261089,
+      "tag": "0025_comment-replies-survive-parent-deletion",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1794849261453,
+      "tag": "0026_restore-comment-parents",
+      "breakpoints": true
     }
   ]
 }

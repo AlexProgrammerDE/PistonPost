@@ -1,4 +1,4 @@
-import { and, count, countDistinct, desc, eq, inArray, lt, or, sql } from "drizzle-orm"
+import { and, count, countDistinct, desc, eq, inArray, lt, ne, or, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 
 import type { PublicPostCursor } from "@/domain"
@@ -186,6 +186,10 @@ export async function listPublicPostReads(
         )
       )`
     : undefined
+  // Followed tags would otherwise bring the viewer's own posts into their following feed.
+  const followingAuthorFilter = input.followingUserId
+    ? ne(posts.authorId, input.followingUserId)
+    : undefined
 
   const postRows = await database
     .select({
@@ -217,6 +221,7 @@ export async function listPublicPostReads(
         cursorFilter,
         tagFilter,
         followingFilter,
+        followingAuthorFilter,
         input.username ? eq(profiles.normalizedUsername, input.username) : undefined,
       ),
     )
@@ -419,13 +424,21 @@ export async function getPublicTagRead(database: ReadDatabase, normalizedName: s
   return publicPost ? { ...tag, searchIndexable: trustedPost !== undefined } : null
 }
 
+function sitemapProfileCondition() {
+  return and(
+    searchIndexingTrustCondition(),
+    sql`exists (
+      select 1 from ${posts} sitemap_posts
+      where sitemap_posts.author_id = ${profiles.userId}
+        and sitemap_posts.status = 'published'
+        and sitemap_posts.visibility = 'public'
+    )`,
+    // A username made only of dots resolves to another path, such as /user/ or /.
+    sql`trim(${profiles.normalizedUsername}, '.') <> ''`,
+  )
+}
+
 export async function getPublicSitemapCounts(database: ReadDatabase) {
-  const publicPostExists = sql`exists (
-    select 1 from ${posts} sitemap_posts
-    where sitemap_posts.author_id = ${profiles.userId}
-      and sitemap_posts.status = 'published'
-      and sitemap_posts.visibility = 'public'
-  )`
   const [postCount, profileCount, tagCount] = await Promise.all([
     database
       .select({ value: count() })
@@ -443,7 +456,7 @@ export async function getPublicSitemapCounts(database: ReadDatabase) {
       .select({ value: count() })
       .from(profiles)
       .innerJoin(user, eq(user.id, profiles.userId))
-      .where(and(searchIndexingTrustCondition(), publicPostExists))
+      .where(sitemapProfileCondition())
       .get(),
     database
       .select({ value: countDistinct(tags.id) })
@@ -546,24 +559,25 @@ export async function listPublicProfileSitemapRecords(
   offset: number,
   limit: number,
 ): Promise<ReadonlyArray<PublicProfileSitemapRecord>> {
-  return database
-    .select({ username: profiles.normalizedUsername, updatedAt: profiles.updatedAt })
+  // A profile page lists the author's posts, so it changes when one of them changes.
+  const lastModified = sql<number>`max(
+    ${profiles.updatedAt},
+    coalesce((
+      select max(profile_posts.updated_at) from ${posts} profile_posts
+      where profile_posts.author_id = ${profiles.userId}
+        and profile_posts.status = 'published'
+        and profile_posts.visibility = 'public'
+    ), ${profiles.updatedAt})
+  )`
+  const rows = await database
+    .select({ username: profiles.normalizedUsername, updatedAt: lastModified })
     .from(profiles)
     .innerJoin(user, eq(user.id, profiles.userId))
-    .where(
-      and(
-        searchIndexingTrustCondition(),
-        sql`exists (
-          select 1 from ${posts} sitemap_posts
-          where sitemap_posts.author_id = ${profiles.userId}
-            and sitemap_posts.status = 'published'
-            and sitemap_posts.visibility = 'public'
-        )`,
-      ),
-    )
-    .orderBy(desc(profiles.updatedAt), desc(profiles.userId))
+    .where(sitemapProfileCondition())
+    .orderBy(desc(lastModified), desc(profiles.userId))
     .limit(limit)
     .offset(offset)
+  return rows.map((row) => ({ username: row.username, updatedAt: new Date(row.updatedAt) }))
 }
 
 export async function listPublicTagSitemapRecords(

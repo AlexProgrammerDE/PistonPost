@@ -61,6 +61,8 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
     emailOtpPlugin({
       emailVerification: true,
       passwordReset: true,
+      changeEmail: true,
+      verifyCurrentEmail: true,
       localization: { emailOtp: "email code" },
     }),
     multiSessionPlugin({

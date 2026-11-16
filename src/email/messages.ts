@@ -29,13 +29,6 @@ type AuthenticationMessageInput =
       expirationHours: number
     }>
   | Readonly<{
-      template: "email-change-approval"
-      currentEmail: string
-      newEmail: string
-      url: string
-      expirationMinutes: number
-    }>
-  | Readonly<{
       template: "email-otp"
       purpose: Exclude<EmailOtpPurpose, "two-factor">
       email: string
@@ -55,7 +48,6 @@ const copy = {
   "password-reset": "Reset your PistonPost password",
   "account-deletion": "Confirm PistonPost account deletion",
   "two-factor-otp": "Your PistonPost security code",
-  "email-change-approval": "Approve your PistonPost email change",
 } as const
 
 const emailOtpSubjects = {

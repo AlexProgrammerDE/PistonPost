@@ -9,7 +9,7 @@ import {
   listPublicTagSitemapRecords,
 } from "@/db/public-read-model"
 import {
-  SITEMAP_PAGE_SIZE,
+  SITEMAP_PAGE_SIZES,
   buildPostSitemapXml,
   buildProfileSitemapXml,
   buildStaticSitemapXml,
@@ -53,29 +53,26 @@ async function sitemapPage({
   const origin = context.runtime.config.PUBLIC_APP_URL.origin
   const database = createD1Database(context.env.DB)
   const counts = await getPublicSitemapCounts(database)
-  const pageCount = kind === "static" ? 1 : sitemapPageCount(counts[kind])
+  const pageCount = kind === "static" ? 1 : sitemapPageCount(kind, counts[kind])
   if (page > pageCount) return new Response("Sitemap page not found.", { status: 404 })
 
   let body: string | null = null
   if (request.method !== "HEAD") {
-    const offset = (page - 1) * SITEMAP_PAGE_SIZE
-    body =
-      kind === "static"
-        ? buildStaticSitemapXml(origin)
-        : kind === "posts"
-          ? buildPostSitemapXml(
-              origin,
-              await listPublicPostSitemapRecords(database, offset, SITEMAP_PAGE_SIZE),
-            )
+    if (kind === "static") {
+      body = buildStaticSitemapXml(origin)
+    } else {
+      const limit = SITEMAP_PAGE_SIZES[kind]
+      const offset = (page - 1) * limit
+      body =
+        kind === "posts"
+          ? buildPostSitemapXml(origin, await listPublicPostSitemapRecords(database, offset, limit))
           : kind === "profiles"
             ? buildProfileSitemapXml(
                 origin,
-                await listPublicProfileSitemapRecords(database, offset, SITEMAP_PAGE_SIZE),
+                await listPublicProfileSitemapRecords(database, offset, limit),
               )
-            : buildTagSitemapXml(
-                origin,
-                await listPublicTagSitemapRecords(database, offset, SITEMAP_PAGE_SIZE),
-              )
+            : buildTagSitemapXml(origin, await listPublicTagSitemapRecords(database, offset, limit))
+    }
   }
 
   return new Response(body, {

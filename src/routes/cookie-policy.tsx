@@ -29,7 +29,7 @@ function CookiePolicyPage() {
     <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
       <article className="typeset typeset-post">
         <h1>Cookie Policy</h1>
-        <p>Last updated: August 31, 2026.</p>
+        <p>Last updated: November 16, 2026.</p>
         <p>
           This policy describes the cookies, browser storage, and similar technologies PistonPost
           currently uses. Optional PostHog analytics stay off unless you allow them. Authentication,
@@ -58,13 +58,6 @@ function CookiePolicyPage() {
                 </td>
                 <td>Keeps the current account, and any additional saved sessions, signed in.</td>
                 <td>Up to 7 days, or the browser session when remember me is off.</td>
-              </tr>
-              <tr>
-                <td>
-                  <code>pistonpost.session_data</code> and numbered chunks
-                </td>
-                <td>Holds a short-lived encrypted session cache.</td>
-                <td>5 minutes; stored as a session cookie when remember me is off.</td>
               </tr>
               <tr>
                 <td>
@@ -132,6 +125,12 @@ function CookiePolicyPage() {
           choice. It stays until you change it, clear site data, or remove it through your browser.
           PistonPost does not use local storage for persistent PostHog analytics identifiers.
         </p>
+        <p>
+          When you accept analytics, the PostHog SDK saves its own copy of that choice in a{" "}
+          <code>__ph_opt_in_out_</code> entry followed by the PostHog project key. It holds only the
+          accepted choice, not an identifier. PistonPost removes it when you reject analytics or
+          when the <code>pistonpost_cookie_consent</code> cookie no longer allows analytics.
+        </p>
 
         <p>
           The <code>pistonpost.composer-draft.v1</code> entry saves text and post details for
@@ -144,9 +143,15 @@ function CookiePolicyPage() {
         <p>
           When you share text, links, or images into PistonPost, the <code>pistonpost-local</code>
           IndexedDB database holds them on this device for up to one hour. It keeps at most three
-          pending shares, each with up to 20 images and 50 MB of files. An anonymous share follows
-          your first sign-in. Account changes clear shares belonging to the previous account. Adding
-          or discarding a share removes its temporary record.
+          pending shares, each with up to 20 images and 50 MB of files. A new share replaces the
+          oldest pending one. An anonymous share follows your first sign-in. Signing in to a
+          different account clears shares belonging to the previous account. Adding or discarding a
+          share removes its temporary record.
+        </p>
+        <p>
+          The same database records which account turned on push notifications in this browser. If a
+          different account signs in, PistonPost turns push off for this browser. Turning push off
+          removes the record.
         </p>
         <p>
           Shared images can contain their original metadata while stored locally. The composer
@@ -181,7 +186,8 @@ function CookiePolicyPage() {
           If you accept analytics, PostHog receives pseudonymous page-view events using broad route
           categories such as post, tag, or profile. Temporary identifiers and standard browser or
           device properties may be included. Dynamic post IDs, tag names, usernames, page titles,
-          referrers, query strings, and page content are removed before an event is sent.
+          referrers, query strings, and page content are removed before an event is sent. Events ask
+          PostHog to skip location lookup, so they do not gain a city, postcode, or coordinates.
         </p>
         <p>
           PostHog uses memory-only persistence on PistonPost, so PistonPost does not set persistent

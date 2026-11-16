@@ -1,4 +1,4 @@
-import { inArray } from "drizzle-orm"
+import { eq, inArray, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Context, Data, Effect, Layer } from "effect"
 
@@ -15,9 +15,14 @@ class AccountDeletionIncomplete extends Data.TaggedError("AccountDeletionIncompl
   readonly message = "Owned media still requires deletion."
 }
 
+class AccountStillExists extends Data.TaggedError("AccountStillExists") {
+  readonly message = "The account row has not been deleted yet."
+}
+
 class AccountDeletionStore extends Context.Service<
   AccountDeletionStore,
   {
+    readonly accountExists: (userId: string) => Effect.Effect<boolean, OperationError>
     readonly media: (ids: string[]) => Effect.Effect<OwnedMediaForDeletion[], OperationError>
     readonly scheduleCachePurge: (job: InternalJob) => Effect.Effect<void, OperationError>
     readonly complete: (input: AccountDeletionParams) => Effect.Effect<void, OperationError>
@@ -29,6 +34,14 @@ export function accountDeletionStoreLayer(
   send: (job: InternalJob) => Promise<unknown>,
 ) {
   return Layer.succeed(AccountDeletionStore, {
+    accountExists: (userId) =>
+      bindingOperation("account-deletion.account", () =>
+        database
+          .select({ id: schema.user.id })
+          .from(schema.user)
+          .where(eq(schema.user.id, userId))
+          .get(),
+      ).pipe(Effect.map((row) => row !== undefined)),
     media: (ids) =>
       ids.length === 0
         ? Effect.succeed([])
@@ -40,7 +53,13 @@ export function accountDeletionStoreLayer(
                 streamUid: schema.mediaAssets.streamUid,
               })
               .from(schema.mediaAssets)
-              .where(inArray(schema.mediaAssets.id, ids)),
+              .where(
+                // One JSON parameter keeps large accounts within D1's bound-parameter limit.
+                inArray(
+                  schema.mediaAssets.id,
+                  sql`(select value from json_each(${JSON.stringify(ids)}))`,
+                ),
+              ),
           ),
     scheduleCachePurge: (job) =>
       bindingOperation("account-deletion.cache-purge", () => send(job)).pipe(Effect.asVoid),
@@ -57,6 +76,18 @@ export function accountDeletionStoreLayer(
       ).pipe(Effect.asVoid),
   })
 }
+
+/**
+ * The workflow starts before Better Auth deletes the user row. Purging media only after the
+ * row is gone keeps an account whose deletion failed from losing its uploads.
+ */
+export const confirmAccountDeleted = Effect.fn("AccountDeletion.confirmAccountDeleted")(function* (
+  input: AccountDeletionParams,
+) {
+  const store = yield* AccountDeletionStore
+  if (yield* store.accountExists(input.userId)) return yield* new AccountStillExists()
+  return { deleted: true }
+})
 
 export const deleteOwnedAccountMedia = Effect.fn("AccountDeletion.deleteOwnedMedia")(function* (
   input: AccountDeletionParams,

@@ -33,6 +33,7 @@ import {
 import { Spinner } from "@/components/ui/spinner"
 import { adminTableSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
 import { adminRowsQueryOptions } from "@/lib/queries/admin"
+import { userFacingServerMessage } from "@/lib/server-function-error"
 import {
   DataTable,
   createAppColumnHelper,
@@ -261,9 +262,11 @@ function JobAction({ row }: { row: AdminRow }) {
       toast.success("Job queued again")
       await router.invalidate()
     },
-    onError: () => toast.error("The job could not be queued again."),
+    onError: (error) =>
+      toast.error(userFacingServerMessage(error) ?? "The job could not be queued again."),
   })
-  if (row.status === "complete") return null
+  // A running job still holds its lease, so retrying it would run the work twice.
+  if (row.status === "complete" || row.status === "running") return null
   return (
     <ConfirmationAction
       label="Retry"
@@ -309,6 +312,8 @@ function ReportAction({ row }: { row: AdminRow }) {
 
 function RowAction({ row, section }: { row: AdminRow; section: AdminSection }) {
   if (section === "posts" || section === "comments") {
+    // Only published content can be hidden and only moderated content can be restored.
+    if (row.status !== "published" && row.status !== "moderated") return null
     return <ModerationAction row={row} section={section} />
   }
   if (section === "reports") return <ReportAction row={row} />
@@ -505,21 +510,25 @@ function AdminTableView({
             page: 0,
             hidden: search.hidden ? search.hidden.split(",") : [],
           }}
-          onUrlStateChange={(next: DataTableUrlState) =>
+          onUrlStateChange={(next: DataTableUrlState) => {
+            // Clearing the sort falls back to newest first, so compare the order that is applied.
+            const sort = next.sort || "createdAt"
+            const direction = next.sort ? next.direction : "desc"
+            const keepsOrder = sort === search.sort && direction === search.direction
             void navigate({
               to: "/admin/$section",
               params: { section },
               search: {
                 ...search,
-                sort: next.sort || "createdAt",
-                direction: next.sort ? next.direction : "desc",
-                cursor: next.direction === search.direction ? search.cursor : "",
-                trail: next.direction === search.direction ? search.trail : "",
+                sort,
+                direction,
+                cursor: keepsOrder ? search.cursor : "",
+                trail: keepsOrder ? search.trail : "",
                 hidden: next.hidden.join(","),
               },
               replace: true,
             })
-          }
+          }}
           cursorPagination={{
             page: trail.length + 1,
             previousLink:

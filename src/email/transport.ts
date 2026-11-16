@@ -130,15 +130,14 @@ export const deliverEmail = Effect.fn("Email.deliver")(function* (message: Email
   })
 })
 
+/**
+ * Sends an authentication email once. A failed send may still have been accepted, so an
+ * automatic retry could deliver duplicate links. The person can request another email.
+ */
 export const deliverImmediateEmail = Effect.fn("Email.deliverImmediate")(function* (
   message: EmailDelivery,
 ) {
-  yield* deliverEmail(message).pipe(
-    Effect.retry({
-      times: 2,
-      until: (error) => error instanceof EmailRenderError || !error.retryable,
-    }),
-  )
+  yield* deliverEmail(message)
 })
 
 export function createCaptureEmailTransport(captured: Array<OutboundEmail>): EmailTransportService {

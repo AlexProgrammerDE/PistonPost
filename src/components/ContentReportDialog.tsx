@@ -2,7 +2,7 @@
 
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { useLocation, useNavigate } from "@tanstack/react-router"
+import { useHydrated, useLocation, useNavigate } from "@tanstack/react-router"
 import { Flag, RotateCw, TriangleAlert } from "lucide-react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
@@ -52,14 +52,20 @@ const MAX_REPORT_DETAILS_LENGTH = 1000
 
 export function ContentReportDialog({
   target,
+  authorId,
   variant = "ghost",
   size = "sm",
 }: {
   readonly target: ContentReportTarget
+  /** The author of the reported content. The dialog is hidden from the author. */
+  readonly authorId?: string | null
   readonly variant?: "ghost" | "outline"
   readonly size?: "xs" | "sm"
 }) {
   const session = useSession(authClient)
+  // The server renders without a session, so keep the viewer pending until hydration finishes.
+  const hydrated = useHydrated()
+  const sessionPending = !hydrated || session.isPending
   const navigate = useNavigate()
   const currentHref = useLocation({ select: (location) => location.href })
   const [open, setOpen] = useState(false)
@@ -92,6 +98,8 @@ export function ContentReportDialog({
     },
   })
 
+  if (!sessionPending && authorId && session.data?.user.id === authorId) return null
+
   return (
     <Credenza
       open={open}
@@ -113,9 +121,7 @@ export function ContentReportDialog({
         setOpen(nextOpen)
       }}
     >
-      <CredenzaTrigger
-        render={<Button variant={variant} size={size} disabled={session.isPending} />}
-      >
+      <CredenzaTrigger render={<Button variant={variant} size={size} disabled={sessionPending} />}>
         <Flag aria-hidden="true" data-icon="inline-start" />
         Report
       </CredenzaTrigger>

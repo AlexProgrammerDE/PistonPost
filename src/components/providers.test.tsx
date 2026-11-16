@@ -10,6 +10,7 @@ import { captchaPlugin } from "@better-auth-ui/react/plugins/captcha"
 
 import { StopImpersonating } from "@/components/auth/admin/stop-impersonating"
 import { UserActivity } from "@/components/auth/dash/activity"
+import { ChangeEmailOtp } from "@/components/auth/email-otp/change-email-otp"
 import { EmailOtp } from "@/components/auth/email-otp/email-otp"
 import { ForgotPasswordOtp } from "@/components/auth/email-otp/forgot-password-otp"
 import { ResetPasswordOtp } from "@/components/auth/email-otp/reset-password-otp"
@@ -67,7 +68,9 @@ describe("global authentication plugins", () => {
       forgotPassword: ForgotPasswordOtp,
       resetPassword: ResetPasswordOtp,
     })
-    expect(emailOtp?.cardOverrides?.account).toBeUndefined()
+    // The server sends change-email codes and checks the current address first.
+    expect(emailOtp?.cardOverrides?.account).toEqual({ changeEmail: ChangeEmailOtp })
+    expect(emailOtp).toMatchObject({ changeEmail: true, verifyCurrentEmail: true })
     expect(twoFactor?.views?.auth).toEqual({ twoFactor: TwoFactorChallenge })
     expect(twoFactor?.securityCards).toEqual([TwoFactorSettings])
   })

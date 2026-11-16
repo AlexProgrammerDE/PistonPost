@@ -12,10 +12,14 @@ export const validAuthPathSegments = new Set([
   ...Object.values(twoFactorViewPaths),
 ])
 
+// Each label names the page title and heading, so it matches the visible view.
 const authViewLabels = new Map([
+  [viewPaths.auth.callback, "Finishing sign-in"],
+  [viewPaths.auth.error, "Sign-in problem"],
+  [viewPaths.auth.redirect, "Redirecting"],
   [viewPaths.auth.signIn, "Sign in"],
-  [viewPaths.auth.signUp, "Create account"],
-  [viewPaths.auth.forgotPassword, "Reset password"],
+  [viewPaths.auth.signUp, "Sign up"],
+  [viewPaths.auth.forgotPassword, "Forgot password"],
   [viewPaths.auth.resetPassword, "Reset password"],
   [viewPaths.auth.resetLinkSent, "Check your email"],
   [viewPaths.auth.signOut, "Sign out"],

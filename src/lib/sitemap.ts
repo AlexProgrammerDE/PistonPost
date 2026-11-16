@@ -6,19 +6,18 @@ import type {
 
 import { mediaImageUrl } from "./media-image"
 import { VIDEO_PLAYER_CACHE_VERSION, VIDEO_THUMBNAIL_CACHE_VERSION } from "./video-thumbnail"
-
-export const SITEMAP_PAGE_SIZE = 10_000
+import { escapeXml } from "./xml"
 
 export type SitemapKind = "static" | "posts" | "profiles" | "tags"
-export type SitemapCounts = Readonly<Record<Exclude<SitemapKind, "static">, number>>
+type PagedSitemapKind = Exclude<SitemapKind, "static">
+export type SitemapCounts = Readonly<Record<PagedSitemapKind, number>>
 
-function escapeXml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&apos;")
+// A sitemap file may hold 50,000 URLs and 50 MB. A post can list up to 150 images at
+// roughly 150 bytes each, so post pages stay small enough to fit the byte limit.
+export const SITEMAP_PAGE_SIZES: Readonly<Record<PagedSitemapKind, number>> = {
+  posts: 1_000,
+  profiles: 10_000,
+  tags: 10_000,
 }
 
 function absoluteXmlUrl(origin: string, path: string) {
@@ -40,14 +39,14 @@ function basicEntry(origin: string, path: string, updatedAt?: Date) {
   return `  <url>\n    <loc>${absoluteXmlUrl(origin, path)}</loc>${updatedAt ? lastModifiedXml(updatedAt) : ""}\n  </url>`
 }
 
-export function sitemapPageCount(count: number) {
-  return Math.ceil(Math.max(0, count) / SITEMAP_PAGE_SIZE)
+export function sitemapPageCount(kind: PagedSitemapKind, count: number) {
+  return Math.ceil(Math.max(0, count) / SITEMAP_PAGE_SIZES[kind])
 }
 
 export function buildSitemapIndexXml(origin: string, counts: SitemapCounts) {
   const locations = ["/sitemaps/static/1"]
   for (const kind of ["posts", "profiles", "tags"] as const) {
-    for (let page = 1; page <= sitemapPageCount(counts[kind]); page += 1) {
+    for (let page = 1; page <= sitemapPageCount(kind, counts[kind]); page += 1) {
       locations.push(`/sitemaps/${kind}/${page.toString()}`)
     }
   }

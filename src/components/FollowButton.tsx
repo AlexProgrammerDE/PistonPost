@@ -2,7 +2,7 @@
 
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link, useLocation } from "@tanstack/react-router"
+import { Link, useHydrated, useLocation } from "@tanstack/react-router"
 import { UserCheck, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { followKeys, followStateQueryOptions } from "@/lib/queries/follows"
+import { postFeedKeys } from "@/lib/queries/posts"
 import { userFacingServerMessage } from "@/lib/server-function-error"
 import { cn } from "@/lib/utils"
 import { setFollow, type FollowTarget } from "@/server/follows"
@@ -24,12 +25,15 @@ export function FollowButton({
   readonly className?: string
 }) {
   const session = useSession(authClient)
+  // The server renders without a session, so keep the viewer pending until hydration finishes.
+  const hydrated = useHydrated()
+  const sessionPending = !hydrated || session.isPending
   const queryClient = useQueryClient()
   const currentHref = useLocation({ select: (location) => location.href })
-  const viewerId = session.data?.user.id ?? null
+  const viewerId = sessionPending ? null : (session.data?.user.id ?? null)
   const state = useQuery({
     ...followStateQueryOptions(viewerId ?? "anonymous", target),
-    enabled: viewerId !== null && !session.isPending,
+    enabled: viewerId !== null,
   })
   const mutation = useMutation({
     mutationFn: (following: boolean) => setFollow({ data: { ...target, following } }),
@@ -37,14 +41,14 @@ export function FollowButton({
       if (!viewerId) return
       queryClient.setQueryData(followKeys.state(viewerId, target), nextState)
       await queryClient.invalidateQueries({
-        queryKey: ["posts", "following-feed", viewerId],
+        queryKey: [...postFeedKeys.following, viewerId],
       })
     },
     onError: (error) =>
       toast.error(userFacingServerMessage(error) ?? "The follow could not be saved."),
   })
 
-  if (session.isPending || (viewerId && state.isPending)) {
+  if (sessionPending || (viewerId && state.isPending)) {
     return (
       <Skeleton
         role="status"

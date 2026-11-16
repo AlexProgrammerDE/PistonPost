@@ -5,8 +5,10 @@ import { Result, Schema } from "effect"
 import {
   isShareAvailable,
   MAX_SHARED_FILES,
+  MAX_SHARED_TITLE_LENGTH,
   sharedContentSchema,
   SHARE_RETENTION_MS,
+  truncateSharedTitle,
 } from "./share-intake"
 
 describe("shared content boundaries", () => {
@@ -96,5 +98,28 @@ describe("shared content boundaries", () => {
     expect(isShareAvailable({ ...share, ownerId: null }, "first", now)).toBe(true)
     expect(isShareAvailable(share, "first", now + SHARE_RETENTION_MS)).toBe(false)
     expect(isShareAvailable(share, "first", now - 1)).toBe(false)
+  })
+
+  it("shortens long shared titles so the share is still accepted", () => {
+    const title = `${"Long page title ".repeat(10)}👩‍👩‍👧‍👦 end`
+    const shortened = truncateSharedTitle(title)
+
+    expect(shortened.length).toBeLessThanOrEqual(MAX_SHARED_TITLE_LENGTH)
+    expect(shortened.endsWith("…")).toBe(true)
+    expect(title.startsWith(shortened.slice(0, -1))).toBe(true)
+    expect(
+      Result.isSuccess(
+        Schema.decodeResult(sharedContentSchema, { errors: "all" })({ title: shortened }),
+      ),
+    ).toBe(true)
+    expect(truncateSharedTitle("A short title")).toBe("A short title")
+  })
+
+  it("does not split an emoji at the title limit", () => {
+    const family = "👩‍👩‍👧‍👦"
+    const title = `${"a".repeat(MAX_SHARED_TITLE_LENGTH - 5)}${family}${family}`
+    const shortened = truncateSharedTitle(title)
+
+    expect(shortened).toBe(`${"a".repeat(MAX_SHARED_TITLE_LENGTH - 5)}…`)
   })
 })

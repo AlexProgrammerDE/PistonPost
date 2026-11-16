@@ -13,10 +13,30 @@ import {
 } from "@/push/subscription"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
-import { conflictFailure, invalidInputFailure } from "@/server/server-function-failure"
+import {
+  conflictFailure,
+  invalidInputFailure,
+  rateLimitedFailure,
+} from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
 const maxSubscriptionsPerUser = 10
+
+function limitPushChanges(limiter: RateLimit, userId: string) {
+  return bindingOperation("limitPushChanges.operation", () =>
+    limiter.limit({ key: `push-subscription:${userId}` }),
+  ).pipe(
+    Effect.flatMap((limited) =>
+      limited.success
+        ? Effect.void
+        : Effect.fail(
+            rateLimitedFailure(
+              "You're changing notifications too fast. Wait a minute and try again.",
+            ),
+          ),
+    ),
+  )
+}
 
 const activeSubscriptionCount = Effect.fn("activeSubscriptionCount")(function* (
   database: D1DatabaseClient,
@@ -93,6 +113,7 @@ export const upsertPushSubscription = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        yield* limitPushChanges(context.env.USER_RATE_LIMITER, session.user.id)
         return yield* saveSubscription(database, session.user.id, session.session.id, data).pipe(
           Effect.uninterruptible,
         )
@@ -113,6 +134,7 @@ export const removePushSubscription = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        yield* limitPushChanges(context.env.USER_RATE_LIMITER, session.user.id)
         const endpointHash = yield* bindingOperation("removePushSubscription.endpointHash", () =>
           hashPushEndpoint(data.endpoint),
         )

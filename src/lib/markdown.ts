@@ -1,4 +1,5 @@
 import type { Definition, Image, ImageReference } from "mdast"
+import { normalizeUri } from "micromark-util-sanitize-uri"
 import remarkDirective from "remark-directive"
 import remarkGfm from "remark-gfm"
 import remarkParse from "remark-parse"
@@ -74,7 +75,12 @@ export function externalImageProxyUrl(postId: string, sourceUrl: string) {
   return `/media/external-image/${encodeURIComponent(postId)}?${search.toString()}`
 }
 
+/**
+ * Checks a rendered image source against the post Markdown. Rendering normalizes
+ * image URLs with `normalizeUri`, so both sides are compared in that form.
+ */
 export function markdownContainsImageUrl(markdown: string, sourceUrl: string) {
+  const source = normalizeUri(sourceUrl)
   const tree = gfmMarkdownProcessor.parse(markdown)
   const definitions = new Map<string, string>()
   const imageUrls: string[] = []
@@ -82,17 +88,19 @@ export function markdownContainsImageUrl(markdown: string, sourceUrl: string) {
 
   visit(tree, (node) => {
     if (isDefinition(node)) {
-      if (!definitions.has(node.identifier)) definitions.set(node.identifier, node.url)
+      if (!definitions.has(node.identifier)) {
+        definitions.set(node.identifier, normalizeUri(node.url))
+      }
     } else if (isImage(node)) {
-      imageUrls.push(node.url)
+      imageUrls.push(normalizeUri(node.url))
     } else if (isImageReference(node)) {
       imageReferences.push(node.identifier)
     }
   })
 
   return (
-    imageUrls.includes(sourceUrl) ||
-    imageReferences.some((identifier) => definitions.get(identifier) === sourceUrl)
+    imageUrls.includes(source) ||
+    imageReferences.some((identifier) => definitions.get(identifier) === source)
   )
 }
 

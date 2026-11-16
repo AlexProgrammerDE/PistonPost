@@ -18,6 +18,9 @@ import { withOutboxClaim } from "./queue-job"
 
 type ProductJob = ProductEmailJob | ProductEmailBatchJob
 
+/** Cloudflare Queues accepts at most 100 messages in one `sendBatch` call. */
+const QUEUE_SEND_BATCH_LIMIT = 100
+
 export class ProductBatchStore extends Context.Service<
   ProductBatchStore,
   {
@@ -161,7 +164,8 @@ export const deliverProductBatch = Effect.fn("Queue.deliverProductBatch")(functi
         if (next) yield* store.continue(next)
         else yield* store.finish(job.campaignId)
         const dispatchJobs: ProductJob[] = next ? [...jobs, next] : jobs
-        if (dispatchJobs.length > 0) yield* dispatch.send(dispatchJobs)
+        for (let offset = 0; offset < dispatchJobs.length; offset += QUEUE_SEND_BATCH_LIMIT)
+          yield* dispatch.send(dispatchJobs.slice(offset, offset + QUEUE_SEND_BATCH_LIMIT))
         yield* outbox.complete(job.idempotencyKey, claim.attempt, "batch-created")
       }).pipe(Effect.uninterruptible)
     }),

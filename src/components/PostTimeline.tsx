@@ -56,6 +56,8 @@ export function PostTimeline({
                   post={post}
                   sizes="(min-width: 640px) 2.5rem, 2rem"
                   displaySize="responsive"
+                  tabIndex={-1}
+                  aria-hidden
                 />
               </TimelineDot>
               <TimelineConnector />

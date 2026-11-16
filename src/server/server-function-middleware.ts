@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { serverFunctionErrorStatus, toServerFunctionClientError } from "@/lib/server-function-error"
-import { findRequestSession, isActiveAdministrator } from "@/server/request-session"
+import { findRequestSession, isActiveAdministrator, isBannedUser } from "@/server/request-session"
 import {
   forbiddenFailure,
   normalizeServerFunctionFailure,
@@ -60,6 +60,7 @@ export const authenticatedServerFunctionMiddleware = createMiddleware({ type: "f
   async ({ context, next }) => {
     const session = await findRequestSession(context)
     if (!session) throw unauthenticatedFailure()
+    if (isBannedUser(session.user)) throw forbiddenFailure("This account is banned.")
     return next({
       context: {
         database: createD1Database(context.env.DB),

@@ -377,24 +377,51 @@ export const deleteComment = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        const limited = yield* bindingOperation("deleteComment.limited", () =>
+          context.env.USER_RATE_LIMITER.limit({ key: `delete-comment:${session.user.id}` }),
+        )
+        if (!limited.success)
+          return yield* rateLimitedFailure(
+            "You're deleting comments too fast. Wait a minute and try again.",
+          )
         const comment = yield* bindingOperation("deleteComment.comment", () =>
           database
-            .select({ id: schema.comments.id, authorId: schema.comments.authorId })
+            .select({
+              id: schema.comments.id,
+              authorId: schema.comments.authorId,
+              status: schema.comments.status,
+            })
             .from(schema.comments)
             .where(eq(schema.comments.id, data.id))
             .get(),
         )
-        if (!comment) return yield* notFoundFailure("The comment was not found.")
+        if (!comment || comment.status === "deleted")
+          return yield* notFoundFailure("The comment was not found.")
         if (comment.authorId !== session.user.id && session.user.role !== "admin") {
           return yield* forbiddenFailure("You cannot delete this comment.")
         }
+        const deleteRow = database
+          .update(schema.comments)
+          .set({ status: "deleted", deletedAt: new Date(), content: "[deleted]" })
+          .where(eq(schema.comments.id, comment.id))
         return yield* Effect.gen(function* () {
-          yield* bindingOperation("deleteComment.operation", () =>
-            database
-              .update(schema.comments)
-              .set({ status: "deleted", deletedAt: new Date(), content: "[deleted]" })
-              .where(eq(schema.comments.id, comment.id)),
-          )
+          if (comment.authorId === session.user.id) {
+            yield* bindingOperation("deleteComment.operation", () => deleteRow)
+          } else {
+            yield* bindingOperation("deleteComment.operation", () =>
+              database.batch([
+                deleteRow,
+                database.insert(schema.auditEvents).values({
+                  id: crypto.randomUUID(),
+                  actorId: session.user.id,
+                  action: "comment.delete",
+                  entityType: "comment",
+                  entityId: comment.id,
+                  metadata: { authorId: comment.authorId },
+                }),
+              ]),
+            )
+          }
           return { id: comment.id }
         }).pipe(Effect.uninterruptible)
       }),

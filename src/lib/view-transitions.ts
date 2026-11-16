@@ -132,12 +132,39 @@ export function getActiveSharedViewTransition() {
   return activeSharedViewTransition
 }
 
+function hasSourcePost(target: SharedViewTransitionTarget) {
+  return target.kind !== "post" && target.sourcePostId !== undefined
+}
+
+/**
+ * Resolves the shared transition kind for one element. An element tied to a source post only takes
+ * part on the page where the transition started. The destination page can show the same post in
+ * its feed, and two elements with one view-transition-name would cancel the transition.
+ */
+export function sharedViewTransitionKind(
+  activeTransition: ActiveSharedViewTransition | null,
+  target: SharedViewTransitionTarget,
+  currentPathname: string | undefined,
+): SharedViewTransitionTarget["kind"] | undefined {
+  if (!activeTransition || !targetsMatch(activeTransition.target, target)) return undefined
+  if (
+    hasSourcePost(target) &&
+    (currentPathname === undefined ||
+      normalizedPathname(currentPathname) !== normalizedPathname(activeTransition.sourcePathname))
+  ) {
+    return undefined
+  }
+  return target.kind
+}
+
 export function activeSharedViewTransitionKind(
   target: SharedViewTransitionTarget,
 ): SharedViewTransitionTarget["kind"] | undefined {
-  return activeSharedViewTransition && targetsMatch(activeSharedViewTransition.target, target)
-    ? target.kind
-    : undefined
+  return sharedViewTransitionKind(
+    activeSharedViewTransition,
+    target,
+    typeof window === "undefined" ? undefined : window.location.pathname,
+  )
 }
 
 function historyTransitionType(fromLocation: TransitionLocation, toLocation: TransitionLocation) {

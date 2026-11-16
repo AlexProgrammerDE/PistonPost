@@ -1,12 +1,14 @@
 import { useEffect, type ReactNode } from "react"
 import * as CookieConsent from "vanilla-cookieconsent"
 
-import { isPostHogConfigured, syncPostHogConsent } from "@/lib/integrations/posthog"
+import {
+  COOKIE_CONSENT_COOKIE_NAME,
+  COOKIE_CONSENT_REVISION,
+  isPostHogConfigured,
+  syncPostHogConsent,
+} from "@/lib/integrations/posthog"
 
 let cookieConsentStarted = false
-
-const COOKIE_CONSENT_COOKIE_NAME = "pistonpost_cookie_consent"
-const COOKIE_CONSENT_REVISION = 1
 const POSTHOG_COOKIE_NAMES = [/^ph_/, /^posthog/]
 
 function syncAnalyticsConsent() {
@@ -117,6 +119,9 @@ export function CookieConsentProvider({ children }: { readonly children: ReactNo
           },
         },
       },
+    }).then(() => {
+      // No consent callback fires while the choice is missing, expired, or from an older revision.
+      if (!CookieConsent.validConsent()) syncPostHogConsent(false)
     })
   }, [])
 

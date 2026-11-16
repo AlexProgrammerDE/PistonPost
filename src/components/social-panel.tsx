@@ -7,7 +7,7 @@ import {
   useQueryClient,
   useSuspenseInfiniteQuery,
 } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useHydrated } from "@tanstack/react-router"
 import { Heart, History, MessageCircle, Reply, Send, Trash2, TriangleAlert, X } from "lucide-react"
 import { AnimatePresence, useReducedMotion, type Transition } from "motion/react"
 import * as m from "motion/react-m"
@@ -51,16 +51,19 @@ import {
 } from "@/components/ui/item"
 import { Spinner } from "@/components/ui/spinner"
 import { Toggle } from "@/components/ui/toggle"
+import { avatarInitials } from "@/lib/avatar-initials"
 import { useAppForm } from "@/lib/forms/app-form"
 import {
   observedVerticalPosition,
   shouldShowPostActionDock,
   type ObservedVerticalPosition,
 } from "@/lib/post-action-dock"
+import { postQueryOptions } from "@/lib/queries/posts"
 import {
-  discussionKeys,
+  applyConfirmedHeart,
   discussionQueryOptions,
   discussionViewerQueryOptions,
+  refreshAfterCommentChange,
 } from "@/lib/queries/social"
 import { userFacingServerMessage } from "@/lib/server-function-error"
 import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
@@ -242,16 +245,23 @@ export function SocialPanel({
     useState<ObservedVerticalPosition>("visible")
   const [footerActionsPosition, setFooterActionsPosition] =
     useState<ObservedVerticalPosition>("below")
-  const [confirmedHeartCount, setConfirmedHeartCount] = useState(heartCount)
   const [replyingTo, setReplyingTo] = useState<DiscussionComment | null>(null)
   const discussion = useSuspenseInfiniteQuery(discussionQueryOptions(postId))
   const session = useSession(authClient)
-  const sessionUserId = session.data?.user.id ?? null
+  // The server renders without a session. Keep the viewer pending until hydration finishes, or an
+  // early session result inside this streamed boundary would not match the server HTML.
+  const hydrated = useHydrated()
+  const sessionPending = !hydrated || session.isPending
+  const sessionUserId = sessionPending ? null : (session.data?.user.id ?? null)
   const viewer = useQuery({
     ...discussionViewerQueryOptions(postId, sessionUserId ?? "anonymous"),
-    enabled: sessionUserId !== null && !session.isPending,
+    enabled: sessionUserId !== null,
   })
-  const viewerPending = session.isPending || (sessionUserId !== null && viewer.isPending)
+  const postAuthorId = useQuery({
+    ...postQueryOptions(postId),
+    select: (post) => post?.author.id ?? null,
+  }).data
+  const viewerPending = sessionPending || (sessionUserId !== null && viewer.isPending)
   const viewerId = viewer.data?.viewerId ?? null
   const viewerRole = viewer.data?.viewerRole ?? null
   const hasHeart = viewer.data?.viewerHasHeart ?? false
@@ -296,12 +306,14 @@ export function SocialPanel({
 
   const heartMutation = useMutation({
     mutationFn: (active: boolean) => setHeart({ data: { postId, active } }),
-    onSuccess: async ({ heartCount: nextHeartCount }) => {
-      setConfirmedHeartCount(nextHeartCount)
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: discussionKeys.viewerPost(postId) }),
-        queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
-      ])
+    onSuccess: async ({ heartCount: nextHeartCount }, active) => {
+      if (!sessionUserId) return
+      await applyConfirmedHeart(queryClient, {
+        viewerId: sessionUserId,
+        postId,
+        active,
+        heartCount: nextHeartCount,
+      })
     },
     onError: (error) =>
       toast.error(userFacingServerMessage(error) ?? "The heart could not be saved."),
@@ -310,22 +322,14 @@ export function SocialPanel({
   const commentMutation = useMutation({
     mutationFn: (input: { content: string; parentCommentId?: string }) =>
       createComment({ data: { postId, ...input } }),
-    onSuccess: async () => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
-        queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
-      ])
-    },
+    onSuccess: () => refreshAfterCommentChange(queryClient, postId),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteComment({ data: { id } }),
     onSuccess: async () => {
       toast.success("Comment deleted.")
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
-        queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
-      ])
+      await refreshAfterCommentChange(queryClient, postId)
     },
     onError: (error) =>
       toast.error(userFacingServerMessage(error) ?? "The comment could not be deleted."),
@@ -349,7 +353,8 @@ export function SocialPanel({
             authorId: viewerId,
             parentId: parentCommentId ?? null,
             authorName: "You",
-            authorUsername: "you",
+            // The handle is unknown until the comment saves, so the row shows no handle.
+            authorUsername: "",
             authorImage: null,
             optimistic: true,
           })
@@ -367,11 +372,7 @@ export function SocialPanel({
     },
   })
 
-  const displayedHeartCount = optimisticHeartCount(
-    confirmedHeartCount,
-    hasHeart,
-    optimisticHasHeart,
-  )
+  const displayedHeartCount = optimisticHeartCount(heartCount, hasHeart, optimisticHasHeart)
   const showActionDock = shouldShowPostActionDock(contentStartPosition, footerActionsPosition)
 
   function updateHeart(nextHasHeart: boolean) {
@@ -436,7 +437,11 @@ export function SocialPanel({
         >
           <ButtonGroup aria-label="Share and report actions">
             <PostShareActions postId={postId} imageCount={imageCount} />
-            <ContentReportDialog target={{ type: "post", id: postId }} variant="outline" />
+            <ContentReportDialog
+              target={{ type: "post", id: postId }}
+              authorId={postAuthorId}
+              variant="outline"
+            />
           </ButtonGroup>
           {viewerPending ? (
             <DiscussionViewerSkeleton />
@@ -577,7 +582,7 @@ export function SocialPanel({
                               />
                             ) : null}
                             <AvatarFallback className="text-foreground">
-                              {comment.authorName.slice(0, 2).toUpperCase()}
+                              {avatarInitials(comment.authorName)}
                             </AvatarFallback>
                           </Avatar>
                         </ItemMedia>
@@ -585,9 +590,11 @@ export function SocialPanel({
                           <div className="min-w-0">
                             <ItemTitle className="line-clamp-none min-w-0 flex-wrap">
                               <bdi className="min-w-0 truncate">{comment.authorName}</bdi>
-                              <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
-                                @{comment.authorUsername}
-                              </span>
+                              {comment.authorUsername ? (
+                                <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
+                                  @{comment.authorUsername}
+                                </span>
+                              ) : null}
                             </ItemTitle>
                             <ItemDescription className="line-clamp-none text-xs">
                               {comment.optimistic ? (
@@ -601,6 +608,7 @@ export function SocialPanel({
                             <ItemActions>
                               <ContentReportDialog
                                 target={{ type: "comment", id: comment.id }}
+                                authorId={comment.authorId}
                                 size="xs"
                               />
                               {canDelete ? (

@@ -13,10 +13,17 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ButtonGroup } from "@/components/ui/button-group"
 import { Skeleton } from "@/components/ui/skeleton"
 import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserGeneratedLink"
+import { avatarInitials } from "@/lib/avatar-initials"
 import { feedPageHref } from "@/lib/feed-pagination"
 import { AVATAR_IMAGE_SIZE } from "@/lib/media-image"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
-import { SITE_NAME, absoluteUrl, createSeoHead, truncateDescription } from "@/lib/seo"
+import {
+  SITE_NAME,
+  absoluteUrl,
+  createSeoHead,
+  socialImagePath,
+  truncateDescription,
+} from "@/lib/seo"
 import { safeUserGeneratedUrl } from "@/lib/user-generated-link"
 import { activeSharedViewTransitionKind } from "@/lib/view-transitions"
 
@@ -74,7 +81,9 @@ export const Route = createFileRoute("/user/$username")({
             description,
             url: profileIdentityUrl,
             label: "View profile",
-            thumbnail: loaderData.image ? absoluteUrl(loaderData.image) : undefined,
+            thumbnail: loaderData.image
+              ? absoluteUrl(socialImagePath(loaderData.image))
+              : undefined,
           }
         : false,
       title: `${name} (@${username}) · ${SITE_NAME}`,
@@ -120,7 +129,7 @@ export const Route = createFileRoute("/user/$username")({
           name,
           alternateName: `@${username}`,
           url: profileIdentityUrl,
-          image: loaderData?.image ? absoluteUrl(loaderData.image) : undefined,
+          image: loaderData?.image ? absoluteUrl(socialImagePath(loaderData.image)) : undefined,
           sameAs: website ? [website] : undefined,
           interactionStatistic: [
             {
@@ -145,10 +154,17 @@ export const Route = createFileRoute("/user/$username")({
 
 function ProfileFeed() {
   const { username } = Route.useParams()
-  const normalizedUsername = username.toLocaleLowerCase("en-US")
+  const normalizedUsername = normalizeProfileUsername(username)
+  // The loader rejects invalid names, so this only guards a direct render.
+  if (!normalizedUsername) throw notFound()
+  return <ProfileFeedContent normalizedUsername={normalizedUsername} />
+}
+
+function ProfileFeedContent({ normalizedUsername }: { readonly normalizedUsername: string }) {
   const { cursor } = Route.useSearch()
   const profile = useSuspenseQuery(profileQueryOptions(normalizedUsername)).data
-  if (!profile) return null
+  // A refetch can find the profile gone after the loader saw it, for example after a ban.
+  if (!profile) throw notFound()
   const website = safeWebsite(profile.website)
   const activeTransition = activeSharedViewTransitionKind({
     kind: "profile",
@@ -170,7 +186,7 @@ function ProfileFeed() {
             />
           )}
           <AvatarFallback className="font-heading text-2xl">
-            {profile.name.slice(0, 2).toLocaleUpperCase("en-US")}
+            {avatarInitials(profile.name)}
           </AvatarFallback>
         </Avatar>
         <div className="max-w-2xl min-w-0 sm:flex sm:items-start sm:justify-between sm:gap-4">

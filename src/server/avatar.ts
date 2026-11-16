@@ -12,6 +12,20 @@ import { authenticatedServerFunctionMiddleware } from "@/server/server-function-
 
 import { mediaCleanupJob } from "./jobs"
 
+function limitAvatarChanges(limiter: RateLimit, key: string) {
+  return bindingOperation("limitAvatarChanges.operation", () => limiter.limit({ key })).pipe(
+    Effect.flatMap((limited) =>
+      limited.success
+        ? Effect.void
+        : Effect.fail(
+            rateLimitedFailure(
+              "You're changing your avatar too fast. Wait a minute and try again.",
+            ),
+          ),
+    ),
+  )
+}
+
 const avatarIntentInput = Schema.Struct({
   filename: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(255)),
   mimeType: Schema.Literals(IMAGE_UPLOAD_MIME_TYPES),
@@ -80,6 +94,7 @@ export const cancelAvatarUpload = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        yield* limitAvatarChanges(context.env.USER_RATE_LIMITER, `avatar-cancel:${session.user.id}`)
         const asset = yield* bindingOperation("cancelAvatarUpload.asset", () =>
           database
             .select({ id: schema.mediaAssets.id, status: schema.mediaAssets.status })
@@ -118,6 +133,7 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
+        yield* limitAvatarChanges(context.env.USER_RATE_LIMITER, `avatar-delete:${session.user.id}`)
         const profile = yield* bindingOperation("deleteManagedAvatar.profile", () =>
           database
             .select({

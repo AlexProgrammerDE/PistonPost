@@ -86,6 +86,7 @@ import { useComposerDraft } from "@/hooks/use-composer-draft"
 import { useAppForm } from "@/lib/forms/app-form"
 import { sharedText, type SharedContent } from "@/lib/pwa/share-intake"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
+import { markPostFeedsStale } from "@/lib/queries/posts"
 import { userFacingServerMessage } from "@/lib/server-function-error"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { ImagePreparationError, prepareImageForUpload } from "@/lib/uploads/image-preparation"
@@ -172,7 +173,7 @@ const composerMessages = new Set([
   "Media is still processing.",
   "Images are still being cleaned.",
   "The video is still being checked.",
-  "Video processing is taking longer than expected. The draft is still saved.",
+  "The video is still processing. Try posting again in a few minutes.",
   "The video could not be processed.",
   HUMAN_VERIFICATION_ERROR_MESSAGE,
 ])
@@ -244,7 +245,7 @@ async function waitForVideo(queryClient: QueryClient, assetId: string) {
     // eslint-disable-next-line no-await-in-loop
     await new Promise((resolve) => setTimeout(resolve, 5_000))
   }
-  throw new Error("Video processing is taking longer than expected. The draft is still saved.")
+  throw new Error("The video is still processing. Try posting again in a few minutes.")
 }
 
 export function PostComposer({
@@ -411,6 +412,8 @@ export function PostComposer({
         releaseUploadPreviews(uploads)
         dispatch({ type: "reset" })
         toast.success("Posted")
+        // Cached feeds were loaded before this post existed.
+        await markPostFeedsStale(queryClient)
         await navigate({ to: "/post/$postId", params: { postId: published.id } })
       } catch (error) {
         setSubmitError(readableError(error))

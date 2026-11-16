@@ -69,8 +69,10 @@ export function uploadVideo(
     signal?.addEventListener(
       "abort",
       () => {
+        // Cancellation still rejects when Stream fails to delete the partial upload.
         void upload
           .abort(true)
+          .catch(() => undefined)
           .finally(() => reject(new UploadClientError("The video upload was cancelled.")))
       },
       { once: true },

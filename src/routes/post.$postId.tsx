@@ -10,6 +10,7 @@ import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStat
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import type { PublicPostRead } from "@/db/public-read-model"
 import { galleryLayouts } from "@/lib/gallery-layout"
 import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
@@ -71,6 +72,13 @@ export const Route = createFileRoute("/post/$postId")({
   pendingComponent: PostDetailSkeleton,
 })
 
+// TanStack head() keeps one meta tag per property, so repeated tag properties render here.
+// React hoists these meta elements into the document head.
+function PostTagMeta({ post }: { readonly post: PublicPostRead }) {
+  const property = post.type === "video" ? "video:tag" : "article:tag"
+  return post.tags.map((tag) => <meta key={tag.slug} property={property} content={tag.name} />)
+}
+
 function PostDetail() {
   const session = useSession(authClient)
   const { postId } = Route.useParams()
@@ -100,6 +108,7 @@ function PostDetail() {
 
   return (
     <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+      <PostTagMeta post={post} />
       {post.visibility === "unlisted" && (
         <Alert className="mb-8">
           <Link2 aria-hidden="true" />

@@ -15,7 +15,14 @@ import {
 } from "@/lib/uploads/image-upload-policy"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
+import {
+  finalizeImageUploadStatements,
+  reserveImageUploadKeyStatement,
+} from "@/server/image-upload-statements"
 import { mediaCleanupJob } from "@/server/jobs"
+
+const usedUploadMessage =
+  "This upload expired or was already used. Remove the image and add it again."
 
 function jsonError(message: string, status: number) {
   return Response.json(
@@ -36,11 +43,7 @@ async function uploadImage({
   const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
     errors: "all",
   })(params.mediaId)
-  if (!Result.isSuccess(mediaId))
-    return jsonError(
-      "This upload expired or was already used. Remove the image and add it again.",
-      400,
-    )
+  if (!Result.isSuccess(mediaId)) return jsonError(usedUploadMessage, 400)
 
   const expectedOrigin = new URL(context.runtime.config.PUBLIC_APP_URL).origin
   if (request.headers.get("origin") !== expectedOrigin)
@@ -80,29 +83,15 @@ async function uploadImage({
       ),
     )
     .get()
-  if (!asset)
-    return jsonError(
-      "This upload expired or was already used. Remove the image and add it again.",
-      404,
-    )
+  if (!asset) return jsonError(usedUploadMessage, 404)
   if (asset.kind !== "image" && asset.kind !== "avatar") {
-    return jsonError(
-      "This upload expired or was already used. Remove the image and add it again.",
-      404,
-    )
+    return jsonError(usedUploadMessage, 404)
   }
   if (asset.status === "ready") return Response.json({ assetId: asset.id, status: "ready" })
-  if (asset.status !== "pending")
-    return jsonError(
-      "This upload expired or was already used. Remove the image and add it again.",
-      409,
-    )
+  if (asset.status !== "pending") return jsonError(usedUploadMessage, 409)
   const expiresAt = asset.providerMetadata.expiresAt
   if (typeof expiresAt !== "number" || expiresAt < Date.now()) {
-    return jsonError(
-      "This upload expired or was already used. Remove the image and add it again.",
-      410,
-    )
+    return jsonError(usedUploadMessage, 410)
   }
   if (request.headers.get("content-type")?.split(";", 1)[0] !== asset.mimeType) {
     return jsonError(
@@ -111,12 +100,15 @@ async function uploadImage({
     )
   }
 
-  const body = await request.arrayBuffer()
-  if (body.byteLength !== length || body.byteLength !== asset.byteSize) {
-    await database
+  const markFailed = () =>
+    database
       .update(schema.mediaAssets)
       .set({ status: "failed" })
-      .where(eq(schema.mediaAssets.id, asset.id))
+      .where(and(eq(schema.mediaAssets.id, asset.id), eq(schema.mediaAssets.status, "pending")))
+
+  const body = await request.arrayBuffer()
+  if (body.byteLength !== length || body.byteLength !== asset.byteSize) {
+    await markFailed()
     return jsonError(
       "This file changed after it was chosen. Remove the image and add it again.",
       400,
@@ -151,8 +143,16 @@ async function uploadImage({
       byte.toString(16).padStart(2, "0"),
     ).join("")
     const directory = asset.kind === "avatar" ? "avatars" : "images"
-    objectKey = `users/${session.user.id}/${directory}/${asset.id}/${checksum}`
-    await context.env.MEDIA.put(objectKey, body, {
+    const key = `users/${session.user.id}/${directory}/${asset.id}/${checksum}`
+    const reserve = reserveImageUploadKeyStatement(asset.id, key)
+    const reserved = await database.$client
+      .prepare(reserve.sql)
+      .bind(...reserve.params)
+      .run()
+    // The upload was cancelled or finished elsewhere after it was read.
+    if (reserved.meta.changes !== 1) return jsonError(usedUploadMessage, 409)
+    objectKey = key
+    await context.env.MEDIA.put(key, body, {
       httpMetadata: { contentType: info.format },
       customMetadata: { checksum, owner: session.user.id },
     })
@@ -164,21 +164,20 @@ async function uploadImage({
         ? await createImagePlaceholder(context.env.IMAGES, body).catch(() => null)
         : null
 
-    const readyAsset = database
-      .update(schema.mediaAssets)
-      .set({
-        status: "ready" as const,
-        r2Key: objectKey,
-        mimeType: info.format,
-        byteSize: body.byteLength,
-        width: info.width,
-        height: info.height,
-        checksum,
-        providerMetadata: { ...asset.providerMetadata, placeholderColor },
-        finalizedAt: new Date(),
-      })
-      .where(eq(schema.mediaAssets.id, asset.id))
+    const finalized = {
+      assetId: asset.id,
+      r2Key: key,
+      finalizeToken: crypto.randomUUID(),
+      mimeType: info.format,
+      byteSize: body.byteLength,
+      width: info.width,
+      height: info.height,
+      checksum,
+      providerMetadata: { ...asset.providerMetadata, placeholderColor },
+    }
 
+    let statements
+    let previousAvatarId: string | null = null
     if (asset.kind === "avatar") {
       const profile = await database
         .select({
@@ -188,37 +187,14 @@ async function uploadImage({
         .where(eq(schema.profiles.userId, session.user.id))
         .get()
       if (!profile) throw new Error("Profile missing")
-
-      const image = mediaImageUrl(asset.id, "avatar")
-      const cleanup = profile.avatarMediaId ? mediaCleanupJob(profile.avatarMediaId) : null
-      await database.batch([
-        readyAsset,
-        database
-          .update(schema.profiles)
-          .set({
-            avatarMediaId: asset.id,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.profiles.userId, session.user.id)),
-        database.update(schema.user).set({ image }).where(eq(schema.user.id, session.user.id)),
-        ...(cleanup
-          ? [
-              database
-                .insert(schema.outbox)
-                .values({ id: cleanup.idempotencyKey, kind: cleanup.type, payload: cleanup })
-                .onConflictDoNothing(),
-            ]
-          : []),
-        database.insert(schema.auditEvents).values({
-          id: crypto.randomUUID(),
-          actorId: session.user.id,
-          action: "avatar.updated",
-          entityType: "media",
-          entityId: asset.id,
-          metadata: {},
-        }),
-      ])
-      if (cleanup) context.executionContext.waitUntil(context.env.JOBS.send(cleanup))
+      previousAvatarId = profile.avatarMediaId === asset.id ? null : profile.avatarMediaId
+      statements = finalizeImageUploadStatements(finalized, {
+        kind: "avatar",
+        userId: session.user.id,
+        image: mediaImageUrl(asset.id, "avatar"),
+        previousAvatarId,
+        auditEventId: crypto.randomUUID(),
+      })
     } else {
       const editing = typeof asset.providerMetadata.editPostId === "string"
       const postId = editing ? asset.providerMetadata.editPostId : asset.providerMetadata.postId
@@ -242,18 +218,37 @@ async function uploadImage({
         (post.authorId !== session.user.id && !(editing && session.user.role === "admin"))
       )
         throw new Error("Image draft missing")
+      statements = finalizeImageUploadStatements(
+        finalized,
+        editing ? { kind: "edit-image" } : { kind: "draft-image", postId: post.postId, ordinal },
+      )
+    }
 
-      await database.batch([
-        readyAsset,
-        ...(editing
-          ? []
-          : [
-              database
-                .insert(schema.postMedia)
-                .values({ postId: post.postId, mediaId: asset.id, ordinal })
-                .onConflictDoNothing(),
-            ]),
-      ])
+    const results = await database.$client.batch(
+      statements.map((statement) =>
+        database.$client.prepare(statement.sql).bind(...statement.params),
+      ),
+    )
+    if (results[0]?.meta.changes !== 1) {
+      const current = await database
+        .select({ status: schema.mediaAssets.status, r2Key: schema.mediaAssets.r2Key })
+        .from(schema.mediaAssets)
+        .where(eq(schema.mediaAssets.id, asset.id))
+        .get()
+      // A parallel request with the same bytes owns this key and already finished.
+      if (current?.status === "ready" && current.r2Key === key) {
+        return Response.json(
+          { assetId: asset.id, status: "ready", width: info.width, height: info.height },
+          { headers: { "Cache-Control": "private, no-store" } },
+        )
+      }
+      objectKey = null
+      await context.env.MEDIA.delete(key)
+      return jsonError(usedUploadMessage, 409)
+    }
+    if (previousAvatarId) {
+      const cleanup = mediaCleanupJob(previousAvatarId)
+      context.executionContext.waitUntil(context.env.JOBS.send(cleanup))
     }
 
     return Response.json(
@@ -268,10 +263,7 @@ async function uploadImage({
     )
   } catch {
     if (objectKey) await context.env.MEDIA.delete(objectKey)
-    await database
-      .update(schema.mediaAssets)
-      .set({ status: "failed" })
-      .where(eq(schema.mediaAssets.id, asset.id))
+    await markFailed()
     return jsonError(
       "This image did not match its file type or could not be checked. Try saving it again as JPG or PNG.",
       400,

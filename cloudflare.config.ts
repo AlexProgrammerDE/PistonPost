@@ -71,7 +71,7 @@ export default defineConfig((ctx) => {
             triggers.queue({
               maxBatchSize: 10,
               maxBatchTimeout: 5,
-              maxRetries: 0,
+              maxRetries: 3,
               name: "pistonpost-staging-dead-letter",
             }),
           ],
@@ -272,7 +272,7 @@ export default defineConfig((ctx) => {
             triggers.queue({
               maxBatchSize: 10,
               maxBatchTimeout: 5,
-              maxRetries: 0,
+              maxRetries: 3,
               name: "pistonpost-production-dead-letter",
             }),
           ],
@@ -490,7 +490,7 @@ export default defineConfig((ctx) => {
             triggers.queue({
               maxBatchSize: 10,
               maxBatchTimeout: 5,
-              maxRetries: 0,
+              maxRetries: 3,
               name: "pistonpost-local-dead-letter",
             }),
           ],

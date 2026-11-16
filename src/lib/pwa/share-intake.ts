@@ -7,6 +7,24 @@ export const MAX_SHARED_FILES = 20
 export const MAX_SHARED_BYTES = 50 * 1024 * 1024
 export const SHARE_RETENTION_MS = 60 * 60 * 1000
 export const MAX_PENDING_SHARES = 3
+export const MAX_SHARED_TITLE_LENGTH = 100
+
+/**
+ * Shortens a shared title to the stored limit without splitting an emoji or other grapheme. Apps
+ * often share a full page title, so a long one should not make the whole share fail.
+ */
+export function truncateSharedTitle(title: string, maxLength = MAX_SHARED_TITLE_LENGTH) {
+  if (title.length <= maxLength) return title
+  const ellipsis = "…"
+  let truncated = ""
+  for (const { segment } of new Intl.Segmenter(undefined, { granularity: "grapheme" }).segment(
+    title,
+  )) {
+    if (truncated.length + segment.length + ellipsis.length > maxLength) break
+    truncated += segment
+  }
+  return `${truncated.trimEnd()}${ellipsis}`
+}
 
 const sharedFileSchema = Schema.instanceOf(File).check(
   Schema.makeFilter(
@@ -20,7 +38,7 @@ const sharedFileSchema = Schema.instanceOf(File).check(
 )
 
 export const sharedContentSchema = Schema.Struct({
-  title: Schema.String.check(Schema.isMaxLength(100)).pipe(
+  title: Schema.String.check(Schema.isMaxLength(MAX_SHARED_TITLE_LENGTH)).pipe(
     Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
   ),
   text: Schema.String.check(Schema.isMaxLength(10_000)).pipe(

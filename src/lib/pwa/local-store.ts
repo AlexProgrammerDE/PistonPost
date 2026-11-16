@@ -71,7 +71,10 @@ async function cleanShares(store: IDBObjectStore, userId?: string | null) {
         !Result.isSuccess(parsed) ||
         parsed.success.createdAt > Date.now() ||
         Date.now() - parsed.success.createdAt >= SHARE_RETENTION_MS ||
+        // A signed-out load can be an expired session, so keep owned shares until another
+        // account signs in.
         (userId !== undefined &&
+          userId !== null &&
           parsed.success.ownerId !== null &&
           parsed.success.ownerId !== userId)
       ) {
@@ -85,6 +88,30 @@ async function cleanShares(store: IDBObjectStore, userId?: string | null) {
   })
 }
 
+async function dropOldestShares(store: IDBObjectStore, keep: number) {
+  const records: { readonly key: IDBValidKey; readonly createdAt: number }[] = []
+  await new Promise<void>((resolve, reject) => {
+    const request = store.openCursor()
+    request.addEventListener("error", () => reject(request.error))
+    request.addEventListener("success", () => {
+      const cursor = request.result
+      if (!cursor) {
+        resolve()
+        return
+      }
+      const parsed = Schema.decodeUnknownResult(pendingShareSchema, { errors: "all" })(cursor.value)
+      records.push({
+        key: cursor.primaryKey,
+        createdAt: Result.isSuccess(parsed) ? parsed.success.createdAt : 0,
+      })
+      cursor.continue()
+    })
+  })
+  const oldestFirst = records.toSorted((a, b) => a.createdAt - b.createdAt)
+  const excess = oldestFirst.slice(0, Math.max(0, oldestFirst.length - keep))
+  await Promise.all(excess.map((record) => result(store.delete(record.key))))
+}
+
 export async function reconcileLocalAccount(userId: string | null) {
   return transaction(async (shares, meta) => {
     await cleanShares(shares, userId)
@@ -96,8 +123,9 @@ export async function stageSharedContent(input: SharedContent) {
   const content = Schema.decodeSync(sharedContentSchema, { errors: "all" })(input)
   return transaction(async (shares, meta) => {
     await cleanShares(shares)
+    // The newest share is the one someone is acting on, so it replaces the oldest pending one.
     if ((await result(shares.count())) >= MAX_PENDING_SHARES) {
-      throw new Error("Open or discard an earlier share before sharing more files.")
+      await dropOldestShares(shares, MAX_PENDING_SHARES - 1)
     }
     const owner: unknown = await result(meta.get("account"))
     const share = {
@@ -131,5 +159,22 @@ export async function readSharedContent(id: string, userId: string | null) {
 export async function removeSharedContent(id: string) {
   return transaction(async (shares) => {
     await result(shares.delete(id))
+  })
+}
+
+const PUSH_OWNER_KEY = "push-owner"
+
+/** Returns the account that turned on push in this browser, or null when nobody is recorded. */
+export async function readPushOwner() {
+  return transaction(async (_shares, meta) => {
+    const owner: unknown = await result(meta.get(PUSH_OWNER_KEY))
+    return typeof owner === "string" && owner ? owner : null
+  })
+}
+
+export async function writePushOwner(userId: string | null) {
+  return transaction(async (_shares, meta) => {
+    if (userId) await result(meta.put(userId, PUSH_OWNER_KEY))
+    else await result(meta.delete(PUSH_OWNER_KEY))
   })
 }

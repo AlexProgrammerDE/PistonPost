@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test"
 
 import {
   resolveRouteTransitionTypes,
+  sharedViewTransitionKind,
   type ActiveSharedViewTransition,
   type RouteTransitionInfo,
 } from "./view-transitions"
@@ -157,5 +158,30 @@ describe("route view transitions", () => {
         null,
       ),
     ).toEqual(["settings-back"])
+  })
+
+  it("marks a source post only on the page where the shared transition started", () => {
+    const activeProfile: ActiveSharedViewTransition = {
+      sourcePathname: "/",
+      target: { kind: "profile", sourcePostId: "post-1", username: "Alex" },
+    }
+    const sourceAvatar = { kind: "profile", sourcePostId: "post-1", username: "alex" } as const
+    const destinationHeader = { kind: "profile", username: "alex" } as const
+
+    expect(sharedViewTransitionKind(activeProfile, sourceAvatar, "/")).toBe("profile")
+    expect(sharedViewTransitionKind(activeProfile, sourceAvatar, "/user/alex")).toBeUndefined()
+    expect(sharedViewTransitionKind(activeProfile, sourceAvatar, undefined)).toBeUndefined()
+    expect(sharedViewTransitionKind(activeProfile, destinationHeader, "/user/alex")).toBe("profile")
+
+    const activeTag: ActiveSharedViewTransition = {
+      sourcePathname: "/user/alex/",
+      target: { kind: "tag", sourcePostId: "post-1", tag: "art" },
+    }
+    const sourceTag = { kind: "tag", sourcePostId: "post-1", tag: "art" } as const
+
+    expect(sharedViewTransitionKind(activeTag, sourceTag, "/user/alex")).toBe("tag")
+    expect(sharedViewTransitionKind(activeTag, sourceTag, "/tag/art")).toBeUndefined()
+    expect(sharedViewTransitionKind(activeTag, { kind: "tag", tag: "art" }, "/tag/art")).toBe("tag")
+    expect(sharedViewTransitionKind(null, sourceTag, "/user/alex")).toBeUndefined()
   })
 })

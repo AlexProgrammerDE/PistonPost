@@ -39,7 +39,7 @@ function renderPostMarkdown(source: string) {
 }
 
 describe("post Markdown directives", () => {
-  test("renders allowlisted embeds and cards as sanitized directive paragraphs", () => {
+  test("renders allowlisted embeds and cards as sanitized directive blocks", () => {
     expect(
       renderPostMarkdown(
         '::embed[Demo video]{url="https://youtu.be/M7lc1UVf-VE"}\n\n::card{url="https://example.com"}',
@@ -49,7 +49,7 @@ describe("post Markdown directives", () => {
       children: [
         {
           type: "element",
-          tagName: "p",
+          tagName: "div",
           properties: {
             dataPostDirective: "embed",
             dataUrl: "https://youtu.be/M7lc1UVf-VE",
@@ -60,7 +60,7 @@ describe("post Markdown directives", () => {
         { type: "text", value: "\n" },
         {
           type: "element",
-          tagName: "p",
+          tagName: "div",
           properties: {
             dataPostDirective: "card",
             dataUrl: "https://example.com/",
@@ -69,6 +69,37 @@ describe("post Markdown directives", () => {
         },
       ],
     })
+  })
+
+  test("keeps embeds and cards inside tight list items", () => {
+    const tree = renderPostMarkdown(
+      '- ::card{url="https://example.com"}\n- ::embed{url="https://youtu.be/M7lc1UVf-VE"}',
+    )
+    const list = tree.children[0]
+    const items =
+      list?.type === "element" ? list.children.filter((child) => child.type === "element") : []
+
+    expect(items.map((item) => item.tagName)).toEqual(["li", "li"])
+    expect(
+      items.map((item) =>
+        item.children.find((child) => child.type === "element" && child.tagName === "div"),
+      ),
+    ).toMatchObject([
+      { properties: { dataPostDirective: "card", dataUrl: "https://example.com/" } },
+      { properties: { dataPostDirective: "embed", dataUrl: "https://youtu.be/M7lc1UVf-VE" } },
+    ])
+  })
+
+  test("drops an empty callout label instead of leaving an empty paragraph", () => {
+    const callout = renderPostMarkdown(":::callout[]{kind=tip}\nBody.\n:::").children[0]
+
+    expect(callout).toMatchObject({
+      tagName: "div",
+      properties: { dataPostDirective: "callout", dataKind: "tip" },
+    })
+    expect(callout?.type === "element" ? callout.children : []).toMatchObject([
+      { tagName: "p", children: [{ type: "text", value: "Body." }] },
+    ])
   })
 
   test("renders spoilers without exposing their text in the fallback children", () => {

@@ -7,6 +7,7 @@ import * as schema from "@/db/schema"
 
 import {
   accountDeletionStoreLayer,
+  confirmAccountDeleted,
   deleteOwnedAccountMedia,
   scheduleAccountCachePurge,
   verifyAccountPurge,
@@ -34,6 +35,12 @@ export class AccountDeletionWorkflow extends WorkflowEntrypoint<
 
   async run(event: Readonly<WorkflowEvent<AccountDeletionParams>>, step: WorkflowStep) {
     const input = event.payload
+    // Better Auth deletes the user row after this instance starts. Wait about ten minutes for it.
+    await step.do(
+      "confirm account deleted",
+      { retries: { limit: 6, delay: "10 seconds", backoff: "exponential" } },
+      () => Effect.runPromise(confirmAccountDeleted(input).pipe(Effect.provide(this.services()))),
+    )
     await step.do(
       "delete owned media",
       { retries: { limit: 8, delay: "10 seconds", backoff: "exponential" } },

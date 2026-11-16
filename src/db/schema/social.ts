@@ -22,7 +22,10 @@ export const comments = sqliteTable(
     authorId: text("author_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    parentId: text("parent_id").references((): AnySQLiteColumn => comments.id),
+    // Replies outlive a deleted account's parent comment and render as top-level comments.
+    parentId: text("parent_id").references((): AnySQLiteColumn => comments.id, {
+      onDelete: "set null",
+    }),
     content: text("content").notNull(),
     status: text("status", { enum: ["published", "moderated", "deleted"] })
       .notNull()

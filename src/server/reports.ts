@@ -9,6 +9,7 @@ import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
 import {
   conflictFailure,
+  forbiddenFailure,
   notFoundFailure,
   rateLimitedFailure,
 } from "@/server/server-function-failure"
@@ -61,11 +62,11 @@ export const createContentReport = createServerFn({ method: "POST" })
           )
         yield* verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createReport)
 
-        const targetExists =
+        const target =
           data.target.type === "post"
             ? yield* bindingOperation("createContentReport.operation", () =>
                 database
-                  .select({ id: schema.posts.id })
+                  .select({ ownerId: schema.posts.authorId })
                   .from(schema.posts)
                   .where(
                     and(eq(schema.posts.id, data.target.id), eq(schema.posts.status, "published")),
@@ -75,7 +76,7 @@ export const createContentReport = createServerFn({ method: "POST" })
             : data.target.type === "comment"
               ? yield* bindingOperation("createContentReport.operation", () =>
                   database
-                    .select({ id: schema.comments.id })
+                    .select({ ownerId: schema.comments.authorId })
                     .from(schema.comments)
                     .innerJoin(schema.posts, eq(schema.posts.id, schema.comments.postId))
                     .where(
@@ -89,7 +90,7 @@ export const createContentReport = createServerFn({ method: "POST" })
                 )
               : yield* bindingOperation("createContentReport.operation", () =>
                   database
-                    .select({ id: schema.profiles.normalizedUsername })
+                    .select({ ownerId: schema.profiles.userId })
                     .from(schema.profiles)
                     .where(
                       eq(
@@ -99,7 +100,10 @@ export const createContentReport = createServerFn({ method: "POST" })
                     )
                     .get(),
                 )
-        if (!targetExists) return yield* notFoundFailure("The content could not be found.")
+        if (!target) return yield* notFoundFailure("The content could not be found.")
+        if (target.ownerId === session.user.id) {
+          return yield* forbiddenFailure("You can't report your own content.")
+        }
 
         const targetId =
           data.target.type === "profile"

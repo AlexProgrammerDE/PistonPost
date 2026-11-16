@@ -1,0 +1,1 @@
+CREATE INDEX `posts_author_feed_idx` ON `posts` (`author_id`,`status`,`visibility`,`published_at`,`id`);

@@ -3,10 +3,11 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { eq } from "drizzle-orm"
 import { Effect, Layer } from "effect"
 
-import { createMigratedTestDatabase, createUser, schema } from "@/db"
+import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
 
 import {
   accountDeletionStoreLayer,
+  confirmAccountDeleted,
   deleteOwnedAccountMedia,
   scheduleAccountCachePurge,
   verifyAccountPurge,
@@ -102,5 +103,90 @@ describe("native account deletion steps", () => {
         tags: ["pistonpost-owner-test-user", "pistonpost-feed", "pistonpost-sitemap"],
       },
     ])
+  })
+
+  test("purges and verifies more owned media than D1 allows as bound parameters", async () => {
+    const { db, store } = setup()
+    const mediaIds = Array.from({ length: 150 }, (_, index) => `bulk-${index.toString()}`)
+    for (const id of mediaIds)
+      db.insert(schema.mediaAssets)
+        .values({
+          id,
+          ownerId: "test-user",
+          kind: "image",
+          provider: "r2",
+          status: "ready",
+          r2Key: id,
+          originalFilename: `${id}.png`,
+          mimeType: "image/png",
+          byteSize: 128,
+        })
+        .run()
+    const input = { userId: "test-user", mediaIds }
+    // D1 rejects statements with more than 100 bound parameters. Bun's SQLite allows more.
+    const prepare = db.$client.prepare.bind(db.$client)
+    db.$client.prepare = (query: string) => {
+      if ((query.match(/\?/g)?.length ?? 0) > 100) throw new Error("too many SQL variables")
+      return prepare(query)
+    }
+    const layer = Layer.merge(
+      store,
+      accountMediaPurgeLayer({
+        deleteR2: async () => undefined,
+        deleteStream: async () => undefined,
+        deleteRecord: async (id) => {
+          db.delete(schema.mediaAssets).where(eq(schema.mediaAssets.id, id)).run()
+        },
+      }),
+    )
+    expect(
+      await Effect.runPromise(deleteOwnedAccountMedia(input).pipe(Effect.provide(layer))),
+    ).toEqual({ deleted: 150 })
+    expect(await Effect.runPromise(verifyAccountPurge(input).pipe(Effect.provide(store)))).toEqual({
+      complete: true,
+    })
+    expect(
+      db
+        .select()
+        .from(schema.mediaAssets)
+        .all()
+        .map(({ id }) => id),
+    ).toEqual(["asset"])
+  })
+
+  test("deletes an account whose comment has replies and waits for the row to go", async () => {
+    const { db, store, input } = setup()
+    db.insert(schema.user)
+      .values(createUser({ id: "replier", email: "replier@example.com" }))
+      .run()
+    const post = createPost({ authorId: "replier" })
+    db.insert(schema.posts).values(post).run()
+    db.insert(schema.comments)
+      .values([
+        { id: "parent", postId: post.id, authorId: "test-user", content: "First" },
+        {
+          id: "reply",
+          postId: post.id,
+          authorId: "replier",
+          parentId: "parent",
+          content: "Reply",
+        },
+      ])
+      .run()
+
+    expect(
+      Effect.runPromise(confirmAccountDeleted(input).pipe(Effect.provide(store))),
+    ).rejects.toMatchObject({ _tag: "AccountStillExists" })
+    db.delete(schema.user).where(eq(schema.user.id, "test-user")).run()
+
+    expect(db.select().from(schema.comments).all()).toEqual([
+      expect.objectContaining({ id: "reply", parentId: null, content: "Reply" }),
+    ])
+    expect(
+      await Effect.runPromise(confirmAccountDeleted(input).pipe(Effect.provide(store))),
+    ).toEqual({ deleted: true })
+    expect(
+      db.select({ ownerId: schema.mediaAssets.ownerId }).from(schema.mediaAssets).get(),
+    ).toEqual({ ownerId: null })
   })
 })
