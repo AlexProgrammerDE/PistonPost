@@ -1,5 +1,6 @@
 "use client"
 
+import { authQueryKeys } from "@better-auth-ui/core"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Bell, Save, TriangleAlert, UserRound } from "lucide-react"
 import { useState } from "react"
@@ -27,6 +28,7 @@ import {
 } from "@/components/ui/table"
 import type { NotificationPreference } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
+import { ServerFunctionClientError } from "@/lib/server-function-error"
 import {
   getMyProductSettings,
   updateNotificationPreference,
@@ -34,6 +36,15 @@ import {
 } from "@/server/settings"
 
 type ProductSettings = Awaited<ReturnType<typeof getMyProductSettings>>
+
+const profileSaveFallbackMessage =
+  "Your profile could not be saved. Check the fields and try again."
+
+export function profileSaveErrorMessage(error: unknown) {
+  if (!(error instanceof ServerFunctionClientError)) return profileSaveFallbackMessage
+  if (error.code === "INTERNAL_ERROR") return profileSaveFallbackMessage
+  return error.message
+}
 
 function RequiredNotificationSwitch({ label }: { label: string }) {
   return <Switch checked disabled aria-label={`${label} are required and always on`} />
@@ -102,7 +113,7 @@ function NotificationPreferenceSwitch({
 
 function NotificationRowHeader({ label, description }: { label: string; description: string }) {
   return (
-    <TableHead scope="row" className="h-auto min-w-44 py-4 whitespace-normal">
+    <TableHead scope="row" className="h-auto py-4 whitespace-normal">
       <span className="block font-medium">{label}</span>
       <span className="mt-1 block text-xs leading-relaxed font-normal text-muted-foreground">
         {description}
@@ -136,10 +147,13 @@ export function ProfileSettingsForm({ settings }: { settings: ProductSettings })
       setError(null)
       try {
         await updateProfile({ data: value })
-        await queryClient.invalidateQueries({ queryKey: ["profiles"] })
-        toast.success("Profile updated")
-      } catch {
-        setError("The profile could not be updated. Check the fields and try again.")
+        await Promise.all([
+          queryClient.invalidateQueries({ queryKey: ["profiles"] }),
+          queryClient.invalidateQueries({ queryKey: authQueryKeys.session }),
+        ])
+        toast.success("Profile saved")
+      } catch (saveError) {
+        setError(profileSaveErrorMessage(saveError))
       }
     },
   })
@@ -208,10 +222,10 @@ export function NotificationSettingsForm({ settings }: { settings: ProductSettin
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead scope="col">Notification</TableHead>
-              <TableHead scope="col" className="w-24 text-center">
+              <TableHead scope="col" className="w-20 text-center">
                 Email
               </TableHead>
-              <TableHead scope="col" className="w-24 text-center">
+              <TableHead scope="col" className="w-20 text-center">
                 Push
               </TableHead>
             </TableRow>

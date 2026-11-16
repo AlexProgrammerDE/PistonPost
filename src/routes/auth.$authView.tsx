@@ -20,5 +20,11 @@ export const Route = createFileRoute("/auth/$authView")({
 
 function AuthView() {
   const { authView } = Route.useParams()
-  return <Auth path={authView} socialLayout="horizontal" className="w-full max-w-sm" />
+  return (
+    <>
+      {/* Better Auth UI renders its card title as a div, so the page needs its own heading. */}
+      <h1 className="sr-only">{getAuthViewLabel(authView)}</h1>
+      <Auth path={authView} socialLayout="horizontal" className="w-full max-w-sm" />
+    </>
+  )
 }

@@ -24,6 +24,18 @@ import {
   uploadManagedAvatar,
 } from "@/lib/uploads/avatar-upload"
 
+/** Sentence-case labels that match the rest of the interface. */
+const authLocalization = {
+  auth: {
+    forgotPassword: "Forgot password",
+    resetPassword: "Reset password",
+    signIn: "Sign in",
+    signOut: "Sign out",
+    signUp: "Sign up",
+    verifyEmail: "Verify email",
+  },
+}
+
 function RouterLink({ href, ...props }: ComponentPropsWithoutRef<AuthConfig["Link"]>) {
   return <Link to={href} {...props} />
 }
@@ -42,17 +54,24 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
       minUsernameLength: 1,
       maxUsernameLength: 32,
       usernamePrefix: "@",
-      localization: { usernamePlaceholder: "garage-name" },
+      localization: {
+        usernamePlaceholder: "garage-name",
+        displayUsername: "Display username",
+        displayUsernamePlaceholder: "Display username",
+      },
     }),
     emailOtpPlugin({
       emailVerification: true,
       passwordReset: true,
+      localization: { emailOtp: "email code" },
     }),
-    multiSessionPlugin(),
+    multiSessionPlugin({
+      localization: { switchAccount: "Switch account", addAccount: "Add account" },
+    }),
     adminPlugin(),
     dashPlugin({ organization: false }),
     passkeyPlugin(),
-    twoFactorPlugin(),
+    twoFactorPlugin({ localization: { twoFactor: "Two-factor authentication" } }),
     deleteUserPlugin({ sendDeleteAccountVerification: true }),
     themePlugin({ useTheme }),
     ...(turnstileSiteKey
@@ -108,6 +127,7 @@ export function AuthenticationProvider({
         requireEmailVerification: true,
       }}
       basePaths={{ admin: "/admin", auth: "/auth", settings: "/settings" }}
+      localization={authLocalization}
       plugins={createAuthenticationPlugins(turnstileSiteKey)}
     >
       {children}

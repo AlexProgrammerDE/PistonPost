@@ -608,7 +608,7 @@ Markdown still works **inside** this callout.
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))
       .toMatch(/\/post\/[a-z0-9]+$/u)
 
-    await timelineActions.getByRole("button", { name: /Comments/u }).click()
+    await timelineActions.getByRole("link", { name: /Comments/u }).click()
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+#discussion$/u)
 
     const commentImageRequests: string[] = []
@@ -857,7 +857,7 @@ https://youtu.be/dQw4w9WgXcQ`
     await longGallery.getByRole("button").nth(9).scrollIntoViewIfNeeded()
     const quickActions = page.getByRole("navigation", { name: "Quick post actions" })
     await expect(quickActions).toBeVisible()
-    await quickActions.getByRole("button", { name: "Comments 0" }).click()
+    await quickActions.getByRole("link", { name: "Comments 0" }).click()
     await expect(page).toHaveURL(/#discussion$/u)
     await expect(quickActions).toHaveCount(0)
     await expect(page.getByRole("navigation", { name: "Post actions" })).toBeVisible()

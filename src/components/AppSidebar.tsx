@@ -166,7 +166,7 @@ export function AppSidebar() {
                 to={item.to}
                 viewTransition={isMobile ? false : undefined}
                 aria-current={pathname === item.to ? "page" : undefined}
-                className="hover:text-sidebar-foreground hover:underline"
+                className="underline-offset-2 hover:text-sidebar-foreground hover:underline aria-[current=page]:text-sidebar-foreground aria-[current=page]:underline"
                 onClick={closeMobileSidebar}
               >
                 {item.label}

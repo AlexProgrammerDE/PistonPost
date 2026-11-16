@@ -11,10 +11,11 @@ import { Link } from "@tanstack/react-router"
 import { Heart, History, MessageCircle, Reply, Send, Trash2, TriangleAlert, X } from "lucide-react"
 import { AnimatePresence, useReducedMotion, type Transition } from "motion/react"
 import * as m from "motion/react-m"
-import { startTransition, useEffect, useOptimistic, useRef, useState } from "react"
+import { startTransition, useEffect, useId, useOptimistic, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
+import { ButtonLink } from "@/components/ButtonLink"
 import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { DateTime } from "@/components/DateTime"
 import { CommentComposerSkeleton, DiscussionViewerSkeleton } from "@/components/LoadingStates"
@@ -61,7 +62,7 @@ import {
   discussionQueryOptions,
   discussionViewerQueryOptions,
 } from "@/lib/queries/social"
-import { optimisticHeartCount } from "@/lib/social-state"
+import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
 import { cn } from "@/lib/utils"
 import { createComment, deleteComment, getDiscussion, setHeart } from "@/server/social"
 
@@ -100,18 +101,51 @@ function AnimatedHeartCount({ count }: { readonly count: number }) {
 }
 
 function HeartControl({
+  postId,
   count,
   hasHeart,
   disabled,
+  signedOut,
   onPressedChange,
   variant,
 }: {
+  readonly postId: string
   readonly count: number
   readonly hasHeart: boolean
   readonly disabled: boolean
+  readonly signedOut: boolean
   readonly onPressedChange: (pressed: boolean) => void
   readonly variant: "default" | "outline"
 }) {
+  const countId = useId()
+  const countDescription = (
+    <span id={countId} hidden>
+      {heartCountLabel(count)}
+    </span>
+  )
+
+  if (signedOut) {
+    return (
+      <ButtonLink
+        variant={variant === "default" ? "ghost" : "outline"}
+        size="sm"
+        render={
+          <Link
+            to="/auth/$authView"
+            params={{ authView: "sign-in" }}
+            search={{ redirectTo: discussionRedirect(postId) }}
+            aria-label="Sign in to add a heart"
+            aria-describedby={countId}
+          />
+        }
+      >
+        <Heart aria-hidden="true" data-icon="inline-start" />
+        <span className="tabular-nums">{count}</span>
+        {countDescription}
+      </ButtonLink>
+    )
+  }
+
   return (
     <Toggle
       pressed={hasHeart}
@@ -119,6 +153,7 @@ function HeartControl({
       variant={variant}
       size="sm"
       aria-label="Heart"
+      aria-describedby={countId}
       disabled={disabled}
     >
       <m.span
@@ -134,8 +169,49 @@ function HeartControl({
         />
       </m.span>
       <AnimatedHeartCount count={count} />
+      {countDescription}
     </Toggle>
   )
+}
+
+function discussionRedirect(postId: string) {
+  return `/post/${encodeURIComponent(postId)}#discussion`
+}
+
+type ThreadedComment<T> = { readonly comment: T; readonly nested: boolean }
+
+/**
+ * Places each loaded reply directly below its parent, oldest reply first.
+ * Replies whose parent is not loaded keep their position and are not indented,
+ * so they never look attached to an unrelated comment.
+ */
+export function threadComments<T extends { readonly id: string; readonly parentId: string | null }>(
+  comments: readonly T[],
+): ThreadedComment<T>[] {
+  const loadedIds = new Set(comments.map((comment) => comment.id))
+  const repliesByParent = new Map<string, T[]>()
+  for (const comment of comments) {
+    if (!comment.parentId || !loadedIds.has(comment.parentId)) continue
+    const replies = repliesByParent.get(comment.parentId) ?? []
+    replies.unshift(comment)
+    repliesByParent.set(comment.parentId, replies)
+  }
+
+  const threaded: ThreadedComment<T>[] = []
+  for (const comment of comments) {
+    if (comment.parentId && loadedIds.has(comment.parentId)) continue
+    threaded.push({ comment, nested: false })
+    for (const reply of repliesByParent.get(comment.id) ?? []) {
+      threaded.push({ comment: reply, nested: true })
+    }
+  }
+  return threaded
+}
+
+function focusCommentComposer() {
+  document.querySelector<HTMLTextAreaElement>("#comment-composer textarea")?.focus({
+    preventScroll: true,
+  })
 }
 
 function elementPosition(element: Element): ObservedVerticalPosition {
@@ -243,6 +319,7 @@ export function SocialPanel({
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteComment({ data: { id } }),
     onSuccess: async () => {
+      toast.success("Comment deleted.")
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: discussionKeys.public(postId) }),
         queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
@@ -258,26 +335,31 @@ export function SocialPanel({
       if (!content || !viewerId) return
       const parentCommentId = replyingTo?.id
       const pendingId = `pending-${crypto.randomUUID()}`
-      startTransition(async () => {
-        addOptimisticComment({
-          id: pendingId,
-          content,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          authorId: viewerId,
-          parentId: parentCommentId ?? null,
-          authorName: "You",
-          authorUsername: "you",
-          authorImage: null,
-          optimistic: true,
+      // Keep the form submitting until the comment settles so a second click cannot post it twice.
+      await new Promise<void>((resolve) => {
+        startTransition(async () => {
+          addOptimisticComment({
+            id: pendingId,
+            content,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            authorId: viewerId,
+            parentId: parentCommentId ?? null,
+            authorName: "You",
+            authorUsername: "you",
+            authorImage: null,
+            optimistic: true,
+          })
+          try {
+            await commentMutation.mutateAsync({ content, parentCommentId })
+            form.reset()
+            setReplyingTo(null)
+          } catch {
+            toast.error("The comment could not be posted.")
+          } finally {
+            resolve()
+          }
         })
-        try {
-          await commentMutation.mutateAsync({ content, parentCommentId })
-          form.reset()
-          setReplyingTo(null)
-        } catch {
-          toast.error("The comment could not be posted.")
-        }
       })
     },
   })
@@ -290,10 +372,7 @@ export function SocialPanel({
   const showActionDock = shouldShowPostActionDock(contentStartPosition, footerActionsPosition)
 
   function updateHeart(nextHasHeart: boolean) {
-    if (!viewerId) {
-      toast.error("Sign in to add a heart.")
-      return
-    }
+    if (!viewerId || heartMutation.isPending) return
     startTransition(async () => {
       setOptimisticHasHeart(nextHasHeart)
       try {
@@ -325,22 +404,23 @@ export function SocialPanel({
               <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-2 px-4 sm:px-6">
                 <PostShareActions postId={postId} imageCount={imageCount} variant="ghost" />
                 <HeartControl
+                  postId={postId}
                   count={displayedHeartCount}
                   hasHeart={optimisticHasHeart}
                   disabled={viewerPending || !viewerId}
+                  signedOut={!viewerPending && sessionUserId === null}
                   onPressedChange={updateHeart}
                   variant="default"
                 />
-                <Button
+                <ButtonLink
                   variant="ghost"
                   size="sm"
-                  nativeButton={false}
                   render={<Link to="/post/$postId" params={{ postId }} hash="discussion" />}
                 >
                   <MessageCircle aria-hidden="true" data-icon="inline-start" />
                   <span className="hidden sm:inline">Comments</span>
                   {commentCount}
-                </Button>
+                </ButtonLink>
               </div>
             </m.nav>
           ) : null}
@@ -359,9 +439,11 @@ export function SocialPanel({
             <DiscussionViewerSkeleton />
           ) : (
             <HeartControl
+              postId={postId}
               count={displayedHeartCount}
               hasHeart={optimisticHasHeart}
               disabled={!viewerId}
+              signedOut={sessionUserId === null}
               onPressedChange={updateHeart}
               variant="outline"
             />
@@ -402,7 +484,10 @@ export function SocialPanel({
                         variant="ghost"
                         size="icon-xs"
                         aria-label="Cancel reply"
-                        onClick={() => setReplyingTo(null)}
+                        onClick={() => {
+                          setReplyingTo(null)
+                          focusCommentComposer()
+                        }}
                       >
                         <X aria-hidden="true" />
                       </Button>
@@ -438,7 +523,12 @@ export function SocialPanel({
             </Alert>
           ) : (
             <p className="text-sm text-muted-foreground">
-              <Link to="/auth/$authView" params={{ authView: "sign-in" }} className="underline">
+              <Link
+                to="/auth/$authView"
+                params={{ authView: "sign-in" }}
+                search={{ redirectTo: discussionRedirect(postId) }}
+                className="underline"
+              >
                 Sign in
               </Link>{" "}
               to add a heart or comment.
@@ -448,7 +538,7 @@ export function SocialPanel({
           {optimisticComments.length > 0 ? (
             <ItemGroup className="gap-0 border-y">
               <AnimatePresence initial={false}>
-                {optimisticComments.map((comment) => {
+                {threadComments(optimisticComments).map(({ comment, nested }) => {
                   const canDelete =
                     !comment.optimistic && (comment.authorId === viewerId || viewerRole === "admin")
                   return (
@@ -457,7 +547,7 @@ export function SocialPanel({
                       id={`comment-${comment.id}`}
                       className={cn(
                         "min-w-0 overflow-hidden wrap-anywhere [&:last-child>[data-slot=item]]:border-b-0",
-                        comment.parentId && "ml-8 border-l pl-4 sm:ml-12",
+                        nested && "ml-8 border-l pl-4 sm:ml-12",
                       )}
                       role="listitem"
                       initial={
@@ -567,9 +657,11 @@ export function SocialPanel({
                               size="xs"
                               onClick={() => {
                                 setReplyingTo(comment)
-                                document
-                                  .getElementById("comment-composer")
-                                  ?.scrollIntoView({ behavior: "smooth", block: "center" })
+                                document.getElementById("comment-composer")?.scrollIntoView({
+                                  behavior: reduceMotion ? "auto" : "smooth",
+                                  block: "center",
+                                })
+                                focusCommentComposer()
                               }}
                             >
                               <Reply aria-hidden="true" data-icon="inline-start" />

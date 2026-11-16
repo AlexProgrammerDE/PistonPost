@@ -19,14 +19,18 @@ import { cn } from "@/lib/utils"
 
 const COPY_CONFIRMATION_DURATION_MS = 2_000
 
-async function copyToClipboard(value: string) {
+async function copyToClipboard(value: string, failureMessage = "The link could not be copied.") {
   try {
     await navigator.clipboard.writeText(value)
     return true
   } catch {
-    toast.error("The link could not be copied.")
+    toast.error(failureMessage)
     return false
   }
+}
+
+async function copyFromMenu(value: string, successMessage: string, failureMessage: string) {
+  if (await copyToClipboard(value, failureMessage)) toast.success(successMessage)
 }
 
 export function PostShareActions({
@@ -55,11 +59,27 @@ export function PostShareActions({
       <DropdownMenuContent align="start">
         <DropdownMenuGroup>
           <NativeShareMenuItem postId={postId} />
-          <DropdownMenuItem onClick={() => void copyToClipboard(shareLinks().postUrl)}>
+          <DropdownMenuItem
+            onClick={() =>
+              void copyFromMenu(
+                shareLinks().postUrl,
+                "Post link copied.",
+                "The link could not be copied.",
+              )
+            }
+          >
             <Link2 aria-hidden="true" />
             Copy post link
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => void copyToClipboard(shareLinks().imageUrls.join("\n"))}>
+          <DropdownMenuItem
+            onClick={() =>
+              void copyFromMenu(
+                shareLinks().imageUrls.join("\n"),
+                `${imageCount} image links copied.`,
+                "The image links could not be copied.",
+              )
+            }
+          >
             <Copy aria-hidden="true" />
             Copy image links
           </DropdownMenuItem>
@@ -158,11 +178,9 @@ function CopyPostLinkButton({
           Copy link
         </span>
       </Button>
-      {copied ? (
-        <span className="sr-only" role="status">
-          Link copied.
-        </span>
-      ) : null}
+      <span className="sr-only" role="status">
+        {copied ? "Link copied." : ""}
+      </span>
     </>
   )
 }

@@ -4,7 +4,7 @@ import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
 import { createServerOnlyFn } from "@tanstack/react-start"
 import { Schema, Effect, Option } from "effect"
-import { CheckCircle2, MailX } from "lucide-react"
+import { CheckCircle2, MailX, TriangleAlert } from "lucide-react"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
@@ -72,17 +72,25 @@ function EmailUnsubscribe() {
             <AlertTitle>{preferenceName} are off</AlertTitle>
             <AlertDescription>Your email preference has been saved.</AlertDescription>
           </Alert>
-        ) : unsubscribe.isError ? (
+        ) : !token || unsubscribe.isError ? (
           <Alert variant="destructive" className="mt-6">
-            <AlertTitle>This link could not be used</AlertTitle>
+            <TriangleAlert aria-hidden="true" />
+            <AlertTitle>
+              {token ? "This link could not be used" : "This link is incomplete"}
+            </AlertTitle>
             <AlertDescription>
-              It may be invalid or expired. Sign in to change the preference from account settings.
+              {token ? "It may be invalid or expired." : "Open the full link from the email again."}{" "}
+              You can also sign in and change it in{" "}
+              <Link to="/settings/$settingsView" params={{ settingsView: "notifications" }}>
+                notification settings
+              </Link>
+              .
             </AlertDescription>
           </Alert>
         ) : (
           <Button
             className="mt-6"
-            disabled={!token || unsubscribe.isPending}
+            disabled={unsubscribe.isPending}
             onClick={() => unsubscribe.mutate()}
           >
             {unsubscribe.isPending ? (

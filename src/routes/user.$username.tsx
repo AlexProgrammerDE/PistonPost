@@ -23,6 +23,18 @@ const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
 )
 
+const decodeUsernameParam = Schema.decodeUnknownOption(
+  Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32)),
+)
+
+/** Returns the lookup key for a profile URL segment, or null when no profile can match it. */
+function normalizeProfileUsername(value: string) {
+  return Option.match(decodeUsernameParam(value), {
+    onNone: () => null,
+    onSome: (username) => username.toLocaleLowerCase("en-US"),
+  })
+}
+
 const feedSearchSchema = Schema.Struct({
   cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))).pipe(
     Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
@@ -33,10 +45,8 @@ export const Route = createFileRoute("/user/$username")({
   validateSearch: Schema.toStandardSchemaV1(feedSearchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => ({ cursor: search.cursor }),
   loader: async ({ context, params, deps }) => {
-    const username = Schema.decodeSync(
-      Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(32)),
-      { errors: "all" },
-    )(params.username).toLocaleLowerCase("en-US")
+    const username = normalizeProfileUsername(params.username)
+    if (!username) throw notFound()
     const profilePromise = context.queryClient.ensureQueryData(profileQueryOptions(username))
     void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ username }, deps.cursor))
     const profile = await profilePromise
@@ -170,7 +180,7 @@ function ProfileFeed() {
             {profile.bio && (
               <p
                 dir="auto"
-                className="mt-4 max-w-xl overflow-hidden text-base leading-relaxed text-muted-foreground"
+                className="mt-4 max-w-xl overflow-hidden text-base leading-relaxed whitespace-pre-line text-muted-foreground"
               >
                 {profile.bio}
               </p>

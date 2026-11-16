@@ -155,7 +155,7 @@ export function MarkdownEditor({
   }
 
   function handleShortcut(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (!event.ctrlKey && !event.metaKey) return
+    if ((!event.ctrlKey && !event.metaKey) || event.altKey || event.shiftKey) return
     const command =
       event.key.toLocaleLowerCase("en-US") === "b"
         ? "bold"
@@ -197,7 +197,8 @@ export function MarkdownEditor({
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="write">
+      {/* Keep the textarea mounted so undo history, selection, and the label target survive Preview. */}
+      <TabsContent value="write" keepMounted>
         <InputGroup>
           <InputGroupTextarea
             {...props}

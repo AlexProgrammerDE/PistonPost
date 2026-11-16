@@ -13,7 +13,7 @@ test("activates without push permission and only caches the offline fallback", a
     .toBe(true)
   expect(await page.evaluate(() => Notification.permission)).not.toBe("granted")
   const paths = await page.evaluate(async () => {
-    const cache = await caches.open("pistonpost-offline-v1")
+    const cache = await caches.open("pistonpost-offline-v2")
     return (await cache.keys()).map((request) => new URL(request.url).pathname).toSorted()
   })
   expect(paths).toEqual(["/offline.css", "/offline.html", "/offline.js"])

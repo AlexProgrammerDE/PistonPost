@@ -2,11 +2,12 @@
 
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useLocation } from "@tanstack/react-router"
 import { UserCheck, UserPlus } from "lucide-react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
+import { ButtonLink } from "@/components/ButtonLink"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
@@ -23,6 +24,7 @@ export function FollowButton({
 }) {
   const session = useSession(authClient)
   const queryClient = useQueryClient()
+  const currentHref = useLocation({ select: (location) => location.href })
   const viewerId = session.data?.user.id ?? null
   const state = useQuery({
     ...followStateQueryOptions(viewerId ?? "anonymous", target),
@@ -41,20 +43,31 @@ export function FollowButton({
   })
 
   if (session.isPending || (viewerId && state.isPending)) {
-    return <Skeleton className={cn("h-9 w-20", className)} aria-label="Loading follow status" />
+    return (
+      <Skeleton
+        role="status"
+        className={cn("h-9 w-20", className)}
+        aria-label="Loading follow status"
+      />
+    )
   }
 
   if (!viewerId) {
     return (
-      <Button
+      <ButtonLink
         variant="outline"
         className={className}
-        nativeButton={false}
-        render={<Link to="/auth/$authView" params={{ authView: "sign-in" }} />}
+        render={
+          <Link
+            to="/auth/$authView"
+            params={{ authView: "sign-in" }}
+            search={{ redirectTo: currentHref }}
+          />
+        }
       >
         <UserPlus aria-hidden="true" data-icon="inline-start" />
         Follow
-      </Button>
+      </ButtonLink>
     )
   }
 
@@ -70,7 +83,7 @@ export function FollowButton({
       onClick={() => mutation.mutate(!following)}
     >
       {mutation.isPending ? (
-        <Spinner data-icon="inline-start" />
+        <Spinner aria-hidden="true" data-icon="inline-start" />
       ) : following ? (
         <UserCheck aria-hidden="true" data-icon="inline-start" />
       ) : (

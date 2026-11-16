@@ -36,6 +36,11 @@ export const Route = createFileRoute("/settings")({
   pendingComponent: SettingsLayoutSkeleton,
 })
 
+// The tab row scrolls sideways on phones, so bring the current tab into view.
+function keepTabVisible(node: HTMLAnchorElement | null) {
+  node?.scrollIntoView({ block: "nearest", inline: "nearest" })
+}
+
 function SettingsLayout() {
   const location = useLocation()
 
@@ -47,7 +52,10 @@ function SettingsLayout() {
           Manage your profile, sign-in details, notifications, and account security.
         </p>
       </header>
-      <nav className="mb-8 grid grid-cols-2 border-b sm:flex" aria-label="Account settings">
+      <nav
+        className="-mx-5 mb-8 flex overflow-x-auto border-b px-5 sm:mx-0 sm:px-0"
+        aria-label="Account settings"
+      >
         {settingsViews.map((view) => {
           const active = location.pathname.endsWith(`/${view.value}`)
           const ViewIcon =
@@ -66,7 +74,8 @@ function SettingsLayout() {
               to="/settings/$settingsView"
               params={{ settingsView: view.value }}
               aria-current={active ? "page" : undefined}
-              className="inline-flex items-center justify-center gap-1.5 border-b-2 border-transparent px-3 py-3 text-center text-sm font-medium text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground sm:shrink-0 sm:justify-start sm:text-left"
+              ref={active ? keepTabVisible : undefined}
+              className="inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-3 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground"
             >
               <ViewIcon aria-hidden="true" className="size-4" />
               {view.label}

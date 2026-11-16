@@ -2,10 +2,11 @@ import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query"
 import { Link, createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router"
 import { Schema, Effect, Option, Result } from "effect"
 import { Search } from "lucide-react"
-import { useDeferredValue, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { AdminSectionNav } from "@/components/AdminSectionNav"
+import { DateTime } from "@/components/DateTime"
 import { AdminTablePageSkeleton } from "@/components/LoadingStates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,7 @@ import { resolveContentReport } from "@/server/reports"
 import { cleanupAdminMedia, getAdminRows, moderateEntity, retryAdminJob } from "@/server/tables"
 
 const sectionSchema = Schema.Literals(adminTableSections.map((section) => section.value))
+const MIN_MODERATION_REASON_LENGTH = 3
 const MAX_MODERATION_REASON_LENGTH = 500
 const searchSchema = Schema.Struct({
   q: Schema.String.pipe(
@@ -71,6 +73,9 @@ const searchSchema = Schema.Struct({
     Schema.withDecodingDefaultType(Effect.sync(() => "" as const)),
   ),
 })
+/** Waits for a pause in typing so each keystroke does not run a server query. */
+const ADMIN_SEARCH_DELAY_MS = 300
+
 type AdminRow = Awaited<ReturnType<typeof getAdminRows>>["rows"][number]
 const column = createAppColumnHelper<AdminRow>()
 
@@ -132,6 +137,7 @@ function ConfirmationAction({
 }
 
 function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | "comments" }) {
+  const [open, setOpen] = useState(false)
   const [reason, setReason] = useState("")
   const router = useRouter()
   const action = row.status === "moderated" ? "restore" : "hide"
@@ -144,12 +150,14 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
           ? `${humanizeStatus(target)} hidden`
           : `${humanizeStatus(target)} restored`,
       )
+      setOpen(false)
+      setReason("")
       await router.invalidate()
     },
     onError: () => toast.error(`The ${target} could not be updated.`),
   })
   return (
-    <Credenza>
+    <Credenza open={open} onOpenChange={setOpen}>
       <CredenzaTrigger render={<Button variant="outline" size="sm" />}>
         {action === "hide" ? "Hide" : "Restore"}
       </CredenzaTrigger>
@@ -164,7 +172,13 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
               : `The ${target} will become visible again.`}
           </CredenzaDescription>
         </CredenzaHeader>
-        <CredenzaBody>
+        <CredenzaBody className="flex flex-col gap-4">
+          <figure className="flex flex-col gap-1 border-l-2 pl-3 text-sm">
+            <blockquote className="max-h-40 overflow-y-auto wrap-break-word whitespace-pre-wrap">
+              {row.primary}
+            </blockquote>
+            <figcaption className="text-muted-foreground">{row.secondary}</figcaption>
+          </figure>
           <Field>
             <FieldLabel htmlFor={`moderation-reason-${row.id}`}>Reason</FieldLabel>
             <InputGroup>
@@ -184,14 +198,17 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
                 </InputGroupText>
               </InputGroupAddon>
             </InputGroup>
-            <FieldDescription>This reason is saved in the audit log.</FieldDescription>
+            <FieldDescription>
+              Use at least {MIN_MODERATION_REASON_LENGTH} characters. This reason is saved in the
+              audit log.
+            </FieldDescription>
           </Field>
         </CredenzaBody>
         <CredenzaFooter>
           <CredenzaClose render={<Button variant="outline" />}>Cancel</CredenzaClose>
           <Button
             variant={action === "hide" ? "destructive" : "default"}
-            disabled={reason.trim().length < 3 || mutation.isPending}
+            disabled={reason.trim().length < MIN_MODERATION_REASON_LENGTH || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
             {mutation.isPending ? (
@@ -360,23 +377,50 @@ function AdminTableView({
   const trail = parseCursorTrail(search.trail)
   const previousPage = popCursorTrail(trail)
   const [query, setQuery] = useState(search.q)
-  const deferredQuery = useDeferredValue(query)
+  // The last search this page sent to the URL. When the URL search changes to anything else, the
+  // change came from elsewhere, such as a section tab that clears it, so the box follows it.
+  const [submittedQuery, setSubmittedQuery] = useState(search.q)
+  const [seenQuery, setSeenQuery] = useState(search.q)
+  if (search.q !== seenQuery) {
+    setSeenQuery(search.q)
+    if (search.q !== submittedQuery) {
+      setSubmittedQuery(search.q)
+      setQuery(search.q)
+    }
+  }
 
   useEffect(() => {
-    if (deferredQuery === search.q) return
-    void navigate({
-      to: "/admin/$section",
-      params: { section },
-      search: { ...search, q: deferredQuery, cursor: "", trail: "" },
-      replace: true,
-    })
-  }, [deferredQuery, navigate, search, section])
+    if (query === search.q) return undefined
+    const timeout = setTimeout(() => {
+      setSubmittedQuery(query)
+      void navigate({
+        to: "/admin/$section",
+        params: { section },
+        search: { ...search, q: query, cursor: "", trail: "" },
+        replace: true,
+      })
+    }, ADMIN_SEARCH_DELAY_MS)
+    return () => clearTimeout(timeout)
+  }, [query, navigate, search, section])
 
   const columns = column.columns([
     column.accessor("primary", {
       header: details.primaryLabel,
       enableSorting: false,
-      cell: ({ getValue }) => <span className="block max-w-96 truncate">{getValue()}</span>,
+      cell: ({ getValue, row }) => {
+        const content = (
+          <span className="line-clamp-2 max-w-96 min-w-48 wrap-break-word whitespace-normal">
+            {getValue()}
+          </span>
+        )
+        return row.original.href ? (
+          <Link className="underline-offset-4 hover:underline" to={row.original.href}>
+            {content}
+          </Link>
+        ) : (
+          content
+        )
+      },
     }),
     column.accessor("secondary", {
       header: details.secondaryLabel,
@@ -404,11 +448,11 @@ function AdminTableView({
     }),
     column.accessor("createdAt", {
       header: "Created",
-      cell: ({ getValue }) => getValue().toLocaleDateString("en"),
+      cell: ({ getValue }) => <DateTime value={getValue()} presentation="absolute" />,
     }),
     column.display({
       id: "actions",
-      header: "",
+      header: () => <span className="sr-only">Actions</span>,
       enableHiding: false,
       enableSorting: false,
       cell: ({ row }) => <RowAction row={row.original} section={section} />,
@@ -418,7 +462,10 @@ function AdminTableView({
   return (
     <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
       <header className="mb-6 border-b pb-6">
-        <h1 className="font-heading text-3xl font-bold tracking-tight">{details.label}</h1>
+        <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
+          Administration
+        </Link>
+        <h1 className="mt-3 font-heading text-3xl font-bold tracking-tight">{details.label}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{details.description}</p>
       </header>
       <AdminSectionNav className="mb-6" current={section} />

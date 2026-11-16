@@ -1,12 +1,13 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { LogIn, Newspaper, UsersRound } from "lucide-react"
+import { LogIn, Newspaper, TriangleAlert, UsersRound } from "lucide-react"
 import { Suspense } from "react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { PostTimeline } from "@/components/PostTimeline"
-import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Empty,
   EmptyContent,
@@ -57,13 +58,10 @@ function FollowingFeed() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button
-              nativeButton={false}
-              render={<Link to="/auth/$authView" params={{ authView: "sign-in" }} />}
-            >
+            <ButtonLink render={<Link to="/auth/$authView" params={{ authView: "sign-in" }} />}>
               <LogIn aria-hidden="true" data-icon="inline-start" />
               Sign in
-            </Button>
+            </ButtonLink>
           </EmptyContent>
         </Empty>
       )}
@@ -88,10 +86,10 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+          <ButtonLink variant="outline" render={<Link to="/" />}>
             <Newspaper aria-hidden="true" data-icon="inline-start" />
             Browse the timeline
-          </Button>
+          </ButtonLink>
         </EmptyContent>
       </Empty>
     )
@@ -99,6 +97,15 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
 
   return (
     <>
+      {feed.fetchStatus === "paused" && (
+        <Alert className="mb-8">
+          <TriangleAlert aria-hidden="true" />
+          <AlertTitle>You are offline</AlertTitle>
+          <AlertDescription>
+            Showing posts already loaded in this tab. Reconnect to load more.
+          </AlertDescription>
+        </Alert>
+      )}
       <PostTimeline posts={posts} surface="following" />
       <InfiniteScrollTrigger
         key={`following:${viewerId}`}

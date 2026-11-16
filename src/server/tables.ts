@@ -112,6 +112,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                     id: schema.posts.id,
                     primary: schema.posts.title,
                     secondary: schema.user.name,
+                    href: sql<string | null>`'/post/' || ${schema.posts.id}`,
                     status: schema.posts.status,
                     createdAt: schema.posts.createdAt,
                   })
@@ -140,6 +141,9 @@ export const getAdminRows = createServerFn({ method: "GET" })
                     id: schema.comments.id,
                     primary: schema.comments.content,
                     secondary: schema.user.name,
+                    href: sql<
+                      string | null
+                    >`'/post/' || ${schema.comments.postId} || '#comment-' || ${schema.comments.id}`,
                     status: schema.comments.status,
                     createdAt: schema.comments.createdAt,
                   })
@@ -166,6 +170,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                 database
                   .select({
                     id: schema.contentReports.id,
+                    href: sql<string | null>`null`,
                     primary: sql<string>`${schema.contentReports.reason} || case when ${schema.contentReports.details} is null then '' else ': ' || ${schema.contentReports.details} end`,
                     secondary: sql<string>`case
                 when ${schema.contentReports.targetType} = 'post'
@@ -208,6 +213,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                 database
                   .select({
                     id: schema.mediaAssets.id,
+                    href: sql<string | null>`null`,
                     primary: schema.mediaAssets.originalFilename,
                     secondary: schema.mediaAssets.kind,
                     status: schema.mediaAssets.status,
@@ -235,6 +241,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                 database
                   .select({
                     id: schema.auditEvents.id,
+                    href: sql<string | null>`null`,
                     primary: schema.auditEvents.action,
                     secondary: schema.auditEvents.entityType,
                     status: schema.auditEvents.entityId,
@@ -262,6 +269,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                 database
                   .select({
                     id: schema.outbox.id,
+                    href: sql<string | null>`null`,
                     primary: schema.outbox.kind,
                     secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
                     status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,

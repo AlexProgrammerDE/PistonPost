@@ -1,9 +1,18 @@
 import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
-import { SearchX } from "lucide-react"
+import { Link } from "@tanstack/react-router"
+import { History, Newspaper, SearchX } from "lucide-react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { PostTimeline } from "@/components/PostTimeline"
-import { Empty, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import {
+  Empty,
+  EmptyContent,
+  EmptyDescription,
+  EmptyHeader,
+  EmptyMedia,
+  EmptyTitle,
+} from "@/components/ui/empty"
 import { feedPageHref } from "@/lib/feed-pagination"
 import { feedQueryOptions, type FeedFilters } from "@/lib/queries/posts"
 
@@ -22,6 +31,26 @@ export function FilteredFeed({
   const posts = feed.data.pages.flatMap((page) => page.posts)
   const feedIdentity = filters.tag ? `tag:${filters.tag}` : `user:${filters.username}`
 
+  if (posts.length === 0 && initialCursor) {
+    return (
+      <Empty className="min-h-64">
+        <EmptyHeader>
+          <EmptyMedia variant="icon">
+            <History aria-hidden="true" />
+          </EmptyMedia>
+          <EmptyTitle>No older posts here</EmptyTitle>
+          <EmptyDescription>This link may be out of date.</EmptyDescription>
+        </EmptyHeader>
+        <EmptyContent>
+          <ButtonLink render={<Link to={pagePath} />}>
+            <Newspaper aria-hidden="true" data-icon="inline-start" />
+            Latest posts
+          </ButtonLink>
+        </EmptyContent>
+      </Empty>
+    )
+  }
+
   if (posts.length === 0) {
     return (
       <Empty className="min-h-64">
@@ -29,7 +58,7 @@ export function FilteredFeed({
           <EmptyMedia variant="icon">
             <SearchX aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle className="overflow-hidden">{emptyMessage}</EmptyTitle>
+          <EmptyTitle className="wrap-anywhere">{emptyMessage}</EmptyTitle>
         </EmptyHeader>
       </Empty>
     )

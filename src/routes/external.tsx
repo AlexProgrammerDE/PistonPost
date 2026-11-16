@@ -2,8 +2,8 @@ import { Link, createFileRoute } from "@tanstack/react-router"
 import { Schema, Effect, Option } from "effect"
 import { ArrowLeft, ExternalLink, TriangleAlert } from "lucide-react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
 import {
   MAX_USER_GENERATED_URL_LENGTH,
@@ -42,7 +42,9 @@ function ExternalLinkWarning() {
       {destination ? (
         <Alert className="w-full max-w-lg">
           <ExternalLink aria-hidden="true" />
-          <AlertTitle>Open an external link?</AlertTitle>
+          <AlertTitle role="heading" aria-level={1}>
+            Open an external link?
+          </AlertTitle>
           <AlertDescription className="grid gap-4">
             <p>
               This link goes to {externalLinkDestination(destination)}. External sites have their
@@ -51,43 +53,39 @@ function ExternalLinkWarning() {
             <code className="border-y py-3 text-xs break-all text-muted-foreground">
               {destination}
             </code>
-            <ButtonGroup aria-label="External link actions" className="flex-wrap">
-              <Button
-                nativeButton={false}
-                render={
-                  <a
-                    href={destination}
-                    rel={userGeneratedLinkRel(true)}
-                    aria-label="Open external link"
-                  />
-                }
-              >
-                Open link
-                <ExternalLink aria-hidden="true" data-icon="inline-end" />
-              </Button>
-              <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
-                <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-                Back to PistonPost
-              </Button>
-            </ButtonGroup>
           </AlertDescription>
+          <ButtonGroup aria-label="External link actions" className="col-start-2 mt-4 flex-wrap">
+            <ButtonLink
+              render={
+                <a
+                  href={destination}
+                  rel={userGeneratedLinkRel(true)}
+                  aria-label="Open external link"
+                />
+              }
+            >
+              Open link
+              <ExternalLink aria-hidden="true" data-icon="inline-end" />
+            </ButtonLink>
+            <ButtonLink variant="outline" render={<Link to="/" />}>
+              <ArrowLeft aria-hidden="true" data-icon="inline-start" />
+              Back to PistonPost
+            </ButtonLink>
+          </ButtonGroup>
         </Alert>
       ) : (
         <Alert variant="destructive" className="w-full max-w-lg">
           <TriangleAlert aria-hidden="true" />
-          <AlertTitle>Link unavailable</AlertTitle>
-          <AlertDescription className="grid gap-4">
-            <p>This destination is missing or uses a link type PistonPost does not allow.</p>
-            <Button
-              className="w-fit"
-              variant="outline"
-              nativeButton={false}
-              render={<Link to="/" />}
-            >
-              <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-              Back to PistonPost
-            </Button>
+          <AlertTitle role="heading" aria-level={1}>
+            Link unavailable
+          </AlertTitle>
+          <AlertDescription>
+            This link is missing or uses a link type PistonPost does not allow.
           </AlertDescription>
+          <ButtonLink className="col-start-2 mt-4 w-fit" variant="outline" render={<Link to="/" />}>
+            <ArrowLeft aria-hidden="true" data-icon="inline-start" />
+            Back to PistonPost
+          </ButtonLink>
         </Alert>
       )}
     </main>

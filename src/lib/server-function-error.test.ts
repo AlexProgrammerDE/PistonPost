@@ -5,7 +5,9 @@ import { Schema, Effect } from "effect"
 import {
   parseServerFunctionError,
   serverFunctionErrorStatus,
+  ServerFunctionClientError,
   serverFunctionValidator,
+  shouldRetryQuery,
   toServerFunctionClientError,
 } from "./server-function-error"
 
@@ -50,5 +52,35 @@ describe("server function error contract", () => {
 
     expect(validate({})).toEqual({ limit: 12 })
     expect(() => validate({ limit: 0 })).toThrow(Schema.SchemaError)
+  })
+})
+
+describe("query retry policy", () => {
+  test("does not retry declared client errors", () => {
+    const invalidCursor = new ServerFunctionClientError({
+      code: "INVALID_INPUT",
+      message: "The pagination cursor is invalid.",
+      issues: [],
+    })
+    const rateLimited = new ServerFunctionClientError({
+      code: "RATE_LIMITED",
+      message: "Wait before trying again.",
+      retryAfterSeconds: 30,
+    })
+
+    expect(shouldRetryQuery(0, invalidCursor)).toBe(false)
+    expect(shouldRetryQuery(0, rateLimited)).toBe(false)
+  })
+
+  test("retries internal and network errors up to three times", () => {
+    const internal = new ServerFunctionClientError({
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Try again.",
+      requestId: crypto.randomUUID(),
+    })
+
+    expect(shouldRetryQuery(0, internal)).toBe(true)
+    expect(shouldRetryQuery(2, new TypeError("Failed to fetch"))).toBe(true)
+    expect(shouldRetryQuery(3, new TypeError("Failed to fetch"))).toBe(false)
   })
 })

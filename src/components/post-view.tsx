@@ -13,6 +13,7 @@ import {
 } from "lucide-react"
 import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { DateTime } from "@/components/DateTime"
 import { FeedPostActions } from "@/components/feed-post-actions"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
@@ -132,6 +133,7 @@ function GalleryLayoutToggle({
           : selectedImageIndex === undefined
             ? { layout: value }
             : { image: selectedImageIndex, layout: value },
+      resetScroll: false,
     })
   }
 
@@ -384,6 +386,7 @@ function DetailPostImageMedia({
   readonly selectedImageIndex: number | undefined
   readonly galleryLayout: GalleryLayout
 }) {
+  const navigate = useNavigate()
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   function openLightbox(index: number) {
@@ -391,6 +394,14 @@ function DetailPostImageMedia({
   }
 
   function closeLightbox() {
+    // Keep the image browser on the image the viewer last looked at in the lightbox.
+    if (
+      galleryLayout === "browser" &&
+      lightboxIndex !== null &&
+      lightboxIndex !== (selectedImageIndex ?? 0)
+    ) {
+      void navigate(browserImageNavigation(post.id, lightboxIndex))
+    }
     setLightboxIndex(null)
   }
 
@@ -486,6 +497,18 @@ function DetailPostImageMedia({
   )
 }
 
+// Stepping through images replaces the history entry and keeps the scroll position, so
+// Back leaves the post and the controls stay where the viewer clicked them.
+function browserImageNavigation(postId: string, index: number) {
+  return {
+    to: "/post/$postId",
+    params: { postId },
+    search: { image: index, layout: "browser" },
+    replace: true,
+    resetScroll: false,
+  } as const
+}
+
 function ImageBrowser({
   post,
   selectedImageIndex,
@@ -497,6 +520,12 @@ function ImageBrowser({
 }) {
   const navigate = useNavigate()
   const selectedThumbnailRef = useRef<HTMLAnchorElement | null>(null)
+  const previousButtonRef = useRef<HTMLButtonElement | null>(null)
+  const nextButtonRef = useRef<HTMLButtonElement | null>(null)
+  const focusAfterStepRef = useRef<{
+    readonly index: number
+    readonly button: HTMLButtonElement | null
+  } | null>(null)
   const selectedIndex = Math.min(Math.max(selectedImageIndex, 0), post.media.length - 1)
   const selectedImage = post.media[selectedIndex] ?? post.media[0]
 
@@ -515,26 +544,36 @@ function ImageBrowser({
     })
   }, [selectedIndex])
 
+  // The step button disables itself at either end of the collection. Move focus to the
+  // opposite button so keyboard users do not lose their place.
+  useEffect(() => {
+    const target = focusAfterStepRef.current
+    if (target?.index !== selectedIndex) return
+    focusAfterStepRef.current = null
+    target.button?.focus()
+  }, [selectedIndex])
+
   if (!selectedImage) return null
 
-  function selectImage(index: number) {
-    void navigate({
-      to: "/post/$postId",
-      params: { postId: post.id },
-      search: { image: index, layout: "browser" },
-    })
+  function stepImage(index: number) {
+    if (index === 0) focusAfterStepRef.current = { index, button: nextButtonRef.current }
+    if (index === post.media.length - 1) {
+      focusAfterStepRef.current = { index, button: previousButtonRef.current }
+    }
+    void navigate(browserImageNavigation(post.id, index))
   }
 
   return (
-    <div className="grid gap-3" aria-label={`${post.title} image collection`}>
+    <div role="group" className="grid gap-3" aria-label={`${post.title} image collection`}>
       <ButtonGroup className="w-full" aria-label="Browse images">
         <Button
+          ref={previousButtonRef}
           type="button"
           variant="outline"
           size="sm"
           className="flex-1 sm:flex-none"
           disabled={selectedIndex === 0}
-          onClick={() => selectImage(selectedIndex - 1)}
+          onClick={() => stepImage(selectedIndex - 1)}
         >
           <ArrowLeft aria-hidden="true" data-icon="inline-start" />
           Previous
@@ -543,12 +582,13 @@ function ImageBrowser({
           Image {selectedIndex + 1} of {post.media.length}
         </ButtonGroupText>
         <Button
+          ref={nextButtonRef}
           type="button"
           variant="outline"
           size="sm"
           className="flex-1 sm:flex-none"
           disabled={selectedIndex === post.media.length - 1}
-          onClick={() => selectImage(selectedIndex + 1)}
+          onClick={() => stepImage(selectedIndex + 1)}
         >
           Next
           <ArrowRight aria-hidden="true" data-icon="inline-end" />
@@ -582,9 +622,7 @@ function ImageBrowser({
             key={image.id}
             ref={index === selectedIndex ? selectedThumbnailRef : undefined}
             data-image-index={index}
-            to="/post/$postId"
-            params={{ postId: post.id }}
-            search={{ image: index, layout: "browser" }}
+            {...browserImageNavigation(post.id, index)}
             aria-label={`Show image ${String(index + 1)} of ${String(post.media.length)}`}
             aria-current={index === selectedIndex ? "true" : undefined}
             className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
@@ -749,15 +787,14 @@ export function PostView({
           </Badge>
         ) : null}
         {canEdit ? (
-          <Button
-            nativeButton={false}
+          <ButtonLink
             variant="outline"
             size="sm"
             render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
           >
             <Pencil aria-hidden="true" data-icon="inline-start" />
             Edit
-          </Button>
+          </ButtonLink>
         ) : null}
       </header>
 

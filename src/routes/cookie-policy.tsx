@@ -42,87 +42,89 @@ function CookiePolicyPage() {
           cookies add the <code>__Secure-</code> prefix. A large encrypted value can be split across
           numbered cookie chunks.
         </p>
-        <table>
-          <thead>
-            <tr>
-              <th>Cookie name or pattern</th>
-              <th>Purpose</th>
-              <th>Typical lifetime</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <code>pistonpost.session_token</code> and <code>_multi-*</code> variants
-              </td>
-              <td>Keeps the current account, and any additional saved sessions, signed in.</td>
-              <td>Up to 7 days, or the browser session when remember me is off.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost.session_data</code> and numbered chunks
-              </td>
-              <td>Holds a short-lived encrypted session cache.</td>
-              <td>5 minutes; stored as a session cookie when remember me is off.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost.dont_remember</code>
-              </td>
-              <td>Tells the authentication system to use session-only sign-in cookies.</td>
-              <td>Browser session.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost.two_factor</code>
-              </td>
-              <td>Completes a two-factor sign-in.</td>
-              <td>10 minutes.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost.trust_device</code>
-              </td>
-              <td>Remembers a device after you choose to trust it during two-factor sign-in.</td>
-              <td>30 days.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost.better-auth-passkey</code>
-              </td>
-              <td>Stores a temporary passkey challenge.</td>
-              <td>Browser session and cleared after the passkey flow.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost.admin_session</code>
-              </td>
-              <td>Lets an authorized administrator return from an impersonation session.</td>
-              <td>Up to 7 days and cleared after returning from impersonation.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>better-auth.last_used_login_method</code>
-              </td>
-              <td>Remembers the sign-in method last used in this browser.</td>
-              <td>30 days.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>pistonpost_cookie_consent</code>
-              </td>
-              <td>Records whether you allowed optional PostHog analytics.</td>
-              <td>365 days after acceptance or 180 days after rejection.</td>
-            </tr>
-            <tr>
-              <td>
-                <code>sidebar_state</code>
-              </td>
-              <td>Remembers whether you collapsed the navigation sidebar.</td>
-              <td>7 days.</td>
-            </tr>
-          </tbody>
-        </table>
+        <div className="typeset-scroll" role="region" aria-label="Cookies PistonPost can set">
+          <table className="w-full max-w-none">
+            <thead>
+              <tr>
+                <th>Cookie name or pattern</th>
+                <th>Purpose</th>
+                <th>Typical lifetime</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <code>pistonpost.session_token</code> and <code>_multi-*</code> variants
+                </td>
+                <td>Keeps the current account, and any additional saved sessions, signed in.</td>
+                <td>Up to 7 days, or the browser session when remember me is off.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost.session_data</code> and numbered chunks
+                </td>
+                <td>Holds a short-lived encrypted session cache.</td>
+                <td>5 minutes; stored as a session cookie when remember me is off.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost.dont_remember</code>
+                </td>
+                <td>Tells the authentication system to use session-only sign-in cookies.</td>
+                <td>Browser session.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost.two_factor</code>
+                </td>
+                <td>Completes a two-factor sign-in.</td>
+                <td>10 minutes.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost.trust_device</code>
+                </td>
+                <td>Remembers a device after you choose to trust it during two-factor sign-in.</td>
+                <td>30 days.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost.better-auth-passkey</code>
+                </td>
+                <td>Stores a temporary passkey challenge.</td>
+                <td>Browser session and cleared after the passkey flow.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost.admin_session</code>
+                </td>
+                <td>Lets an authorized administrator return from an impersonation session.</td>
+                <td>Up to 7 days and cleared after returning from impersonation.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>better-auth.last_used_login_method</code>
+                </td>
+                <td>Remembers the sign-in method last used in this browser.</td>
+                <td>30 days.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>pistonpost_cookie_consent</code>
+                </td>
+                <td>Records whether you allowed optional PostHog analytics.</td>
+                <td>365 days after acceptance or 180 days after rejection.</td>
+              </tr>
+              <tr>
+                <td>
+                  <code>sidebar_state</code>
+                </td>
+                <td>Remembers whether you collapsed the navigation sidebar.</td>
+                <td>7 days.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
 
         <h2>Local storage</h2>
         <p>

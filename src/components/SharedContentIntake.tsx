@@ -80,9 +80,11 @@ export function SharedContentIntake({
         ) : state.status === "ready" ? (
           <>
             <p>
-              {state.share.content.files.length > 0
-                ? `${state.share.content.files.length} shared images. `
-                : "Shared text or link. "}
+              {state.share.content.files.length === 1
+                ? "1 shared image. "
+                : state.share.content.files.length > 1
+                  ? `${state.share.content.files.length} shared images. `
+                  : "Shared text or link. "}
               Adding this replaces the current composer contents. Nothing is posted until you choose
               Post it.
             </p>
@@ -105,7 +107,7 @@ export function SharedContentIntake({
             </div>
           </>
         ) : (
-          <p>Your post form is ready below.</p>
+          <p>Loading what you shared…</p>
         )}
       </AlertDescription>
     </Alert>

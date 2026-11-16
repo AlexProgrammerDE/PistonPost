@@ -2,13 +2,14 @@
 
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { Flag, TriangleAlert } from "lucide-react"
+import { useLocation, useNavigate } from "@tanstack/react-router"
+import { Flag, RotateCw, TriangleAlert } from "lucide-react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
 import { TurnstileChallenge, type TurnstileChallengeHandle } from "@/components/TurnstileChallenge"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import {
   Credenza,
@@ -59,6 +60,8 @@ export function ContentReportDialog({
   readonly size?: "xs" | "sm"
 }) {
   const session = useSession(authClient)
+  const navigate = useNavigate()
+  const currentHref = useLocation({ select: (location) => location.href })
   const [open, setOpen] = useState(false)
   const [reason, setReason] = useState<ContentReportReason>("spam")
   const [details, setDetails] = useState("")
@@ -94,7 +97,17 @@ export function ContentReportDialog({
       open={open}
       onOpenChange={(nextOpen) => {
         if (nextOpen && !session.data?.user) {
-          toast.error("Sign in to report content.")
+          toast.error("Sign in to report content.", {
+            action: {
+              label: "Sign in",
+              onClick: () =>
+                void navigate({
+                  to: "/auth/$authView",
+                  params: { authView: "sign-in" },
+                  search: { redirectTo: currentHref },
+                }),
+            },
+          })
           return
         }
         setOpen(nextOpen)
@@ -169,7 +182,18 @@ export function ContentReportDialog({
             <Alert variant="destructive">
               <TriangleAlert aria-hidden="true" />
               <AlertTitle>Verification unavailable</AlertTitle>
-              <AlertDescription>Close this window and try again.</AlertDescription>
+              <AlertDescription>The report form could not load its spam check.</AlertDescription>
+              <AlertAction>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={runtimeConfig.isFetching}
+                  onClick={() => void runtimeConfig.refetch()}
+                >
+                  <RotateCw aria-hidden="true" data-icon="inline-start" />
+                  Try again
+                </Button>
+              </AlertAction>
             </Alert>
           ) : null}
           {runtimeConfig.data ? (
@@ -193,7 +217,7 @@ export function ContentReportDialog({
           >
             {mutation.isPending || runtimeConfig.isPending ? (
               <>
-                <Spinner data-icon="inline-start" />
+                <Spinner aria-hidden="true" data-icon="inline-start" />
                 {mutation.isPending ? "Sending…" : "Preparing…"}
               </>
             ) : (

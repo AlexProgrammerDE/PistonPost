@@ -75,3 +75,14 @@ export function serverFunctionValidator<Schema extends Schema.ConstraintDecoder<
   return (input: Schema["Encoded"]): Schema["Type"] =>
     Schema.decodeUnknownSync(schema, { errors: "all" })(input)
 }
+
+const MAX_QUERY_RETRIES = 3
+
+/**
+ * Retries a failed query only when another attempt could succeed. Declared client errors, such as an
+ * invalid cursor, fail the same way every time, and rate limits should not be retried right away.
+ */
+export function shouldRetryQuery(failureCount: number, error: unknown) {
+  if (error instanceof ServerFunctionClientError && error.code !== "INTERNAL_ERROR") return false
+  return failureCount < MAX_QUERY_RETRIES
+}

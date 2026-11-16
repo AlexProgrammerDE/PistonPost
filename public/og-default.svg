@@ -4,8 +4,7 @@
   <rect width="1200" height="630" fill="#fff9ed"/>
   <rect x="72" y="76" width="90" height="90" rx="14" fill="#dc3850"/>
   <path fill="#fff9ed" d="M95 96h23.2c13.4 0 21.8 7.9 21.8 20 0 12.3-8.7 20.2-21.8 20.2h-8.4V150H95V96Zm14.8 12.7v14.8h7.3c5.3 0 8.2-2.5 8.2-7.5 0-4.8-2.9-7.3-8.2-7.3h-7.3Z"/>
-  <text x="72" y="340" fill="#2e2220" font-family="Outfit, sans-serif" font-size="100" font-weight="800" letter-spacing="-5">piston</text>
-  <text x="344" y="340" fill="#dc3850" font-family="Outfit, sans-serif" font-size="100" font-weight="800" letter-spacing="-5">post</text>
+  <text x="72" y="340" fill="#2e2220" font-family="Outfit, sans-serif" font-size="100" font-weight="800" letter-spacing="-5">piston<tspan fill="#dc3850">post</tspan></text>
   <g transform="translate(72 438)">
     <rect width="88" height="88" fill="#ffe36e"/>
     <rect x="104" width="150" height="88" fill="#f5a0ad"/>

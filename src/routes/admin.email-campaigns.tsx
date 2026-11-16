@@ -5,6 +5,7 @@ import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Eye, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 
+import { DateTime } from "@/components/DateTime"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -227,9 +228,13 @@ function EmailCampaigns() {
                   </ItemTitle>
                   <ItemDescription>{campaign.message}</ItemDescription>
                   <p className="text-xs text-muted-foreground tabular-nums">
-                    {campaign.status === "draft"
-                      ? `Saved ${campaign.createdAt.toLocaleDateString("en")}`
-                      : `${campaign.sent} sent, ${campaign.skipped} skipped, ${campaign.queued} queued`}
+                    {campaign.status === "draft" ? (
+                      <>
+                        Saved <DateTime value={campaign.createdAt} presentation="absolute" />
+                      </>
+                    ) : (
+                      `${campaign.sent} sent, ${campaign.skipped} skipped, ${campaign.queued} queued`
+                    )}
                   </p>
                 </ItemContent>
                 {campaign.status === "draft" ? (

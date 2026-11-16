@@ -5,6 +5,7 @@ import { createContext, useContext, useState, type ComponentProps, type ReactNod
 import { Button } from "@/components/ui/button"
 import {
   Credenza,
+  CredenzaBody,
   CredenzaClose,
   CredenzaContent,
   CredenzaDescription,
@@ -68,6 +69,13 @@ export function UserGeneratedLinkProvider({ children }: { readonly children: Rea
               have their own privacy and security policies. The link will open in a new tab.
             </CredenzaDescription>
           </CredenzaHeader>
+          {pendingLink ? (
+            <CredenzaBody>
+              <p className="rounded-md bg-muted px-3 py-2 font-mono text-xs break-all text-muted-foreground">
+                {pendingLink}
+              </p>
+            </CredenzaBody>
+          ) : null}
           <CredenzaFooter>
             <CredenzaClose render={<Button variant="outline" />}>Stay here</CredenzaClose>
             <Button onClick={openPendingLink}>Open link</Button>

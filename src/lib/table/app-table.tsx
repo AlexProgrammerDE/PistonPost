@@ -25,6 +25,7 @@ import {
 import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Columns3, SearchX } from "lucide-react"
 import type { ReactElement } from "react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -280,8 +281,7 @@ export function DataTable<TData extends RowData>({
                 <PaginationContent>
                   <PaginationItem>
                     {cursorPagination?.previousLink ? (
-                      <Button
-                        nativeButton={false}
+                      <ButtonLink
                         render={cursorPagination.previousLink}
                         variant="outline"
                         size="sm"
@@ -289,7 +289,7 @@ export function DataTable<TData extends RowData>({
                       >
                         <ChevronLeft aria-hidden="true" data-icon="inline-start" />
                         Previous
-                      </Button>
+                      </ButtonLink>
                     ) : (
                       <Button
                         variant="outline"
@@ -304,8 +304,7 @@ export function DataTable<TData extends RowData>({
                   </PaginationItem>
                   <PaginationItem>
                     {cursorPagination?.nextLink ? (
-                      <Button
-                        nativeButton={false}
+                      <ButtonLink
                         render={cursorPagination.nextLink}
                         variant="outline"
                         size="sm"
@@ -313,7 +312,7 @@ export function DataTable<TData extends RowData>({
                       >
                         Next
                         <ChevronRight aria-hidden="true" data-icon="inline-end" />
-                      </Button>
+                      </ButtonLink>
                     ) : (
                       <Button
                         variant="outline"

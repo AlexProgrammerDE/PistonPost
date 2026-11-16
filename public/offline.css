@@ -48,12 +48,15 @@ button {
   cursor: pointer;
 }
 :focus-visible {
-  outline: 2px solid currentColor;
+  outline: 2px solid #ab2036;
   outline-offset: 4px;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     color: #fff9ed;
     background: #241b1b;
+  }
+  :focus-visible {
+    outline-color: #ff6b79;
   }
 }

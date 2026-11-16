@@ -186,6 +186,43 @@ describe("transactional email", () => {
     expect(rendered.text).toContain("email/unsubscribe?token=")
   })
 
+  it("matches the support footer to why the email was sent", async () => {
+    const comment = await renderEmail({
+      template: "comment-notification",
+      subject: "Ann commented on Cats",
+      preview: "A new comment was posted on Cats.",
+      heading: "New comment on your post",
+      message: "Ann left a comment on Cats.",
+    })
+    const emailChange = await renderEmail(
+      securityNotificationMessage({
+        template: "email-changed",
+        email: "recipient@example.com",
+        secureAccountUrl: "https://post.pistonmaster.net/settings/security",
+      }),
+    )
+
+    for (const rendered of [comment, emailChange]) {
+      expect(rendered.text).not.toContain("you can ignore it")
+    }
+    expect(comment.text).toContain("Questions? Contact PistonPost support")
+    expect(emailChange.text).toContain("If you did not ask for this change, contact PistonPost")
+  })
+
+  it("supports dark mode in notification email", async () => {
+    const rendered = await renderEmail({
+      template: "reply-notification",
+      subject: "Ann replied to your comment",
+      preview: "A new reply was posted on Cats.",
+      heading: "New reply to your comment",
+      message: "Ann replied to your comment on Cats.",
+    })
+
+    expect(rendered.html).toContain('name="color-scheme"')
+    expect(rendered.html).toContain("prefers-color-scheme: dark")
+    expect(rendered.text).not.toContain("prefers-color-scheme")
+  })
+
   it("adds a List-Unsubscribe header to product delivery", async () => {
     const captured: Array<Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0]> =
       []

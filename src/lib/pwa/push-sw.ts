@@ -7,7 +7,7 @@ import { MAX_SHARED_BYTES, sharedContentSchema } from "./share-intake"
 
 declare const self: ServiceWorkerGlobalScope
 
-const OFFLINE_CACHE = "pistonpost-offline-v1"
+const OFFLINE_CACHE = "pistonpost-offline-v2"
 const OFFLINE_ASSETS = ["/offline.html", "/offline.css", "/offline.js"]
 
 self.addEventListener("install", (event) => {

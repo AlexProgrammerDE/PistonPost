@@ -37,7 +37,7 @@ test.describe("authentication", () => {
       accountAccess.getByRole("textbox", { name: "Password", exact: true }),
     ).toBeVisible()
     await expect(
-      accountAccess.getByRole("link", { name: "Continue with Email Code" }),
+      accountAccess.getByRole("link", { name: "Continue with email code" }),
     ).toBeVisible()
     await expect(accountAccess.getByRole("link", { name: "Continue with Magic Link" })).toHaveCount(
       0,
@@ -61,7 +61,7 @@ test.describe("authentication", () => {
     await expect(accountAccess.getByLabel("Password", { exact: true })).toBeVisible()
     await expect(accountAccess.getByLabel(/confirm password/i)).toBeVisible()
     await expect(accountAccess.getByRole("group", { name: "CAPTCHA verification" })).toBeVisible()
-    await expect(accountAccess.getByRole("button", { name: "Sign Up" })).toBeVisible()
+    await expect(accountAccess.getByRole("button", { name: "Sign up" })).toBeVisible()
   })
 
   test("keeps auth responses out of public caches", async ({ request }) => {

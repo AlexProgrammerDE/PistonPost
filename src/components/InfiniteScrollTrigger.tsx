@@ -3,6 +3,7 @@
 import { History, RotateCcw, WifiOff } from "lucide-react"
 import { useEffect, useRef } from "react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { Button } from "@/components/ui/button"
 import { Spinner } from "@/components/ui/spinner"
 
@@ -76,9 +77,8 @@ export function InfiniteScrollTrigger({
   return (
     <div ref={triggerRef} className="mt-10 flex justify-center [overflow-anchor:none]">
       {nextPageHref ? (
-        <Button
+        <ButtonLink
           variant="outline"
-          nativeButton={false}
           render={<a href={nextPageHref} aria-label={label} />}
           aria-disabled={isFetching || isPaused}
           onClick={(event) => {
@@ -87,7 +87,7 @@ export function InfiniteScrollTrigger({
           }}
         >
           {content}
-        </Button>
+        </ButtonLink>
       ) : (
         <Button variant="outline" disabled={isFetching || isPaused} onClick={handleLoadMore}>
           {content}

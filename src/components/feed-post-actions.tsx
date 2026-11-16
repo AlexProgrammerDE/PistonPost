@@ -2,12 +2,13 @@
 
 import { useSession } from "@better-auth-ui/react"
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
+import { Link, useLocation } from "@tanstack/react-router"
 import { Heart, MessageCircle, Pencil } from "lucide-react"
 import {
   createContext,
   startTransition,
   useContext,
+  useId,
   useMemo,
   useOptimistic,
   useState,
@@ -17,12 +18,12 @@ import {
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
+import { ButtonLink } from "@/components/ButtonLink"
 import { PostLinkActions } from "@/components/post-share-actions"
-import { Button } from "@/components/ui/button"
 import { Toggle } from "@/components/ui/toggle"
 import { batchFeedPostIds } from "@/lib/feed-heart-state"
 import { discussionKeys, feedHeartStatesQueryOptions } from "@/lib/queries/social"
-import { optimisticHeartCount } from "@/lib/social-state"
+import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
 import { cn } from "@/lib/utils"
 import { setHeart } from "@/server/social"
 
@@ -83,6 +84,7 @@ function FeedHeartControl({
   readonly heartCount: number
 }) {
   const queryClient = useQueryClient()
+  const currentHref = useLocation({ select: (location) => location.href })
   const { viewerId, heartPostIds, pending } = useContext(FeedHeartStateContext)
   const hasHeart = heartPostIds.has(postId)
   const [confirmedHeartState, setConfirmedHeartState] = useState(() => ({
@@ -115,6 +117,12 @@ function FeedHeartControl({
     hasHeart,
     optimisticHasHeart,
   )
+  const countId = useId()
+  const countDescription = (
+    <span id={countId} hidden>
+      {heartCountLabel(displayedHeartCount)}
+    </span>
+  )
   const content = (
     <>
       <Heart
@@ -129,21 +137,23 @@ function FeedHeartControl({
 
   if (!pending && !viewerId) {
     return (
-      <Button
+      <ButtonLink
         variant="ghost"
         size="sm"
         className={feedActionClassName}
-        nativeButton={false}
         render={
           <Link
             to="/auth/$authView"
             params={{ authView: "sign-in" }}
+            search={{ redirectTo: currentHref }}
             aria-label={`Sign in to heart ${postTitle}`}
+            aria-describedby={countId}
           />
         }
       >
         {content}
-      </Button>
+        {countDescription}
+      </ButtonLink>
     )
   }
 
@@ -170,9 +180,11 @@ function FeedHeartControl({
         "aria-pressed:bg-primary/10 aria-pressed:text-primary dark:aria-pressed:bg-primary/15",
       )}
       aria-label="Heart"
+      aria-describedby={countId}
       disabled={pending || mutation.isPending}
     >
       {content}
+      {countDescription}
     </Toggle>
   )
 }
@@ -195,11 +207,10 @@ export function FeedPostActions({
   return (
     <>
       <FeedHeartControl postId={postId} postTitle={postTitle} heartCount={heartCount} />
-      <Button
+      <ButtonLink
         variant="ghost"
         size="sm"
         className={feedActionClassName}
-        nativeButton={false}
         render={
           <Link to="/post/$postId" params={{ postId }} hash="discussion" onClick={onOpenPost} />
         }
@@ -207,19 +218,18 @@ export function FeedPostActions({
         <MessageCircle aria-hidden="true" data-icon="inline-start" />
         <span className="max-[359px]:sr-only">Comments</span>
         <span className="tabular-nums">{commentCount}</span>
-      </Button>
+      </ButtonLink>
       <PostLinkActions postId={postId} compactOnNarrowScreens className={feedActionClassName} />
       {canEdit ? (
-        <Button
+        <ButtonLink
           variant="ghost"
           size="sm"
           className={feedActionClassName}
-          nativeButton={false}
           render={<Link to="/post/$postId/edit" params={{ postId }} />}
         >
           <Pencil aria-hidden="true" data-icon="inline-start" />
           Edit
-        </Button>
+        </ButtonLink>
       ) : null}
     </>
   )

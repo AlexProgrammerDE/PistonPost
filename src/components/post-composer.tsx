@@ -199,6 +199,29 @@ function fileRejectionMessage(type: "images" | "video", message: string) {
     : "Choose a video no larger than 2 GB and no longer than 10 minutes."
 }
 
+const uploadStatusLabels: Record<UploadItem["status"], string> = {
+  queued: "Ready to upload",
+  uploading: "Uploading",
+  processing: "Processing",
+  ready: "Uploaded",
+  failed: "Upload failed",
+}
+
+function uploadStatusLabel(item: Pick<UploadItem, "kind" | "status">) {
+  if (item.kind === "video" && item.status === "processing") return "Processing video"
+  return uploadStatusLabels[item.status]
+}
+
+/** Moves focus to the first field that failed validation so its error is visible. */
+function focusFirstInvalidField(formElement: HTMLFormElement) {
+  const invalid = formElement.querySelector<HTMLElement>('[aria-invalid="true"]')
+  if (!invalid) return
+  const target = invalid.matches("input, textarea, select, button")
+    ? invalid
+    : invalid.querySelector<HTMLElement>("input, textarea, select, button")
+  target?.focus()
+}
+
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     // Polling must remain ordered so each check observes the latest Stream state.
@@ -551,7 +574,11 @@ export function PostComposer({
       onSubmit={(event) => {
         event.preventDefault()
         event.stopPropagation()
-        void form.handleSubmit()
+        const formElement = event.currentTarget
+        void form.handleSubmit().then(() => {
+          if (form.state.isValid) return
+          requestAnimationFrame(() => focusFirstInvalidField(formElement))
+        })
       }}
     >
       <form.AppForm>
@@ -665,6 +692,7 @@ export function PostComposer({
                     uploadStore={uploadStore}
                     preparingImageCount={preparingImageCount}
                     isInspectingVideo={isInspectingVideo}
+                    isSubmitting={isSubmitting}
                     sensors={sensors}
                     onFiles={async (files, kind) => {
                       await selectFiles(files, kind)
@@ -797,6 +825,7 @@ function MediaPicker({
   uploadStore,
   preparingImageCount,
   isInspectingVideo,
+  isSubmitting,
   sensors,
   onFiles,
   onRemove,
@@ -807,6 +836,7 @@ function MediaPicker({
   uploadStore: MediaUploadStore
   preparingImageCount: number
   isInspectingVideo: boolean
+  isSubmitting: boolean
   sensors: ReturnType<typeof useSensors>
   onFiles: (files: File[], type: ComposerValues["type"]) => Promise<void>
   onRemove: (item: UploadItem) => void
@@ -849,7 +879,10 @@ function MediaPicker({
         label={inputLabel}
         multiple={type === "images"}
         disabled={
-          preparingImageCount > 0 || isInspectingVideo || (type === "video" && uploads.length > 0)
+          isSubmitting ||
+          preparingImageCount > 0 ||
+          isInspectingVideo ||
+          (type === "video" && uploads.length > 0)
         }
         onAccept={(files) => void onFiles(files, type)}
         onFileReject={(_, message) =>
@@ -885,6 +918,7 @@ function MediaPicker({
                   key={item.clientId}
                   clientId={item.clientId}
                   uploadStore={uploadStore}
+                  isSubmitting={isSubmitting}
                   onRemove={onRemove}
                   onAltText={onAltText}
                   onView={setSelectedImageId}
@@ -913,12 +947,14 @@ function MediaPicker({
 function SortableUpload({
   clientId,
   uploadStore,
+  isSubmitting,
   onRemove,
   onAltText,
   onView,
 }: {
   clientId: string
   uploadStore: MediaUploadStore
+  isSubmitting: boolean
   onRemove: (item: UploadItem) => void
   onAltText: (clientId: string, altText: string) => void
   onView: (clientId: string) => void
@@ -927,21 +963,35 @@ function SortableUpload({
     items.find((upload) => upload.clientId === clientId),
   )
   if (!item) return null
-  return <UploadRow item={item} onRemove={onRemove} onAltText={onAltText} onView={onView} />
+  return (
+    <UploadRow
+      item={item}
+      isSubmitting={isSubmitting}
+      onRemove={onRemove}
+      onAltText={onAltText}
+      onView={onView}
+    />
+  )
 }
 
 function UploadRow({
   item,
+  isSubmitting,
   onRemove,
   onAltText,
   onView,
 }: {
   item: UploadItem
+  isSubmitting: boolean
   onRemove: (item: UploadItem) => void
   onAltText: (clientId: string, altText: string) => void
   onView: (clientId: string) => void
 }) {
-  const dragDisabled = item.kind === "video" || item.status !== "queued"
+  // Every submit attempt creates a fresh draft and uploads all files again, so files stay
+  // editable after a failed attempt. While a submit runs, only active uploads can be canceled.
+  const dragDisabled = item.kind === "video" || isSubmitting
+  const editDisabled = isSubmitting
+  const removeDisabled = isSubmitting && item.status !== "uploading" && item.status !== "processing"
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
     id: item.clientId,
     disabled: dragDisabled,
@@ -999,7 +1049,7 @@ function UploadRow({
           <span className="min-w-0 truncate">{item.filename}</span>
         </ItemTitle>
         <ItemDescription className="line-clamp-none text-xs">
-          {(item.file.size / 1024 / 1024).toFixed(1)} MB · {item.status}
+          {(item.file.size / 1024 / 1024).toFixed(1)} MB · {uploadStatusLabel(item)}
         </ItemDescription>
       </ItemContent>
       <ItemActions>
@@ -1007,8 +1057,8 @@ function UploadRow({
           type="button"
           variant="ghost"
           size="icon"
-          aria-label={`Remove ${item.filename}`}
-          disabled={item.status === "ready"}
+          aria-label={`${item.status === "uploading" || item.status === "processing" ? "Cancel upload of" : "Remove"} ${item.filename}`}
+          disabled={removeDisabled}
           onClick={() => onRemove(item)}
         >
           <Trash2 aria-hidden="true" />
@@ -1018,16 +1068,16 @@ function UploadRow({
         <ItemFooter className="items-start">
           <div className="grid min-w-0 flex-1 gap-3">
             {item.kind === "image" ? (
-              <Field className="gap-2" data-disabled={item.status !== "queued" || undefined}>
+              <Field className="gap-2" data-disabled={editDisabled || undefined}>
                 <FieldLabel htmlFor={altTextId}>Alt text</FieldLabel>
-                <InputGroup data-disabled={item.status !== "queued" || undefined}>
+                <InputGroup data-disabled={editDisabled || undefined}>
                   <InputGroupInput
                     id={altTextId}
                     value={item.altText}
                     maxLength={300}
                     placeholder="Describe this image…"
                     autoComplete="off"
-                    disabled={item.status !== "queued"}
+                    disabled={editDisabled}
                     aria-describedby={altTextDescriptionId}
                     onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
                   />

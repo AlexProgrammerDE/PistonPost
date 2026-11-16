@@ -134,6 +134,10 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    /* Keep hash targets such as #discussion clear of the sticky mobile header. */
+    @apply scroll-pt-14 md:scroll-pt-0;
+  }
   body {
     @apply bg-background text-foreground antialiased;
     min-width: 20rem;
@@ -430,6 +434,11 @@ html:active-view-transition-type(settings-back)::view-transition-new(settings-pa
   [data-slot="skeleton"],
   [data-slot="spinner"] {
     animation: none;
+  }
+
+  [data-slot="sidebar-gap"],
+  [data-slot="sidebar-container"] {
+    transition: none;
   }
 
   ::view-transition-group(*),

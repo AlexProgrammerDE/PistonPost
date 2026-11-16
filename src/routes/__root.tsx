@@ -11,6 +11,7 @@ import { useEffect } from "react"
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
+import { ButtonLink } from "@/components/ButtonLink"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -35,10 +36,20 @@ const defaultSeo = createSeoHead({
   indexing: "inherit",
 })
 
+const notFoundSeo = createSeoHead({
+  title: "Page not found · PistonPost",
+  description: "The address may be wrong, or the page may have moved.",
+  path: "/",
+  twitterCard: "summary",
+  indexing: "noindex",
+})
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   loader: () => getPublicRuntimeConfig(),
   staleTime: Infinity,
-  head: () => ({
+  // The root is the only not-found boundary, so its head is the only asset match that
+  // TanStack Router keeps when a path is unknown or a loader throws notFound().
+  head: ({ match }) => ({
     meta: [
       {
         charSet: "utf-8",
@@ -55,7 +66,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "msapplication-TileColor", content: "#dc3850" },
       { name: "msapplication-tap-highlight", content: "no" },
-      ...defaultSeo.meta,
+      // oxlint-disable-next-line no-underscore-dangle -- RouteMatch exposes the not-found boundary only as `_notFound`.
+      ...(match._notFound ? notFoundSeo.meta : defaultSeo.meta),
     ],
     links: [
       {
@@ -81,14 +93,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           <EmptyMedia variant="icon">
             <FileQuestion aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>Page not found</EmptyTitle>
+          <EmptyTitle>
+            <h1>Page not found</h1>
+          </EmptyTitle>
           <EmptyDescription>The address may be wrong, or the page may have moved.</EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
-          <Button nativeButton={false} render={<Link to="/" />}>
+          <ButtonLink render={<Link to="/" />}>
             <ArrowLeft aria-hidden="true" data-icon="inline-start" />
             Back to latest posts
-          </Button>
+          </ButtonLink>
         </EmptyContent>
       </Empty>
     </main>
@@ -114,7 +128,9 @@ function RootError() {
     <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
       <Alert variant="destructive" className="w-full max-w-xl">
         <TriangleAlert aria-hidden="true" />
-        <AlertTitle>We couldn’t load this page</AlertTitle>
+        <AlertTitle>
+          <h1>We couldn’t load this page</h1>
+        </AlertTitle>
         <AlertDescription className="grid gap-4">
           <span>Try again. If the problem continues, return to the latest posts.</span>
           <ButtonGroup aria-label="Page recovery actions">
@@ -122,10 +138,10 @@ function RootError() {
               <RotateCcw aria-hidden="true" data-icon="inline-start" />
               Try again
             </Button>
-            <Button variant="outline" nativeButton={false} render={<Link to="/" />}>
+            <ButtonLink variant="outline" render={<Link to="/" />}>
               <House aria-hidden="true" data-icon="inline-start" />
               Go home
-            </Button>
+            </ButtonLink>
           </ButtonGroup>
         </AlertDescription>
       </Alert>

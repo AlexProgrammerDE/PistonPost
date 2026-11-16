@@ -20,7 +20,14 @@ import { toast } from "sonner"
 
 import { AppImage } from "@/components/AppImage"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field"
 import { FileUpload, FileUploadDropzone, FileUploadTrigger } from "@/components/ui/file-upload"
 import { Input } from "@/components/ui/input"
 import {
@@ -37,6 +44,12 @@ import { ImagePreparationError, prepareImageForUpload } from "@/lib/uploads/imag
 import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import type { EditablePostImage } from "@/lib/uploads/post-edit-images"
 import { cn } from "@/lib/utils"
+
+function fileRejectionMessage(message: string) {
+  return message === `Maximum ${MAX_IMAGES_PER_POST} files allowed`
+    ? `A post can contain up to ${MAX_IMAGES_PER_POST} images.`
+    : "Images must be JPG, PNG, GIF, WebP, or AVIF files no larger than 15 MB."
+}
 
 export function ImagePostEditor({
   images,
@@ -109,10 +122,10 @@ export function ImagePostEditor({
 
   return (
     <FieldGroup>
-      <Field>
-        <FieldLabel>
+      <FieldSet>
+        <FieldLegend variant="label">
           Images ({images.length} / {MAX_IMAGES_PER_POST})
-        </FieldLabel>
+        </FieldLegend>
         <FieldDescription>
           Drag to reorder. Add images, remove them, or change their alt text before saving.
         </FieldDescription>
@@ -125,7 +138,9 @@ export function ImagePostEditor({
           maxSize={MAX_IMAGE_UPLOAD_BYTES}
           disabled={disabled || preparing}
           onAccept={(files) => void addFiles(files)}
-          onFileReject={(_, message) => toast.error(message)}
+          onFileReject={(_, message) =>
+            toast.error(fileRejectionMessage(message), { id: "edit-images-file-rejection" })
+          }
         >
           <FileUploadDropzone aria-label="Image dropzone">
             <p role="status">
@@ -140,7 +155,7 @@ export function ImagePostEditor({
             </p>
           </FileUploadDropzone>
         </FileUpload>
-      </Field>
+      </FieldSet>
       <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}

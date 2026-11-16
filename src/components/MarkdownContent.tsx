@@ -363,6 +363,7 @@ function EmbedConsent({ embed, label }: { embed: MarkdownEmbed; label: string | 
           <Button type="button" variant="outline" onClick={() => setLoaded(true)}>
             <Play aria-hidden="true" data-icon="inline-start" />
             Load
+            <span className="sr-only"> {providerName} embed</span>
           </Button>
         </ItemActions>
       </Item>
@@ -417,7 +418,7 @@ function MarkdownSpoiler({ label }: { label: string }) {
     <button
       type="button"
       aria-pressed={revealed}
-      aria-label={revealed ? "Hide spoiler" : "Reveal spoiler"}
+      title={revealed ? "Hide spoiler" : "Reveal spoiler"}
       className={cn(
         "inline border px-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
         revealed
@@ -426,12 +427,12 @@ function MarkdownSpoiler({ label }: { label: string }) {
       )}
       onClick={() => setRevealed((current) => !current)}
     >
+      <span className="sr-only">Spoiler{revealed ? ": " : ""}</span>
       {revealed ? (
         label
       ) : (
         <EyeOff aria-hidden="true" className="inline size-[1em] align-[-0.125em]" />
       )}
-      {!revealed ? <span className="sr-only">Spoiler</span> : null}
     </button>
   )
 }
@@ -514,7 +515,9 @@ function MarkdownImage({ src, alt }: ComponentProps<"img"> & ExtraProps) {
       <ItemContent className="min-w-0">
         <ItemTitle className="line-clamp-2 wrap-anywhere">{alt || "External image"}</ItemTitle>
         <ItemDescription className="text-xs">
-          The image will be proxied after this post is saved.
+          {!postId && isProxyableExternalImageUrl(src)
+            ? "The image will be proxied after this post is saved."
+            : `Opens an image on ${externalLinkDestination(src)}.`}
         </ItemDescription>
       </ItemContent>
     </Item>

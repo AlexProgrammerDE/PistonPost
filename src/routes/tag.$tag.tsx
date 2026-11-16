@@ -1,7 +1,8 @@
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute, Link, notFound } from "@tanstack/react-router"
 import { Schema, Effect, Option } from "effect"
 import { lazy, Suspense } from "react"
 
+import { FeedLoadError } from "@/components/FeedLoadError"
 import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -14,6 +15,18 @@ const FollowButton = lazy(() =>
   import("@/components/FollowButton").then((module) => ({ default: module.FollowButton })),
 )
 
+const decodeTagParam = Schema.decodeUnknownOption(
+  Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+)
+
+/** Returns the lookup key for a tag URL segment, or null when no tag can match it. */
+function normalizeTagParam(value: string) {
+  return Option.match(decodeTagParam(value), {
+    onNone: () => null,
+    onSome: (tag) => tag.toLocaleLowerCase("en-US"),
+  })
+}
+
 const feedSearchSchema = Schema.Struct({
   cursor: Schema.optional(Schema.String.check(Schema.isMaxLength(512))).pipe(
     Schema.catchDecoding(() => Effect.sync(() => Option.some(undefined))),
@@ -24,10 +37,8 @@ export const Route = createFileRoute("/tag/$tag")({
   validateSearch: Schema.toStandardSchemaV1(feedSearchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => ({ cursor: search.cursor }),
   loader: async ({ context, params, deps }) => {
-    const tag = Schema.decodeSync(
-      Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
-      { errors: "all" },
-    )(params.tag).toLocaleLowerCase("en-US")
+    const tag = normalizeTagParam(params.tag)
+    if (!tag) throw notFound()
     const tagPromise = context.queryClient.ensureQueryData(tagQueryOptions(tag))
     const feedPromise = context.queryClient.prefetchInfiniteQuery(
       feedQueryOptions({ tag }, deps.cursor),
@@ -60,6 +71,7 @@ export const Route = createFileRoute("/tag/$tag")({
   },
   component: TagFeed,
   pendingComponent: FeedPageSkeleton,
+  errorComponent: TagFeedError,
 })
 
 function TagFeed() {
@@ -76,13 +88,27 @@ function TagFeed() {
         data-view-transition-active={activeTransition}
         className="mb-8 flex items-center justify-between gap-4 border-b pb-4"
       >
-        <h1
-          data-view-transition-part="tag-name"
-          className="overflow-hidden font-heading text-3xl font-bold tracking-tight"
-        >
-          #{tag.displayName}
-        </h1>
-        <Suspense fallback={<Skeleton className="h-9 w-20" />}>
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1
+            data-view-transition-part="tag-name"
+            className="min-w-0 font-heading text-3xl font-bold tracking-tight wrap-anywhere"
+          >
+            #{tag.displayName}
+          </h1>
+          {cursor ? (
+            <p className="text-sm text-muted-foreground">
+              You are viewing older posts.{" "}
+              <Link
+                to="/tag/$tag"
+                params={{ tag: tag.normalizedName }}
+                className="font-semibold text-primary underline-offset-4 hover:underline"
+              >
+                Back to latest
+              </Link>
+            </p>
+          ) : null}
+        </div>
+        <Suspense fallback={<Skeleton className="h-9 w-20 shrink-0" />}>
           <FollowButton target={{ kind: "tag", tag: tag.normalizedName }} />
         </Suspense>
       </header>
@@ -94,6 +120,22 @@ function TagFeed() {
           pagePath={pagePath}
         />
       </Suspense>
+    </main>
+  )
+}
+
+function TagFeedError() {
+  const { tag } = Route.useParams()
+  const { cursor } = Route.useSearch()
+
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-8 border-b pb-4">
+        <h1 className="min-w-0 font-heading text-3xl font-bold tracking-tight wrap-anywhere">
+          #{tag}
+        </h1>
+      </header>
+      <FeedLoadError latestLink={cursor ? <Link to="/tag/$tag" params={{ tag }} /> : undefined} />
     </main>
   )
 }

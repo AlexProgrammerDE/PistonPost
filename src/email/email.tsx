@@ -1,5 +1,16 @@
 import { render } from "@react-email/render"
-import { Body, Button, Container, Head, Heading, Html, Link, Preview, Text } from "react-email"
+import {
+  Body,
+  Button,
+  Container,
+  Head,
+  Heading,
+  Html,
+  Link,
+  Preview,
+  Section,
+  Text,
+} from "react-email"
 
 import { ChangeEmailConfirmationEmail } from "@/components/auth/email/change-email-confirmation"
 import { DeleteAccountVerificationEmail } from "@/components/auth/email/delete-account-verification"
@@ -182,43 +193,101 @@ function subscriptionLabel(preference: EmailNotificationPreference) {
   return exhaustivePreference
 }
 
+function supportPrompt(template: GenericEmailContent["template"]) {
+  switch (template) {
+    case "email-changed":
+      return "If you did not ask for this change, contact "
+    case "moderation-action":
+      return "Think this was a mistake? Contact "
+    case "product-update":
+      return "Questions about this update? Contact "
+    case "comment-notification":
+    case "reply-notification":
+      return "Questions? Contact "
+  }
+  const exhaustiveTemplate: never = template
+  return exhaustiveTemplate
+}
+
+// Inline styles carry the light theme. These rules only switch colors in dark mode clients.
+const darkModeStyles = `
+  @media (prefers-color-scheme: dark) {
+    .bg-background { background-color: #211a18 !important; }
+    .bg-card { background-color: #2e2220 !important; }
+    .border-border { border-color: #4d3b35 !important; }
+    .text-card-foreground { color: #fff9ed !important; }
+    .text-foreground { color: #eadbd2 !important; }
+    .text-muted-foreground { color: #d3bdb4 !important; }
+    .text-primary { color: #ff6b79 !important; }
+    .bg-primary { background-color: #ff6b79 !important; }
+    .text-primary-foreground { color: #2e2220 !important; }
+  }
+`
+
 export function PistonPostEmail({ content }: { readonly content: GenericEmailContent }) {
   return (
     <Html lang="en">
-      <Head />
+      <Head>
+        <meta content="light dark" name="color-scheme" />
+        <meta content="light dark" name="supported-color-schemes" />
+        <style type="text/css">{darkModeStyles}</style>
+      </Head>
       <Preview>{content.preview}</Preview>
-      <Body style={styles.body}>
-        <Container style={styles.container}>
-          <Text style={styles.brand}>
-            piston<span style={styles.brandAccent}>post</span>
-          </Text>
-          <Heading style={styles.heading}>{content.heading}</Heading>
-          <Text style={styles.message}>{content.message}</Text>
-          {content.action ? (
-            <Button href={content.action.url} style={styles.button}>
-              {content.action.label}
-            </Button>
-          ) : null}
-          {content.footnote ? <Text style={styles.footnote}>{content.footnote}</Text> : null}
-          {content.subscription ? (
-            <Text style={styles.footnote}>
-              You can{" "}
-              <Link href={content.subscription.unsubscribeUrl} style={styles.link}>
-                stop {subscriptionLabel(content.subscription.preference)}
-              </Link>{" "}
-              at any time.
+      <Body className="bg-background" style={styles.body}>
+        <Section className="bg-background" style={styles.canvas}>
+          <Container className="border-border bg-card" style={styles.container}>
+            <Text className="text-card-foreground" style={styles.brand}>
+              piston
+              <span className="text-primary" style={styles.brandAccent}>
+                post
+              </span>
             </Text>
-          ) : null}
-          <Text style={styles.footer}>
-            {content.template === "product-update"
-              ? "Questions about this update? Contact "
-              : "If you did not request this message, you can ignore it or contact "}
-            <Link href="mailto:support@pistonmaster.net" style={styles.link}>
-              PistonPost support
-            </Link>
-            .
-          </Text>
-        </Container>
+            <Heading className="text-card-foreground" style={styles.heading}>
+              {content.heading}
+            </Heading>
+            <Text className="text-foreground" style={styles.message}>
+              {content.message}
+            </Text>
+            {content.action ? (
+              <Button
+                className="bg-primary text-primary-foreground"
+                href={content.action.url}
+                style={styles.button}
+              >
+                {content.action.label}
+              </Button>
+            ) : null}
+            {content.footnote ? (
+              <Text className="text-muted-foreground" style={styles.footnote}>
+                {content.footnote}
+              </Text>
+            ) : null}
+            {content.subscription ? (
+              <Text className="text-muted-foreground" style={styles.footnote}>
+                You can{" "}
+                <Link
+                  className="text-primary"
+                  href={content.subscription.unsubscribeUrl}
+                  style={styles.link}
+                >
+                  stop {subscriptionLabel(content.subscription.preference)}
+                </Link>{" "}
+                at any time.
+              </Text>
+            ) : null}
+            <Text className="border-border text-muted-foreground" style={styles.footer}>
+              {supportPrompt(content.template)}
+              <Link
+                className="text-primary"
+                href="mailto:support@pistonmaster.net"
+                style={styles.link}
+              >
+                PistonPost support
+              </Link>
+              .
+            </Text>
+          </Container>
+        </Section>
       </Body>
     </Html>
   )
@@ -318,8 +387,10 @@ const styles = {
     color: "#2e2220",
     fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
     margin: 0,
-    padding: "32px 12px",
   },
+  // Body copies its inline background to a wrapper cell that dark mode rules cannot target.
+  // This full-width section covers that cell and carries the themed page background.
+  canvas: { backgroundColor: "#fff9ed", padding: "32px 12px" },
   container: {
     backgroundColor: "#ffffff",
     border: "1px solid #e5d4bb",
@@ -338,10 +409,10 @@ const styles = {
     margin: 0,
   },
   brandAccent: { color: "#dc3850" },
-  heading: { fontSize: "28px", lineHeight: "34px", margin: "20px 0 12px" },
+  heading: { color: "#2e2220", fontSize: "28px", lineHeight: "34px", margin: "20px 0 12px" },
   message: { color: "#65504a", fontSize: "16px", lineHeight: "25px" },
   button: {
-    backgroundColor: "#dc3850",
+    backgroundColor: "#c82d47",
     borderRadius: "7px",
     color: "#ffffff",
     display: "inline-block",

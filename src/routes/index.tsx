@@ -1,14 +1,15 @@
-import { useQueryErrorResetBoundary, useSuspenseInfiniteQuery } from "@tanstack/react-query"
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
+import { useSuspenseInfiniteQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { Schema, Effect, Option } from "effect"
-import { Newspaper, Plus, RotateCcw, TriangleAlert } from "lucide-react"
-import { Suspense, useEffect } from "react"
+import { History, Newspaper, Plus, TriangleAlert } from "lucide-react"
+import { Suspense, type ReactNode } from "react"
 
+import { ButtonLink } from "@/components/ButtonLink"
+import { FeedLoadError } from "@/components/FeedLoadError"
 import { InfiniteScrollTrigger } from "@/components/InfiniteScrollTrigger"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { PostTimeline } from "@/components/PostTimeline"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
 import {
   Empty,
   EmptyContent,
@@ -61,13 +62,31 @@ export const Route = createFileRoute("/")({
 
 function PublicFeed() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-      <header className="mb-7">
-        <h1 className="font-heading text-2xl font-bold tracking-tight">Timeline</h1>
-      </header>
+    <PublicFeedLayout>
       <Suspense fallback={<FeedItemsSkeleton />}>
         <PublicFeedResults />
       </Suspense>
+    </PublicFeedLayout>
+  )
+}
+
+function PublicFeedLayout({ children }: { readonly children: ReactNode }) {
+  const { cursor } = Route.useSearch()
+
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-7 flex flex-col gap-1">
+        <h1 className="font-heading text-2xl font-bold tracking-tight">Timeline</h1>
+        {cursor ? (
+          <p className="text-sm text-muted-foreground">
+            You are viewing older posts.{" "}
+            <Link to="/" className="font-semibold text-primary underline-offset-4 hover:underline">
+              Back to latest
+            </Link>
+          </p>
+        ) : null}
+      </header>
+      {children}
     </main>
   )
 }
@@ -89,7 +108,23 @@ function PublicFeedResults() {
         </Alert>
       )}
 
-      {posts.length === 0 ? (
+      {posts.length === 0 && cursor ? (
+        <Empty className="min-h-80">
+          <EmptyHeader>
+            <EmptyMedia variant="icon">
+              <History aria-hidden="true" />
+            </EmptyMedia>
+            <EmptyTitle>No older posts here</EmptyTitle>
+            <EmptyDescription>This link may be out of date.</EmptyDescription>
+          </EmptyHeader>
+          <EmptyContent>
+            <ButtonLink render={<Link to="/" />}>
+              <Newspaper aria-hidden="true" data-icon="inline-start" />
+              Latest posts
+            </ButtonLink>
+          </EmptyContent>
+        </Empty>
+      ) : posts.length === 0 ? (
         <Empty className="min-h-80">
           <EmptyHeader>
             <EmptyMedia variant="icon">
@@ -99,10 +134,10 @@ function PublicFeedResults() {
             <EmptyDescription>Create the first post for this feed.</EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <Button nativeButton={false} render={<Link to="/posts/new" />}>
+            <ButtonLink render={<Link to="/posts/new" />}>
               <Plus aria-hidden="true" data-icon="inline-start" />
               Create a post
-            </Button>
+            </ButtonLink>
           </EmptyContent>
         </Empty>
       ) : (
@@ -124,31 +159,11 @@ function PublicFeedResults() {
 }
 
 function FeedError() {
-  const router = useRouter()
-  const queryErrorResetBoundary = useQueryErrorResetBoundary()
-
-  useEffect(() => {
-    queryErrorResetBoundary.reset()
-  }, [queryErrorResetBoundary])
-
-  function retry() {
-    queryErrorResetBoundary.reset()
-    void router.invalidate()
-  }
+  const { cursor } = Route.useSearch()
 
   return (
-    <main className="mx-auto grid min-h-[60svh] w-full max-w-2xl place-items-center px-4">
-      <Alert variant="destructive">
-        <TriangleAlert aria-hidden="true" />
-        <AlertTitle>The feed could not be loaded</AlertTitle>
-        <AlertDescription className="flex flex-col items-start gap-4">
-          <span>Check your connection and try again.</span>
-          <Button variant="outline" onClick={retry}>
-            <RotateCcw aria-hidden="true" data-icon="inline-start" />
-            Try again
-          </Button>
-        </AlertDescription>
-      </Alert>
-    </main>
+    <PublicFeedLayout>
+      <FeedLoadError latestLink={cursor ? <Link to="/" /> : undefined} />
+    </PublicFeedLayout>
   )
 }

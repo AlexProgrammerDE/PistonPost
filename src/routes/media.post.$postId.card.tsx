@@ -1,4 +1,5 @@
-import outfitFontSource from "@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?inline"
+import outfitLatinExtendedFontSource from "@fontsource-variable/outfit/files/outfit-latin-ext-wght-normal.woff2?inline"
+import outfitLatinFontSource from "@fontsource-variable/outfit/files/outfit-latin-wght-normal.woff2?inline"
 import { createFileRoute } from "@tanstack/react-router"
 import { eq } from "drizzle-orm"
 import { Schema, Result } from "effect"
@@ -10,8 +11,32 @@ import { getPublishedPostRead } from "@/db/public-read-model"
 import * as schema from "@/db/schema"
 import { postMarkdownToPlainText } from "@/lib/markdown"
 import { SOCIAL_IMAGE_HEIGHT, SOCIAL_IMAGE_WIDTH } from "@/lib/seo"
+import { socialCardFallbackFonts } from "@/lib/social-card-fonts"
 import type { AppRequestContext } from "@/server"
 import { cacheTagHeader, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
+
+// The inline imports are data URLs. Takumi fetches them once per isolate and caches them by name.
+function inlineFont(source: string) {
+  return () => fetch(source).then((response) => response.arrayBuffer())
+}
+
+// Both subsets share the Outfit family, so names such as "Paweł" or "İlkay" do not render as boxes.
+// Noto fallbacks cover the scripts Outfit lacks, such as Cyrillic, Arabic and CJK.
+const cardFonts = [
+  {
+    name: "Outfit Latin",
+    data: inlineFont(outfitLatinFontSource),
+    subsetOf: "Outfit",
+    subsetRank: 0,
+  },
+  {
+    name: "Outfit Latin Extended",
+    data: inlineFont(outfitLatinExtendedFontSource),
+    subsetOf: "Outfit",
+    subsetRank: 1,
+  },
+  ...socialCardFallbackFonts("Outfit", 2),
+]
 
 async function textPostCard({
   request,
@@ -50,7 +75,7 @@ async function textPostCard({
       width: SOCIAL_IMAGE_WIDTH,
       height: SOCIAL_IMAGE_HEIGHT,
       format: "png",
-      fonts: [outfitFontSource],
+      fonts: cardFonts,
       headers: {
         "Cache-Control":
           post.visibility === "public"
