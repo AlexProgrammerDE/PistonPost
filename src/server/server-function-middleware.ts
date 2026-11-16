@@ -3,10 +3,11 @@ import { createMiddleware } from "@tanstack/react-start"
 import { setResponseHeader, setResponseStatus } from "@tanstack/react-start/server"
 import { eq } from "drizzle-orm"
 
+import { isBannedUser } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { serverFunctionErrorStatus, toServerFunctionClientError } from "@/lib/server-function-error"
-import { findRequestSession, isActiveAdministrator, isBannedUser } from "@/server/request-session"
+import { findRequestSession, isActiveAdministrator } from "@/server/request-session"
 import {
   forbiddenFailure,
   normalizeServerFunctionFailure,
@@ -74,7 +75,11 @@ export const administratorServerFunctionMiddleware = createMiddleware({ type: "f
   .middleware([authenticatedServerFunctionMiddleware])
   .server(async ({ context, next }) => {
     const currentUser = await context.database
-      .select({ role: schema.user.role, banned: schema.user.banned })
+      .select({
+        role: schema.user.role,
+        banned: schema.user.banned,
+        banExpires: schema.user.banExpires,
+      })
       .from(schema.user)
       .where(eq(schema.user.id, context.session.user.id))
       .get()

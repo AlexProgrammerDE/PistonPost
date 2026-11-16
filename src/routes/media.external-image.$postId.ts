@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { Schema, Result } from "effect"
 
+import { notBannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import {
@@ -95,7 +96,13 @@ async function deliverExternalImage({
       visibility: schema.posts.visibility,
     })
     .from(schema.posts)
-    .where(and(eq(schema.posts.id, input.success.postId), eq(schema.posts.status, "published")))
+    .where(
+      and(
+        eq(schema.posts.id, input.success.postId),
+        eq(schema.posts.status, "published"),
+        notBannedAccount(schema.posts.authorId),
+      ),
+    )
     .get()
   if (!post?.textContent || !markdownContainsImageUrl(post.textContent, input.success.source)) {
     return new Response("Not found", { status: 404 })

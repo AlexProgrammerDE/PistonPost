@@ -11,6 +11,9 @@ import {
   privateAuthResponse,
   recordAuthAudit,
 } from "@/server/auth"
+import { FEED_CACHE_TAG, ownerCacheTag, SITEMAP_CACHE_TAG } from "@/server/cache-tags"
+import { cacheInvalidationTagsJob, videoAccessJob } from "@/server/jobs"
+import { authorVideoPostIds } from "@/server/media-jobs"
 import { bindingOperation } from "@/server/operation"
 
 const auditedMutations = new Map([
@@ -37,6 +40,9 @@ const auditedAdminActions = new Map([
   ["/admin/revoke-user-sessions", "admin.user-sessions-revoked"],
   ["/admin/update-user", "admin.user-updated"],
 ])
+
+// A ban hides the user's public content and an unban shows it again, so both purge cached pages.
+const contentVisibilityActions = new Set(["admin.user-banned", "admin.user-unbanned"])
 
 type AdminAudit = {
   readonly action: string
@@ -120,16 +126,51 @@ const recordAdminAuditEffect = Effect.fn("Auth.recordAdminAudit")(function* (
   context: AppRequestContext,
   audit: AdminAudit,
 ) {
-  yield* bindingOperation("auth.admin-audit", () =>
-    createD1Database(context.env.DB).insert(schema.auditEvents).values({
-      id: crypto.randomUUID(),
-      actorId: audit.actorId,
-      action: audit.action,
-      entityType: "user",
-      entityId: audit.targetUserId,
-      metadata: audit.metadata,
-    }),
-  )
+  const database = createD1Database(context.env.DB)
+  const auditEventId = crypto.randomUUID()
+  const changesVisibility = contentVisibilityActions.has(audit.action)
+  // Stream videos are reachable by their public UID, so a ban must also switch them to signed
+  // URLs. Each job re-reads the ban state when it runs, so ban and unban jobs converge.
+  const videoPostIds = changesVisibility
+    ? yield* authorVideoPostIds(database, audit.targetUserId)
+    : []
+  const jobs = changesVisibility
+    ? [
+        cacheInvalidationTagsJob(
+          `account-ban:${audit.targetUserId}`,
+          [ownerCacheTag(audit.targetUserId), FEED_CACHE_TAG, SITEMAP_CACHE_TAG],
+          `cache.invalidate:account-ban:${audit.targetUserId}:${auditEventId}`,
+        ),
+        ...videoPostIds.map((postId) => videoAccessJob(postId, auditEventId)),
+      ]
+    : []
+  yield* Effect.gen(function* () {
+    yield* bindingOperation("auth.admin-audit", () =>
+      database.batch([
+        database.insert(schema.auditEvents).values({
+          id: auditEventId,
+          actorId: audit.actorId,
+          action: audit.action,
+          entityType: "user",
+          entityId: audit.targetUserId,
+          metadata: audit.metadata,
+        }),
+        ...jobs.map((job) =>
+          database
+            .insert(schema.outbox)
+            .values({ id: job.idempotencyKey, kind: job.type, payload: job })
+            .onConflictDoNothing(),
+        ),
+      ]),
+    )
+    // Queues accept at most 100 messages per sendBatch call.
+    for (let start = 0; start < jobs.length; start += 100) {
+      const chunk = jobs.slice(start, start + 100)
+      yield* bindingOperation("auth.admin-visibility-jobs", () =>
+        context.env.JOBS.sendBatch(chunk.map((job) => ({ body: job }))),
+      )
+    }
+  }).pipe(Effect.uninterruptible)
 })
 
 async function handleAuth({ request, context }: { request: Request; context: AppRequestContext }) {

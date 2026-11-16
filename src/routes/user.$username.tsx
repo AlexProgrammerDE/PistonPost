@@ -8,6 +8,7 @@ import { ContentReportDialog } from "@/components/ContentReportDialog"
 import { FeedLoadError } from "@/components/FeedLoadError"
 import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, ProfilePageSkeleton } from "@/components/LoadingStates"
+import { OwnedUnlistedPosts } from "@/components/OwnedUnlistedPosts"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -242,6 +243,7 @@ function ProfileFeedContent({ normalizedUsername }: { readonly normalizedUsernam
           </ButtonGroup>
         </div>
       </header>
+      <OwnedUnlistedPosts username={profile.normalizedUsername} />
       <Suspense fallback={<FeedItemsSkeleton />}>
         <FilteredFeed
           filters={{ username: normalizedUsername }}

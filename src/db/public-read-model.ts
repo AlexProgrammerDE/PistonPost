@@ -4,6 +4,7 @@ import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import type { PublicPostCursor } from "@/domain"
 import { isSearchIndexingTrusted, searchIndexingTrustCondition } from "@/lib/search-indexing"
 
+import { notBannedAccount } from "./account-ban"
 import type * as databaseSchema from "./schema"
 import {
   comments,
@@ -126,7 +127,8 @@ export async function listViewerFeedHeartPostIds(
         eq(reactions.userId, viewerId),
         inArray(reactions.postId, postIds),
         eq(posts.status, "published"),
-        eq(posts.visibility, "public"),
+        // Owners also see hearts on their own unlisted posts, which their profile lists.
+        or(eq(posts.visibility, "public"), eq(posts.authorId, viewerId)),
       ),
     )
 
@@ -218,6 +220,7 @@ export async function listPublicPostReads(
       and(
         eq(posts.status, "published"),
         eq(posts.visibility, "public"),
+        notBannedAccount(posts.authorId),
         cursorFilter,
         tagFilter,
         followingFilter,
@@ -265,7 +268,7 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
     .innerJoin(user, eq(user.id, posts.authorId))
     .innerJoin(profiles, eq(profiles.userId, posts.authorId))
     .leftJoin(postViewCounts, eq(postViewCounts.postId, posts.id))
-    .where(and(eq(posts.id, id), eq(posts.status, "published")))
+    .where(and(eq(posts.id, id), eq(posts.status, "published"), notBannedAccount(posts.authorId)))
     .get()
 
   if (!row?.publishedAt) return null
@@ -286,7 +289,13 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
     .from(comments)
     .innerJoin(user, eq(user.id, comments.authorId))
     .innerJoin(profiles, eq(profiles.userId, comments.authorId))
-    .where(and(eq(comments.postId, post.id), eq(comments.status, "published")))
+    .where(
+      and(
+        eq(comments.postId, post.id),
+        eq(comments.status, "published"),
+        notBannedAccount(comments.authorId),
+      ),
+    )
     .orderBy(desc(comments.createdAt), desc(comments.id))
     .limit(25)
   return { ...post, structuredComments }
@@ -299,7 +308,7 @@ export async function getPublishedPostTrackingContext(
   const post = await database
     .select({ id: posts.id, type: posts.type, visibility: posts.visibility })
     .from(posts)
-    .where(and(eq(posts.id, id), eq(posts.status, "published")))
+    .where(and(eq(posts.id, id), eq(posts.status, "published"), notBannedAccount(posts.authorId)))
     .get()
 
   return post ?? null
@@ -324,7 +333,12 @@ export async function getPublicProfileRead(database: ReadDatabase, username: str
     })
     .from(profiles)
     .innerJoin(user, eq(user.id, profiles.userId))
-    .where(eq(profiles.normalizedUsername, username.toLocaleLowerCase("en-US")))
+    .where(
+      and(
+        eq(profiles.normalizedUsername, username.toLocaleLowerCase("en-US")),
+        notBannedAccount(profiles.userId),
+      ),
+    )
     .get()
   if (!profile) return null
 
@@ -400,6 +414,7 @@ export async function getPublicTagRead(database: ReadDatabase, normalizedName: s
           eq(postTags.tagId, tag.id),
           eq(posts.status, "published"),
           eq(posts.visibility, "public"),
+          notBannedAccount(posts.authorId),
         ),
       )
       .limit(1)
@@ -414,6 +429,7 @@ export async function getPublicTagRead(database: ReadDatabase, normalizedName: s
           eq(postTags.tagId, tag.id),
           eq(posts.status, "published"),
           eq(posts.visibility, "public"),
+          notBannedAccount(posts.authorId),
           searchIndexingTrustCondition(),
         ),
       )
@@ -427,6 +443,7 @@ export async function getPublicTagRead(database: ReadDatabase, normalizedName: s
 function sitemapProfileCondition() {
   return and(
     searchIndexingTrustCondition(),
+    notBannedAccount(profiles.userId),
     sql`exists (
       select 1 from ${posts} sitemap_posts
       where sitemap_posts.author_id = ${profiles.userId}
@@ -449,6 +466,7 @@ export async function getPublicSitemapCounts(database: ReadDatabase) {
           eq(posts.status, "published"),
           eq(posts.visibility, "public"),
           searchIndexingTrustCondition(),
+          notBannedAccount(posts.authorId),
         ),
       )
       .get(),
@@ -469,6 +487,7 @@ export async function getPublicSitemapCounts(database: ReadDatabase) {
           eq(posts.status, "published"),
           eq(posts.visibility, "public"),
           searchIndexingTrustCondition(),
+          notBannedAccount(posts.authorId),
         ),
       )
       .get(),
@@ -500,6 +519,7 @@ export async function listPublicPostSitemapRecords(
         eq(posts.status, "published"),
         eq(posts.visibility, "public"),
         searchIndexingTrustCondition(),
+        notBannedAccount(posts.authorId),
       ),
     )
     .orderBy(desc(posts.updatedAt), desc(posts.id))
@@ -597,6 +617,7 @@ export async function listPublicTagSitemapRecords(
         eq(posts.status, "published"),
         eq(posts.visibility, "public"),
         searchIndexingTrustCondition(),
+        notBannedAccount(posts.authorId),
       ),
     )
     .groupBy(tags.id, tags.normalizedName)
@@ -646,7 +667,13 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArra
     database
       .select({ postId: comments.postId, count: sql<number>`count(*)` })
       .from(comments)
-      .where(and(inArray(comments.postId, postIds), eq(comments.status, "published")))
+      .where(
+        and(
+          inArray(comments.postId, postIds),
+          eq(comments.status, "published"),
+          notBannedAccount(comments.authorId),
+        ),
+      )
       .groupBy(comments.postId),
   ])
 

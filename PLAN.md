@@ -1272,3 +1272,26 @@ Record future changes here with date, decision, reason, and affected phases.
   commands to the Cloudflare CLI. Validate the production D1 ID and Secrets Store
   bindings before building, then deploy the checked Build Output. Use Vite directly
   for the `prod` build because the CLI beta rejects TanStack build modes.
+
+- 2026-11-16: Show the signed-in owner their own published unlisted posts in a section on their
+  profile, so they can find, edit, or delete them after losing the link. The section loads
+  client-side after hydration through an authenticated, private server function. The public
+  profile HTML, the public profile feed, and shared caches still never include unlisted posts.
+  Drafts and moderated posts stay out of this list.
+
+- 2026-11-16: Hide all public content of a banned user while the ban applies. A ban applies when
+  `user.banned` is true and `ban_expires` is empty or in the future, so an expired ban shows the
+  content again. `src/db/account-ban.ts` holds this rule once in TypeScript and once as a Drizzle
+  condition. Public feeds, post detail, profiles, tags, comments, comment counts, sitemaps, the
+  Atom feed, and the text-post card leave the user out. Media of a banned author returns 404 to
+  the public and stays available, privately and uncached, to the owner and active administrators.
+  Admin screens still show everything. No data is deleted. An admin ban or unban queues a purge
+  of the owner, feed, and sitemap cache tags. A ban that expires on its own does not purge, so
+  content can return a little later than the expiry.
+  Ban and unban also queue the video-access job for the user's video posts, so Stream requires
+  signed URLs while the ban applies.
+
+- 2026-11-16: Reject usernames and tags made only of dots, because `/user/.` and `/user/..`
+  collapse to other URLs. Migration `0027_rename-dot-only-usernames` renames existing dot-only
+  usernames to `user-<8 hex characters>` in both `profiles` and `user`. The owner can choose a
+  new name in settings.

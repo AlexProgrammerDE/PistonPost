@@ -3,6 +3,7 @@ import { getRequestHeaders } from "@tanstack/react-start/server"
 import { and, count, desc, eq, lt, or } from "drizzle-orm"
 import { Schema, Effect } from "effect"
 
+import { notBannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
@@ -71,7 +72,7 @@ export const getDiscussion = createServerFn({ method: "GET" })
           database
             .select({ id: schema.posts.id, status: schema.posts.status })
             .from(schema.posts)
-            .where(eq(schema.posts.id, data.postId))
+            .where(and(eq(schema.posts.id, data.postId), notBannedAccount(schema.posts.authorId)))
             .get(),
         )
         if (!post || post.status !== "published") {
@@ -98,6 +99,7 @@ export const getDiscussion = createServerFn({ method: "GET" })
               and(
                 eq(schema.comments.postId, post.id),
                 eq(schema.comments.status, "published"),
+                notBannedAccount(schema.comments.authorId),
                 ...(cursor
                   ? [
                       or(
@@ -145,7 +147,13 @@ export const getDiscussionViewer = createServerFn({ method: "GET" })
           database
             .select({ id: schema.posts.id })
             .from(schema.posts)
-            .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+            .where(
+              and(
+                eq(schema.posts.id, data.postId),
+                eq(schema.posts.status, "published"),
+                notBannedAccount(schema.posts.authorId),
+              ),
+            )
             .get(),
         )
         if (!post) return yield* notFoundFailure("The post was not found.")
@@ -223,7 +231,13 @@ export const setHeart = createServerFn({ method: "POST" })
           database
             .select({ id: schema.posts.id })
             .from(schema.posts)
-            .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+            .where(
+              and(
+                eq(schema.posts.id, data.postId),
+                eq(schema.posts.status, "published"),
+                notBannedAccount(schema.posts.authorId),
+              ),
+            )
             .get(),
         )
         if (!post) return yield* notFoundFailure("The post was not found.")
@@ -286,7 +300,13 @@ export const createComment = createServerFn({ method: "POST" })
           database
             .select({ id: schema.posts.id, authorId: schema.posts.authorId })
             .from(schema.posts)
-            .where(and(eq(schema.posts.id, data.postId), eq(schema.posts.status, "published")))
+            .where(
+              and(
+                eq(schema.posts.id, data.postId),
+                eq(schema.posts.status, "published"),
+                notBannedAccount(schema.posts.authorId),
+              ),
+            )
             .get(),
         )
         if (!post) return yield* notFoundFailure("The post was not found.")
@@ -305,6 +325,7 @@ export const createComment = createServerFn({ method: "POST" })
                   and(
                     eq(schema.comments.id, parentCommentId),
                     eq(schema.comments.status, "published"),
+                    notBannedAccount(schema.comments.authorId),
                   ),
                 )
                 .get(),

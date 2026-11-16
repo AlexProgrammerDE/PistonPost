@@ -3,7 +3,7 @@ import { Schema, Result } from "effect"
 
 import { VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 import type { AppRequestContext } from "@/server"
-import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
+import { cacheTagHeader } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
 
 async function videoPlayer({
@@ -38,11 +38,7 @@ async function videoPlayer({
       "Cache-Control": video.publiclyCacheable ? "public, max-age=3600" : "private, no-store",
       ...(video.publiclyCacheable
         ? {
-            "Cache-Tag": cacheTagHeader([
-              mediaCacheTag(mediaId.success),
-              ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
-              ...(video.postId ? [postCacheTag(video.postId)] : []),
-            ]),
+            "Cache-Tag": cacheTagHeader(video.cacheTags),
           }
         : {}),
     },

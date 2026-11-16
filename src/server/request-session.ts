@@ -1,5 +1,6 @@
 import { getRequestHeaders } from "@tanstack/react-start/server"
 
+import { isBannedUser } from "@/db/account-ban"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 
@@ -15,16 +16,15 @@ export async function findRequestSession(context: AppRequestContext) {
   return auth.api.getSession({ headers, query: { disableCookieCache: true } })
 }
 
-/** Match the admin plugin: a ban with a past expiry no longer applies. */
-export function isBannedUser(
-  user: { banned?: boolean | null; banExpires?: Date | null },
+export function isActiveAdministrator(
+  user:
+    | {
+        readonly role?: string | null
+        readonly banned?: boolean | null
+        readonly banExpires?: Date | null
+      }
+    | undefined,
   now = new Date(),
 ) {
-  return user.banned === true && (!user.banExpires || user.banExpires.getTime() > now.getTime())
-}
-
-export function isActiveAdministrator(
-  user: { role: string | null; banned: boolean | null } | undefined,
-) {
-  return user?.role === "admin" && user.banned !== true
+  return user?.role === "admin" && !isBannedUser(user, now)
 }

@@ -1,10 +1,13 @@
 import { and, eq } from "drizzle-orm"
 import { Effect } from "effect"
 
+import { bannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuthEffect } from "@/server/auth"
+import { mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
+import { canViewMedia, mediaAudience } from "@/server/media-access"
 
 import { bindingOperation } from "./operation"
 
@@ -22,8 +25,10 @@ const getDeliverableVideoEffect = Effect.fn("Video.getDeliverable")(function* (
         height: schema.mediaAssets.height,
         providerMetadata: schema.mediaAssets.providerMetadata,
         postId: schema.posts.id,
+        postAuthorId: schema.posts.authorId,
         postStatus: schema.posts.status,
         visibility: schema.posts.visibility,
+        authorBanned: bannedAccount(schema.posts.authorId),
       })
       .from(schema.mediaAssets)
       .leftJoin(schema.postMedia, eq(schema.postMedia.mediaId, schema.mediaAssets.id))
@@ -39,12 +44,16 @@ const getDeliverableVideoEffect = Effect.fn("Video.getDeliverable")(function* (
   )
   if (!row?.streamUid) return null
 
-  if (row.postStatus !== "published") {
+  const audience = mediaAudience({
+    published: row.postStatus === "published",
+    authorBanned: row.authorBanned,
+  })
+  if (audience !== "public") {
     const auth = yield* createRequestAuthEffect(context)
     const session = yield* bindingOperation("video-delivery.session", () =>
       auth.api.getSession({ headers: request.headers }),
     )
-    if (session?.user.id !== row.ownerId) return null
+    if (!canViewMedia(audience, row.ownerId, session?.user)) return null
   }
 
   return {
@@ -52,9 +61,14 @@ const getDeliverableVideoEffect = Effect.fn("Video.getDeliverable")(function* (
     width: row.width,
     height: row.height,
     providerMetadata: row.providerMetadata,
-    ownerId: row.ownerId,
-    postId: row.postId,
-    publiclyCacheable: row.postStatus === "published" && row.visibility === "public",
+    publiclyCacheable: audience === "public" && row.visibility === "public",
+    cacheTags: [
+      mediaCacheTag(mediaId),
+      ...(row.ownerId ? [ownerCacheTag(row.ownerId)] : []),
+      // An administrator can add media to another author's post, so tag the author as well.
+      ...(row.postAuthorId ? [ownerCacheTag(row.postAuthorId)] : []),
+      ...(row.postId ? [postCacheTag(row.postId)] : []),
+    ],
   }
 })
 

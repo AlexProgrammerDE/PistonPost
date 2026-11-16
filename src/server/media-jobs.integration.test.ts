@@ -5,7 +5,7 @@ import { Effect } from "effect"
 
 import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
 
-import { mediaAttachedToLivePost, syncPostVideoAccess } from "./media-jobs"
+import { authorVideoPostIds, mediaAttachedToLivePost, syncPostVideoAccess } from "./media-jobs"
 
 const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 afterEach(() => {
@@ -60,6 +60,25 @@ describe("post video access", () => {
     })
     db.update(schema.posts).set({ status: "published" }).where(eq(schema.posts.id, "post")).run()
     // A late replay of the hide job follows the restored state.
+    expect(await sync(db)).toEqual({
+      reason: "public-playback",
+      updates: [["stream-video", false]],
+    })
+  })
+
+  test("requires signed URLs while the author is banned and lifts them after the ban", async () => {
+    const { db } = setup("published")
+    expect(await Effect.runPromise(authorVideoPostIds(db, "test-user"))).toEqual(["post"])
+    db.update(schema.user).set({ banned: true }).where(eq(schema.user.id, "test-user")).run()
+    expect(await sync(db)).toEqual({
+      reason: "signed-urls-required",
+      updates: [["stream-video", true]],
+    })
+    // An expired ban no longer applies.
+    db.update(schema.user)
+      .set({ banExpires: new Date(Date.now() - 1000) })
+      .where(eq(schema.user.id, "test-user"))
+      .run()
     expect(await sync(db)).toEqual({
       reason: "public-playback",
       updates: [["stream-video", false]],

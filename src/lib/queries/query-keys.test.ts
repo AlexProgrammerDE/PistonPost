@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { adminRowsKeys } from "./admin"
 import { followKeys } from "./follows"
+import { ownedUnlistedPostsQueryOptions } from "./posts"
 import { discussionKeys } from "./social"
 
 describe("server-state query keys", () => {
@@ -54,5 +55,14 @@ describe("server-state query keys", () => {
     expect(followKeys.state("viewer-one", target)).not.toEqual(
       followKeys.state("viewer-one", { kind: "tag", tag: "art" }),
     )
+  })
+
+  test("keeps owned unlisted posts under the shared post key and separate for each viewer", () => {
+    const key = ownedUnlistedPostsQueryOptions("viewer-one", "owner").queryKey
+
+    // Creating, editing, and deleting posts invalidates everything under ["posts"].
+    expect(key.slice(0, 1)).toEqual(["posts"])
+    expect(key).not.toEqual(ownedUnlistedPostsQueryOptions("viewer-two", "owner").queryKey)
+    expect(key).not.toEqual(ownedUnlistedPostsQueryOptions("viewer-one", "other").queryKey)
   })
 })

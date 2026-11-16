@@ -8,6 +8,7 @@ import {
 import type { PublicPostRead } from "@/db/public-read-model"
 import { FEED_PAGE_SIZE } from "@/lib/feed-heart-state"
 import { getFollowingFeed } from "@/server/follows"
+import { getOwnedUnlistedPosts } from "@/server/owned-posts"
 import { getPublicFeed, getPublishedPost, getPublicProfile, getPublicTag } from "@/server/posts"
 
 export type FeedFilters = {
@@ -29,6 +30,22 @@ export function feedQueryOptions(filters: FeedFilters = {}, initialCursor?: stri
 export const postFeedKeys = {
   public: ["posts", "public-feed"] as const,
   following: ["posts", "following-feed"] as const,
+  ownedUnlisted: ["posts", "owned-unlisted"] as const,
+}
+
+/**
+ * The signed-in viewer's own unlisted posts on a profile. The server returns nothing for another
+ * user's profile. The key holds the viewer so accounts never share cached results.
+ */
+export function ownedUnlistedPostsQueryOptions(viewerId: string, username: string) {
+  return infiniteQueryOptions({
+    queryKey: [...postFeedKeys.ownedUnlisted, viewerId, username] as const,
+    queryFn: ({ pageParam }) =>
+      getOwnedUnlistedPosts({ data: { username, cursor: pageParam, limit: FEED_PAGE_SIZE } }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (page) => page.nextCursor ?? undefined,
+    staleTime: 15_000,
+  })
 }
 
 export function followingFeedQueryOptions(viewerId: string, initialCursor?: string) {
@@ -114,5 +131,6 @@ export function markPostFeedsStale(queryClient: QueryClient) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: postFeedKeys.public, refetchType: "none" }),
     queryClient.invalidateQueries({ queryKey: postFeedKeys.following, refetchType: "none" }),
+    queryClient.invalidateQueries({ queryKey: postFeedKeys.ownedUnlisted, refetchType: "none" }),
   ])
 }

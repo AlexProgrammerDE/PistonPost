@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { and, eq } from "drizzle-orm"
 import { Schema, Result } from "effect"
 
+import { bannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import {
@@ -22,6 +23,7 @@ import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 import { requestValidatorsMatch } from "@/server/http-cache"
+import { canViewMedia, mediaAudience } from "@/server/media-access"
 
 const variants = {
   avatar: {
@@ -56,6 +58,7 @@ type ResolvedImageRequest = {
   readonly animation: MediaImageAnimation
   readonly asset: typeof schema.mediaAssets.$inferSelect
   readonly postId: string | null
+  readonly postAuthorId: string | null
   readonly publiclyCacheable: boolean
   readonly requestedWidth: number | undefined
   readonly r2Key: string
@@ -94,8 +97,12 @@ async function resolveImageRequest({
       asset: schema.mediaAssets,
       postStatus: schema.posts.status,
       postId: schema.posts.id,
+      postAuthorId: schema.posts.authorId,
       visibility: schema.posts.visibility,
       avatarOwnerId: schema.profiles.userId,
+      // Post media follows the post author. An avatar follows its profile owner.
+      postAuthorBanned: bannedAccount(schema.posts.authorId),
+      avatarOwnerBanned: bannedAccount(schema.profiles.userId),
     })
     .from(schema.mediaAssets)
     .leftJoin(schema.postMedia, eq(schema.postMedia.mediaId, schema.mediaAssets.id))
@@ -123,17 +130,26 @@ async function resolveImageRequest({
   }
 
   const isPublished = row.postStatus === "published"
-  if (!isPublished && row.asset.kind !== "avatar") {
+  const audience = mediaAudience({
+    published: isPublished || row.asset.kind === "avatar",
+    authorBanned: row.postAuthorBanned || row.avatarOwnerBanned,
+  })
+  if (audience !== "public") {
     const auth = await createRequestAuth(context)
     const session = await auth.api.getSession({ headers: request.headers })
-    if (session?.user.id !== row.asset.ownerId) return new Response("Not found", { status: 404 })
+    if (!canViewMedia(audience, row.asset.ownerId, session?.user)) {
+      return new Response("Not found", { status: 404 })
+    }
   }
 
   return {
     animation,
     asset: row.asset,
     postId: row.postId,
-    publiclyCacheable: (isPublished && row.visibility === "public") || row.asset.kind === "avatar",
+    postAuthorId: row.postAuthorId,
+    publiclyCacheable:
+      audience === "public" &&
+      ((isPublished && row.visibility === "public") || row.asset.kind === "avatar"),
     requestedWidth,
     r2Key: row.asset.r2Key,
     variant: input.success.variant,
@@ -172,6 +188,8 @@ function imageResponseHeaders(
       cacheTagHeader([
         mediaCacheTag(image.asset.id),
         ...(image.asset.ownerId ? [ownerCacheTag(image.asset.ownerId)] : []),
+        // An administrator can add media to another author's post, so tag the author as well.
+        ...(image.postAuthorId ? [ownerCacheTag(image.postAuthorId)] : []),
         ...(image.postId ? [postCacheTag(image.postId)] : []),
       ]),
     )

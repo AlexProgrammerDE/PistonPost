@@ -5,7 +5,7 @@ import { Effect, Result, Schema } from "effect"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import type { AppRequestContext } from "@/server"
-import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
+import { cacheTagHeader } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
 import { readyVideoDownloadUrl, refreshVideoDownload } from "@/server/video-download"
 
@@ -60,11 +60,7 @@ async function videoDownload({
       "Cache-Control": video.publiclyCacheable ? "public, max-age=3600" : "private, no-store",
       ...(video.publiclyCacheable
         ? {
-            "Cache-Tag": cacheTagHeader([
-              mediaCacheTag(mediaId.success),
-              ...(video.ownerId ? [ownerCacheTag(video.ownerId)] : []),
-              ...(video.postId ? [postCacheTag(video.postId)] : []),
-            ]),
+            "Cache-Tag": cacheTagHeader(video.cacheTags),
           }
         : {}),
     },

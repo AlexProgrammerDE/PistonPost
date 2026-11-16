@@ -3,6 +3,7 @@ import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 
 import { searchIndexingTrustCondition } from "@/lib/search-indexing"
 
+import { notBannedAccount } from "./account-ban"
 import type * as databaseSchema from "./schema"
 import { posts, profiles, user } from "./schema"
 
@@ -47,6 +48,7 @@ export async function listPublicAtomFeedRecords(
         eq(posts.status, "published"),
         eq(posts.visibility, "public"),
         searchIndexingTrustCondition(),
+        notBannedAccount(posts.authorId),
       ),
     )
     .orderBy(desc(posts.publishedAt), desc(posts.id))
