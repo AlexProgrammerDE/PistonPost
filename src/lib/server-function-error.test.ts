@@ -9,6 +9,7 @@ import {
   serverFunctionValidator,
   shouldRetryQuery,
   toServerFunctionClientError,
+  userFacingServerMessage,
 } from "./server-function-error"
 
 describe("server function error contract", () => {
@@ -82,5 +83,28 @@ describe("query retry policy", () => {
     expect(shouldRetryQuery(0, internal)).toBe(true)
     expect(shouldRetryQuery(2, new TypeError("Failed to fetch"))).toBe(true)
     expect(shouldRetryQuery(3, new TypeError("Failed to fetch"))).toBe(false)
+  })
+})
+
+describe("user-facing server messages", () => {
+  test("shows declared messages, such as a rate limit, to the user", () => {
+    const rateLimited = new ServerFunctionClientError({
+      code: "RATE_LIMITED",
+      message: "You're commenting too fast. Wait a minute and try again.",
+      retryAfterSeconds: 60,
+    })
+    expect(userFacingServerMessage(rateLimited)).toBe(
+      "You're commenting too fast. Wait a minute and try again.",
+    )
+  })
+
+  test("leaves internal failures and network errors to the caller's fallback", () => {
+    const internal = new ServerFunctionClientError({
+      code: "INTERNAL_ERROR",
+      message: "Something went wrong. Try again.",
+      requestId: crypto.randomUUID(),
+    })
+    expect(userFacingServerMessage(internal)).toBeUndefined()
+    expect(userFacingServerMessage(new TypeError("Failed to fetch"))).toBeUndefined()
   })
 })

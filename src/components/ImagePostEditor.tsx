@@ -268,13 +268,19 @@ function ImageRow({
         </ItemActions>
         <ItemFooter>
           <Field data-disabled={disabled || undefined}>
-            <FieldLabel htmlFor={`edit-alt-${image.clientId}`}>Alt text</FieldLabel>
+            <FieldLabel htmlFor={`edit-alt-${image.clientId}`}>
+              Alt text <span className="sr-only">for {image.filename}</span>
+            </FieldLabel>
             <Input
               id={`edit-alt-${image.clientId}`}
               value={image.altText}
               maxLength={300}
               disabled={disabled}
               aria-describedby={`edit-alt-help-${image.clientId}`}
+              // Enter would save the whole post while someone is still describing images.
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.preventDefault()
+              }}
               onChange={(event) => onAltText(event.currentTarget.value)}
             />
             <FieldDescription id={`edit-alt-help-${image.clientId}`}>

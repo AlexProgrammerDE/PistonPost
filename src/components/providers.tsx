@@ -1,13 +1,14 @@
 import type { AuthConfig } from "@better-auth-ui/core"
 import { captchaPlugin } from "@better-auth-ui/react/plugins/captcha"
 import type { QueryClient } from "@tanstack/react-query"
-import { Link, useNavigate } from "@tanstack/react-router"
+import { Link, useLocation, useNavigate, useRouter } from "@tanstack/react-router"
 import { useTheme } from "next-themes"
 import type { ComponentPropsWithoutRef, PropsWithChildren } from "react"
 
 import { authClient } from "@/auth/client"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { TurnstileWidget } from "@/components/turnstile-widget"
+import { withAuthReturnRedirect } from "@/lib/auth-return-redirect"
 import { adminPlugin } from "@/lib/auth/admin-plugin"
 import { dashPlugin } from "@/lib/auth/dash-plugin"
 import { deleteUserPlugin } from "@/lib/auth/delete-user-plugin"
@@ -37,7 +38,8 @@ const authLocalization = {
 }
 
 function RouterLink({ href, ...props }: ComponentPropsWithoutRef<AuthConfig["Link"]>) {
-  return <Link to={href} {...props} />
+  const location = useLocation()
+  return <Link to={withAuthReturnRedirect(href, location)} {...props} />
 }
 
 async function invalidateAvatarQueries(queryClient: QueryClient) {
@@ -54,11 +56,7 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
       minUsernameLength: 1,
       maxUsernameLength: 32,
       usernamePrefix: "@",
-      localization: {
-        usernamePlaceholder: "garage-name",
-        displayUsername: "Display username",
-        displayUsernamePlaceholder: "Display username",
-      },
+      localization: { usernamePlaceholder: "your-name" },
     }),
     emailOtpPlugin({
       emailVerification: true,
@@ -94,13 +92,16 @@ export function AuthenticationProvider({
   readonly turnstileSiteKey?: string
 }>) {
   const navigate = useNavigate()
+  const router = useRouter()
 
   return (
     <AuthProvider
       authClient={authClient}
       queryClient={queryClient}
       Link={RouterLink}
-      navigate={({ to, replace }) => navigate({ to, replace })}
+      navigate={({ to, replace }) =>
+        navigate({ to: withAuthReturnRedirect(to, router.state.location), replace })
+      }
       redirectTo="/"
       socialSignInMode="popup"
       avatar={{

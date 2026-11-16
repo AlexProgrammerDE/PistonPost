@@ -47,11 +47,13 @@ function preloadImageLightbox() {
   void loadImageLightbox()
 }
 
-const feedImageSizes = "(max-width: 639px) calc(100vw - 2rem), 45rem"
-const feedPreviewImageSizes = "(max-width: 639px) calc((100vw - 2.25rem) / 2), 22.375rem"
+// On phones the feed card sits beside the author avatar column, so subtract it as well as the gutters.
+const feedImageSizes = "(max-width: 639px) calc(100vw - 5rem), 45rem"
+const feedPreviewImageSizes = "(max-width: 639px) calc((100vw - 5.25rem) / 2), 22.375rem"
 const detailImageSizes = "(max-width: 639px) calc(100vw - 2rem), 61rem"
+// Two columns on phones too, so a large image dump does not become one very long column.
 const masonryImageSizes =
-  "(max-width: 639px) calc(100vw - 2rem), (max-width: 1023px) calc((100vw - 3.5rem) / 2), 20rem"
+  "(max-width: 639px) calc((100vw - 2.5rem) / 2), (max-width: 1023px) calc((100vw - 3.5rem) / 2), 20rem"
 const galleryThumbnailSizes = "(min-width: 640px) 6rem, 5rem"
 const compactNumberFormat = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -180,6 +182,8 @@ function PostDetailMetadata({
         <Badge
           key={tag.slug}
           variant="secondary"
+          className="max-w-full min-w-0"
+          title={`#${tag.name}`}
           render={
             <Link
               to="/tag/$tag"
@@ -194,7 +198,7 @@ function PostDetailMetadata({
             />
           }
         >
-          #{tag.name}
+          <span className="min-w-0 truncate">#{tag.name}</span>
         </Badge>
       ))}
       <div
@@ -456,7 +460,7 @@ function DetailPostImageMedia({
     <div className="grid gap-3">
       {galleryLayout === "masonry" ? (
         <ul
-          className="m-0 list-none columns-1 gap-2 p-0 sm:columns-2 lg:columns-3"
+          className="m-0 list-none columns-2 gap-2 p-0 lg:columns-3"
           aria-label={`${post.title} image collection`}
         >
           {post.media.map((image, index) => (
@@ -467,7 +471,10 @@ function DetailPostImageMedia({
                   index < 4 ? `post-media-${String(index + 1)}` : undefined
                 }
                 className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                aria-label={`Expand image ${String(index + 1)} of ${String(post.media.length)}`}
+                aria-label={withAltText(
+                  `Expand image ${String(index + 1)} of ${String(post.media.length)}`,
+                  image.altText,
+                )}
                 onPointerEnter={preloadImageLightbox}
                 onFocus={preloadImageLightbox}
                 onClick={() => openLightbox(index)}
@@ -576,9 +583,12 @@ function ImageBrowser({
           onClick={() => stepImage(selectedIndex - 1)}
         >
           <ArrowLeft aria-hidden="true" data-icon="inline-start" />
-          Previous
+          <span className="max-sm:sr-only">Previous</span>
         </Button>
-        <ButtonGroupText className="flex-1 justify-center tabular-nums" aria-live="polite">
+        <ButtonGroupText
+          className="flex-1 justify-center whitespace-nowrap tabular-nums"
+          aria-live="polite"
+        >
           Image {selectedIndex + 1} of {post.media.length}
         </ButtonGroupText>
         <Button
@@ -590,7 +600,7 @@ function ImageBrowser({
           disabled={selectedIndex === post.media.length - 1}
           onClick={() => stepImage(selectedIndex + 1)}
         >
-          Next
+          <span className="max-sm:sr-only">Next</span>
           <ArrowRight aria-hidden="true" data-icon="inline-end" />
         </Button>
       </ButtonGroup>
@@ -601,7 +611,10 @@ function ImageBrowser({
           selectedIndex < 4 ? `post-media-${String(selectedIndex + 1)}` : undefined
         }
         className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        aria-label={`Expand image ${String(selectedIndex + 1)} of ${String(post.media.length)}`}
+        aria-label={withAltText(
+          `Expand image ${String(selectedIndex + 1)} of ${String(post.media.length)}`,
+          selectedImage.altText,
+        )}
         onPointerEnter={preloadImageLightbox}
         onFocus={preloadImageLightbox}
         onClick={() => onOpen(selectedIndex)}
@@ -616,16 +629,19 @@ function ImageBrowser({
           fetchPriority="high"
         />
       </button>
-      <nav className="flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
+      <nav className="relative flex gap-2 overflow-x-auto pb-2" aria-label="Choose an image">
         {post.media.map((image, index) => (
           <Link
             key={image.id}
             ref={index === selectedIndex ? selectedThumbnailRef : undefined}
             data-image-index={index}
             {...browserImageNavigation(post.id, index)}
-            aria-label={`Show image ${String(index + 1)} of ${String(post.media.length)}`}
+            aria-label={withAltText(
+              `Show image ${String(index + 1)} of ${String(post.media.length)}`,
+              image.altText,
+            )}
             aria-current={index === selectedIndex ? "true" : undefined}
-            className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:border-ring aria-[current=true]:border-primary"
+            className="shrink-0 border-2 border-transparent outline-none hover:border-muted-foreground/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background aria-[current]:border-primary"
           >
             <ResponsiveMediaImage
               image={image}
@@ -645,6 +661,15 @@ function ImageBrowser({
 
 function findTransitionPost(event: MouseEvent<HTMLAnchorElement>) {
   return event.currentTarget.closest("[data-view-transition-post]")
+}
+
+/**
+ * An image control's own label replaces the image's alt text for screen readers, so add the
+ * description the author wrote to the label.
+ */
+function withAltText(label: string, altText: string | null | undefined) {
+  const description = altText?.trim()
+  return description ? `${label}: ${description}` : label
 }
 
 export function PostAuthorAvatar({
@@ -675,7 +700,7 @@ export function PostAuthorAvatar({
   return (
     <Link
       to="/user/$username"
-      params={{ username: post.author.username }}
+      params={{ username: post.author.normalizedUsername }}
       aria-label={`View ${post.author.name}'s profile`}
       onClick={openProfile}
       className={cn(
@@ -767,7 +792,7 @@ export function PostView({
         <div className="min-w-0 flex-1">
           <Link
             to="/user/$username"
-            params={{ username: post.author.username }}
+            params={{ username: post.author.normalizedUsername }}
             dir="auto"
             data-view-transition-part="profile-name"
             onClick={openProfile}
@@ -865,6 +890,8 @@ export function PostView({
               <Badge
                 key={tag.slug}
                 variant="secondary"
+                className="max-w-full min-w-0"
+                title={`#${tag.name}`}
                 render={
                   <Link
                     to="/tag/$tag"
@@ -879,7 +906,7 @@ export function PostView({
                   />
                 }
               >
-                #{tag.name}
+                <span className="min-w-0 truncate">#{tag.name}</span>
               </Badge>
             ))}
             <div className="ml-auto px-1">

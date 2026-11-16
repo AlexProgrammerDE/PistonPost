@@ -23,6 +23,7 @@ import { PostLinkActions } from "@/components/post-share-actions"
 import { Toggle } from "@/components/ui/toggle"
 import { batchFeedPostIds } from "@/lib/feed-heart-state"
 import { discussionKeys, feedHeartStatesQueryOptions } from "@/lib/queries/social"
+import { userFacingServerMessage } from "@/lib/server-function-error"
 import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
 import { cn } from "@/lib/utils"
 import { setHeart } from "@/server/social"
@@ -110,7 +111,8 @@ function FeedHeartControl({
         queryClient.invalidateQueries({ queryKey: ["posts", "following-feed"] }),
       ])
     },
-    onError: () => toast.error("The heart could not be saved."),
+    onError: (error) =>
+      toast.error(userFacingServerMessage(error) ?? "The heart could not be saved."),
   })
   const displayedHeartCount = optimisticHeartCount(
     confirmedHeartCount,
@@ -158,7 +160,9 @@ function FeedHeartControl({
   }
 
   function updateHeart(nextHasHeart: boolean) {
-    if (!viewerId) return
+    // Ignore presses while a change saves instead of disabling the toggle: a disabled button drops
+    // keyboard focus to the page body.
+    if (!viewerId || mutation.isPending) return
     startTransition(async () => {
       setOptimisticHasHeart(nextHasHeart)
       try {
@@ -181,7 +185,8 @@ function FeedHeartControl({
       )}
       aria-label="Heart"
       aria-describedby={countId}
-      disabled={pending || mutation.isPending}
+      aria-busy={mutation.isPending}
+      disabled={pending}
     >
       {content}
       {countDescription}

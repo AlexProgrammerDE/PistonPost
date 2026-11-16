@@ -36,11 +36,15 @@ async function uploadImage({
   const mediaId = Schema.decodeResult(Schema.String.check(Schema.isUUID()), {
     errors: "all",
   })(params.mediaId)
-  if (!Result.isSuccess(mediaId)) return jsonError("The upload intent is invalid.", 400)
+  if (!Result.isSuccess(mediaId))
+    return jsonError(
+      "This upload expired or was already used. Remove the image and add it again.",
+      400,
+    )
 
   const expectedOrigin = new URL(context.runtime.config.PUBLIC_APP_URL).origin
   if (request.headers.get("origin") !== expectedOrigin)
-    return jsonError("The request origin was rejected.", 403)
+    return jsonError("This upload came from another site. Reload PistonPost and try again.", 403)
 
   const length = Number(request.headers.get("content-length"))
   if (!Number.isSafeInteger(length) || length < 1 || length > MAX_IMAGE_UPLOAD_BYTES) {
@@ -49,7 +53,7 @@ async function uploadImage({
 
   const auth = await createRequestAuth(context)
   const session = await auth.api.getSession({ headers: request.headers })
-  if (!session) return jsonError("Authentication is required.", 401)
+  if (!session) return jsonError("Sign in again to upload images.", 401)
   const rateLimit = await context.env.IMAGE_UPLOAD_RATE_LIMITER.limit({
     key: `image-bytes:${session.user.id}`,
   })
@@ -76,18 +80,35 @@ async function uploadImage({
       ),
     )
     .get()
-  if (!asset) return jsonError("The upload intent was not found.", 404)
+  if (!asset)
+    return jsonError(
+      "This upload expired or was already used. Remove the image and add it again.",
+      404,
+    )
   if (asset.kind !== "image" && asset.kind !== "avatar") {
-    return jsonError("The upload intent was not found.", 404)
+    return jsonError(
+      "This upload expired or was already used. Remove the image and add it again.",
+      404,
+    )
   }
   if (asset.status === "ready") return Response.json({ assetId: asset.id, status: "ready" })
-  if (asset.status !== "pending") return jsonError("The upload intent is no longer active.", 409)
+  if (asset.status !== "pending")
+    return jsonError(
+      "This upload expired or was already used. Remove the image and add it again.",
+      409,
+    )
   const expiresAt = asset.providerMetadata.expiresAt
   if (typeof expiresAt !== "number" || expiresAt < Date.now()) {
-    return jsonError("The upload intent expired.", 410)
+    return jsonError(
+      "This upload expired or was already used. Remove the image and add it again.",
+      410,
+    )
   }
   if (request.headers.get("content-type")?.split(";", 1)[0] !== asset.mimeType) {
-    return jsonError("The upload content type did not match the intent.", 400)
+    return jsonError(
+      "This file changed after it was chosen. Remove the image and add it again.",
+      400,
+    )
   }
 
   const body = await request.arrayBuffer()
@@ -96,7 +117,10 @@ async function uploadImage({
       .update(schema.mediaAssets)
       .set({ status: "failed" })
       .where(eq(schema.mediaAssets.id, asset.id))
-    return jsonError("The uploaded byte size did not match the intent.", 400)
+    return jsonError(
+      "This file changed after it was chosen. Remove the image and add it again.",
+      400,
+    )
   }
 
   let objectKey: string | null = null
@@ -248,7 +272,10 @@ async function uploadImage({
       .update(schema.mediaAssets)
       .set({ status: "failed" })
       .where(eq(schema.mediaAssets.id, asset.id))
-    return jsonError("The image could not be validated.", 400)
+    return jsonError(
+      "This image did not match its file type or could not be checked. Try saving it again as JPG or PNG.",
+      400,
+    )
   }
 }
 

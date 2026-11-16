@@ -1,7 +1,7 @@
 import { useStore } from "@tanstack/react-form"
 import { useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { Schema } from "effect"
+import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router"
+import { Option, Schema } from "effect"
 import { FilePenLine, Globe2, Link2, Save, Trash2, TriangleAlert } from "lucide-react"
 import { useRef, useState } from "react"
 import { toast } from "sonner"
@@ -28,6 +28,7 @@ import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_POST_MARKDOWN_LENGTH } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
 import { mediaImageUrl } from "@/lib/media-image"
+import { ownedRouteFailure } from "@/lib/owned-route-failure"
 import { ServerFunctionClientError } from "@/lib/server-function-error"
 import { uploadPostEditImages, type EditablePostImage } from "@/lib/uploads/post-edit-images"
 import { UploadClientError } from "@/lib/uploads/upload-client"
@@ -54,13 +55,19 @@ function focusFirstInvalidField(formElement: HTMLFormElement) {
   target?.focus()
 }
 
+const decodePostIdParam = Schema.decodeUnknownOption(
+  Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+)
+
 export const Route = createFileRoute("/post_/$postId/edit")({
-  loader: async ({ params }) => {
-    const id = Schema.decodeSync(
-      Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
-      { errors: "all" },
-    )(params.postId)
-    return getOwnedPostForEditing({ data: { id } })
+  loader: async ({ params, location }) => {
+    const id = decodePostIdParam(params.postId)
+    if (Option.isNone(id)) throw notFound()
+    try {
+      return await getOwnedPostForEditing({ data: { id: id.value } })
+    } catch (error) {
+      throw ownedRouteFailure(error, location.href)
+    }
   },
   head: () => ({
     meta: [{ title: "Edit post · PistonPost" }, { name: "robots", content: "noindex, nofollow" }],

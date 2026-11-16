@@ -15,7 +15,13 @@ import { DefaultVideoLayout, defaultLayoutIcons } from "@vidstack/react/player/l
 import { createVideoPreviewThumbnails, VIDEO_THUMBNAIL_CACHE_VERSION } from "@/lib/video-thumbnail"
 
 function configureProvider(provider: MediaProviderAdapter | null) {
-  if (isDASHProvider(provider)) provider.library = () => import("dashjs")
+  if (!isDASHProvider(provider)) return
+  provider.library = () => import("dashjs")
+  // Pick a rendition that fits the player instead of the largest one, so a phone does not fetch
+  // 1080p segments for a 360px wide player.
+  provider.config = {
+    streaming: { abr: { limitBitrateByPortal: true, usePixelRatioInLimitBitrateByPortal: true } },
+  }
 }
 
 function canUseNativeHLSAirPlay() {
@@ -66,7 +72,9 @@ export function VidstackVideoPlayer({
       duration={durationSeconds}
       viewType="video"
       streamType="on-demand"
-      load={detail ? "eager" : "visible"}
+      // Wait for Play before fetching video. The poster still loads right away, and dash.js ignores
+      // preload, so an eager load would buffer several megabytes nobody asked for.
+      load={detail ? "play" : "visible"}
       posterLoad={detail ? "eager" : "visible"}
       preload={detail ? "metadata" : "none"}
       playsInline

@@ -62,6 +62,7 @@ import {
   discussionQueryOptions,
   discussionViewerQueryOptions,
 } from "@/lib/queries/social"
+import { userFacingServerMessage } from "@/lib/server-function-error"
 import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
 import { cn } from "@/lib/utils"
 import { createComment, deleteComment, getDiscussion, setHeart } from "@/server/social"
@@ -302,7 +303,8 @@ export function SocialPanel({
         queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
       ])
     },
-    onError: () => toast.error("The heart could not be saved."),
+    onError: (error) =>
+      toast.error(userFacingServerMessage(error) ?? "The heart could not be saved."),
   })
 
   const commentMutation = useMutation({
@@ -325,7 +327,8 @@ export function SocialPanel({
         queryClient.invalidateQueries({ queryKey: ["posts", "published", postId] }),
       ])
     },
-    onError: () => toast.error("The comment could not be deleted."),
+    onError: (error) =>
+      toast.error(userFacingServerMessage(error) ?? "The comment could not be deleted."),
   })
 
   const form = useAppForm({
@@ -354,8 +357,8 @@ export function SocialPanel({
             await commentMutation.mutateAsync({ content, parentCommentId })
             form.reset()
             setReplyingTo(null)
-          } catch {
-            toast.error("The comment could not be posted.")
+          } catch (error) {
+            toast.error(userFacingServerMessage(error) ?? "The comment could not be posted.")
           } finally {
             resolve()
           }
@@ -394,7 +397,7 @@ export function SocialPanel({
           {showActionDock ? (
             <m.nav
               key="quick-post-actions"
-              className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-safe"
+              className="fixed inset-x-0 bottom-0 z-30 border-t bg-background pb-safe md:left-(--sidebar-width) md:group-has-[[data-collapsible=icon]]/sidebar-wrapper:left-(--sidebar-width-icon)"
               aria-label="Quick post actions"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

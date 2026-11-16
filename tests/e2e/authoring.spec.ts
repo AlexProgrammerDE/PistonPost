@@ -168,7 +168,7 @@ test.describe.serial("authenticated authoring", () => {
     expect(signOut.ok()).toBe(true)
     await page.reload()
     await expect(
-      page.getByRole("main").getByRole("button", { name: "Sign in", exact: true }),
+      page.getByRole("main").getByRole("link", { name: "Sign in", exact: true }),
     ).toBeVisible()
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("pistonpost.composer-draft.v1")))
@@ -824,7 +824,7 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await expect(imageCollection).toHaveCSS("column-count", "1")
+    await expect(imageCollection).toHaveCSS("column-count", "2")
     await page.setViewportSize({ width: 1280, height: 720 })
 
     await page.goto(`${postUrl}?image=1`)

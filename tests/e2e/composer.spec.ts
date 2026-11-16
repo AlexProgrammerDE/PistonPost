@@ -6,10 +6,10 @@ test.describe("composer and media boundaries", () => {
     await page.goto("/posts/new")
 
     await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
+    await expect(page.getByRole("note").getByText("Sign in to post", { exact: true })).toBeVisible()
     await expect(
-      page.getByRole("alert").getByText("Sign in to post", { exact: true }),
+      page.getByRole("main").getByRole("link", { name: "Sign in", exact: true }),
     ).toBeVisible()
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeVisible()
     const accessibility = await new AxeBuilder({ page }).analyze()
     expect(accessibility.violations).toEqual([])
   })

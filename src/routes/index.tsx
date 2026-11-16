@@ -43,6 +43,8 @@ export const Route = createFileRoute("/")({
       description: cursor ? `Older public posts on ${SITE_NAME}.` : SITE_DESCRIPTION,
       path,
       twitterCard: "summary_large_image",
+      // Older pages are reached through a cursor that expires, so keep them out of results.
+      indexing: cursor ? "noindex-follow" : "index",
       jsonLd: {
         "@context": "https://schema.org",
         "@type": cursor ? "CollectionPage" : "WebSite",

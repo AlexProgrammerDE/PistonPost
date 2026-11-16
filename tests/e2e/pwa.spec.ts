@@ -13,10 +13,10 @@ test("activates without push permission and only caches the offline fallback", a
     .toBe(true)
   expect(await page.evaluate(() => Notification.permission)).not.toBe("granted")
   const paths = await page.evaluate(async () => {
-    const cache = await caches.open("pistonpost-offline-v2")
+    const cache = await caches.open("pistonpost-offline-v3")
     return (await cache.keys()).map((request) => new URL(request.url).pathname).toSorted()
   })
-  expect(paths).toEqual(["/offline.css", "/offline.html", "/offline.js"])
+  expect(paths).toEqual(["/offline", "/offline.css", "/offline.js"])
   await context.setOffline(true)
   await page.goto("/posts/new")
   await expect(page.getByRole("heading", { name: "You are offline" })).toBeVisible()
@@ -51,7 +51,7 @@ test("receives a share locally and preserves its handoff through the sign-in lin
   await page.locator('[data-hydrated="true"]').waitFor()
   const cookieChoice = page.getByRole("button", { name: "Reject optional", exact: true })
   if (await cookieChoice.isVisible()) await cookieChoice.click()
-  await page.getByRole("main").getByRole("button", { name: "Sign in", exact: true }).click()
+  await page.getByRole("main").getByRole("link", { name: "Sign in", exact: true }).click()
   await expect(page).toHaveURL(/\/auth\/sign-in\?redirectTo=/)
   expect(new URL(page.url()).searchParams.get("redirectTo")).toBe(
     destination.pathname + destination.search,

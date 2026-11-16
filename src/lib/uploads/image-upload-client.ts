@@ -3,7 +3,8 @@ export class UploadClientError extends Error {
 }
 
 function rejectedUploadMessage(status: number) {
-  if (status === 400) return "This image did not match its file type or could not be validated."
+  if (status === 400)
+    return "This image did not match its file type or could not be checked. Try saving it again as JPG or PNG."
   if (status === 413) return "This image is larger than 15 MB."
   if (status === 429) return "Too many uploads were started at once. Wait a minute and try again."
   return "The image upload was rejected. Try again."

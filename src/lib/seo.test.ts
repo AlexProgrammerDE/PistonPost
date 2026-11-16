@@ -239,6 +239,17 @@ describe("SEO metadata", () => {
     expect(absoluteUrl("/post/example")).toBe(`${SITE_URL}/post/example`)
   })
 
+  it("keeps older feed pages out of results while crawlers follow their links", () => {
+    const head = createSeoHead({
+      title: "Older posts",
+      description: "Older public posts.",
+      path: "/?cursor=abc",
+      twitterCard: "summary",
+      indexing: "noindex-follow",
+    })
+    expect(metaContent(head.meta, "name", "robots")).toBe("noindex, follow")
+  })
+
   it("keeps probationary authors out of indexes", () => {
     const head = createPostSeoHead({
       ...basePost,

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { followKeys, followStateQueryOptions } from "@/lib/queries/follows"
+import { userFacingServerMessage } from "@/lib/server-function-error"
 import { cn } from "@/lib/utils"
 import { setFollow, type FollowTarget } from "@/server/follows"
 
@@ -39,7 +40,8 @@ export function FollowButton({
         queryKey: ["posts", "following-feed", viewerId],
       })
     },
-    onError: () => toast.error("The follow could not be saved."),
+    onError: (error) =>
+      toast.error(userFacingServerMessage(error) ?? "The follow could not be saved."),
   })
 
   if (session.isPending || (viewerId && state.isPending)) {

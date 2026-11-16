@@ -39,13 +39,16 @@ const postSearchSchema = Schema.Struct({
   ),
 })
 
+const decodePostIdParam = Schema.decodeUnknownOption(
+  Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
+)
+
 export const Route = createFileRoute("/post/$postId")({
   validateSearch: Schema.toStandardSchemaV1(postSearchSchema, { parseOptions: { errors: "all" } }),
   loader: async ({ context, params }) => {
-    const postId = Schema.decodeSync(
-      Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
-      { errors: "all" },
-    )(params.postId)
+    const decodedPostId = decodePostIdParam(params.postId)
+    if (Option.isNone(decodedPostId)) throw notFound()
+    const postId = decodedPostId.value
     const post = await context.queryClient.ensureQueryData(postQueryOptions(postId))
     if (!post) throw notFound()
     void context.queryClient.prefetchInfiniteQuery(discussionQueryOptions(postId))

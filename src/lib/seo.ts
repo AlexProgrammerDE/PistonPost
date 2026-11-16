@@ -48,7 +48,8 @@ type SeoOptions = {
   readonly videoDuration?: number
   readonly player?: SeoVideo
   readonly twitterCard: "summary" | "summary_large_image" | "player"
-  readonly indexing?: "index" | "noindex" | "inherit"
+  /** `noindex-follow` keeps a page out of results while crawlers still follow its links. */
+  readonly indexing?: "index" | "noindex" | "noindex-follow" | "inherit"
   readonly publishedAt?: string
   readonly modifiedAt?: string
   readonly authorUrl?: string
@@ -203,6 +204,8 @@ export function createSeoHead(options: SeoOptions) {
     })
   } else if (indexing === "noindex") {
     meta.push({ name: "robots", content: "noindex, nofollow" })
+  } else if (indexing === "noindex-follow") {
+    meta.push({ name: "robots", content: "noindex, follow" })
   }
 
   return {

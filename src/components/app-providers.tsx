@@ -11,7 +11,7 @@ import { CookieConsentProvider } from "@/lib/integrations/cookie-consent"
 import { PostHogProvider } from "@/lib/integrations/posthog"
 
 const LIGHT_THEME_COLOR = "#fff9ed"
-const DARK_THEME_COLOR = "#241b1b"
+const DARK_THEME_COLOR = "#170c0b"
 
 function ThemeColorSync() {
   const { resolvedTheme } = useTheme()

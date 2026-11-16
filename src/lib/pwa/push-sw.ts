@@ -7,13 +7,26 @@ import { MAX_SHARED_BYTES, sharedContentSchema } from "./share-intake"
 
 declare const self: ServiceWorkerGlobalScope
 
-const OFFLINE_CACHE = "pistonpost-offline-v2"
-const OFFLINE_ASSETS = ["/offline.html", "/offline.css", "/offline.js"]
+const OFFLINE_CACHE = "pistonpost-offline-v3"
+// Static assets drop the .html extension, so /offline.html redirects to /offline. Cache the page at
+// its final URL, because a browser rejects a redirected response as the answer to a navigation.
+const OFFLINE_PAGE = "/offline"
+const OFFLINE_ASSETS = [OFFLINE_PAGE, "/offline.css", "/offline.js"]
+
+/** Stores a fresh copy so the cached response never carries the redirected flag. */
+async function cacheOfflineAsset(cache: Cache, path: string) {
+  const response = await fetch(path, { cache: "no-cache" })
+  if (!response.ok) throw new Error(`Could not cache ${path}: ${response.status}`)
+  await cache.put(
+    path,
+    new Response(await response.blob(), { status: 200, headers: response.headers }),
+  )
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(OFFLINE_CACHE).then(async (cache) => {
-      await cache.addAll(OFFLINE_ASSETS)
+      await Promise.all(OFFLINE_ASSETS.map((path) => cacheOfflineAsset(cache, path)))
       // No application documents or versioned app assets are cached, so taking over is safe.
       await self.skipWaiting()
     }),
@@ -89,7 +102,7 @@ self.addEventListener("fetch", (event) => {
   } else if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request).catch(async () => {
-        const fallback = await caches.match("/offline.html", { cacheName: OFFLINE_CACHE })
+        const fallback = await caches.match(OFFLINE_PAGE, { cacheName: OFFLINE_CACHE })
         return (
           fallback ?? new Response("You are offline. Reconnect and try again.", { status: 503 })
         )

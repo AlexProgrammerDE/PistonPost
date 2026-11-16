@@ -5,7 +5,11 @@ import { hydrateRoot } from "react-dom/client"
 window.addEventListener("vite:preloadError", (event) => {
   event.preventDefault()
 
-  // Avoid reload loops for genuine network failures.
+  // Offline, a reload would replace the page someone is reading with the offline fallback. Leave
+  // it in place; the next navigation after reconnecting loads the chunk normally.
+  if (!navigator.onLine) return
+
+  // A new deploy removed the old chunk. Avoid reload loops for genuine network failures.
   const key = "vite-preload-reload"
   const lastReload = Number(sessionStorage.getItem(key) ?? 0)
 

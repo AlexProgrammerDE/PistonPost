@@ -111,13 +111,27 @@ export function parseMediaImageAnimation(value: string | null): MediaImageAnimat
   return value === "still" ? value : null
 }
 
+/**
+ * Formats that can hold animation. Stickers and memes exported from chat apps are often animated
+ * WebP or APNG. Keeping animation on a still image changes nothing, since that is the transform
+ * default.
+ */
+const ANIMATABLE_IMAGE_TYPES: ReadonlySet<string> = new Set([
+  "image/gif",
+  "image/webp",
+  "image/png",
+])
+
 export function shouldPreserveMediaImageAnimation(
   mimeType: string,
   variant: MediaImageVariant,
   animation: MediaImageAnimation,
 ) {
   return (
-    mimeType === "image/gif" && variant !== "thumbnail" && variant !== "og" && animation !== "still"
+    ANIMATABLE_IMAGE_TYPES.has(mimeType) &&
+    variant !== "thumbnail" &&
+    variant !== "og" &&
+    animation !== "still"
   )
 }
 
@@ -160,14 +174,27 @@ export function createMediaImageSources(
   const sourceWidth = image.width
   const sourceHeight = image.height
 
-  return Array.from(new Set(widths))
-    .filter((width) => responsiveMediaWidthSet.has(width) && width <= maxWidth)
-    .toSorted((left, right) => left - right)
-    .map((width) => ({
-      src: mediaImageUrl(image.id, variant, width, animation),
-      width,
-      height: Math.max(1, Math.round((sourceHeight * width) / sourceWidth)),
-    }))
+  const requested = Array.from(new Set(widths)).filter((width) =>
+    responsiveMediaWidthSet.has(width),
+  )
+  const fitting = requested.filter((width) => width <= maxWidth).toSorted((a, b) => a - b)
+  const sources = fitting.map((width) => ({
+    src: mediaImageUrl(image.id, variant, width, animation),
+    width,
+    height: Math.max(1, Math.round((sourceHeight * width) / sourceWidth)),
+  }))
+
+  // When a requested width is larger than this image allows, offer the variant at its largest size
+  // instead. Without it, a 736px image would top out at the 480px candidate on a sharp screen.
+  const largestFitting = fitting.at(-1) ?? 0
+  if (requested.some((width) => width > maxWidth) && maxWidth > largestFitting) {
+    sources.push({
+      src: mediaImageUrl(image.id, variant, undefined, animation),
+      width: maxWidth,
+      height: Math.max(1, Math.round((sourceHeight * maxWidth) / sourceWidth)),
+    })
+  }
+  return sources
 }
 
 export function createMediaImageSrcSet(

@@ -39,11 +39,9 @@ export const Route = createFileRoute("/tag/$tag")({
   loader: async ({ context, params, deps }) => {
     const tag = normalizeTagParam(params.tag)
     if (!tag) throw notFound()
-    const tagPromise = context.queryClient.ensureQueryData(tagQueryOptions(tag))
-    const feedPromise = context.queryClient.prefetchInfiniteQuery(
-      feedQueryOptions({ tag }, deps.cursor),
-    )
-    const [tagRead] = await Promise.all([tagPromise, feedPromise])
+    // Start the feed without waiting for it, so the tag heading shows while posts load.
+    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ tag }, deps.cursor))
+    const tagRead = await context.queryClient.ensureQueryData(tagQueryOptions(tag))
     if (!tagRead) throw notFound()
     return tagRead
   },
@@ -58,7 +56,11 @@ export const Route = createFileRoute("/tag/$tag")({
       description,
       path,
       twitterCard: "summary",
-      indexing: loaderData?.searchIndexable ? "index" : "noindex",
+      indexing: !loaderData?.searchIndexable
+        ? "noindex"
+        : match.search.cursor
+          ? "noindex-follow"
+          : "index",
       jsonLd: {
         "@context": "https://schema.org",
         "@type": "CollectionPage",

@@ -518,7 +518,9 @@ export const publishPost = createServerFn({ method: "POST" })
           }),
         )
         if (!limited.success)
-          return yield* rateLimitedFailure("Too many posts were published at once.")
+          return yield* rateLimitedFailure(
+            "Too many posts were sent at once. Wait a minute and try again.",
+          )
         const recentWindow = new Date(Date.now() - 10 * 60 * 1_000)
         const recentPublishes = yield* bindingOperation("publishPost.recentPublishes", () =>
           database
@@ -534,7 +536,10 @@ export const publishPost = createServerFn({ method: "POST" })
             .get(),
         )
         if ((recentPublishes?.value ?? 0) >= 10) {
-          return yield* rateLimitedFailure("You can publish up to 10 posts every 10 minutes.", 600)
+          return yield* rateLimitedFailure(
+            "You can post up to 10 times every 10 minutes. Try again in a bit.",
+            600,
+          )
         }
         const post = yield* bindingOperation("publishPost.post", () =>
           database
@@ -546,7 +551,9 @@ export const publishPost = createServerFn({ method: "POST" })
         if (!post || post.status !== "draft")
           return yield* notFoundFailure("The draft was not found.")
         if (post.version !== data.version) {
-          return yield* conflictFailure("The draft changed in another session.")
+          return yield* conflictFailure(
+            "This draft was changed in another tab or device. Reload the page and try again.",
+          )
         }
 
         const media = yield* bindingOperation("publishPost.media", () =>
@@ -604,7 +611,9 @@ export const publishPost = createServerFn({ method: "POST" })
               .run(),
           )
           if (result.meta.changes !== 1) {
-            return yield* conflictFailure("The draft changed in another session.")
+            return yield* conflictFailure(
+              "This draft was changed in another tab or device. Reload the page and try again.",
+            )
           }
 
           const invalidate = cacheInvalidationJob(post.id)
@@ -827,7 +836,9 @@ export const deletePost = createServerFn({ method: "POST" })
               .run(),
           )
           if (deleted.meta.changes !== 1) {
-            return yield* conflictFailure("The post changed in another session.")
+            return yield* conflictFailure(
+              "This post was changed in another tab or device. Reload the page to get the latest version.",
+            )
           }
 
           const statements: D1PreparedStatement[] = [

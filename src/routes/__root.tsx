@@ -1,20 +1,11 @@
-import { useQueryErrorResetBoundary, type QueryClient } from "@tanstack/react-query"
-import {
-  HeadContent,
-  Link,
-  Scripts,
-  createRootRouteWithContext,
-  useRouter,
-} from "@tanstack/react-router"
-import { ArrowLeft, FileQuestion, House, RotateCcw, TriangleAlert } from "lucide-react"
-import { useEffect } from "react"
+import type { QueryClient } from "@tanstack/react-query"
+import { HeadContent, Link, Scripts, createRootRouteWithContext } from "@tanstack/react-router"
+import { ArrowLeft, FileQuestion } from "lucide-react"
 
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
 import { ButtonLink } from "@/components/ButtonLink"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Button } from "@/components/ui/button"
-import { ButtonGroup } from "@/components/ui/button-group"
+import { RouteError } from "@/components/RouteError"
 import {
   Empty,
   EmptyContent,
@@ -107,47 +98,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       </Empty>
     </main>
   ),
-  errorComponent: RootError,
+  errorComponent: RouteError,
   shellComponent: RootDocument,
 })
-
-function RootError() {
-  const router = useRouter()
-  const queryErrorResetBoundary = useQueryErrorResetBoundary()
-
-  useEffect(() => {
-    queryErrorResetBoundary.reset()
-  }, [queryErrorResetBoundary])
-
-  function retry() {
-    queryErrorResetBoundary.reset()
-    void router.invalidate()
-  }
-
-  return (
-    <main className="mx-auto grid min-h-[65svh] w-full max-w-3xl place-items-center px-4 py-16">
-      <Alert variant="destructive" className="w-full max-w-xl">
-        <TriangleAlert aria-hidden="true" />
-        <AlertTitle>
-          <h1>We couldn’t load this page</h1>
-        </AlertTitle>
-        <AlertDescription className="grid gap-4">
-          <span>Try again. If the problem continues, return to the latest posts.</span>
-          <ButtonGroup aria-label="Page recovery actions">
-            <Button onClick={retry}>
-              <RotateCcw aria-hidden="true" data-icon="inline-start" />
-              Try again
-            </Button>
-            <ButtonLink variant="outline" render={<Link to="/" />}>
-              <House aria-hidden="true" data-icon="inline-start" />
-              Go home
-            </ButtonLink>
-          </ButtonGroup>
-        </AlertDescription>
-      </Alert>
-    </main>
-  )
-}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext()
@@ -158,7 +111,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <head>
         <meta name="color-scheme" content="light dark" />
         <meta name="theme-color" content="#fff9ed" media="(prefers-color-scheme: light)" />
-        <meta name="theme-color" content="#241b1b" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#170c0b" media="(prefers-color-scheme: dark)" />
         <HeadContent />
       </head>
       <body>

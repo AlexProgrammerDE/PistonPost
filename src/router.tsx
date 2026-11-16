@@ -2,6 +2,7 @@ import { QueryClient } from "@tanstack/react-query"
 import { createRouter as createTanStackRouter } from "@tanstack/react-router"
 import { setupRouterSsrQueryIntegration } from "@tanstack/react-router-ssr-query"
 
+import { RouteError } from "@/components/RouteError"
 import { shouldRetryQuery } from "@/lib/server-function-error"
 import { getActiveSharedViewTransition, resolveRouteTransitionTypes } from "@/lib/view-transitions"
 
@@ -18,6 +19,7 @@ export function getRouter() {
     routeTree,
     context: { queryClient },
 
+    defaultErrorComponent: RouteError,
     scrollRestoration: true,
     defaultPreload: "intent",
     defaultPreloadStaleTime: 0,

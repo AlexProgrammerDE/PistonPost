@@ -58,7 +58,15 @@ function FollowingFeed() {
             </EmptyDescription>
           </EmptyHeader>
           <EmptyContent>
-            <ButtonLink render={<Link to="/auth/$authView" params={{ authView: "sign-in" }} />}>
+            <ButtonLink
+              render={
+                <Link
+                  to="/auth/$authView"
+                  params={{ authView: "sign-in" }}
+                  search={{ redirectTo: "/following" }}
+                />
+              }
+            >
               <LogIn aria-hidden="true" data-icon="inline-start" />
               Sign in
             </ButtonLink>

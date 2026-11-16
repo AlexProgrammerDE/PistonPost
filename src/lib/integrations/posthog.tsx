@@ -136,7 +136,7 @@ export function PostHogProvider({ children }: { readonly children: ReactNode }) 
     }
   }, [])
 
-  if (!client) return children
-
+  // Keep the provider mounted while the client loads. Swapping it in later would change the element
+  // above every route, so React would remount the whole app after hydration.
   return <PostHogContext value={client}>{children}</PostHogContext>
 }

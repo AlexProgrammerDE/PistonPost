@@ -11,7 +11,7 @@ export const Route = createFileRoute("/auth/$authView")({
   head: ({ params }) => ({
     meta: [
       {
-        title: `${getAuthViewLabel(params.authView)} | PistonPost`,
+        title: `${getAuthViewLabel(params.authView)} · PistonPost`,
       },
       { name: "robots", content: "noindex, nofollow" },
     ],

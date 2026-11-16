@@ -55,6 +55,17 @@ describe("responsive media images", () => {
     expect(sources).toEqual([
       { src: "/media/image/image%20id/feed?v=1&width=480", width: 480, height: 240 },
       { src: "/media/image/image%20id/feed?v=1&width=768", width: 768, height: 384 },
+      // 1280 was requested but the image is only 1200 wide, so the full-size variant fills in.
+      { src: "/media/image/image%20id/feed?v=1", width: 1200, height: 600 },
+    ])
+  })
+
+  it("does not add a full-size candidate when every requested width fits", () => {
+    expect(
+      createMediaImageSources({ id: "image id", width: 2000, height: 1000 }, "feed", [480, 768]),
+    ).toEqual([
+      { src: "/media/image/image%20id/feed?v=1&width=480", width: 480, height: 240 },
+      { src: "/media/image/image%20id/feed?v=1&width=768", width: 768, height: 384 },
     ])
   })
 
@@ -76,14 +87,18 @@ describe("responsive media images", () => {
     ])
   })
 
-  it("animates GIF content except for still-only variants and requests", () => {
+  it("animates GIF, WebP and APNG content except for still-only variants and requests", () => {
     expect(shouldPreserveMediaImageAnimation("image/gif", "feed", "auto")).toBeTrue()
     expect(shouldPreserveMediaImageAnimation("image/gif", "detail", "auto")).toBeTrue()
     expect(shouldPreserveMediaImageAnimation("image/gif", "avatar", "auto")).toBeTrue()
     expect(shouldPreserveMediaImageAnimation("image/gif", "thumbnail", "auto")).toBeFalse()
     expect(shouldPreserveMediaImageAnimation("image/gif", "og", "auto")).toBeFalse()
     expect(shouldPreserveMediaImageAnimation("image/gif", "avatar", "still")).toBeFalse()
-    expect(shouldPreserveMediaImageAnimation("image/png", "feed", "auto")).toBeFalse()
+    expect(shouldPreserveMediaImageAnimation("image/webp", "feed", "auto")).toBeTrue()
+    expect(shouldPreserveMediaImageAnimation("image/png", "detail", "auto")).toBeTrue()
+    expect(shouldPreserveMediaImageAnimation("image/webp", "thumbnail", "auto")).toBeFalse()
+    expect(shouldPreserveMediaImageAnimation("image/png", "feed", "still")).toBeFalse()
+    expect(shouldPreserveMediaImageAnimation("image/jpeg", "feed", "auto")).toBeFalse()
   })
 
   it("fits social images inside a maximum box without cropping or upscaling", () => {

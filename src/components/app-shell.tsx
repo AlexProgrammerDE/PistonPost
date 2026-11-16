@@ -15,7 +15,7 @@ export function AppShell({ children }: PropsWithChildren) {
     <SidebarProvider data-hydrated={hydrated}>
       <a
         href="#main-content"
-        className="sr-only fixed top-3 left-3 z-50 bg-background px-3 py-2 text-sm font-medium shadow-sm focus:not-sr-only"
+        className="fixed top-3 left-3 z-50 bg-background px-3 py-2 text-sm font-medium shadow-sm not-focus:sr-only focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         Skip to content
       </a>
@@ -25,7 +25,7 @@ export function AppShell({ children }: PropsWithChildren) {
           data-view-transition-chrome="mobile-header"
           className="sticky top-0 z-40 flex h-14 items-center gap-3 border-b bg-background px-3 md:hidden"
         >
-          <SidebarTrigger aria-label="Open navigation" />
+          <SidebarTrigger aria-label="Open navigation" className="size-11" />
           <Link
             to="/"
             className="font-heading text-lg font-extrabold tracking-brand"

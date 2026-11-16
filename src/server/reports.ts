@@ -55,7 +55,10 @@ export const createContentReport = createServerFn({ method: "POST" })
         const limited = yield* bindingOperation("createContentReport.limited", () =>
           context.env.USER_RATE_LIMITER.limit({ key: session.user.id }),
         )
-        if (!limited.success) return yield* rateLimitedFailure("The report rate limit was reached.")
+        if (!limited.success)
+          return yield* rateLimitedFailure(
+            "You've sent a lot of reports. Wait a minute and try again.",
+          )
         yield* verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createReport)
 
         const targetExists =

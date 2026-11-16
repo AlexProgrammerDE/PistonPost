@@ -215,7 +215,10 @@ export const setHeart = createServerFn({ method: "POST" })
         const limited = yield* bindingOperation("setHeart.limited", () =>
           context.env.REACTION_RATE_LIMITER.limit({ key: session.user.id }),
         )
-        if (!limited.success) return yield* rateLimitedFailure("The heart rate limit was reached.")
+        if (!limited.success)
+          return yield* rateLimitedFailure(
+            "You're adding hearts too fast. Wait a minute and try again.",
+          )
         const post = yield* bindingOperation("setHeart.post", () =>
           database
             .select({ id: schema.posts.id })
@@ -276,7 +279,9 @@ export const createComment = createServerFn({ method: "POST" })
           context.env.COMMENT_RATE_LIMITER.limit({ key: session.user.id }),
         )
         if (!limited.success)
-          return yield* rateLimitedFailure("The comment rate limit was reached.")
+          return yield* rateLimitedFailure(
+            "You're commenting too fast. Wait a minute and try again.",
+          )
         const post = yield* bindingOperation("createComment.post", () =>
           database
             .select({ id: schema.posts.id, authorId: schema.posts.authorId })

@@ -53,6 +53,17 @@ function errorMessages(errors: unknown[]) {
   })
 }
 
+/**
+ * Ids that tie a field's description and error to its control, so a screen reader reads why a
+ * field is invalid when focus moves to it, not only that it is.
+ */
+function fieldDescriptionIds(name: string, hasDescription: boolean, invalid: boolean) {
+  const descriptionId = hasDescription ? `${name}-description` : undefined
+  const errorId = `${name}-error`
+  const describedBy = [descriptionId, invalid ? errorId : undefined].filter(Boolean).join(" ")
+  return { descriptionId, errorId, describedBy: describedBy || undefined }
+}
+
 function TextField({
   label,
   description,
@@ -60,6 +71,7 @@ function TextField({
 }: FieldChromeProps & Omit<ComponentProps<typeof Input>, "value" | "onChange" | "onBlur">) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid}>
@@ -71,10 +83,15 @@ function TextField({
         onBlur={field.handleBlur}
         onChange={(event) => field.handleChange(event.currentTarget.value)}
         aria-invalid={invalid}
+        aria-describedby={ids.describedBy}
         {...props}
       />
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
@@ -86,6 +103,7 @@ function TextareaField({
 }: FieldChromeProps & Omit<ComponentProps<typeof Textarea>, "value" | "onChange" | "onBlur">) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid}>
@@ -97,10 +115,15 @@ function TextareaField({
         onBlur={field.handleBlur}
         onChange={(event) => field.handleChange(event.currentTarget.value)}
         aria-invalid={invalid}
+        aria-describedby={ids.describedBy}
         {...props}
       />
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
@@ -118,7 +141,7 @@ function BoundedTextareaField({
   }) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
-  const descriptionId = description ? `${field.name}-description` : undefined
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid} data-disabled={disabled || undefined}>
@@ -132,7 +155,7 @@ function BoundedTextareaField({
           disabled={disabled}
           onBlur={field.handleBlur}
           onChange={(event) => field.handleChange(event.currentTarget.value)}
-          aria-describedby={descriptionId}
+          aria-describedby={ids.describedBy}
           aria-invalid={invalid}
           className={cn("resize-y", className)}
           {...props}
@@ -143,8 +166,12 @@ function BoundedTextareaField({
           </InputGroupText>
         </InputGroupAddon>
       </InputGroup>
-      {description ? <FieldDescription id={descriptionId}>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
@@ -162,7 +189,7 @@ function ComposerTextareaField({
   }) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
-  const descriptionId = description ? `${field.name}-description` : undefined
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid}>
@@ -175,14 +202,14 @@ function ComposerTextareaField({
           maxLength={maxLength}
           onBlur={field.handleBlur}
           onChange={(event) => field.handleChange(event.currentTarget.value)}
-          aria-describedby={descriptionId}
+          aria-describedby={ids.describedBy}
           aria-invalid={invalid}
           className={cn("min-h-24 resize-y", className)}
           {...props}
         />
         <InputGroupAddon align="block-end" className="flex-wrap justify-end border-t">
           {description ? (
-            <InputGroupText id={descriptionId} className="mr-auto text-xs whitespace-normal">
+            <InputGroupText id={ids.descriptionId} className="mr-auto text-xs whitespace-normal">
               {description}
             </InputGroupText>
           ) : null}
@@ -194,7 +221,9 @@ function ComposerTextareaField({
           {actions}
         </InputGroupAddon>
       </InputGroup>
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
@@ -206,6 +235,7 @@ function MarkdownField({
 }: FieldChromeProps & { maxLength: number }) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid}>
@@ -217,12 +247,17 @@ function MarkdownField({
           value={field.state.value}
           maxLength={maxLength}
           aria-invalid={invalid}
+          aria-describedby={ids.describedBy}
           onBlur={field.handleBlur}
           onValueChange={field.handleChange}
         />
       </Suspense>
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
@@ -317,6 +352,7 @@ function ChoiceField({ label, description, options }: SelectFieldProps) {
 function TagsField({ label, description }: FieldChromeProps) {
   const field = useFieldContext<string[]>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
   const [draft, setDraft] = useState("")
 
   function commitTags(rawTags: string) {
@@ -351,6 +387,8 @@ function TagsField({ label, description }: FieldChromeProps) {
             id={field.name}
             name={field.name}
             autoComplete="off"
+            aria-invalid={invalid}
+            aria-describedby={ids.describedBy}
             placeholder={field.state.value.length === 0 ? "Try art…" : "Add another tag…"}
             onBlur={() => {
               commitTags(draft)
@@ -374,8 +412,12 @@ function TagsField({ label, description }: FieldChromeProps) {
           </Button>
         </ComboboxChips>
       </Combobox>
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }

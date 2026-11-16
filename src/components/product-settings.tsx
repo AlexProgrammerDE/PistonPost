@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/table"
 import type { NotificationPreference } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
-import { ServerFunctionClientError } from "@/lib/server-function-error"
+import { userFacingServerMessage } from "@/lib/server-function-error"
 import {
   getMyProductSettings,
   updateNotificationPreference,
@@ -41,9 +41,7 @@ const profileSaveFallbackMessage =
   "Your profile could not be saved. Check the fields and try again."
 
 export function profileSaveErrorMessage(error: unknown) {
-  if (!(error instanceof ServerFunctionClientError)) return profileSaveFallbackMessage
-  if (error.code === "INTERNAL_ERROR") return profileSaveFallbackMessage
-  return error.message
+  return userFacingServerMessage(error) ?? profileSaveFallbackMessage
 }
 
 function RequiredNotificationSwitch({ label }: { label: string }) {

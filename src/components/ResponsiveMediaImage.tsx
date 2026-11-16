@@ -34,13 +34,14 @@ export function ResponsiveMediaImage({
   const sources = createMediaImageSources(image, variant, widths)
   const stillSrcSet = createMediaImageSrcSet(image, variant, widths, "still")
   const stillSource = stillSrcSet ?? mediaImageUrl(image.id, variant, undefined, "still")
-  const placeholderStyle = {
-    ...props.style,
-    "--image-placeholder": image.placeholderColor ?? undefined,
-  }
+  // Set the colour on the wrapper: the image component renames custom properties in its own style
+  // object, so --image-placeholder set there never reaches the browser. The image inherits it.
+  const placeholderStyle = image.placeholderColor
+    ? { "--image-placeholder": image.placeholderColor }
+    : undefined
 
   return (
-    <picture className="contents">
+    <picture className="contents" style={placeholderStyle}>
       <source
         media="(prefers-reduced-motion: reduce)"
         srcSet={stillSource}
@@ -55,7 +56,6 @@ export function ResponsiveMediaImage({
         width={image.width ?? undefined}
         height={image.height ?? undefined}
         className={cn("bg-(--image-placeholder)", props.className)}
-        style={placeholderStyle}
       />
     </picture>
   )

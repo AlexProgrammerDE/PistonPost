@@ -1,10 +1,11 @@
 import { useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute, Link, notFound } from "@tanstack/react-router"
 import { Schema, Effect, Option } from "effect"
 import { ExternalLink, MapPin } from "lucide-react"
 import { lazy, Suspense } from "react"
 
 import { ContentReportDialog } from "@/components/ContentReportDialog"
+import { FeedLoadError } from "@/components/FeedLoadError"
 import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, ProfilePageSkeleton } from "@/components/LoadingStates"
 import { ResponsiveAvatarImage } from "@/components/ResponsiveAvatarImage"
@@ -90,7 +91,11 @@ export const Route = createFileRoute("/user/$username")({
           }
         : undefined,
       twitterCard: "summary",
-      indexing: loaderData?.searchIndexable ? "index" : "noindex",
+      indexing: !loaderData?.searchIndexable
+        ? "noindex"
+        : match.search.cursor
+          ? "noindex-follow"
+          : "index",
       profileUsername: username,
       jsonLd: {
         "@context": "https://schema.org",
@@ -135,6 +140,7 @@ export const Route = createFileRoute("/user/$username")({
   },
   component: ProfileFeed,
   pendingComponent: ProfilePageSkeleton,
+  errorComponent: ProfileFeedError,
 })
 
 function ProfileFeed() {
@@ -242,4 +248,23 @@ function safeWebsite(value: string | null) {
   } catch {
     return null
   }
+}
+
+/** Keeps the profile name on screen and offers the newest posts when an older page fails. */
+function ProfileFeedError() {
+  const { username } = Route.useParams()
+  const { cursor } = Route.useSearch()
+
+  return (
+    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <header className="mb-8 border-b pb-4">
+        <h1 className="min-w-0 font-heading text-3xl font-bold tracking-tight wrap-anywhere">
+          @{username}
+        </h1>
+      </header>
+      <FeedLoadError
+        latestLink={cursor ? <Link to="/user/$username" params={{ username }} /> : undefined}
+      />
+    </main>
+  )
 }

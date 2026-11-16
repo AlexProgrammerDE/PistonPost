@@ -106,7 +106,9 @@ export function mapEffectFailure(cause: unknown) {
     return invalidInputFailure("The pagination cursor is invalid.")
   }
   if (cause instanceof ConflictError) {
-    return conflictFailure(`The ${cause.entity} changed in another session.`)
+    return conflictFailure(
+      `This ${cause.entity} was changed in another tab or device. Reload the page and try again.`,
+    )
   }
   if (cause instanceof TurnstileVerificationError) {
     return cause.reason === "rejected"

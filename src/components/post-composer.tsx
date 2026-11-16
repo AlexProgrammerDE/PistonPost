@@ -18,7 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities"
 import { useStore } from "@tanstack/react-form"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
-import { useNavigate } from "@tanstack/react-router"
+import { Link, useNavigate } from "@tanstack/react-router"
 import { useSelector } from "@tanstack/react-store"
 import { Schema, SchemaIssue } from "effect"
 import {
@@ -37,10 +37,11 @@ import {
   Video,
   ZoomIn,
 } from "lucide-react"
-import { lazy, Suspense, useEffect, useRef, useState } from "react"
+import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react"
 import { toast } from "sonner"
 
 import { AppImage } from "@/components/AppImage"
+import { ButtonLink } from "@/components/ButtonLink"
 import { LightboxLoadingFallback } from "@/components/LoadingStates"
 import { SharedContentIntake } from "@/components/SharedContentIntake"
 import { TurnstileChallenge, type TurnstileChallengeHandle } from "@/components/TurnstileChallenge"
@@ -85,6 +86,7 @@ import { useComposerDraft } from "@/hooks/use-composer-draft"
 import { useAppForm } from "@/lib/forms/app-form"
 import { sharedText, type SharedContent } from "@/lib/pwa/share-intake"
 import { ownedMediaStatusQueryOptions } from "@/lib/queries/media"
+import { userFacingServerMessage } from "@/lib/server-function-error"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE, TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { ImagePreparationError, prepareImageForUpload } from "@/lib/uploads/image-preparation"
 import {
@@ -175,6 +177,11 @@ const composerMessages = new Set([
   HUMAN_VERIFICATION_ERROR_MESSAGE,
 ])
 
+/** Enter in a single-line field would submit the whole post, so keep it inside the field. */
+function ignoreEnterKey(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key === "Enter") event.preventDefault()
+}
+
 function readableError(error: unknown) {
   if (error instanceof Schema.SchemaError)
     return (
@@ -182,8 +189,10 @@ function readableError(error: unknown) {
       "Check the post details."
     )
   if (error instanceof UploadClientError) return error.message
+  const serverMessage = userFacingServerMessage(error)
+  if (serverMessage) return serverMessage
   if (error instanceof Error && composerMessages.has(error.message)) return error.message
-  return "The post could not be posted. Try again."
+  return "Your post didn't go through. Try again."
 }
 
 function fileRejectionMessage(type: "images" | "video", message: string) {
@@ -418,7 +427,8 @@ export function PostComposer({
 
   if (!userId) {
     return (
-      <Alert>
+      // A standing notice, not an error, so it should not interrupt the page announcement.
+      <Alert role="note">
         <TriangleAlert aria-hidden="true" />
         <AlertTitle>Sign in to post</AlertTitle>
         <AlertDescription className="flex flex-col items-start gap-4">
@@ -426,20 +436,20 @@ export function PostComposer({
           {shareId && (
             <p>Your shared content stays on this device for up to one hour while you sign in.</p>
           )}
-          <Button
-            onClick={() =>
-              void navigate({
-                to: "/auth/$authView",
-                params: { authView: "sign-in" },
-                search: {
+          <ButtonLink
+            render={
+              <Link
+                to="/auth/$authView"
+                params={{ authView: "sign-in" }}
+                search={{
                   redirectTo: `/posts/new${shareId ? `?shareId=${encodeURIComponent(shareId)}` : ""}`,
-                },
-              })
+                }}
+              />
             }
           >
             <LogIn aria-hidden="true" data-icon="inline-start" />
             Sign in
-          </Button>
+          </ButtonLink>
         </AlertDescription>
       </Alert>
     )
@@ -1069,7 +1079,9 @@ function UploadRow({
           <div className="grid min-w-0 flex-1 gap-3">
             {item.kind === "image" ? (
               <Field className="gap-2" data-disabled={editDisabled || undefined}>
-                <FieldLabel htmlFor={altTextId}>Alt text</FieldLabel>
+                <FieldLabel htmlFor={altTextId}>
+                  Alt text <span className="sr-only">for {item.filename}</span>
+                </FieldLabel>
                 <InputGroup data-disabled={editDisabled || undefined}>
                   <InputGroupInput
                     id={altTextId}
@@ -1079,6 +1091,7 @@ function UploadRow({
                     autoComplete="off"
                     disabled={editDisabled}
                     aria-describedby={altTextDescriptionId}
+                    onKeyDown={ignoreEnterKey}
                     onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
                   />
                   <InputGroupAddon align="inline-end">

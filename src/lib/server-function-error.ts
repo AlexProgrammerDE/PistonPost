@@ -59,9 +59,29 @@ export class ServerFunctionClientError extends Error {
   }
 }
 
+/**
+ * The message a server function declared for people to read, or undefined for internal failures and
+ * errors that never reached the server. Callers show their own fallback in that case.
+ */
+export function userFacingServerMessage(error: unknown) {
+  if (!(error instanceof ServerFunctionClientError) || error.code === "INTERNAL_ERROR")
+    return undefined
+  return error.message
+}
+
 export function parseServerFunctionError(value: unknown) {
   const parsed = Schema.decodeUnknownResult(serverFunctionErrorSchema, { errors: "all" })(value)
   return Result.isSuccess(parsed) ? parsed.success : null
+}
+
+/**
+ * The error code of a failed server function. In the browser the client middleware has already
+ * turned the failure into a ServerFunctionClientError; during server rendering it is the plain
+ * public error object.
+ */
+export function serverFunctionErrorCode(error: unknown) {
+  if (error instanceof ServerFunctionClientError) return error.code
+  return parseServerFunctionError(error)?.code
 }
 
 export function toServerFunctionClientError(value: unknown) {

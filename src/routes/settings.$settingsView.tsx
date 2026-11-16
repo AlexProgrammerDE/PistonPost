@@ -3,7 +3,7 @@ import { createFileRoute, notFound } from "@tanstack/react-router"
 import { Settings } from "@/components/auth/settings/settings"
 import { SettingsPanelSkeleton } from "@/components/LoadingStates"
 import { NotificationSettingsForm, ProfileSettingsForm } from "@/components/product-settings"
-import { validSettingsPathSegments } from "@/lib/settings-views"
+import { settingsViews, validSettingsPathSegments } from "@/lib/settings-views"
 import { getMyProductSettings } from "@/server/settings"
 
 export const Route = createFileRoute("/settings/$settingsView")({
@@ -16,7 +16,13 @@ export const Route = createFileRoute("/settings/$settingsView")({
       : null,
   component: SettingsView,
   pendingComponent: SettingsPanelSkeleton,
-  head: () => ({ meta: [{ title: "Account settings | PistonPost" }] }),
+  // Each tab is its own route, so name it in the title to confirm the change to screen readers.
+  head: ({ params }) => {
+    const view = settingsViews.find((candidate) => candidate.value === params.settingsView)
+    return {
+      meta: [{ title: `${view ? `${view.label} settings` : "Settings"} · PistonPost` }],
+    }
+  },
 })
 
 function SettingsView() {

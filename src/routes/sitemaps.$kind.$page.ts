@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
+import { Schema, SchemaGetter, Effect, SchemaIssue, Option } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import {
@@ -43,8 +43,13 @@ async function sitemapPage({
   context: AppRequestContext
   params: { kind: string; page: string }
 }) {
-  const kind = Schema.decodeUnknownSync(sitemapKindSchema, { errors: "all" })(params.kind)
-  const page = Schema.decodeSync(sitemapPageSchema, { errors: "all" })(params.page)
+  const decodedKind = Schema.decodeUnknownOption(sitemapKindSchema)(params.kind)
+  const decodedPage = Schema.decodeOption(sitemapPageSchema)(params.page)
+  if (Option.isNone(decodedKind) || Option.isNone(decodedPage)) {
+    return new Response("Sitemap page not found.", { status: 404 })
+  }
+  const kind = decodedKind.value
+  const page = decodedPage.value
   const origin = context.runtime.config.PUBLIC_APP_URL.origin
   const database = createD1Database(context.env.DB)
   const counts = await getPublicSitemapCounts(database)

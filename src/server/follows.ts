@@ -119,7 +119,9 @@ export const setFollow = createServerFn({ method: "POST" })
           context.env.USER_RATE_LIMITER.limit({ key: session.user.id }),
         )
         if (!rateLimit.success)
-          return yield* rateLimitedFailure("The follow rate limit was reached.")
+          return yield* rateLimitedFailure(
+            "You're following too fast. Wait a minute and try again.",
+          )
         const repository = createFollowRepository(database)
 
         return yield* Effect.gen(function* () {

@@ -26,9 +26,9 @@
   --muted-foreground: oklch(0.51 0.035 40);
   --accent: oklch(0.94 0.045 15);
   --accent-foreground: oklch(0.27 0.04 32);
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: oklch(0.52 0.21 27);
   --border: oklch(0.88 0.035 65);
-  --input: oklch(0.88 0.035 65);
+  --input: oklch(0.64 0.035 50);
   --ring: oklch(0.55 0.22 18);
   --chart-1: oklch(0.68 0.19 18);
   --chart-2: oklch(0.82 0.16 88);
@@ -63,7 +63,7 @@
   --accent-foreground: oklch(0.96 0.015 80);
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --input: oklch(1 0 0 / 40%);
   --ring: oklch(0.72 0.18 18);
   --chart-1: oklch(0.72 0.18 18);
   --chart-2: oklch(0.8 0.14 88);
@@ -132,7 +132,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html {
     /* Keep hash targets such as #discussion clear of the sticky mobile header. */
