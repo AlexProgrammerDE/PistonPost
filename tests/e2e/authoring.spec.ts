@@ -361,8 +361,10 @@ Markdown still works **inside** this callout.
     await expect(page.getByRole("heading", { name: "Markdown heading" }).first()).toBeVisible()
     await expect(page.getByRole("button", { name: "Load" }).first()).toBeVisible()
     await expect(page.getByRole("button", { name: "Reveal spoiler" })).toBeVisible()
-    await expect(page.getByText("More context")).toBeVisible()
-    await expect(page.getByText("Remember")).toBeVisible()
+    // The Write panel stays mounted to keep undo history, so its textarea also holds this text.
+    const preview = page.getByRole("tabpanel", { name: "Preview" })
+    await expect(preview.getByText("More context")).toBeVisible()
+    await expect(preview.getByText("Remember")).toBeVisible()
 
     let publishDialogCount = 0
     const acceptPublishDialog = async (dialog: Dialog) => {
