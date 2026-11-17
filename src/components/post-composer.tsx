@@ -235,14 +235,14 @@ function focusFirstInvalidField(formElement: HTMLFormElement) {
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     // Polling must remain ordered so each check observes the latest Stream state.
-    // eslint-disable-next-line no-await-in-loop
+    // oxlint-disable-next-line no-await-in-loop
     const [asset] = await queryClient.fetchQuery(ownedMediaStatusQueryOptions([assetId]))
     if (asset?.status === "ready") return
     if (asset?.status === "failed" || asset?.status === "deleted") {
       throw new Error("The video could not be processed.")
     }
     // The delay is part of the bounded reconciliation protocol.
-    // eslint-disable-next-line no-await-in-loop
+    // oxlint-disable-next-line no-await-in-loop
     await new Promise((resolve) => setTimeout(resolve, 5_000))
   }
   throw new Error("The video is still processing. Try posting again in a few minutes.")
@@ -325,7 +325,7 @@ export function PostComposer({
           const assetIds: string[] = []
           for (const uploadBatch of createImageUploadBatches(uploads)) {
             // Bounded batches keep D1 requests small and issue upload slots close to their use.
-            // eslint-disable-next-line no-await-in-loop
+            // oxlint-disable-next-line no-await-in-loop
             const intents = await createImageUploadIntents({
               data: {
                 postId: draft.id,
@@ -349,7 +349,7 @@ export function PostComposer({
               uploadControllers.current.set(item.clientId, controller)
               try {
                 // Uploads are ordered to preserve media order without D1 writer races.
-                // eslint-disable-next-line no-await-in-loop
+                // oxlint-disable-next-line no-await-in-loop
                 await uploadImage(
                   intent.uploadUrl,
                   item.file,
@@ -544,7 +544,7 @@ export function PostComposer({
     for (const file of selected) {
       try {
         // Preparation stays ordered to cap peak browser memory for large image dumps.
-        // eslint-disable-next-line no-await-in-loop
+        // oxlint-disable-next-line no-await-in-loop
         prepared.push(await prepareImageForUpload(file))
       } catch (error) {
         toast.error(`Couldn’t prepare ${file.name}`, {

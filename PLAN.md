@@ -717,7 +717,7 @@ bun run build
 
 ### Phase 1: Modern project tooling
 
-- [x] Replace ESLint and Prettier with Oxlint and Oxfmt.
+- [x] Use Oxlint and Oxfmt for linting and formatting.
 - [x] Add shared Oxc configuration and editor recommendations.
 - [x] Add root check, fix, test, ci, and runtime-focused scripts.
 - [x] Configure direct root scripts for deterministic build, test, typecheck, and deployment tasks.

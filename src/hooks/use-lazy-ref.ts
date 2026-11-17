@@ -7,7 +7,7 @@ function useLazyRef<T>(fn: () => T) {
     ref.current = fn()
   }
 
-  // eslint-disable-next-line typescript/no-unsafe-type-assertion -- The ref is initialized above.
+  // oxlint-disable-next-line typescript/no-unsafe-type-assertion -- The ref is initialized above.
   return ref as React.RefObject<T>
 }
 

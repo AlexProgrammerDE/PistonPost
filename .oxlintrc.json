@@ -131,6 +131,7 @@
               "border-t-0",
               "border-x-0",
               "last:border-b-0",
+              "no-underline",
               "not-typeset",
               "p-3",
               "px-0",
@@ -209,6 +210,17 @@
             "allow": ["layout", "gap-3", "pb-10", "sm:gap-4"]
           },
           {
+            "pattern": "^TooltipTrigger$",
+            "allow": [
+              "layout",
+              "focus-visible:outline-2",
+              "focus-visible:outline-offset-4",
+              "focus-visible:outline-ring",
+              "outline-none",
+              "text-sidebar-foreground"
+            ]
+          },
+          {
             "pattern": "^Toggle$",
             "allow": [
               "layout",
@@ -251,7 +263,8 @@
     ],
     "effecttsgo/any-unknown-in-error-context": "off",
     "effecttsgo/unsafe-effect-type-assertion": "off",
-    "effecttsgo/strict-effect-provide": "off"
+    "effecttsgo/strict-effect-provide": "off",
+    "effecttsgo/schema-class-missing-brand": "off"
   },
   "overrides": [
     {
@@ -300,6 +313,7 @@
   },
   "extends": ["./node_modules/@effect/tsgo/oxlint-presets/recommended.json"],
   "options": {
-    "typeAware": true
+    "typeAware": true,
+    "reportUnusedDisableDirectives": "error"
   }
 }

@@ -28,7 +28,7 @@ type PrepareImageFailure = {
 
 // This module is bundled only as a dedicated worker. The project-wide DOM lib otherwise types
 // `globalThis` as Window, so narrow the environment at this explicit worker boundary.
-// eslint-disable-next-line typescript/no-unsafe-type-assertion
+// oxlint-disable-next-line typescript/no-unsafe-type-assertion
 const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
 const sanitizerReady = initImageSanitizer()
 
@@ -123,7 +123,7 @@ workerScope.addEventListener("message", (event: MessageEvent<PrepareImageRequest
         message: error instanceof Error ? error.message : "Image preparation failed.",
       }
       // WorkerGlobalScope.postMessage has no target origin because it cannot navigate.
-      // eslint-disable-next-line unicorn/require-post-message-target-origin
+      // oxlint-disable-next-line unicorn/require-post-message-target-origin
       workerScope.postMessage(response)
     })
 })

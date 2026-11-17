@@ -34,7 +34,7 @@ export async function prepareSharedImage(src: string, signal: AbortSignal) {
   let size = 0
   while (true) {
     // Stream reads are sequential so the byte limit also bounds memory use.
-    // eslint-disable-next-line no-await-in-loop
+    // oxlint-disable-next-line no-await-in-loop
     const { done, value } = await reader.read()
     if (done) break
     size += value.byteLength

@@ -186,7 +186,7 @@ export async function prepareVideoForUpload(file: File) {
       try {
         const time = Math.min(durationSeconds - 0.001, durationSeconds * timestampPct)
         // Frame sampling stays ordered so browsers can seek through the local file efficiently.
-        // eslint-disable-next-line no-await-in-loop
+        // oxlint-disable-next-line no-await-in-loop
         await seekVideo(video, Math.max(0, time), remainingTime)
         context.drawImage(video, 0, 0, canvas.width, canvas.height)
         candidates.push({

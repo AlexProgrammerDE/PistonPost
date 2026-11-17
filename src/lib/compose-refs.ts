@@ -21,7 +21,7 @@ function setRef<T>(ref: PossibleRef<T>, value: T) {
  * Accepts callback refs and RefObject(s)
  */
 function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
-  // eslint-disable-next-line typescript/consistent-return -- React 19 ref cleanup is optional.
+  // oxlint-disable-next-line typescript/consistent-return -- React 19 ref cleanup is optional.
   return (node) => {
     let hasCleanup = false
     const cleanups = refs.map((ref) => {
@@ -56,7 +56,7 @@ function composeRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
  * Accepts callback refs and RefObject(s)
  */
 function useComposedRefs<T>(...refs: PossibleRef<T>[]): React.RefCallback<T> {
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- The refs are the complete dependency list.
+  // oxlint-disable-next-line react/exhaustive-deps -- The refs are the complete dependency list.
   return React.useCallback(composeRefs(...refs), refs)
 }
 
