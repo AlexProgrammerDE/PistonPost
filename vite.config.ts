@@ -56,7 +56,7 @@ const config = defineConfig(({ command, mode }) => ({
     ...(mode === "development" ? [devtools()] : []),
     cloudflare({
       viteEnvironment: { name: "ssr" },
-      persistState: { path: ".wrangler/state" },
+      persistState: { path: ".cloudflare/state" },
     }),
     tailwindcss(),
     tanstackStart(),
@@ -65,7 +65,7 @@ const config = defineConfig(({ command, mode }) => ({
       srcDir: "src/lib/pwa",
       filename: "push-sw.ts",
       // Publish the worker alongside the Cloudflare deployment's static assets.
-      outDir: ".cloudflare/output/v0/workers/default/assets",
+      outDir: ".cloudflare/output/v1/workers/default/assets",
       scope: "/",
       injectRegister: false,
       registerType: "autoUpdate",

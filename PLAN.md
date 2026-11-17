@@ -191,7 +191,7 @@ PistonPost/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts
-└── wrangler.jsonc
+└── cloudflare.config.ts
 ```
 
 ## Runtime request flow
@@ -246,7 +246,7 @@ Use descriptive binding names and keep actual IDs out of committed documentation
 | VAPID_PRIVATE_KEY         | Secret                 | Server Web Push signing key                    |
 | VAPID_SUBJECT             | config                 | Monitored Web Push contact                     |
 
-wrangler.jsonc should follow the useful EnderDash patterns:
+cloudflare.config.ts should follow the useful EnderDash patterns:
 
 - Current compatibility date.
 - nodejs_compat only when required.
@@ -258,7 +258,7 @@ wrangler.jsonc should follow the useful EnderDash patterns:
 - Observability with full development sampling and deliberate production trace sampling.
 - Explicit rate-limit bindings.
 - Secrets Store bindings for production secrets.
-- Environment blocks for preview and production.
+- Modes for preview and production.
 
 Do not copy EnderDash account IDs, namespace IDs, routes, hostnames, Hyperdrive, Durable Object migrations, or product-specific secrets.
 
@@ -726,7 +726,7 @@ bun run build
 - [x] Add Knip for unused exports and dependencies.
 - [x] Add Lefthook with staged Oxc checks and appropriate type/tests.
 - [x] Add Renovate configuration with grouped TanStack and Cloudflare updates.
-- [x] Add GitHub Actions for install, generated-file verification, check, typecheck, test, build, and Wrangler dry run.
+- [x] Add GitHub Actions for install, generated-file verification, check, typecheck, test, build, and `cf deploy` dry run.
 - [x] Keep CI installation and validation deterministic from the root lockfile.
 - [x] Ensure hooks are fast enough for normal commits and never bypassed.
 
@@ -739,21 +739,21 @@ bun run ci
 ### Phase 2: Cloudflare and TanStack Start runtime
 
 - [x] Add the Cloudflare Vite plugin using the current TanStack Start integration.
-- [x] Create wrangler.jsonc with preview and production environments.
+- [x] Create cloudflare.config.ts with preview and production modes.
 - [x] Configure assets, smart placement, source maps, observability, cache, rate limits, and initial D1 binding.
 - [x] Add generated Worker environment types.
 - [x] Create a typed runtime-env resolver.
 - [x] Separate public cache policy from private no-store policy.
 - [x] Add shallow health endpoint.
 - [x] Add local development variable examples without secret values.
-- [x] Add Wrangler dry-run build and type generation to CI.
+- [x] Add the `cf deploy` dry run and type generation to CI.
 - [x] Document Cloudflare resource provisioning commands.
 
 Exit criteria:
 
 - Local development serves through the Cloudflare-compatible runtime.
 - Worker type generation is clean.
-- Production build and Wrangler dry run succeed.
+- Production build and `cf deploy` dry run succeed.
 - Public and private cache policy tests pass.
 
 ### Phase 3: D1, Drizzle, and domain foundation
@@ -968,7 +968,7 @@ Pull request CI:
 4. Typecheck.
 5. Unit and integration tests.
 6. Production build.
-7. Wrangler deploy dry run.
+7. `cf deploy` dry run.
 8. Playwright smoke suite for affected critical routes.
 
 Production deployment:
@@ -1023,7 +1023,7 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-09-11: Move production D1 to `pistonpost-production-global` without a jurisdiction
   restriction and enable automatic read replication. This allows replicas outside the EU.
   Preserve the existing read-consistency policies and the R2 bucket jurisdiction.
-  Keep the production database ID in `.env.production` aligned with the Wrangler binding.
+  Keep the production database ID in `.env.production` aligned with the D1 binding in `cloudflare.config.ts`.
   This affects Phases 9 and 10.
 
 - 2026-09-10: Choose D1 consistency at each read boundary (Phases 5, 7, and 9).

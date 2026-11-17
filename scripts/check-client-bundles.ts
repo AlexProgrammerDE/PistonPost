@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises"
 import { resolve } from "node:path"
 
-const clientDirectory = resolve(".cloudflare/output/v0/workers/default/assets/assets")
+const clientDirectory = resolve(".cloudflare/output/v1/workers/default/assets/assets")
 const serviceWorker = Bun.file(resolve(clientDirectory, "../push-sw.js"))
 if (!(await serviceWorker.exists()) || serviceWorker.size === 0) {
   throw new Error("The Cloudflare deployment is missing its service worker.")

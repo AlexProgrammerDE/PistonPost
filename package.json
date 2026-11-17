@@ -26,7 +26,7 @@
     "smoke:production": "bun scripts/smoke-production.ts",
     "test": "bun test --path-ignore-patterns='tests/e2e/**'",
     "test:e2e": "playwright test",
-    "test:prepare-db": "wrangler d1 migrations apply DB --config tests/fixtures/wrangler.local.jsonc --local --persist-to .wrangler/state",
+    "test:prepare-db": "cf d1 migrations apply 5e735af4-a49f-44b7-aedf-45a5a4391291 --dir drizzle --local --persist-to .cloudflare/state",
     "test:web": "bun test --path-ignore-patterns='tests/e2e/**'",
     "typecheck": "bun run cf:typegen && tsgo --noEmit",
     "typecheck:web": "bun run typecheck",
@@ -108,7 +108,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.13.0",
-    "@cloudflare/vite-plugin": "2.0.0-beta.sha-ad79608dd",
+    "@cloudflare/vite-plugin": "2.0.0-rc.0",
     "@effect/tsgo": "0.51.1",
     "@playwright/test": "1.64.0",
     "@posthog/rollup-plugin": "^1.6.2",
@@ -129,7 +129,7 @@
     "@typescript/native-preview": "7.0.0-dev.20260707.2",
     "@vitejs/plugin-react": "6.1.2",
     "babel-plugin-react-compiler": "1.0.0",
-    "cf": "1.0.0-beta.7",
+    "cf": "1.0.0-rc.0",
     "drizzle-kit": "0.31.11",
     "knip": "6.40.0",
     "lefthook": "2.2.1",
@@ -142,13 +142,7 @@
     "typescript": "7.0.2",
     "vite": "8.3.4",
     "vite-plugin-pwa": "^2.0.0",
-    "wasm-pack": "0.15.0",
-    "wrangler": "4.130.0"
-  },
-  "overrides": {
-    "@cloudflare/build-output-utils": "0.8.4",
-    "@cloudflare/config": "0.22.0",
-    "@cloudflare/runtime-types": "0.1.6"
+    "wasm-pack": "0.15.0"
   },
   "engines": {
     "node": ">=20"

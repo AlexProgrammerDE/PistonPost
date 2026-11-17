@@ -62,19 +62,17 @@ Main commands:
 - bun run typecheck:web: check the application TypeScript configuration.
 - bun run ci: run the complete local CI gate.
 
-Run commands from the repository root. The root package owns Vite, Wrangler, Drizzle, shadcn, and tests.
+Run commands from the repository root. The root package owns Vite, the `cf` CLI, Drizzle, shadcn, and tests.
 
-Browser tests use the local state in `.wrangler/state`.
+Browser tests use the local state in `.cloudflare/state`.
 Run automated browser verification in a fresh CI checkout or an isolated source copy with its own disposable state.
 Do not apply test migrations to pre-existing user state. Run `test:prepare-db` only in the disposable copy.
-This command uses Wrangler because the installed `cf` local migration command can remain alive after successful migration.
-Keep this fallback local. Production deployment continues to use `cf`.
 
 ## Package management and generated files
 
 - Use Bun only. Do not add npm, pnpm, or Yarn lockfiles.
 - Use bunx --bun for one-off package CLIs.
-- For existing scripts that invoke Wrangler, preserve its Node runtime for the local `workerd` process.
+- Run `cf` under Node. It cannot load `cloudflare.config.ts` under Bun, so do not pass `--bun` to it.
 - Keep bun.lock committed.
 - Keep one root dependency graph. Do not add workspace-only package manifests or another task orchestrator.
 - Generated route trees, Worker types, Better Auth schemas, and Drizzle migration artifacts must be created by their owning tools.

@@ -9,7 +9,6 @@ dist-ssr
 !.env.production
 !**/.dev.vars.example
 .tanstack
-.wrangler
 .output
 .vinxi
 __unconfig*

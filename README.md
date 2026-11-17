@@ -176,10 +176,9 @@ and [file handlers](https://developer.mozilla.org/en-US/docs/Web/Progressive_web
 
 ## Cloudflare CLI migration
 
-`cloudflare.config.ts` owns the Worker configuration. The legacy Wrangler file
-remains as a backup until the first successful production deployment.
+`cloudflare.config.ts` owns the Worker configuration.
 
-Local D1 commands use a stable development UUID and retain `.wrangler/state/`.
+Local D1 commands use a stable development UUID and keep their state in `.cloudflare/state/`.
 The development UUID differs from the legacy database name. Existing checkouts
 need a local database copy before the first run with the new configuration.
 
