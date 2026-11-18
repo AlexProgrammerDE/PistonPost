@@ -6,7 +6,7 @@ import initImageSanitizer, {
 } from "./image-sanitizer-wasm/pistonpost_image_sanitizer"
 import type { ImageUploadMimeType } from "./image-upload-policy"
 
-type PrepareImageRequest = {
+export type PrepareImageRequest = {
   type: "prepare"
   id: string
   bytes: ArrayBuffer
@@ -112,8 +112,6 @@ async function prepareImage(request: PrepareImageRequest): Promise<PrepareImageS
 
 workerScope.addEventListener("message", (event: MessageEvent<PrepareImageRequest>) => {
   const request = event.data
-  if (request.type !== "prepare") return
-
   void prepareImage(request)
     .then((response) => workerScope.postMessage(response, [response.bytes]))
     .catch((error: unknown) => {

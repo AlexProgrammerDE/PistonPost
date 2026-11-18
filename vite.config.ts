@@ -79,16 +79,16 @@ const config = defineConfig(({ command, mode }) => ({
     }),
     viteReact(),
     babel({ presets: [reactCompilerPreset()] }),
-    ...(command === "build" && process.env.POSTHOG_PERSONAL_API_KEY
+    ...(command === "build" && process.env["POSTHOG_PERSONAL_API_KEY"]
       ? [
           posthog({
-            personalApiKey: process.env.POSTHOG_PERSONAL_API_KEY,
+            personalApiKey: process.env["POSTHOG_PERSONAL_API_KEY"],
             projectId: "225703",
             host: "https://eu.posthog.com",
             sourcemaps: {
               enabled: true,
               releaseName: "pistonpost",
-              releaseVersion: process.env.GITHUB_SHA,
+              releaseVersion: process.env["GITHUB_SHA"],
               deleteAfterUpload: true,
             },
           }),

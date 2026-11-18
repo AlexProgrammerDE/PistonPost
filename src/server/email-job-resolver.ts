@@ -238,8 +238,8 @@ export function emailJobResolverLayer(
             : null
         if (!action) return skip("event-unsupported")
         const reason =
-          typeof event.metadata.reason === "string"
-            ? event.metadata.reason
+          typeof event.metadata["reason"] === "string"
+            ? event.metadata["reason"]
             : "An administrator updated this content."
         return ready({
           to: recipient.email,

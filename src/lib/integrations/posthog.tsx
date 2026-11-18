@@ -7,15 +7,15 @@ export function PostHogProvider({ children }: { readonly children: ReactNode }) 
   const [client, setClient] = useState<typeof posthog | null>(null)
 
   useEffect(() => {
-    let active = true
+    const controller = new AbortController()
 
     void (async () => {
       const readyClient = await postHogReady
-      if (active) setClient(readyClient)
+      if (!controller.signal.aborted) setClient(readyClient)
     })()
 
     return () => {
-      active = false
+      controller.abort()
     }
   }, [])
 

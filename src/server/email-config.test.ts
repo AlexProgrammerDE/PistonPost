@@ -14,7 +14,7 @@ describe("email configuration", () => {
     expect(keyring).toEqual({ current, verificationKeys: [current, previous] })
   })
 
-  it("rejects missing and short signing keys", async () => {
+  it("rejects missing and short signing keys", () => {
     expect(readUnsubscribeKeyring("  ")).rejects.toThrow("unavailable")
     expect(readUnsubscribeKeyring("too-short")).rejects.toThrow("at least 32 characters")
   })

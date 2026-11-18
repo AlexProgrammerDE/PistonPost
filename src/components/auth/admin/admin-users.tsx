@@ -1438,7 +1438,7 @@ function UserInspector({
                         {config.localization.cancel}
                       </Button>
                       <profileForm.Subscribe
-                        selector={(state) => [state.values.name, state.values.email]}
+                        selector={(state) => [state.values.name, state.values.email] as const}
                       >
                         {([name, email]) => (
                           <profileForm.AuthFormSubmitButton

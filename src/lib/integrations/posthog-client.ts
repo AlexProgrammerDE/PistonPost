@@ -124,11 +124,11 @@ export function sanitizePostHogCapture(
     if (!sensitivePropertyName.test(name)) properties[name] = value
   }
 
-  properties.$current_url = new URL(routePath, location.origin).toString()
-  properties.$pathname = routePath
-  properties.route = route
+  properties["$current_url"] = new URL(routePath, location.origin).toString()
+  properties["$pathname"] = routePath
+  properties["route"] = route
   // Skip PostHog's GeoIP enrichment so events never gain city, postcode, or coordinates.
-  properties.$geoip_disable = true
+  properties["$geoip_disable"] = true
 
   return {
     uuid: capture.uuid,

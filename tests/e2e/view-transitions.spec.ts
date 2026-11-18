@@ -21,10 +21,10 @@ async function trackViewTransitions(page: Page) {
         const update = typeof options === "function" ? options : options.update
         const types = typeof options === "function" ? [] : (options.types ?? [])
         const root = document.documentElement
-        const calls = Number(root.dataset.viewTransitionCalls ?? "0") + 1
+        const calls = Number(root.dataset["viewTransitionCalls"] ?? "0") + 1
 
-        root.dataset.viewTransitionCalls = String(calls)
-        root.dataset.viewTransitionTypes = types.join(" ")
+        root.dataset["viewTransitionCalls"] = String(calls)
+        root.dataset["viewTransitionTypes"] = types.join(" ")
 
         const updateCallbackDone = Promise.resolve().then(update)
         return {

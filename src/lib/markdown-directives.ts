@@ -52,14 +52,14 @@ export const postMarkdownSanitizeSchema: SanitizeSchema = {
   attributes: {
     ...defaultSchema.attributes,
     div: [
-      ...(defaultSchema.attributes?.div ?? []),
+      ...(defaultSchema.attributes?.["div"] ?? []),
       ["dataPostDirective", "details", "callout", "embed", "card"],
       "dataUrl",
       "dataLabel",
       ["dataKind", ...CALLOUT_KINDS],
     ],
     span: [
-      ...(defaultSchema.attributes?.span ?? []),
+      ...(defaultSchema.attributes?.["span"] ?? []),
       ["dataPostDirective", "spoiler"],
       "dataLabel",
     ],
@@ -144,12 +144,16 @@ function hasNoAttributes(directive: Directives) {
 function parsePostLeafDirective(directive: Directives) {
   if (directive.type !== "leafDirective") return null
   const attributes = directive.attributes
-  if (!attributes || Object.keys(attributes).length !== 1 || typeof attributes.url !== "string") {
+  if (
+    !attributes ||
+    Object.keys(attributes).length !== 1 ||
+    typeof attributes["url"] !== "string"
+  ) {
     return null
   }
 
   const label = normalizeDirectiveLabel(toString(directive)) || null
-  return parsePostLeafDirectiveInput(directive.name, attributes.url, label)
+  return parsePostLeafDirectiveInput(directive.name, attributes["url"], label)
 }
 
 function parsePostInlineDirective(directive: Directives): ParsedPostInlineDirective | null {
@@ -188,7 +192,7 @@ function parsePostContainerDirective(directive: Directives): ParsedPostContainer
   const attributes = directive.attributes ?? {}
   const keys = Object.keys(attributes)
   if (keys.some((key) => key !== "kind") || keys.length > 1) return null
-  const requestedKind = attributes.kind ?? "note"
+  const requestedKind = attributes["kind"] ?? "note"
   const calloutKind = CALLOUT_KINDS.find((candidate) => candidate === requestedKind)
   if (!calloutKind || (label && label.length > MAX_DIRECTIVE_LABEL_LENGTH)) return null
   return { kind: "callout", calloutKind, label }
@@ -245,27 +249,30 @@ export function parseRenderedPostDirective(
   properties: Readonly<Record<string, unknown>>,
 ): ParsedPostLeafDirective | null {
   if (
-    typeof properties.dataPostDirective !== "string" ||
-    typeof properties.dataUrl !== "string" ||
-    (properties.dataLabel !== undefined && typeof properties.dataLabel !== "string")
+    typeof properties["dataPostDirective"] !== "string" ||
+    typeof properties["dataUrl"] !== "string" ||
+    (properties["dataLabel"] !== undefined && typeof properties["dataLabel"] !== "string")
   ) {
     return null
   }
 
   const label =
-    typeof properties.dataLabel === "string"
-      ? normalizeDirectiveLabel(properties.dataLabel) || null
+    typeof properties["dataLabel"] === "string"
+      ? normalizeDirectiveLabel(properties["dataLabel"]) || null
       : null
-  return parsePostLeafDirectiveInput(properties.dataPostDirective, properties.dataUrl, label)
+  return parsePostLeafDirectiveInput(properties["dataPostDirective"], properties["dataUrl"], label)
 }
 
 export function parseRenderedPostInlineDirective(
   properties: Readonly<Record<string, unknown>>,
 ): ParsedPostInlineDirective | null {
-  if (properties.dataPostDirective !== "spoiler" || typeof properties.dataLabel !== "string") {
+  if (
+    properties["dataPostDirective"] !== "spoiler" ||
+    typeof properties["dataLabel"] !== "string"
+  ) {
     return null
   }
-  const label = normalizeDirectiveLabel(properties.dataLabel)
+  const label = normalizeDirectiveLabel(properties["dataLabel"])
   return label && label.length <= MAX_SPOILER_LENGTH ? { kind: "spoiler", label } : null
 }
 
@@ -273,16 +280,16 @@ export function parseRenderedPostContainerDirective(
   properties: Readonly<Record<string, unknown>>,
 ): ParsedPostContainerDirective | null {
   const label =
-    typeof properties.dataLabel === "string"
-      ? normalizeDirectiveLabel(properties.dataLabel) || null
+    typeof properties["dataLabel"] === "string"
+      ? normalizeDirectiveLabel(properties["dataLabel"]) || null
       : null
-  if (properties.dataPostDirective === "details") {
+  if (properties["dataPostDirective"] === "details") {
     return label && label.length <= MAX_DIRECTIVE_LABEL_LENGTH ? { kind: "details", label } : null
   }
-  if (properties.dataPostDirective !== "callout" || typeof properties.dataKind !== "string") {
+  if (properties["dataPostDirective"] !== "callout" || typeof properties["dataKind"] !== "string") {
     return null
   }
-  const calloutKind = CALLOUT_KINDS.find((candidate) => candidate === properties.dataKind)
+  const calloutKind = CALLOUT_KINDS.find((candidate) => candidate === properties["dataKind"])
   if (!calloutKind || (label && label.length > MAX_DIRECTIVE_LABEL_LENGTH)) return null
   return { kind: "callout", calloutKind, label }
 }

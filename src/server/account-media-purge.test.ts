@@ -13,12 +13,11 @@ describe("account media purge", () => {
       purgeAccountMedia([asset]).pipe(
         Effect.provide(
           accountMediaPurgeLayer({
-            deleteR2: async () => undefined,
-            deleteStream: async () => {
-              throw new Error("temporary Stream failure")
-            },
-            deleteRecord: async (id) => {
+            deleteR2: () => Promise.resolve(),
+            deleteStream: () => Promise.reject(new Error("temporary Stream failure")),
+            deleteRecord: (id) => {
               deleted.push(id)
+              return Promise.resolve()
             },
           }),
         ),
@@ -35,16 +34,18 @@ describe("account media purge", () => {
       purgeAccountMedia([asset]).pipe(
         Effect.provide(
           accountMediaPurgeLayer({
-            deleteR2: async () => undefined,
-            deleteStream: async () => {
-              throw Object.assign(new Error("Video not found"), {
-                name: "NotFoundError",
-                code: 10003,
-                statusCode: 404,
-              })
-            },
-            deleteRecord: async (id) => {
+            deleteR2: () => Promise.resolve(),
+            deleteStream: () =>
+              Promise.reject(
+                Object.assign(new Error("Video not found"), {
+                  name: "NotFoundError",
+                  code: 10003,
+                  statusCode: 404,
+                }),
+              ),
+            deleteRecord: (id) => {
               deleted.push(id)
+              return Promise.resolve()
             },
           }),
         ),
@@ -66,12 +67,14 @@ describe("account media purge", () => {
         Effect.flip,
         Effect.provide(
           accountMediaPurgeLayer({
-            deleteR2: async (key) => {
-              if (key === "users/one/a") throw new Error("temporary R2 failure")
-            },
-            deleteStream: async () => undefined,
-            deleteRecord: async (id) => {
+            deleteR2: (key) =>
+              key === "users/one/a"
+                ? Promise.reject(new Error("temporary R2 failure"))
+                : Promise.resolve(),
+            deleteStream: () => Promise.resolve(),
+            deleteRecord: (id) => {
               deleted.push(id)
+              return Promise.resolve()
             },
           }),
         ),

@@ -12,11 +12,11 @@ type LoaderContext = Parameters<typeof tagLoader>[0]
 
 function loadTag(tag: string, lookups: Array<ReadonlyArray<unknown>>) {
   const queryClient = {
-    ensureQueryData: async ({ queryKey }: { queryKey: ReadonlyArray<unknown> }) => {
+    ensureQueryData: ({ queryKey }: { queryKey: ReadonlyArray<unknown> }) => {
       lookups.push(queryKey)
-      return null
+      return Promise.resolve(null)
     },
-    infiniteQuery: async () => undefined,
+    infiniteQuery: () => Promise.resolve(),
   }
   return tagLoader({
     context: { queryClient },

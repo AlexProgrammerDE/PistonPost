@@ -75,13 +75,15 @@ async function createVerifiedSession(context: BrowserContext) {
   })
   expect(signUp.status()).toBe(200)
 
-  let verificationCode: string | null = null
+  // The poll callback writes here. A property keeps TypeScript from narrowing it to null.
+  const latest: { code: string | null } = { code: null }
   await expect
     .poll(async () => {
-      verificationCode = await verificationCodeSince(startedAt)
-      return verificationCode
+      latest.code = await verificationCodeSince(startedAt)
+      return latest.code
     })
     .not.toBeNull()
+  const verificationCode = latest.code
   if (!verificationCode) throw new Error("The local verification email was not written.")
 
   const verification = await context.request.post("/api/auth/email-otp/verify-email", {

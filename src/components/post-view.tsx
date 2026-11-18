@@ -539,7 +539,8 @@ function ImageBrowser({
 
   useEffect(() => {
     const selectedThumbnail = selectedThumbnailRef.current
-    if (!selectedThumbnail || selectedThumbnail.dataset.imageIndex !== String(selectedIndex)) return
+    if (!selectedThumbnail || selectedThumbnail.dataset["imageIndex"] !== String(selectedIndex))
+      return
     const thumbnailStrip = selectedThumbnail.parentElement
     if (!thumbnailStrip) return
 

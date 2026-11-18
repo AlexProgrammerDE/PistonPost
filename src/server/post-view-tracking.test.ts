@@ -33,19 +33,19 @@ function setup(
           dataPoints.push(dataPoint)
         },
       },
-      async findPublishedPost(postId: string) {
+      findPublishedPost(postId: string) {
         lookedUpPostIds.push(postId)
-        return options.publishedPost === undefined ? post : options.publishedPost
+        return Promise.resolve(options.publishedPost === undefined ? post : options.publishedPost)
       },
-      async incrementViewCount(postId: string) {
+      incrementViewCount(postId: string) {
         incrementedPostIds.push(postId)
-        return incrementedPostIds.length
+        return Promise.resolve(incrementedPostIds.length)
       },
       limiter: {
-        async limit({ key }: RateLimitOptions) {
+        limit({ key }: RateLimitOptions) {
           rateLimitKeys.push(key)
           const limited = key.startsWith("post-open:") ? options.limitedOpens : options.limitedViews
-          return { success: !limited }
+          return Promise.resolve({ success: !limited })
         },
       },
     },

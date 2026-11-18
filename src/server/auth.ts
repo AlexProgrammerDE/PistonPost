@@ -142,7 +142,7 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
           }),
         ).pipe(Effect.asVoid),
       ),
-    notifyNewDevice: async (userId, sessionId) => {
+    notifyNewDevice: (userId, sessionId) => {
       context.executionContext.waitUntil(
         runAuthEffect(
           notifyNewDevice(userId, sessionId).pipe(
@@ -150,8 +150,9 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
           ),
         ),
       )
+      return Promise.resolve()
     },
-    queueSecurityNotification: async (userId, action, entityId) => {
+    queueSecurityNotification: (userId, action, entityId) => {
       context.executionContext.waitUntil(
         runAuthEffect(
           enqueueSecurityNotificationEffect(context, userId, action, entityId).pipe(
@@ -159,6 +160,7 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
           ),
         ),
       )
+      return Promise.resolve()
     },
     initializeProfile: (user) =>
       runAuthEffect(

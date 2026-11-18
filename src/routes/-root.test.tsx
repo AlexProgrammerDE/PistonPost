@@ -18,14 +18,14 @@ function metaContent(meta: HeadMeta, name: string) {
 
 describe("root head", () => {
   test("titles unknown pages as not found and keeps them out of search results", async () => {
-    const { meta = [] } = (await rootHead(true)) ?? {}
+    const { meta = [] } = await rootHead(true)
 
     expect(meta.find((entry) => entry?.title)?.title).toBe("Page not found · PistonPost")
     expect(metaContent(meta, "robots")).toBe("noindex, nofollow")
   })
 
   test("leaves indexing to child routes for found pages", async () => {
-    const { meta = [] } = (await rootHead(false)) ?? {}
+    const { meta = [] } = await rootHead(false)
 
     expect(meta.find((entry) => entry?.title)?.title).toBe("PistonPost")
     expect(metaContent(meta, "robots")).toBeUndefined()

@@ -14,7 +14,7 @@ function details(rows: unknown[]) {
       (row): row is Readonly<Record<string, unknown>> =>
         row !== null && typeof row === "object" && !Array.isArray(row),
     )
-    .map((row) => row.detail)
+    .map((row) => row["detail"])
     .filter((detail): detail is string => typeof detail === "string")
     .join("\n")
 }

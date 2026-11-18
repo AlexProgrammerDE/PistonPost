@@ -13,7 +13,8 @@ import {
 
 describe("shared content boundaries", () => {
   it("accepts supported images without trusting browser metadata as image validation", () => {
-    const files = [new File([new Uint8Array(4)], "photo.png", { type: "image/png" })]
+    const photo = new File([new Uint8Array(4)], "photo.png", { type: "image/png" })
+    const files = [photo]
     expect(
       Result.isSuccess(Schema.decodeResult(sharedContentSchema, { errors: "all" })({ files })),
     ).toBe(true)
@@ -34,7 +35,7 @@ describe("shared content boundaries", () => {
     expect(
       Result.isSuccess(
         Schema.decodeResult(sharedContentSchema, { errors: "all" })({
-          files: Array.from({ length: MAX_SHARED_FILES + 1 }, () => files[0]),
+          files: Array.from({ length: MAX_SHARED_FILES + 1 }, () => photo),
         }),
       ),
     ).toBe(false)

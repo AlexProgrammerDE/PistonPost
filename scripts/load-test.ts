@@ -54,7 +54,7 @@ async function runScenario(options: Options, scenario: Scenario) {
   const durations: number[] = []
   let failures = 0
   let next = 0
-  const sessionCookie = process.env.LOAD_TEST_SESSION_COOKIE
+  const sessionCookie = process.env["LOAD_TEST_SESSION_COOKIE"]
   const workers = Array.from({ length: Math.min(options.concurrency, options.requests) }, () =>
     (async () => {
       while (next < options.requests) {
@@ -107,11 +107,11 @@ const scenarios: Scenario[] = [
 ]
 
 const mutationConfiguration = [
-  ["reaction", process.env.LOAD_TEST_REACTION_PATH, process.env.LOAD_TEST_REACTION_BODY],
-  ["comment", process.env.LOAD_TEST_COMMENT_PATH, process.env.LOAD_TEST_COMMENT_BODY],
+  ["reaction", process.env["LOAD_TEST_REACTION_PATH"], process.env["LOAD_TEST_REACTION_BODY"]],
+  ["comment", process.env["LOAD_TEST_COMMENT_PATH"], process.env["LOAD_TEST_COMMENT_BODY"]],
 ] as const
 for (const [name, path, body] of mutationConfiguration) {
-  if (path && body && process.env.LOAD_TEST_SESSION_COOKIE) {
+  if (path && body && process.env["LOAD_TEST_SESSION_COOKIE"]) {
     JSON.parse(body)
     scenarios.push({ name, path, method: "POST", body })
   }

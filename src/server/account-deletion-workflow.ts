@@ -33,7 +33,7 @@ export class AccountDeletionWorkflow extends WorkflowEntrypoint<
     )
   }
 
-  async run(event: Readonly<WorkflowEvent<AccountDeletionParams>>, step: WorkflowStep) {
+  override async run(event: Readonly<WorkflowEvent<AccountDeletionParams>>, step: WorkflowStep) {
     const input = event.payload
     // Better Auth deletes the user row after this instance starts. Wait about ten minutes for it.
     await step.do(

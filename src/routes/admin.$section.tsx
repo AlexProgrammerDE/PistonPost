@@ -446,7 +446,7 @@ function AdminTableView({
       cell: ({ getValue }) =>
         section === "audit" ? (
           <code className="block max-w-56 truncate text-xs text-muted-foreground">
-            {getValue() ?? "None"}
+            {getValue()}
           </code>
         ) : (
           <Badge variant="outline">{humanizeStatus(getValue())}</Badge>

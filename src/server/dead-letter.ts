@@ -14,8 +14,8 @@ export function deadLetterMetadata(
   message: Pick<Message, "attempts" | "body" | "id">,
 ): DeadLetterMetadata {
   const originalType =
-    objectRecord(message.body) && typeof message.body.type === "string"
-      ? message.body.type.slice(0, 80)
+    objectRecord(message.body) && typeof message.body["type"] === "string"
+      ? message.body["type"].slice(0, 80)
       : "unknown"
   return {
     messageId: message.id,

@@ -24,19 +24,20 @@ export function PushSubscriptionSync({ vapidPublicKey }: { vapidPublicKey: strin
     }
     if (Notification.permission !== "granted") return undefined
 
-    let cancelled = false
+    const controller = new AbortController()
     async function synchronize(accountId: string, key: string) {
       const owned = await getOwnedPushSubscription(accountId)
-      if (!owned || cancelled) return
+      if (!owned || controller.signal.aborted) return
       const subscription = pushSubscriptionUsesKey(owned, key)
         ? owned
         : await replaceOutdatedSubscription(owned, key)
-      if (cancelled) return
+      // Throws after cleanup. The catch below ignores the abort reason.
+      controller.signal.throwIfAborted()
       await upsertPushSubscription({ data: serializePushSubscription(subscription) })
     }
     void synchronize(userId, vapidPublicKey).catch(() => undefined)
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [isPending, sessionId, userId, vapidPublicKey])
 

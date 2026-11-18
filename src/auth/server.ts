@@ -241,8 +241,8 @@ export function createAuth(runtime: AuthRuntime) {
           before: async (user) => {
             if (user.image !== undefined && user.image !== null) rejectUnmanagedAvatar()
             if (
-              typeof user.username === "string" &&
-              (await findUsernameOwner(runtime.database, user.username)) !== undefined
+              typeof user["username"] === "string" &&
+              (await findUsernameOwner(runtime.database, user["username"])) !== undefined
             ) {
               rejectTakenUsername()
             }
@@ -251,12 +251,12 @@ export function createAuth(runtime: AuthRuntime) {
         },
         update: {
           before: async (user, context) => {
-            if (typeof user.username === "string") {
+            if (typeof user["username"] === "string") {
               const targetUserId =
                 context?.path === "/admin/update-user"
                   ? Reflect.get(Object(context.body), "userId")
                   : context?.context.session?.user.id
-              const owner = await findUsernameOwner(runtime.database, user.username)
+              const owner = await findUsernameOwner(runtime.database, user["username"])
               if (owner !== undefined && owner !== targetUserId) rejectTakenUsername()
             }
 
@@ -272,12 +272,12 @@ export function createAuth(runtime: AuthRuntime) {
             }
           },
           after: async (user) => {
-            if (typeof user.username !== "string") return
+            if (typeof user["username"] !== "string") return
             await syncProfileUsername(runtime.database, {
               id: user.id,
-              username: user.username,
+              username: user["username"],
               displayUsername:
-                typeof user.displayUsername === "string" ? user.displayUsername : null,
+                typeof user["displayUsername"] === "string" ? user["displayUsername"] : null,
             })
           },
         },

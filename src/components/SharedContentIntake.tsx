@@ -23,15 +23,17 @@ export function SharedContentIntake({
   >({ status: "loading" })
   const [busy, setBusy] = useState(false)
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
     void (async () => {
       const share = await readSharedContent(shareId, userId)
-      if (!cancelled) setState(share ? { status: "ready", share } : { status: "missing" })
+      if (!controller.signal.aborted) {
+        setState(share ? { status: "ready", share } : { status: "missing" })
+      }
     })().catch(() => {
-      if (!cancelled) setState({ status: "missing" })
+      if (!controller.signal.aborted) setState({ status: "missing" })
     })
     return () => {
-      cancelled = true
+      controller.abort()
     }
   }, [shareId, userId])
 

@@ -16,13 +16,13 @@ describe("Stream video downloads", () => {
     const metadata = await Effect.runPromise(
       synchronizeVideoDownload(
         {
-          generate: async () => {
+          generate: () => {
             generated += 1
-            return {
+            return Promise.resolve({
               default: { status: "ready", percentComplete: 100, url: downloadUrl },
-            }
+            })
           },
-          get: async () => ({}),
+          get: () => Promise.resolve({}),
         },
         {},
       ),
@@ -38,15 +38,15 @@ describe("Stream video downloads", () => {
     const metadata = await Effect.runPromise(
       synchronizeVideoDownload(
         {
-          generate: async () => {
+          generate: () => {
             generated += 1
-            return {}
+            return Promise.resolve({})
           },
-          get: async () => {
+          get: () => {
             retrieved += 1
-            return {
+            return Promise.resolve({
               default: { status: "ready", percentComplete: 100, url: downloadUrl },
-            }
+            })
           },
         },
         { streamDownloadStatus: "inprogress" },
@@ -63,14 +63,12 @@ describe("Stream video downloads", () => {
     const metadata = await Effect.runPromise(
       refreshVideoDownload(
         {
-          generate: async () => {
-            throw new Error("generate should not be called")
-          },
-          get: async () => {
+          generate: () => Promise.reject(new Error("generate should not be called")),
+          get: () => {
             retrieved += 1
-            return {
+            return Promise.resolve({
               default: { status: "inprogress", percentComplete: 75, url: downloadUrl },
-            }
+            })
           },
         },
         {},
@@ -78,7 +76,7 @@ describe("Stream video downloads", () => {
     )
 
     expect(retrieved).toBe(1)
-    expect(metadata.streamDownloadStatus).toBe("inprogress")
+    expect(metadata["streamDownloadStatus"]).toBe("inprogress")
     expect(readyVideoDownloadUrl(metadata)).toBeNull()
   })
 

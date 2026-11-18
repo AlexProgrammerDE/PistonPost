@@ -20,8 +20,10 @@ function asciiMatches(bytes: Uint8Array, offset: number, expected: string) {
 }
 
 function readUint16(bytes: Uint8Array, offset: number) {
-  if (bytes.length < offset + 2) return null
-  return bytes[offset] | (bytes[offset + 1] << 8)
+  const low = bytes[offset]
+  const high = bytes[offset + 1]
+  if (low === undefined || high === undefined) return null
+  return low | (high << 8)
 }
 
 function colorTableBytes(packed: number) {
@@ -32,6 +34,7 @@ function skipSubBlocks(bytes: Uint8Array, start: number) {
   let offset = start
   while (offset < bytes.length) {
     const blockSize = bytes[offset]
+    if (blockSize === undefined) return null
     offset += 1
     if (blockSize === 0) return offset
     if (offset + blockSize > bytes.length) return null

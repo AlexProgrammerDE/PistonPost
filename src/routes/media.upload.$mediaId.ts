@@ -89,7 +89,7 @@ async function uploadImage({
   }
   if (asset.status === "ready") return Response.json({ assetId: asset.id, status: "ready" })
   if (asset.status !== "pending") return jsonError(usedUploadMessage, 409)
-  const expiresAt = asset.providerMetadata.expiresAt
+  const expiresAt = asset.providerMetadata["expiresAt"]
   if (typeof expiresAt !== "number" || expiresAt < Date.now()) {
     return jsonError(usedUploadMessage, 410)
   }
@@ -196,9 +196,11 @@ async function uploadImage({
         auditEventId: crypto.randomUUID(),
       })
     } else {
-      const editing = typeof asset.providerMetadata.editPostId === "string"
-      const postId = editing ? asset.providerMetadata.editPostId : asset.providerMetadata.postId
-      const ordinal = asset.providerMetadata.ordinal
+      const editing = typeof asset.providerMetadata["editPostId"] === "string"
+      const postId = editing
+        ? asset.providerMetadata["editPostId"]
+        : asset.providerMetadata["postId"]
+      const ordinal = asset.providerMetadata["ordinal"]
       if (typeof postId !== "string" || typeof ordinal !== "number") {
         throw new Error("Image draft metadata missing")
       }

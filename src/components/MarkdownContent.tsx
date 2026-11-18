@@ -153,7 +153,7 @@ function loadXScript() {
     if (!existing) {
       script.async = true
       script.src = "https://platform.x.com/widgets.js"
-      script.dataset.pistonpostX = "true"
+      script.dataset["pistonpostX"] = "true"
       document.head.appendChild(script)
     }
   }).catch((error: unknown) => {
@@ -193,7 +193,7 @@ function XEmbed({ embed }: { embed: Extract<MarkdownEmbed, { provider: "x" }> })
 
     const blockquote = document.createElement("blockquote")
     blockquote.className = "twitter-tweet"
-    blockquote.dataset.dnt = "true"
+    blockquote.dataset["dnt"] = "true"
     const link = document.createElement("a")
     link.href = embed.url
     link.textContent = "View this post on X"
@@ -235,7 +235,7 @@ function TumblrWidget({
 
     const post = document.createElement("div")
     post.className = "tumblr-post"
-    post.dataset.href = href
+    post.dataset["href"] = href
     const link = document.createElement("a")
     link.href = embed.url
     link.textContent = "View this post on Tumblr"
@@ -271,20 +271,20 @@ function TumblrEmbed({ embed }: { embed: Extract<MarkdownEmbed, { provider: "tum
   const [state, setState] = useState<TumblrEmbedState>({ status: "loading" })
 
   useEffect(() => {
-    let active = true
+    const controller = new AbortController()
     void (async () => {
       const result = await getTumblrEmbed({ data: { url: embed.url } })
-      if (!active) return
+      if (controller.signal.aborted) return
       setState(
         result.status === "ready"
           ? { status: "ready", href: result.href }
           : { status: "unavailable" },
       )
     })().catch(() => {
-      if (active) setState({ status: "unavailable" })
+      if (!controller.signal.aborted) setState({ status: "unavailable" })
     })
     return () => {
-      active = false
+      controller.abort()
     }
   }, [embed.url])
 

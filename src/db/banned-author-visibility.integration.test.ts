@@ -185,7 +185,7 @@ async function publicView(database: TestDatabase) {
     tagFeed: tagFeed.posts.map((item) => item.id),
     profileFeed: profileFeed.posts.map((item) => item.id),
     post: post?.id ?? null,
-    authorPostComments: authorPost?.structuredComments?.map((comment) => comment.id) ?? [],
+    authorPostComments: authorPost?.structuredComments.map((comment) => comment.id) ?? [],
     tracking: tracking?.id ?? null,
     profile: profile?.username ?? null,
     artTag: artTag?.normalizedName ?? null,

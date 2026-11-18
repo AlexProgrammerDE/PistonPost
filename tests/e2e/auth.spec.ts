@@ -69,6 +69,6 @@ test.describe("authentication", () => {
 
     expect(response.headers()["cache-control"]).toContain("private")
     expect(response.headers()["cache-control"]).toContain("no-store")
-    expect(response.headers().vary).toContain("Cookie")
+    expect(response.headers()["vary"]).toContain("Cookie")
   })
 })

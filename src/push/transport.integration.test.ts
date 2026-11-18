@@ -70,7 +70,7 @@ it("delivers encrypted VAPID requests and classifies real expired-provider respo
     assert.equal(captured.length, 3)
     for (const request of captured) {
       assert.equal(request.headers["content-encoding"], "aes128gcm")
-      assert.equal(request.headers.ttl, "86400")
+      assert.equal(request.headers["ttl"], "86400")
       assert(request.body.length > 0)
       assert.equal(request.body.includes(payload), false)
       const token = request.headers.authorization?.match(/t=([^, ]+)/)?.[1]

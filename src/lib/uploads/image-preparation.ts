@@ -1,5 +1,8 @@
 import { normalizeImageUploadMetadata, type ImageUploadMetadata } from "./image-file-normalization"
-import type { ImagePreparationWorkerResponse } from "./image-preparation.worker"
+import type {
+  ImagePreparationWorkerResponse,
+  PrepareImageRequest,
+} from "./image-preparation.worker"
 import {
   MAX_IMAGE_UPLOAD_BYTES,
   isImageUploadMimeType,
@@ -73,7 +76,8 @@ function runPreparation(
       reject(new ImagePreparationError("Cleaning this image took too long. Try a smaller file."))
     }, IMAGE_PREPARATION_TIMEOUT_MS)
     pendingPreparations.set(id, { resolve, reject, timeout })
-    worker.postMessage({ type: "prepare", id, bytes, mimeType }, [bytes])
+    const request: PrepareImageRequest = { type: "prepare", id, bytes, mimeType }
+    worker.postMessage(request, [bytes])
   })
 }
 

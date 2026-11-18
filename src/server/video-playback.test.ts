@@ -14,8 +14,8 @@ function videoClient({
   hlsPlaybackUrl?: string
 } = {}) {
   return {
-    details: async () => ({ allowedOrigins, dashPlaybackUrl, hlsPlaybackUrl }),
-    update: mock(async () => ({ allowedOrigins: [], dashPlaybackUrl, hlsPlaybackUrl })),
+    details: () => Promise.resolve({ allowedOrigins, dashPlaybackUrl, hlsPlaybackUrl }),
+    update: mock(() => Promise.resolve({ allowedOrigins: [], dashPlaybackUrl, hlsPlaybackUrl })),
   }
 }
 
@@ -62,12 +62,8 @@ describe("video playback URLs", () => {
     const result = await Effect.runPromise(
       Effect.result(
         resolveVideoPlaybackUrl({
-          details: async () => {
-            throw new Error("provider unavailable")
-          },
-          update: async () => {
-            throw new Error("unexpected update")
-          },
+          details: () => Promise.reject(new Error("provider unavailable")),
+          update: () => Promise.reject(new Error("unexpected update")),
         }),
       ),
     )

@@ -44,7 +44,7 @@ export async function prepareSharedImage(src: string, signal: AbortSignal) {
     chunks.push(new Uint8Array(value))
   }
   const file = new File(chunks, `pistonpost-image.${extension}`, { type: mimeType })
-  if (!navigator.canShare?.({ files: [file] }))
+  if (!("canShare" in navigator) || !navigator.canShare({ files: [file] }))
     throw new Error("This browser cannot share this image. Copy the post link instead.")
   return file
 }

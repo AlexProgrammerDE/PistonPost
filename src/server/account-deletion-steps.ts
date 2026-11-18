@@ -12,11 +12,11 @@ import { bindingOperation, type OperationError } from "./operation"
 export type AccountDeletionParams = { userId: string; mediaIds: string[] }
 
 class AccountDeletionIncomplete extends Data.TaggedError("AccountDeletionIncomplete") {
-  readonly message = "Owned media still requires deletion."
+  override readonly message = "Owned media still requires deletion."
 }
 
 class AccountStillExists extends Data.TaggedError("AccountStillExists") {
-  readonly message = "The account row has not been deleted yet."
+  override readonly message = "The account row has not been deleted yet."
 }
 
 class AccountDeletionStore extends Context.Service<

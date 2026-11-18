@@ -7,9 +7,9 @@ const origin = "https://post.pistonmaster.net"
 function limiter(allowed = true) {
   const keys: string[] = []
   const binding: RateLimit = {
-    limit: async ({ key }) => {
+    limit: ({ key }) => {
       keys.push(key)
-      return { success: allowed }
+      return Promise.resolve({ success: allowed })
     },
   }
   return { binding, keys }
@@ -17,9 +17,7 @@ function limiter(allowed = true) {
 
 function failingLimiter(): RateLimit {
   return {
-    limit: async () => {
-      throw new Error("binding unavailable")
-    },
+    limit: () => Promise.reject(new Error("binding unavailable")),
   }
 }
 

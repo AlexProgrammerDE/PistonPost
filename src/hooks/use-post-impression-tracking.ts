@@ -32,7 +32,7 @@ export function usePostImpressionTracking({
     const root = rootRef.current
     if (
       !root ||
-      root.dataset.postIdentity !== postIdentity ||
+      root.dataset["postIdentity"] !== postIdentity ||
       typeof IntersectionObserver === "undefined"
     ) {
       return undefined
@@ -85,7 +85,7 @@ export function usePostImpressionTracking({
       (entries) => {
         for (const entry of entries) {
           const target = entry.target
-          const postId = target instanceof HTMLElement ? target.dataset.postViewId : undefined
+          const postId = target instanceof HTMLElement ? target.dataset["postViewId"] : undefined
           if (!postId) {
             observer.unobserve(target)
             continue
@@ -118,7 +118,7 @@ export function usePostImpressionTracking({
 
     const observePostTargets = () => {
       for (const target of root.querySelectorAll<HTMLElement>(POST_VIEW_SELECTOR)) {
-        const postId = target.dataset.postViewId
+        const postId = target.dataset["postViewId"]
         if (postId) observer.observe(target)
       }
     }

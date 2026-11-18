@@ -4,7 +4,7 @@ import { prepareSharedImage, shareNatively } from "./native-share"
 
 const originalNavigator = Object.getOwnPropertyDescriptor(globalThis, "navigator")
 const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window")
-const share = mock(async (_data: ShareData) => undefined)
+const share = mock((_data: ShareData) => Promise.resolve())
 const canShare = mock((_data: ShareData) => true)
 Object.defineProperty(globalThis, "navigator", { configurable: true, value: { share, canShare } })
 Object.defineProperty(globalThis, "window", {
@@ -52,7 +52,7 @@ describe("native sharing", () => {
     expect(share).not.toHaveBeenCalled()
   })
 
-  it("rejects unsupported response types and bounds downloaded file bytes", async () => {
+  it("rejects unsupported response types and bounds downloaded file bytes", () => {
     const request = spyOn(globalThis, "fetch").mockResolvedValueOnce(
       new Response("<html>", { headers: { "content-type": "text/html" } }),
     )

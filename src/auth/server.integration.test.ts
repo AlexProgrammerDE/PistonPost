@@ -18,7 +18,8 @@ afterEach(() => {
 })
 
 function setup(
-  isManagedUserAvatar: (userId: string, image: string) => Promise<boolean> = async () => false,
+  isManagedUserAvatar: (userId: string, image: string) => Promise<boolean> = () =>
+    Promise.resolve(false),
   options: { readonly production?: boolean } = {},
 ) {
   const database = createMigratedTestDatabase()
@@ -35,8 +36,9 @@ function setup(
     infraEnabled: false,
     isManagedUserAvatar,
     initializeProfile: (user) => initializeUserProfile(database, user),
-    sendEmail: async (email) => {
+    sendEmail: (email) => {
       emails.push(email)
+      return Promise.resolve()
     },
   })
   return { auth, database, emails }
@@ -127,13 +129,13 @@ describe("request-scoped Better Auth", () => {
       trustedOrigins: ["http://localhost:3000"],
       turnstileSecret: "not-used-in-this-test",
       production: false,
-      isManagedUserAvatar: async () => false,
+      isManagedUserAvatar: () => Promise.resolve(false),
       sendEmail: async () => {},
     })
 
     expect(auth.options).toMatchObject({ advanced: { database: { joins: true } } })
 
-    const pluginIds = auth.options.plugins?.map((plugin) => plugin.id) ?? []
+    const pluginIds = auth.options.plugins.map((plugin) => plugin.id)
     expect(pluginIds).toContain("dash")
     expect(pluginIds).toContain("sentinel")
     expect(pluginIds).not.toContain("magic-link")
@@ -164,12 +166,12 @@ describe("request-scoped Better Auth", () => {
       turnstileSecret: "not-used-in-this-test",
       production: false,
       infraEnabled: false,
-      isManagedUserAvatar: async () => false,
+      isManagedUserAvatar: () => Promise.resolve(false),
       sendEmail: async () => {},
       backgroundTasks: { handler },
     })
 
-    auth.options.advanced?.backgroundTasks?.handler(Promise.resolve())
+    auth.options.advanced.backgroundTasks?.handler(Promise.resolve())
     expect(scheduled).toHaveLength(1)
   })
 
@@ -421,7 +423,7 @@ describe("request-scoped Better Auth", () => {
       turnstileSecret: "1x0000000000000000000000000000000AA",
       production: true,
       infraEnabled: false,
-      isManagedUserAvatar: async () => false,
+      isManagedUserAvatar: () => Promise.resolve(false),
       sendEmail: async () => {},
     })
 
@@ -572,7 +574,7 @@ describe("request-scoped Better Auth", () => {
 
   it("rejects external profile images and accepts the user's managed avatar", async () => {
     const managedImage = `/media/image/${crypto.randomUUID()}/avatar`
-    const { auth, database } = setup(async (_userId, image) => image === managedImage)
+    const { auth, database } = setup((_userId, image) => Promise.resolve(image === managedImage))
     await auth.handler(
       authRequest("/sign-up/email", {
         name: "Avatar Tester",
@@ -810,7 +812,7 @@ describe("request-scoped Better Auth", () => {
   })
 
   it("requires a captcha on every sign-in, sign-up, and recovery entry point", async () => {
-    const { auth, database, emails } = setup(async () => false, { production: true })
+    const { auth, database, emails } = setup(() => Promise.resolve(false), { production: true })
     const protectedRequests = [
       ["/sign-up/email", { name: "Bot", email: "bot@example.com", password: "long-password-1" }],
       ["/sign-in/email", { email: "bot@example.com", password: "long-password-1" }],
@@ -837,7 +839,7 @@ describe("request-scoped Better Auth", () => {
   })
 
   it("lets verification codes through without a captcha", async () => {
-    const { auth } = setup(async () => false, { production: true })
+    const { auth } = setup(() => Promise.resolve(false), { production: true })
 
     const response = await auth.handler(
       authRequest("/email-otp/send-verification-otp", {

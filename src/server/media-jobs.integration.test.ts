@@ -45,8 +45,9 @@ function setup(status: "published" | "moderated" | "deleted" | "draft") {
 function sync(db: ReturnType<typeof setup>["db"]) {
   const updates: Array<[string, boolean]> = []
   return Effect.runPromise(
-    syncPostVideoAccess(db, "post", async (uid, required) => {
+    syncPostVideoAccess(db, "post", (uid, required) => {
       updates.push([uid, required])
+      return Promise.resolve()
     }),
   ).then((reason) => ({ reason, updates }))
 }
@@ -90,13 +91,15 @@ describe("post video access", () => {
     const { db } = setup("moderated")
     expect(
       await Effect.runPromise(
-        syncPostVideoAccess(db, "post", async () => {
-          throw Object.assign(new Error("Video not found"), {
-            name: "NotFoundError",
-            code: 10003,
-            statusCode: 404,
-          })
-        }),
+        syncPostVideoAccess(db, "post", () =>
+          Promise.reject(
+            Object.assign(new Error("Video not found"), {
+              name: "NotFoundError",
+              code: 10003,
+              statusCode: 404,
+            }),
+          ),
+        ),
       ),
     ).toBe("signed-urls-required")
   })

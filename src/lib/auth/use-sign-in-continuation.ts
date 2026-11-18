@@ -32,7 +32,7 @@ export function useSignInContinuation() {
   const { basePaths, navigate, plugins, redirectTo } = useAuth()
 
   const twoFactorPath = plugins.find((plugin) => plugin.id === TWO_FACTOR_PLUGIN_ID)?.viewPaths
-    ?.auth?.twoFactor
+    ?.auth?.["twoFactor"]
 
   return useCallback(
     (data: unknown) => {

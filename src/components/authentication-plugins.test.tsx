@@ -62,7 +62,7 @@ describe("global authentication plugins", () => {
     const emailOtp = plugins.find((plugin) => plugin.id === coreEmailOtpPlugin.id)
     const twoFactor = plugins.find((plugin) => plugin.id === coreTwoFactorPlugin.id)
 
-    expect(emailOtp?.views?.auth).toMatchObject({
+    expect(emailOtp?.views.auth).toMatchObject({
       emailOtp: EmailOtp,
       verifyEmail: VerifyEmailOtp,
       forgotPassword: ForgotPasswordOtp,
@@ -71,7 +71,7 @@ describe("global authentication plugins", () => {
     // The server sends change-email codes and checks the current address first.
     expect(emailOtp?.cardOverrides?.account).toEqual({ changeEmail: ChangeEmailOtp })
     expect(emailOtp).toMatchObject({ changeEmail: true, verifyCurrentEmail: true })
-    expect(twoFactor?.views?.auth).toEqual({ twoFactor: TwoFactorChallenge })
+    expect(twoFactor?.views.auth).toEqual({ twoFactor: TwoFactorChallenge })
     expect(twoFactor?.securityCards).toEqual([TwoFactorSettings])
   })
 })

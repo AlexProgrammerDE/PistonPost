@@ -51,13 +51,16 @@ describe("product campaign batch workflow", () => {
   test("persists recipients and continuation before dispatch, then completes the final page", async () => {
     const { db, services, job } = setup(101)
     const sent: Array<Array<{ type: string; idempotencyKey: string }>> = []
-    const dispatch = productBatchDispatchLayer(async (jobs) => {
-      if (jobs.length > 100) throw new Error("Queues accepts at most 100 messages per batch.")
+    const dispatch = productBatchDispatchLayer((jobs) => {
+      if (jobs.length > 100) {
+        return Promise.reject(new Error("Queues accepts at most 100 messages per batch."))
+      }
       for (const next of jobs)
         expect(
           db.select().from(schema.outbox).where(eq(schema.outbox.id, next.idempotencyKey)).get(),
         ).toBeDefined()
       sent.push(jobs)
+      return Promise.resolve()
     })
     const layer = Layer.merge(services, dispatch)
     await Effect.runPromise(deliverProductBatch(job).pipe(Effect.provide(layer)))
@@ -85,9 +88,7 @@ describe("product campaign batch workflow", () => {
           Effect.provide(
             Layer.merge(
               services,
-              productBatchDispatchLayer(async () => {
-                throw new Error("queue unavailable")
-              }),
+              productBatchDispatchLayer(() => Promise.reject(new Error("queue unavailable"))),
             ),
           ),
         ),
@@ -109,7 +110,7 @@ describe("product campaign batch workflow", () => {
         Effect.provide(
           Layer.merge(
             services,
-            productBatchDispatchLayer(async () => undefined),
+            productBatchDispatchLayer(() => Promise.resolve()),
           ),
         ),
       ),
@@ -158,7 +159,7 @@ describe("product campaign batch workflow", () => {
     expect(submissions).toBe(1)
   })
 
-  test("staging rolls back its outbox row if the recipient receipt cannot be saved", async () => {
+  test("staging rolls back its outbox row if the recipient receipt cannot be saved", () => {
     const { db, services } = setup(0)
     const stage = Effect.gen(function* () {
       const store = yield* ProductBatchStore

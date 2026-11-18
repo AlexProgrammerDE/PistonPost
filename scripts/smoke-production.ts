@@ -5,7 +5,7 @@ function required(name: string) {
 }
 
 const baseUrl = new URL(required("PRODUCTION_BASE_URL"))
-const sampledPost = process.env.PRODUCTION_SMOKE_POST_SLUG
+const sampledPost = process.env["PRODUCTION_SMOKE_POST_SLUG"]
 const paths = ["/", "/auth/sign-in", ...(sampledPost ? [`/post/${sampledPost}`] : [])]
 
 const health = await fetch(new URL("/health", baseUrl), { redirect: "manual" })

@@ -8,7 +8,7 @@ describe("requireEmailBinding", () => {
   })
 
   test("returns the configured binding", () => {
-    const binding = { send: async () => ({ messageId: "test-message" }) }
+    const binding = { send: () => Promise.resolve({ messageId: "test-message" }) }
 
     expect(requireEmailBinding({ EMAIL: binding })).toBe(binding)
   })

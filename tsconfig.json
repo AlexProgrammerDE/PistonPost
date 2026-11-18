@@ -25,6 +25,12 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
+    // exactOptionalPropertyTypes stays off. With it, Better Auth stops inferring plugin fields
+    // such as `role` and `username` on the session user, and its plugin types conflict.
+    "noPropertyAccessFromIndexSignature": true,
+    "noImplicitReturns": true,
+    "noImplicitOverride": true,
     "noUncheckedSideEffectImports": true
   }
 }

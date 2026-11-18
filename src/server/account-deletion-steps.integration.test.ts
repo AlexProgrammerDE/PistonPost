@@ -38,8 +38,9 @@ function setup() {
     })
     .run()
   const queued: InternalJob[] = []
-  const store = accountDeletionStoreLayer(db, async (job) => {
+  const store = accountDeletionStoreLayer(db, (job) => {
     queued.push(job)
+    return Promise.resolve()
   })
   const input = { userId: "test-user", mediaIds: ["asset"] }
   return { db, store, queued, input }
@@ -53,15 +54,17 @@ describe("native account deletion steps", () => {
     const layer = Layer.merge(
       store,
       accountMediaPurgeLayer({
-        deleteR2: async () => {
+        deleteR2: () => {
           providers.push("r2")
+          return Promise.resolve()
         },
-        deleteStream: async () => {
+        deleteStream: () => {
           providers.push("stream")
-          if (fail) throw new Error("unavailable")
+          return fail ? Promise.reject(new Error("unavailable")) : Promise.resolve()
         },
-        deleteRecord: async (id) => {
+        deleteRecord: (id) => {
           db.delete(schema.mediaAssets).where(eq(schema.mediaAssets.id, id)).run()
+          return Promise.resolve()
         },
       }),
     )
@@ -132,10 +135,11 @@ describe("native account deletion steps", () => {
     const layer = Layer.merge(
       store,
       accountMediaPurgeLayer({
-        deleteR2: async () => undefined,
-        deleteStream: async () => undefined,
-        deleteRecord: async (id) => {
+        deleteR2: () => Promise.resolve(),
+        deleteStream: () => Promise.resolve(),
+        deleteRecord: (id) => {
           db.delete(schema.mediaAssets).where(eq(schema.mediaAssets.id, id)).run()
+          return Promise.resolve()
         },
       }),
     )

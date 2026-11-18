@@ -37,7 +37,7 @@ export async function parseOneClickUnsubscribeRequest(request: Request) {
   if (
     fields.length !== 1 ||
     fields[0]?.[0] !== "List-Unsubscribe" ||
-    fields[0]?.[1] !== "One-Click"
+    fields[0][1] !== "One-Click"
   ) {
     return { kind: "invalid", status: 400 } as const
   }

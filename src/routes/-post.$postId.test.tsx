@@ -26,11 +26,11 @@ describe("post loader", () => {
   ])("treats a %s post ID as not found without a lookup", async (_case, postId) => {
     const lookups: Array<ReadonlyArray<unknown>> = []
     const queryClient = {
-      ensureQueryData: async ({ queryKey }: { queryKey: ReadonlyArray<unknown> }) => {
+      ensureQueryData: ({ queryKey }: { queryKey: ReadonlyArray<unknown> }) => {
         lookups.push(queryKey)
-        return null
+        return Promise.resolve(null)
       },
-      infiniteQuery: async () => undefined,
+      infiniteQuery: () => Promise.resolve(),
     }
     const error = await rejection(
       postLoader({ context: { queryClient }, params: { postId } } as unknown as LoaderContext),

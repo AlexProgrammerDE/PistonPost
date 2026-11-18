@@ -32,10 +32,10 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
   const updatingRef = useRef(false)
 
   useEffect(() => {
-    let cancelled = false
+    const controller = new AbortController()
     let permissionStatus: PermissionStatus | null = null
     const apply = (next: DeviceState) => {
-      if (!cancelled && !updatingRef.current) setState(next)
+      if (!controller.signal.aborted && !updatingRef.current) setState(next)
     }
     async function inspect() {
       if (!vapidPublicKey) return apply("not-configured")
@@ -58,13 +58,13 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
     if (vapidPublicKey && supportsPushNotifications() && "permissions" in navigator) {
       void (async () => {
         const status = await navigator.permissions.query({ name: "notifications" })
-        if (cancelled) return
+        if (controller.signal.aborted) return
         permissionStatus = status
         status.addEventListener("change", refresh)
       })().catch(() => undefined)
     }
     return () => {
-      cancelled = true
+      controller.abort()
       document.removeEventListener("visibilitychange", refreshWhenVisible)
       permissionStatus?.removeEventListener("change", refresh)
     }
