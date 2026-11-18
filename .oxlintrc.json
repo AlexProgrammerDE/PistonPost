@@ -12,7 +12,12 @@
     "effecttsgo",
     "promise"
   ],
-  "jsPlugins": ["@shadcn/lint"],
+  "jsPlugins": ["@shadcn/lint", "eslint-plugin-better-tailwindcss"],
+  "settings": {
+    "better-tailwindcss": {
+      "entryPoint": "src/styles/globals.css"
+    }
+  },
   "categories": {
     "correctness": "error",
     "suspicious": "error",
@@ -265,7 +270,6 @@
     "effecttsgo/any-unknown-in-error-context": "off",
     "effecttsgo/unsafe-effect-type-assertion": "off",
     "effecttsgo/strict-effect-provide": "off",
-    "effecttsgo/schema-class-missing-brand": "off",
     "typescript/restrict-plus-operands": "error",
     "typescript/prefer-promise-reject-errors": "error",
     "typescript/return-await": "error",
@@ -304,6 +308,22 @@
     ],
     "eslint/no-console": "error",
     "eslint/no-await-in-loop": "off",
+    "unicorn/no-abusive-eslint-disable": "error",
+    "typescript/ban-ts-comment": [
+      "error",
+      {
+        "ts-expect-error": "allow-with-description",
+        "ts-ignore": true,
+        "ts-nocheck": true,
+        "ts-check": false,
+        "minimumDescriptionLength": 10
+      }
+    ],
+    "typescript/prefer-ts-expect-error": "error",
+    "better-tailwindcss/no-conflicting-classes": "error",
+    "better-tailwindcss/no-duplicate-classes": "error",
+    "better-tailwindcss/no-deprecated-classes": "error",
+    "better-tailwindcss/enforce-canonical-classes": "error",
     "import/no-duplicates": "error",
     "import/no-cycle": "error",
     "promise/catch-or-return": "error",
@@ -321,9 +341,7 @@
       {
         "allowConstantExport": true
       }
-    ],
-    // The promise plugin is new here. Only promise/catch-or-return is part of this rollout.
-    "promise/always-return": "off"
+    ]
   },
   "overrides": [
     {
@@ -394,6 +412,8 @@
   "extends": ["./node_modules/@effect/tsgo/oxlint-presets/recommended.json"],
   "options": {
     "typeAware": true,
+    "typeCheck": true,
+    "denyWarnings": true,
     "reportUnusedDisableDirectives": "error"
   }
 }
