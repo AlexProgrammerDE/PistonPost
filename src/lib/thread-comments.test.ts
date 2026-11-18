@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { threadComments } from "./social-panel"
+import { threadComments } from "./thread-comments"
 
 type TestComment = { readonly id: string; readonly parentId: string | null }
 

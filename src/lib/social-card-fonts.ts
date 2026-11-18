@@ -129,7 +129,9 @@ async function fetchFont(url: string, attempt = 1): Promise<ArrayBuffer> {
     throw new Error(`Font request failed with status ${response.status}.`)
   }
   await response.body?.cancel()
-  await new Promise((resolve) => setTimeout(resolve, 200 * attempt))
+  await new Promise((resolve) => {
+    setTimeout(resolve, 200 * attempt)
+  })
   return fetchFont(url, attempt + 1)
 }
 

@@ -2,13 +2,13 @@ import { describe, expect, it } from "bun:test"
 
 import { Effect, Result, Exit, Layer } from "effect"
 
-import { renderEmail } from "./email"
 import { decodeEmailDeliveryJob } from "./jobs"
 import {
   authenticationMessage,
   productUpdateMessage,
   securityNotificationMessage,
 } from "./messages"
+import { renderEmail } from "./render-email"
 import {
   createCloudflareEmailTransport,
   createCaptureEmailTransport,

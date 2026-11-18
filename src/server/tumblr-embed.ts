@@ -49,7 +49,7 @@ export const resolveTumblrEmbedHref = Effect.fn("resolveTumblrEmbedHref")(functi
   input: TumblrEmbedInput,
 ) {
   const embed = parseMarkdownEmbed(input.url)
-  if (!embed || embed.provider !== "tumblr") {
+  if (embed?.provider !== "tumblr") {
     return yield* new TumblrEmbedError({ operation: "validate", status: null })
   }
 

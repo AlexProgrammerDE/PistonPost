@@ -13,6 +13,7 @@ import {
   securityEmailJob,
 } from "@/email"
 import { securityPushJob, type PushDeliveryJob } from "@/push/jobs"
+import { logError } from "@/server/error-log"
 
 import type { AppRequestContext } from "../server"
 import { isManagedUserAvatar } from "./avatar-policy"
@@ -38,13 +39,7 @@ function reportBackgroundFailure(event: string) {
   return Effect.catchCause((cause) =>
     Effect.sync(() => {
       const error = Option.getOrUndefined(Cause.findErrorOption(cause))
-      console.error(
-        JSON.stringify({
-          level: "error",
-          event,
-          error: error instanceof Error ? error.name : "UnknownError",
-        }),
-      )
+      logError(event, { error: error instanceof Error ? error.name : "UnknownError" })
     }),
   )
 }

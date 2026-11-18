@@ -75,7 +75,7 @@ export const getDiscussion = createServerFn({ method: "GET" })
             .where(and(eq(schema.posts.id, data.postId), notBannedAccount(schema.posts.authorId)))
             .get(),
         )
-        if (!post || post.status !== "published") {
+        if (post?.status !== "published") {
           return yield* notFoundFailure("The post was not found.")
         }
         const cursor = decodeCommentCursor(data.cursor)

@@ -16,7 +16,9 @@ export class RouterQueryClient extends QueryClient {
     TError = DefaultError,
     TData = TQueryFnData,
     TQueryKey extends QueryKey = QueryKey,
+    // oxlint-disable-next-line typescript/no-deprecated -- This override keeps the loader retry policy on the deprecated API that loaders still call.
   >(options: EnsureQueryDataOptions<TQueryFnData, TError, TData, TQueryKey>): Promise<TData> {
+    // oxlint-disable-next-line typescript/no-deprecated -- This override keeps the loader retry policy on the deprecated API that loaders still call.
     return super.ensureQueryData({ ...options, retry: options.retry ?? false })
   }
 }

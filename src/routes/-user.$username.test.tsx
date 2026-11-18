@@ -16,7 +16,7 @@ function loadProfile(username: string, lookups: Array<ReadonlyArray<unknown>>) {
       lookups.push(queryKey)
       return null
     },
-    prefetchInfiniteQuery: async () => undefined,
+    infiniteQuery: async () => undefined,
   }
   return profileLoader({
     context: { queryClient },

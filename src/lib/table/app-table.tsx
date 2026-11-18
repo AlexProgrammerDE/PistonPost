@@ -58,7 +58,9 @@ export const pistonPostTableFeatures = tableFeatures({
   sortedRowModel: createSortedRowModel(),
   filteredRowModel: createFilteredRowModel(),
   paginatedRowModel: createPaginatedRowModel(),
+  // oxlint-disable-next-line typescript/no-deprecated -- The full built-in set keeps `auto` and named sort functions working; v9 still supports it.
   sortFns,
+  // oxlint-disable-next-line typescript/no-deprecated -- The full built-in set keeps `auto` and named filter functions working; v9 still supports it.
   filterFns,
 })
 

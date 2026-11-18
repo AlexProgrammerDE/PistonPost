@@ -67,8 +67,10 @@ import {
 } from "@/lib/queries/social"
 import { userFacingServerMessage } from "@/lib/server-function-error"
 import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
+import { threadComments } from "@/lib/thread-comments"
 import { cn } from "@/lib/utils"
-import { createComment, deleteComment, getDiscussion, setHeart } from "@/server/social"
+import type { getDiscussion } from "@/server/social"
+import { createComment, deleteComment, setHeart } from "@/server/social"
 
 type DiscussionComment = Awaited<ReturnType<typeof getDiscussion>>["comments"][number]
 type CommentPage = DiscussionComment & { optimistic?: boolean }
@@ -180,36 +182,6 @@ function HeartControl({
 
 function discussionRedirect(postId: string) {
   return `/post/${encodeURIComponent(postId)}#discussion`
-}
-
-type ThreadedComment<T> = { readonly comment: T; readonly nested: boolean }
-
-/**
- * Places each loaded reply directly below its parent, oldest reply first.
- * Replies whose parent is not loaded keep their position and are not indented,
- * so they never look attached to an unrelated comment.
- */
-export function threadComments<T extends { readonly id: string; readonly parentId: string | null }>(
-  comments: readonly T[],
-): ThreadedComment<T>[] {
-  const loadedIds = new Set(comments.map((comment) => comment.id))
-  const repliesByParent = new Map<string, T[]>()
-  for (const comment of comments) {
-    if (!comment.parentId || !loadedIds.has(comment.parentId)) continue
-    const replies = repliesByParent.get(comment.parentId) ?? []
-    replies.unshift(comment)
-    repliesByParent.set(comment.parentId, replies)
-  }
-
-  const threaded: ThreadedComment<T>[] = []
-  for (const comment of comments) {
-    if (comment.parentId && loadedIds.has(comment.parentId)) continue
-    threaded.push({ comment, nested: false })
-    for (const reply of repliesByParent.get(comment.id) ?? []) {
-      threaded.push({ comment: reply, nested: true })
-    }
-  }
-  return threaded
 }
 
 function focusCommentComposer() {
@@ -715,7 +687,7 @@ export function SocialPanel({
             <Button
               variant="outline"
               disabled={discussion.isFetchingNextPage}
-              onClick={() => discussion.fetchNextPage()}
+              onClick={() => void discussion.fetchNextPage()}
             >
               {discussion.isFetchingNextPage ? (
                 <Spinner aria-hidden="true" data-icon="inline-start" />

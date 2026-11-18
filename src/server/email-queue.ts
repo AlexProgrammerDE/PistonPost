@@ -13,6 +13,7 @@ import {
 } from "@/email"
 import { decodePushDeliveryJob, type PushDeliveryJob } from "@/push/jobs"
 import { PushTransport, webPushTransportLayer } from "@/push/transport"
+import { logError } from "@/server/error-log"
 
 import { missingProviderObject } from "./account-media-purge"
 import { mediaCacheTag } from "./cache-tags"
@@ -410,15 +411,11 @@ const handleDeadLetter = Effect.fn("handleDeadLetter")(function* (
           [metadata.originalType],
           [metadata.attempts],
         )
-        console.error(
-          JSON.stringify({
-            level: "error",
-            event: "queue.dead-letter",
-            messageId: metadata.messageId,
-            originalType: metadata.originalType,
-            attempts: metadata.attempts,
-          }),
-        )
+        logError("queue.dead-letter", {
+          messageId: metadata.messageId,
+          originalType: metadata.originalType,
+          attempts: metadata.attempts,
+        })
         message.ack()
       }).pipe(Effect.uninterruptible),
     { concurrency: 4 },

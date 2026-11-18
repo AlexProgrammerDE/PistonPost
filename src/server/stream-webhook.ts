@@ -5,6 +5,7 @@ import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { transitionMediaStatus } from "@/domain"
 import type { AppRequestContext } from "@/server"
+import { logError } from "@/server/error-log"
 import { synchronizeVideoDownload } from "@/server/video-download"
 
 import { bindingOperation } from "./operation"
@@ -159,14 +160,10 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
       }).pipe(
         Effect.catchCause(() =>
           Effect.sync(() =>
-            console.error(
-              JSON.stringify({
-                level: "error",
-                event: "stream.download-generation",
-                mediaId: asset.id,
-                error: "VideoDownloadError",
-              }),
-            ),
+            logError("stream.download-generation", {
+              mediaId: asset.id,
+              error: "VideoDownloadError",
+            }),
           ),
         ),
       )

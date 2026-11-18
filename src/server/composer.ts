@@ -263,8 +263,7 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
             .get(),
         )
         if (
-          !draft ||
-          draft.type !== "images" ||
+          draft?.type !== "images" ||
           (draft.authorId !== session.user.id &&
             !(data.editing && session.user.role === "admin")) ||
           (!data.editing && draft.status !== "draft")
@@ -594,8 +593,7 @@ export const publishPost = createServerFn({ method: "POST" })
             .where(and(eq(schema.posts.id, data.id), eq(schema.posts.authorId, session.user.id)))
             .get(),
         )
-        if (!post || post.status !== "draft")
-          return yield* notFoundFailure("The draft was not found.")
+        if (post?.status !== "draft") return yield* notFoundFailure("The draft was not found.")
         if (post.version !== data.version) {
           return yield* conflictFailure(
             "This draft was changed in another tab or device. Reload the page and try again.",

@@ -43,7 +43,8 @@ import {
   type DataTableUrlState,
 } from "@/lib/table/app-table"
 import { resolveContentReport } from "@/server/reports"
-import { cleanupAdminMedia, getAdminRows, moderateEntity, retryAdminJob } from "@/server/tables"
+import type { getAdminRows } from "@/server/tables"
+import { cleanupAdminMedia, moderateEntity, retryAdminJob } from "@/server/tables"
 
 const sectionSchema = Schema.Literals(adminTableSections.map((section) => section.value))
 const MIN_MODERATION_REASON_LENGTH = 3
@@ -332,7 +333,7 @@ export const Route = createFileRoute("/admin/$section")({
       cursor: deps.cursor || undefined,
       direction: deps.direction,
     }
-    void context.queryClient.prefetchQuery(adminRowsQueryOptions(input))
+    void context.queryClient.query(adminRowsQueryOptions(input)).catch(() => undefined)
     return input
   },
   head: ({ params }) => ({

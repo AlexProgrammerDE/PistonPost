@@ -4,8 +4,8 @@ function normalizeTagInputValue(value: string) {
   return value
     .trim()
     .replace(/^#+/u, "")
-    .replace(/[^A-Za-z0-9._~-]+/gu, "-")
-    .replace(/^-+|-+$/gu, "")
+    .replaceAll(/[^A-Za-z0-9._~-]+/gu, "-")
+    .replaceAll(/^-+|-+$/gu, "")
     .slice(0, MAX_TAG_LENGTH)
 }
 

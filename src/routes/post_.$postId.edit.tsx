@@ -1,6 +1,6 @@
-import { useStore } from "@tanstack/react-form"
 import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, notFound, useNavigate } from "@tanstack/react-router"
+import { useSelector } from "@tanstack/react-store"
 import { Option, Schema } from "effect"
 import { FilePenLine, Globe2, Link2, Save, Trash2, TriangleAlert } from "lucide-react"
 import { useRef, useState } from "react"
@@ -155,7 +155,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
     },
   })
 
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const isSubmitting = useSelector(form.store, (state) => state.isSubmitting)
 
   async function removePost() {
     setDeleting(true)

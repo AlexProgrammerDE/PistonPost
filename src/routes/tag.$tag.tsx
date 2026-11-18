@@ -40,7 +40,10 @@ export const Route = createFileRoute("/tag/$tag")({
     const tag = normalizeTagParam(params.tag)
     if (!tag) throw notFound()
     // Start the feed without waiting for it, so the tag heading shows while posts load.
-    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ tag }, deps.cursor))
+    void context.queryClient
+      .infiniteQuery(feedQueryOptions({ tag }, deps.cursor))
+      .catch(() => undefined)
+    // oxlint-disable-next-line typescript/no-deprecated -- RouterQueryClient overrides ensureQueryData to stop loader retries; query() would skip that policy.
     const tagRead = await context.queryClient.ensureQueryData(tagQueryOptions(tag))
     if (!tagRead) throw notFound()
     return tagRead

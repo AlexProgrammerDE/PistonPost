@@ -1,4 +1,3 @@
-import { render } from "@react-email/render"
 import {
   Body,
   Button,
@@ -285,7 +284,7 @@ export function PistonPostEmail({ content }: { readonly content: GenericEmailCon
   )
 }
 
-function AuthenticationEmail({ content }: { readonly content: EmailContent }) {
+export function AuthenticationEmail({ content }: { readonly content: EmailContent }) {
   switch (content.template) {
     case "email-verification":
       return (
@@ -355,12 +354,6 @@ function AuthenticationEmail({ content }: { readonly content: EmailContent }) {
 
   const exhaustiveContent: never = content
   return exhaustiveContent
-}
-
-export async function renderEmail(content: EmailContent): Promise<RenderedEmail> {
-  const element = <AuthenticationEmail content={content} />
-  const [html, text] = await Promise.all([render(element), render(element, { plainText: true })])
-  return { subject: content.subject, html, text }
 }
 
 const styles = {

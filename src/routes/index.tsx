@@ -32,7 +32,7 @@ export const Route = createFileRoute("/")({
   validateSearch: Schema.toStandardSchemaV1(feedSearchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => ({ cursor: search.cursor }),
   loader: ({ context, deps }) => {
-    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({}, deps.cursor))
+    void context.queryClient.infiniteQuery(feedQueryOptions({}, deps.cursor)).catch(() => undefined)
   },
   head: ({ match }) => {
     const cursor = match.search.cursor

@@ -26,8 +26,8 @@ function normalizeUsername(username: string) {
 function usernameFromEmail(email: string) {
   const localPart = email.split("@", 1)[0] ?? ""
   const sanitized = localPart
-    .replace(/[^A-Za-z0-9._~-]+/g, "-")
-    .replace(/^-+|-+$/g, "")
+    .replaceAll(/[^A-Za-z0-9._~-]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "")
     .slice(0, MAX_USERNAME_LENGTH)
   return isValidUsername(sanitized) ? sanitized : FALLBACK_USERNAME
 }

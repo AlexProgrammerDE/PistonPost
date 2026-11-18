@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { ServerFunctionClientError } from "@/lib/server-function-error"
 
-import { profileSaveErrorMessage } from "./product-settings"
+import { profileSaveErrorMessage } from "./profile-save-error"
 
 describe("profile save errors", () => {
   test("shows the server reason for a taken username", () => {

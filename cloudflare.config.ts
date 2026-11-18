@@ -424,6 +424,7 @@ export default defineConfig((ctx) => {
         },
       })
     }
+    case undefined:
     default: {
       return defineConfig({
         worker: {

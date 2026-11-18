@@ -68,7 +68,6 @@ async function runScenario(options: Options, scenario: Scenario) {
           }
           if (sessionCookie) headers.set("cookie", sessionCookie)
           // The bounded worker loop awaits each request so concurrency never exceeds the configured pool.
-          // oxlint-disable-next-line no-await-in-loop
           const response = await fetch(new URL(scenario.path, options.baseUrl), {
             method: scenario.method,
             headers,
@@ -76,7 +75,6 @@ async function runScenario(options: Options, scenario: Scenario) {
             redirect: "manual",
           })
           if (response.status >= 400) failures += 1
-          // oxlint-disable-next-line no-await-in-loop
           await response.arrayBuffer()
         } catch {
           failures += 1

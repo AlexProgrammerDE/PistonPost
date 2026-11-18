@@ -33,9 +33,9 @@ export const Route = createFileRoute("/following")({
   loader: async ({ context, deps }) => {
     const viewer = await getFollowingViewer()
     if (viewer) {
-      void context.queryClient.prefetchInfiniteQuery(
-        followingFeedQueryOptions(viewer.id, deps.cursor),
-      )
+      void context.queryClient
+        .infiniteQuery(followingFeedQueryOptions(viewer.id, deps.cursor))
+        .catch(() => undefined)
     }
     return viewer
   },

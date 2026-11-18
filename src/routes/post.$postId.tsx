@@ -50,9 +50,10 @@ export const Route = createFileRoute("/post/$postId")({
     const decodedPostId = decodePostIdParam(params.postId)
     if (Option.isNone(decodedPostId)) throw notFound()
     const postId = decodedPostId.value
+    // oxlint-disable-next-line typescript/no-deprecated -- RouterQueryClient overrides ensureQueryData to stop loader retries; query() would skip that policy.
     const post = await context.queryClient.ensureQueryData(postQueryOptions(postId))
     if (!post) throw notFound()
-    void context.queryClient.prefetchInfiniteQuery(discussionQueryOptions(postId))
+    void context.queryClient.infiniteQuery(discussionQueryOptions(postId)).catch(() => undefined)
     return post
   },
   headers: ({ loaderData }) => ({

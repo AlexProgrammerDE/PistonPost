@@ -5,6 +5,7 @@ import { UnsubscribeTokenError } from "@/email"
 import type { AppRequestContext } from "@/server"
 import { readUnsubscribeKeyring } from "@/server/email-config"
 import { applyUnsubscribeToken } from "@/server/email-preference-service"
+import { logError } from "@/server/error-log"
 
 function unsubscribeResponse(status: 204 | 400 | 415 | 500) {
   return new Response(null, {
@@ -61,10 +62,10 @@ export async function handleOneClickUnsubscribe(request: Request, context: AppRe
     )
     if (Result.isSuccess(result)) return unsubscribeResponse(204)
     if (result.failure instanceof UnsubscribeTokenError) return unsubscribeResponse(400)
-    console.error(JSON.stringify({ level: "error", event: "email.unsubscribe.failed" }))
+    logError("email.unsubscribe.failed")
     return unsubscribeResponse(500)
   } catch {
-    console.error(JSON.stringify({ level: "error", event: "email.unsubscribe.failed" }))
+    logError("email.unsubscribe.failed")
     return unsubscribeResponse(500)
   }
 }

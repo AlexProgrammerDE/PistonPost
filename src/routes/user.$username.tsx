@@ -56,8 +56,11 @@ export const Route = createFileRoute("/user/$username")({
   loader: async ({ context, params, deps }) => {
     const username = normalizeProfileUsername(params.username)
     if (!username) throw notFound()
+    // oxlint-disable-next-line typescript/no-deprecated -- RouterQueryClient overrides ensureQueryData to stop loader retries; query() would skip that policy.
     const profilePromise = context.queryClient.ensureQueryData(profileQueryOptions(username))
-    void context.queryClient.prefetchInfiniteQuery(feedQueryOptions({ username }, deps.cursor))
+    void context.queryClient
+      .infiniteQuery(feedQueryOptions({ username }, deps.cursor))
+      .catch(() => undefined)
     const profile = await profilePromise
     if (!profile) throw notFound()
     return profile

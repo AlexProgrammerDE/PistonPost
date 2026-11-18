@@ -6,7 +6,6 @@ import { useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 
 import { authClient } from "@/auth/client"
-import { replaceOutdatedSubscription } from "@/components/push-subscription-sync"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Field, FieldContent, FieldDescription, FieldTitle } from "@/components/ui/field"
@@ -20,6 +19,7 @@ import {
   serializePushSubscription,
   supportsPushNotifications,
 } from "@/lib/push-notifications"
+import { replaceOutdatedSubscription } from "@/lib/push-subscription-replacement"
 import { removePushSubscription, upsertPushSubscription } from "@/server/push-subscriptions"
 
 type DeviceState = "checking" | "disabled" | "enabled" | "denied" | "unsupported" | "not-configured"

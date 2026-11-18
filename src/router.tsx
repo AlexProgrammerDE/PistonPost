@@ -28,6 +28,7 @@ export function getRouter() {
     defaultViewTransition: {
       types: (locationChangeInfo) => {
         if (
+          // oxlint-disable-next-line typescript/prefer-optional-chain -- `window?.` throws on the server, where `window` is not declared.
           typeof window !== "undefined" &&
           window.matchMedia("(prefers-reduced-motion: reduce)").matches
         ) {

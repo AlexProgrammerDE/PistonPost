@@ -62,7 +62,6 @@ async function receiveShare(request: Request) {
     let bytes = 0
     while (true) {
       // Read incrementally to enforce the limit without buffering an unbounded body.
-      // oxlint-disable-next-line no-await-in-loop
       const { done, value } = await reader.read()
       if (done) break
       bytes += value.byteLength

@@ -1,4 +1,5 @@
-import { Cause, Data, Effect, Exit } from "effect"
+import type { Cause } from "effect"
+import { Data, Effect, Exit } from "effect"
 
 export class MaintenanceError extends Data.TaggedError("MaintenanceError")<{
   readonly failures: ReadonlyArray<{ readonly task: string; readonly cause: Cause.Cause<unknown> }>

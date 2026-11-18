@@ -6,17 +6,13 @@ import {
   COOKIE_CONSENT_REVISION,
   isPostHogConfigured,
   syncPostHogConsent,
-} from "@/lib/integrations/posthog"
+} from "@/lib/integrations/posthog-client"
 
 let cookieConsentStarted = false
 const POSTHOG_COOKIE_NAMES = [/^ph_/, /^posthog/]
 
 function syncAnalyticsConsent() {
   syncPostHogConsent(CookieConsent.acceptedCategory("analytics"))
-}
-
-export function showCookiePreferences() {
-  if (isPostHogConfigured()) CookieConsent.showPreferences()
 }
 
 export function CookieConsentProvider({ children }: { readonly children: ReactNode }) {

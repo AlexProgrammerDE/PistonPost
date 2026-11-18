@@ -22,7 +22,7 @@ import { ThemeToggleItem } from "@/components/auth/theme/theme-toggle-item"
 import { TwoFactorChallenge } from "@/components/auth/two-factor/two-factor-challenge"
 import { TwoFactorSettings } from "@/components/auth/two-factor/two-factor-settings"
 
-import { createAuthenticationPlugins } from "./providers"
+import { createAuthenticationPlugins } from "./authentication-plugins"
 
 describe("global authentication plugins", () => {
   test("contributes account switching, impersonation, and theme controls", () => {

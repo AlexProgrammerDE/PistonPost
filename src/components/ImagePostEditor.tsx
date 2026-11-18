@@ -91,7 +91,6 @@ export function ImagePostEditor({
     for (const file of files.slice(0, remaining)) {
       try {
         // Keep preparation ordered to cap peak memory for large galleries.
-        // oxlint-disable-next-line no-await-in-loop
         const prepared = await prepareImageForUpload(file)
         if (!mounted.current) return
         const previewUrl = URL.createObjectURL(prepared.file)

@@ -54,7 +54,7 @@ describe("router query client", () => {
     const query = failingQuery()
 
     expect(
-      await rejection(client.fetchQuery({ queryKey: ["component"], queryFn: query.queryFn })),
+      await rejection(client.query({ queryKey: ["component"], queryFn: query.queryFn })),
     ).toEqual(new Error("unavailable"))
     expect(query.calls()).toBe(4)
   })

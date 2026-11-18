@@ -7,6 +7,7 @@ import { isBannedUser } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import { serverFunctionErrorStatus, toServerFunctionClientError } from "@/lib/server-function-error"
+import { logError } from "@/server/error-log"
 import { findRequestSession, isActiveAdministrator } from "@/server/request-session"
 import {
   forbiddenFailure,
@@ -42,17 +43,14 @@ export const serverFunctionErrorMiddleware = createMiddleware({ type: "function"
         setResponseHeader("Retry-After", error.retryAfterSeconds.toString())
       }
       if (error.code === "INTERNAL_ERROR") {
-        console.error(
-          JSON.stringify({
-            level: "error",
-            event: "server-function.failed",
-            functionId: serverFnMeta.id,
-            functionName: serverFnMeta.name,
-            requestId: error.requestId,
-            error: getFailureName(failure.cause),
-          }),
-        )
+        logError("server-function.failed", {
+          functionId: serverFnMeta.id,
+          functionName: serverFnMeta.name,
+          requestId: error.requestId,
+          error: getFailureName(failure.cause),
+        })
       }
+      // oxlint-disable-next-line typescript/only-throw-error -- TanStack Start serializes this plain error payload, and the client middleware rebuilds the Error.
       throw error
     }
   })

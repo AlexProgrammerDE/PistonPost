@@ -1,23 +1,15 @@
 import { useSession } from "@better-auth-ui/react"
-import { createContext, useContext, useEffect, useState, type PropsWithChildren } from "react"
+import { useEffect, useState, type PropsWithChildren } from "react"
 
 import { authClient } from "@/auth/client"
 import { FileLaunchHandler } from "@/components/FileLaunchHandler"
+import { PwaContext, type InstallPrompt, type InstallState } from "@/lib/pwa/app-installation"
 import { reconcileDraftAccount } from "@/lib/pwa/local-draft"
 import { reconcileLocalAccount } from "@/lib/pwa/local-store"
 import { registerAppWorker } from "@/lib/pwa/registration"
 
-type InstallPrompt = Event & { prompt: () => Promise<{ outcome: "accepted" | "dismissed" }> }
-type InstallState = { installed: boolean; prompt: InstallPrompt | null }
-
-const PwaContext = createContext<InstallState>({ installed: false, prompt: null })
-
 function isInstallPrompt(event: Event): event is InstallPrompt {
   return "prompt" in event && typeof event.prompt === "function"
-}
-
-export function useAppInstallation() {
-  return useContext(PwaContext)
 }
 
 export function PwaProvider({ children }: PropsWithChildren) {

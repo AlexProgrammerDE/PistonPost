@@ -1,6 +1,7 @@
 import { Context, Effect, Layer, Schema } from "effect"
 
-import { renderEmail, type EmailContent, type RenderedEmail } from "./email"
+import type { EmailContent, RenderedEmail } from "./email"
+import { renderEmail } from "./render-email"
 
 export type EmailAddress = Readonly<{ email: string; name: string }>
 

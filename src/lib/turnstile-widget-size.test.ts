@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
-import { getTurnstileWidgetSize } from "./turnstile-widget"
+import { getTurnstileWidgetSize } from "./turnstile-widget-size"
 
 describe("Turnstile widget size", () => {
   test("uses the compact widget when the form is narrower than the flexible minimum", () => {

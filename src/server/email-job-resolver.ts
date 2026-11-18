@@ -125,7 +125,7 @@ export function emailJobResolverLayer(
             .where(eq(schema.comments.id, job.commentId))
             .get(),
         )
-        if (!comment || comment.status !== "published" || comment.postStatus !== "published") {
+        if (comment?.status !== "published" || comment.postStatus !== "published") {
           return skip("content-unavailable")
         }
 

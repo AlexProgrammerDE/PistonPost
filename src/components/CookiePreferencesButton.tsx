@@ -1,8 +1,8 @@
 import { Cookie } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { showCookiePreferences } from "@/lib/integrations/cookie-consent"
-import { usePostHogClient } from "@/lib/integrations/posthog"
+import { showCookiePreferences } from "@/lib/integrations/cookie-preferences"
+import { usePostHogClient } from "@/lib/integrations/posthog-client"
 
 export function CookiePreferencesButton() {
   const posthog = usePostHogClient()

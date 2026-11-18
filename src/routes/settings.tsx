@@ -11,6 +11,7 @@ import { getCurrentSession } from "@/server/session"
 
 const ensureSettingsSession = createIsomorphicFn()
   .server((queryClient: QueryClient) =>
+    // oxlint-disable-next-line typescript/no-deprecated -- RouterQueryClient overrides ensureQueryData to stop loader retries; query() would skip that policy.
     queryClient.ensureQueryData({
       queryKey: authQueryKeys.session,
       queryFn: () => getCurrentSession(),

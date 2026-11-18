@@ -53,7 +53,7 @@ function parseHttpUrl(value: string) {
 
 export function isProxyableExternalImageUrl(value: string) {
   const url = parseHttpUrl(value)
-  if (!url || url.protocol !== "https:" || url.username || url.password) return false
+  if (url?.protocol !== "https:" || url.username || url.password) return false
   if (url.port && url.port !== "443") return false
 
   const hostname = url.hostname.toLocaleLowerCase("en-US").replace(/\.$/u, "")

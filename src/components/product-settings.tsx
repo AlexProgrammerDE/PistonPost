@@ -29,21 +29,11 @@ import {
 } from "@/components/ui/table"
 import type { NotificationPreference } from "@/domain"
 import { useAppForm } from "@/lib/forms/app-form"
-import { userFacingServerMessage } from "@/lib/server-function-error"
-import {
-  getMyProductSettings,
-  updateNotificationPreference,
-  updateProfile,
-} from "@/server/settings"
+import { profileSaveErrorMessage } from "@/lib/profile-save-error"
+import type { getMyProductSettings } from "@/server/settings"
+import { updateNotificationPreference, updateProfile } from "@/server/settings"
 
 type ProductSettings = Awaited<ReturnType<typeof getMyProductSettings>>
-
-const profileSaveFallbackMessage =
-  "Your profile could not be saved. Check the fields and try again."
-
-export function profileSaveErrorMessage(error: unknown) {
-  return userFacingServerMessage(error) ?? profileSaveFallbackMessage
-}
 
 function RequiredNotificationSwitch({ label }: { label: string }) {
   return <Switch checked disabled aria-label={`${label} are required and always on`} />

@@ -62,6 +62,7 @@ export function VidstackVideoPlayer({
   })
 
   return (
+    // oxlint-disable-next-line typescript/no-deprecated -- Vidstack is deprecated in favor of Video.js 10, which is a separate migration.
     <MediaPlayer
       src={{
         src: manifestUrl,

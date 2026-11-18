@@ -29,7 +29,6 @@ export async function uploadPostEditImages(
   )
   for (const batch of createImageUploadBatches(pending)) {
     // Issue slots close to use and upload in order to bound memory and D1 writes.
-    // oxlint-disable-next-line no-await-in-loop
     const intents = await createImageUploadIntents({
       data: {
         postId,
@@ -47,7 +46,6 @@ export async function uploadPostEditImages(
     for (const [index, image] of batch.entries()) {
       const intent = intents[index]
       if (!intent) throw new Error("The image upload could not be started.")
-      // oxlint-disable-next-line no-await-in-loop
       await uploadImage(
         intent.uploadUrl,
         image.file,

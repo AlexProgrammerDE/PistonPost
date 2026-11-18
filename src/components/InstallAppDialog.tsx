@@ -2,7 +2,6 @@ import { Download } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { useAppInstallation } from "@/components/PwaProvider"
 import { Button } from "@/components/ui/button"
 import {
   Credenza,
@@ -15,6 +14,7 @@ import {
   CredenzaTitle,
 } from "@/components/ui/credenza"
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
+import { useAppInstallation } from "@/lib/pwa/app-installation"
 
 export function InstallAppMenuItem({ onOpen }: { onOpen: () => void }) {
   const { installed } = useAppInstallation()

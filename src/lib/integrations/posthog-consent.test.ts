@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import { Schema } from "effect"
 
-import { cookieAcceptsAnalytics } from "./posthog"
+import { cookieAcceptsAnalytics } from "./posthog-client"
 
 const token = "phc_test"
 const consentKey = `__ph_opt_in_out_${token}`
@@ -72,7 +72,7 @@ async function runPostHog(cookie: string, storage: Record<string, string>) {
       ...process.env,
       VITE_PUBLIC_POSTHOG_KEY: "",
       TEST_COOKIE: cookie,
-      TEST_MODULE: new URL("./posthog.tsx", import.meta.url).pathname,
+      TEST_MODULE: new URL("./posthog-client.ts", import.meta.url).pathname,
       TEST_STORAGE: JSON.stringify(Object.entries(storage)),
     },
     stdout: "pipe",

@@ -30,7 +30,7 @@ describe("post loader", () => {
         lookups.push(queryKey)
         return null
       },
-      prefetchInfiniteQuery: async () => undefined,
+      infiniteQuery: async () => undefined,
     }
     const error = await rejection(
       postLoader({ context: { queryClient }, params: { postId } } as unknown as LoaderContext),

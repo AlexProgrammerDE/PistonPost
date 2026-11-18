@@ -16,7 +16,7 @@ function loadTag(tag: string, lookups: Array<ReadonlyArray<unknown>>) {
       lookups.push(queryKey)
       return null
     },
-    prefetchInfiniteQuery: async () => undefined,
+    infiniteQuery: async () => undefined,
   }
   return tagLoader({
     context: { queryClient },

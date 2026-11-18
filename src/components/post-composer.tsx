@@ -16,7 +16,6 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { useStore } from "@tanstack/react-form"
 import { type QueryClient, useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useSelector } from "@tanstack/react-store"
@@ -235,15 +234,15 @@ function focusFirstInvalidField(formElement: HTMLFormElement) {
 async function waitForVideo(queryClient: QueryClient, assetId: string) {
   for (let attempt = 0; attempt < 120; attempt += 1) {
     // Polling must remain ordered so each check observes the latest Stream state.
-    // oxlint-disable-next-line no-await-in-loop
-    const [asset] = await queryClient.fetchQuery(ownedMediaStatusQueryOptions([assetId]))
+    const [asset] = await queryClient.query(ownedMediaStatusQueryOptions([assetId]))
     if (asset?.status === "ready") return
     if (asset?.status === "failed" || asset?.status === "deleted") {
       throw new Error("The video could not be processed.")
     }
     // The delay is part of the bounded reconciliation protocol.
-    // oxlint-disable-next-line no-await-in-loop
-    await new Promise((resolve) => setTimeout(resolve, 5_000))
+    await new Promise((resolve) => {
+      setTimeout(resolve, 5_000)
+    })
   }
   throw new Error("The video is still processing. Try posting again in a few minutes.")
 }
@@ -325,7 +324,6 @@ export function PostComposer({
           const assetIds: string[] = []
           for (const uploadBatch of createImageUploadBatches(uploads)) {
             // Bounded batches keep D1 requests small and issue upload slots close to their use.
-            // oxlint-disable-next-line no-await-in-loop
             const intents = await createImageUploadIntents({
               data: {
                 postId: draft.id,
@@ -349,7 +347,6 @@ export function PostComposer({
               uploadControllers.current.set(item.clientId, controller)
               try {
                 // Uploads are ordered to preserve media order without D1 writer races.
-                // oxlint-disable-next-line no-await-in-loop
                 await uploadImage(
                   intent.uploadUrl,
                   item.file,
@@ -424,7 +421,7 @@ export function PostComposer({
   })
 
   const localDraft = useComposerDraft(userId, form)
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
+  const isSubmitting = useSelector(form.store, (state) => state.isSubmitting)
 
   useEffect(() => () => releaseUploadPreviews(uploadStore.uploads.get()), [uploadStore])
 
@@ -544,7 +541,6 @@ export function PostComposer({
     for (const file of selected) {
       try {
         // Preparation stays ordered to cap peak browser memory for large image dumps.
-        // oxlint-disable-next-line no-await-in-loop
         prepared.push(await prepareImageForUpload(file))
       } catch (error) {
         toast.error(`Couldn’t prepare ${file.name}`, {

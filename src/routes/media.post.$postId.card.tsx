@@ -54,7 +54,7 @@ async function textPostCard({
 
   const database = createD1Database(context.env.DB)
   const post = await getPublishedPostRead(database, postId.success)
-  if (!post || post.type !== "text") return new Response("Not found", { status: 404 })
+  if (post?.type !== "text") return new Response("Not found", { status: 404 })
 
   // Only the current versioned URL may render. Other query strings would each fill
   // the cache with an immutable copy.

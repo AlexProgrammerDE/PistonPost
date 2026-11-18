@@ -98,6 +98,8 @@ export function securityNotificationMessage(input: SecurityNotificationInput): E
         template: "new-device",
         subject: securityCopy[input.template],
       }
+    case "email-changed":
+      break
   }
 
   return {

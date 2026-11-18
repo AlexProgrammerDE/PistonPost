@@ -20,7 +20,9 @@ function openDatabase(): Promise<IDBDatabase> {
       request.result.createObjectStore("meta")
     })
     request.addEventListener("success", () => resolve(request.result))
-    request.addEventListener("error", () => reject(request.error))
+    request.addEventListener("error", () =>
+      reject(request.error ?? new Error("The local storage request failed.")),
+    )
     request.addEventListener("blocked", () =>
       reject(new Error("Local storage is busy. Close other PistonPost tabs and try again.")),
     )
@@ -30,7 +32,9 @@ function openDatabase(): Promise<IDBDatabase> {
 function result<T>(request: IDBRequest<T>): Promise<T> {
   return new Promise((resolve, reject) => {
     request.addEventListener("success", () => resolve(request.result))
-    request.addEventListener("error", () => reject(request.error))
+    request.addEventListener("error", () =>
+      reject(request.error ?? new Error("The local storage request failed.")),
+    )
   })
 }
 
@@ -59,7 +63,9 @@ async function cleanShares(store: IDBObjectStore, userId?: string | null) {
   // Visit one record at a time instead of cloning every pending file into memory together.
   await new Promise<void>((resolve, reject) => {
     const request = store.openCursor()
-    request.addEventListener("error", () => reject(request.error))
+    request.addEventListener("error", () =>
+      reject(request.error ?? new Error("The local storage request failed.")),
+    )
     request.addEventListener("success", () => {
       const cursor = request.result
       if (!cursor) {
@@ -92,7 +98,9 @@ async function dropOldestShares(store: IDBObjectStore, keep: number) {
   const records: { readonly key: IDBValidKey; readonly createdAt: number }[] = []
   await new Promise<void>((resolve, reject) => {
     const request = store.openCursor()
-    request.addEventListener("error", () => reject(request.error))
+    request.addEventListener("error", () =>
+      reject(request.error ?? new Error("The local storage request failed.")),
+    )
     request.addEventListener("success", () => {
       const cursor = request.result
       if (!cursor) {

@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 
 import type { CaptureResult } from "posthog-js/dist/module.slim"
 
-import { classifyAnalyticsPath, sanitizePostHogCapture } from "./posthog"
+import { classifyAnalyticsPath, sanitizePostHogCapture } from "./posthog-client"
 
 const capture: CaptureResult = {
   uuid: "00000000-0000-4000-8000-000000000000",

@@ -5,24 +5,13 @@ import { useEffect } from "react"
 
 import { authClient } from "@/auth/client"
 import {
-  createPushSubscription,
   getOwnedPushSubscription,
   pushSubscriptionUsesKey,
   serializePushSubscription,
   supportsPushNotifications,
 } from "@/lib/push-notifications"
-import { removePushSubscription, upsertPushSubscription } from "@/server/push-subscriptions"
-
-export async function replaceOutdatedSubscription(
-  subscription: PushSubscription,
-  vapidPublicKey: string,
-) {
-  // A subscription made with an older server key can no longer receive push. Retire it on the
-  // server first, then subscribe again with the current key.
-  await removePushSubscription({ data: { endpoint: subscription.endpoint } }).catch(() => undefined)
-  await subscription.unsubscribe()
-  return createPushSubscription(vapidPublicKey)
-}
+import { replaceOutdatedSubscription } from "@/lib/push-subscription-replacement"
+import { upsertPushSubscription } from "@/server/push-subscriptions"
 
 export function PushSubscriptionSync({ vapidPublicKey }: { vapidPublicKey: string | null }) {
   const { data: session, isPending } = useSession(authClient)
