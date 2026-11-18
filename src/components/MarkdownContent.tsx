@@ -272,18 +272,17 @@ function TumblrEmbed({ embed }: { embed: Extract<MarkdownEmbed, { provider: "tum
 
   useEffect(() => {
     let active = true
-    void getTumblrEmbed({ data: { url: embed.url } })
-      .then((result) => {
-        if (!active) return
-        setState(
-          result.status === "ready"
-            ? { status: "ready", href: result.href }
-            : { status: "unavailable" },
-        )
-      })
-      .catch(() => {
-        if (active) setState({ status: "unavailable" })
-      })
+    void (async () => {
+      const result = await getTumblrEmbed({ data: { url: embed.url } })
+      if (!active) return
+      setState(
+        result.status === "ready"
+          ? { status: "ready", href: result.href }
+          : { status: "unavailable" },
+      )
+    })().catch(() => {
+      if (active) setState({ status: "unavailable" })
+    })
     return () => {
       active = false
     }

@@ -100,7 +100,7 @@ function NotificationRowHeader({ label, description }: { label: string; descript
   return (
     <TableHead scope="row" className="h-auto py-4 whitespace-normal">
       <span className="block font-medium">{label}</span>
-      <span className="mt-1 block text-xs leading-relaxed font-normal text-muted-foreground">
+      <span className="mt-1 block text-xs/relaxed font-normal text-muted-foreground">
         {description}
       </span>
     </TableHead>

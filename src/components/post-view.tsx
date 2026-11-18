@@ -335,7 +335,7 @@ function FeedPostImageMedia({
           variant="feed"
           sizes={feedImageSizes}
           alt={image.altText ?? ""}
-          className="max-h-[46rem] w-full bg-muted object-contain"
+          className="max-h-184 w-full bg-muted object-contain"
           loading={priority ? "eager" : "lazy"}
           fetchPriority={priority ? "high" : undefined}
         />

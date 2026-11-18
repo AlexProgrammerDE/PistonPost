@@ -9,13 +9,13 @@ type VideoPlaybackClient = {
 
 export type VideoPlaybackFormat = "dash" | "hls"
 
-export class VideoPlaybackError extends Schema.TaggedError<VideoPlaybackError>()(
-  "VideoPlaybackError",
-  {
-    operation: Schema.Literals(["details", "update", "validate"]),
-    cause: Schema.Defect(),
-  },
-) {}
+export class VideoPlaybackError extends Schema.TaggedError<
+  VideoPlaybackError,
+  { readonly brand: unique symbol }
+>()("VideoPlaybackError", {
+  operation: Schema.Literals(["details", "update", "validate"]),
+  cause: Schema.Defect(),
+}) {}
 
 function cloudflarePlaybackUrl(value: string) {
   if (!URL.canParse(value)) return null

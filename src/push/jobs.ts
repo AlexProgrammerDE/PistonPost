@@ -7,25 +7,35 @@ const PushJobBase = {
   subscriptionId: Schema.String,
 }
 
-export class CommentPushJob extends Schema.Class<CommentPushJob>("CommentPushJob")({
+export class CommentPushJob extends Schema.Class<CommentPushJob, { readonly brand: unique symbol }>(
+  "CommentPushJob",
+)({
   ...PushJobBase,
   type: Schema.Literal("push.comment"),
   commentId: Schema.String,
 }) {}
 
-export class ReplyPushJob extends Schema.Class<ReplyPushJob>("ReplyPushJob")({
+export class ReplyPushJob extends Schema.Class<ReplyPushJob, { readonly brand: unique symbol }>(
+  "ReplyPushJob",
+)({
   ...PushJobBase,
   type: Schema.Literal("push.reply"),
   commentId: Schema.String,
 }) {}
 
-export class ModerationPushJob extends Schema.Class<ModerationPushJob>("ModerationPushJob")({
+export class ModerationPushJob extends Schema.Class<
+  ModerationPushJob,
+  { readonly brand: unique symbol }
+>("ModerationPushJob")({
   ...PushJobBase,
   type: Schema.Literal("push.moderation"),
   auditEventId: Schema.String,
 }) {}
 
-export class SecurityPushJob extends Schema.Class<SecurityPushJob>("SecurityPushJob")({
+export class SecurityPushJob extends Schema.Class<
+  SecurityPushJob,
+  { readonly brand: unique symbol }
+>("SecurityPushJob")({
   ...PushJobBase,
   type: Schema.Literal("push.security"),
   auditEventId: Schema.String,

@@ -19,13 +19,13 @@ const turnstileResponseSchema = Schema.Struct({
 
 type TurnstileVerificationReason = "configuration" | "provider" | "rejected"
 
-export class TurnstileVerificationError extends Schema.TaggedError<TurnstileVerificationError>()(
-  "TurnstileVerificationError",
-  {
-    reason: Schema.Literals(["configuration", "provider", "rejected"]),
-    message: Schema.String,
-  },
-) {}
+export class TurnstileVerificationError extends Schema.TaggedError<
+  TurnstileVerificationError,
+  { readonly brand: unique symbol }
+>()("TurnstileVerificationError", {
+  reason: Schema.Literals(["configuration", "provider", "rejected"]),
+  message: Schema.String,
+}) {}
 
 type TurnstileVerificationInput = {
   readonly token: string

@@ -56,14 +56,12 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
     refresh()
     document.addEventListener("visibilitychange", refreshWhenVisible)
     if (vapidPublicKey && supportsPushNotifications() && "permissions" in navigator) {
-      void navigator.permissions
-        .query({ name: "notifications" })
-        .then((status) => {
-          if (cancelled) return
-          permissionStatus = status
-          status.addEventListener("change", refresh)
-        })
-        .catch(() => undefined)
+      void (async () => {
+        const status = await navigator.permissions.query({ name: "notifications" })
+        if (cancelled) return
+        permissionStatus = status
+        status.addEventListener("change", refresh)
+      })().catch(() => undefined)
     }
     return () => {
       cancelled = true

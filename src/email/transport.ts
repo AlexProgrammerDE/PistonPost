@@ -13,16 +13,19 @@ export type OutboundEmail = RenderedEmail & {
   readonly headers?: Readonly<Record<string, string>>
 }
 
-export class EmailDeliveryError extends Schema.TaggedError<EmailDeliveryError>()(
-  "EmailDeliveryError",
-  {
-    message: Schema.String,
-    code: Schema.String,
-    retryable: Schema.Boolean,
-  },
-) {}
+export class EmailDeliveryError extends Schema.TaggedError<
+  EmailDeliveryError,
+  { readonly brand: unique symbol }
+>()("EmailDeliveryError", {
+  message: Schema.String,
+  code: Schema.String,
+  retryable: Schema.Boolean,
+}) {}
 
-export class EmailRenderError extends Schema.TaggedError<EmailRenderError>()("EmailRenderError", {
+export class EmailRenderError extends Schema.TaggedError<
+  EmailRenderError,
+  { readonly brand: unique symbol }
+>()("EmailRenderError", {
   message: Schema.String,
 }) {}
 

@@ -62,7 +62,7 @@ function EmailUnsubscribe() {
       <div className="w-full border-y py-8">
         <MailX aria-hidden="true" className="size-6 text-muted-foreground" />
         <h1 className="mt-4 font-heading text-2xl font-bold">Stop these emails?</h1>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
+        <p className="mt-2 text-sm/6 text-muted-foreground">
           Security, account, and moderation messages will still arrive when they are needed. You can
           turn optional emails back on from notification settings.
         </p>

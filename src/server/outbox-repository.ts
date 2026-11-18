@@ -16,10 +16,10 @@ export type OutboxClaim =
   | Readonly<{ _tag: "Deferred"; retryAfterSeconds: number }>
   | Readonly<{ _tag: "Unavailable" }>
 
-export class OutboxRepositoryError extends Schema.TaggedError<OutboxRepositoryError>()(
-  "OutboxRepositoryError",
-  { operation: Schema.String },
-) {}
+export class OutboxRepositoryError extends Schema.TaggedError<
+  OutboxRepositoryError,
+  { readonly brand: unique symbol }
+>()("OutboxRepositoryError", { operation: Schema.String }) {}
 
 export class OutboxRepository extends Context.Service<
   OutboxRepository,

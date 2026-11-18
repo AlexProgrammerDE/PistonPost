@@ -19,19 +19,22 @@ export type PushTarget = Readonly<{
   }>
 }>
 
-export class PushSubscriptionExpired extends Schema.TaggedError<PushSubscriptionExpired>()(
-  "PushSubscriptionExpired",
-  { statusCode: Schema.Finite },
-) {}
+export class PushSubscriptionExpired extends Schema.TaggedError<
+  PushSubscriptionExpired,
+  { readonly brand: unique symbol }
+>()("PushSubscriptionExpired", { statusCode: Schema.Finite }) {}
 
-export class PushRateLimited extends Schema.TaggedError<PushRateLimited>()("PushRateLimited", {
+export class PushRateLimited extends Schema.TaggedError<
+  PushRateLimited,
+  { readonly brand: unique symbol }
+>()("PushRateLimited", {
   retryAfterSeconds: Schema.Finite,
 }) {}
 
-export class PushDeliveryError extends Schema.TaggedError<PushDeliveryError>()(
-  "PushDeliveryError",
-  { code: Schema.String, retryable: Schema.Boolean },
-) {}
+export class PushDeliveryError extends Schema.TaggedError<
+  PushDeliveryError,
+  { readonly brand: unique symbol }
+>()("PushDeliveryError", { code: Schema.String, retryable: Schema.Boolean }) {}
 
 export type PushTransportError = PushSubscriptionExpired | PushRateLimited | PushDeliveryError
 

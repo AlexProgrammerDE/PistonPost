@@ -51,7 +51,7 @@ function FeedItemsPlaceholder() {
                 <Skeleton className="h-3 w-24" />
               </div>
               <Skeleton className="h-8 w-3/4" />
-              <Skeleton className="aspect-[4/3] w-full" />
+              <Skeleton className="aspect-4/3 w-full" />
               <div className="grid gap-3">
                 <div className="flex items-center justify-between gap-3">
                   <Skeleton className="h-5 w-40" />
@@ -162,7 +162,7 @@ export function PostDetailSkeleton() {
         </div>
         <Skeleton className="h-12 w-4/5" />
         <Skeleton className="h-5 w-2/3" />
-        <Skeleton className="aspect-[16/10] w-full" />
+        <Skeleton className="aspect-16/10 w-full" />
         <div className="flex gap-2">
           {generateN(3).map((identity) => (
             <Skeleton key={identity} className="h-6 w-16" />

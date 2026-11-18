@@ -27,10 +27,10 @@ export type ResolvedEmail =
     }>
   | Readonly<{ _tag: "Skip"; reason: string; campaignId?: string }>
 
-export class EmailResolutionError extends Schema.TaggedError<EmailResolutionError>()(
-  "EmailResolutionError",
-  { message: Schema.String },
-) {}
+export class EmailResolutionError extends Schema.TaggedError<
+  EmailResolutionError,
+  { readonly brand: unique symbol }
+>()("EmailResolutionError", { message: Schema.String }) {}
 
 export class EmailJobResolver extends Context.Service<
   EmailJobResolver,

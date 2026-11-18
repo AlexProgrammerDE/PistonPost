@@ -21,19 +21,13 @@ type RecordPostViewInput = {
   readonly surface: PostViewSurface
 }
 
-class PostViewTrackingError extends Schema.TaggedError<PostViewTrackingError>()(
-  "PostViewTrackingError",
-  {
-    operation: Schema.Literals([
-      "fingerprint",
-      "rate-limit",
-      "find-post",
-      "increment",
-      "analytics",
-    ]),
-    cause: Schema.Defect(),
-  },
-) {}
+class PostViewTrackingError extends Schema.TaggedError<
+  PostViewTrackingError,
+  { readonly brand: unique symbol }
+>()("PostViewTrackingError", {
+  operation: Schema.Literals(["fingerprint", "rate-limit", "find-post", "increment", "analytics"]),
+  cause: Schema.Defect(),
+}) {}
 
 function trackingError(operation: PostViewTrackingError["operation"], cause: unknown) {
   return new PostViewTrackingError({ operation, cause })

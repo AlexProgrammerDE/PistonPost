@@ -192,7 +192,8 @@ export const postHogReady = initializePostHog().catch(() => null)
 export function syncPostHogConsent(accepted: boolean) {
   if (!POSTHOG_KEY || typeof window === "undefined") return
 
-  void postHogReady.then((client) => {
+  void (async () => {
+    const client = await postHogReady
     if (!client) return
 
     if (accepted) {
@@ -203,5 +204,5 @@ export function syncPostHogConsent(accepted: boolean) {
     // Clearing the stored flag opts out because the client starts with opt_out_capturing_by_default.
     // Unlike opt_out_capturing, it leaves no PostHog entry in local storage after a rejection.
     client.clear_opt_in_out_capturing()
-  })
+  })()
 }

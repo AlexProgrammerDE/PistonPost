@@ -3,10 +3,10 @@ import { Cause, Effect, Exit, Option, Predicate, Schema } from "effect"
 import { OperationError } from "./operation"
 import { OutboxRepository, outboxRetryDelayMs } from "./outbox-repository"
 
-export class QueueDeliveryError extends Schema.TaggedError<QueueDeliveryError>()(
-  "QueueDeliveryError",
-  { operation: Schema.String, retryAfterSeconds: Schema.Finite },
-) {}
+export class QueueDeliveryError extends Schema.TaggedError<
+  QueueDeliveryError,
+  { readonly brand: unique symbol }
+>()("QueueDeliveryError", { operation: Schema.String, retryAfterSeconds: Schema.Finite }) {}
 
 export function queueFailure(operation: string, retryAfterSeconds = 30) {
   return () => new QueueDeliveryError({ operation, retryAfterSeconds })

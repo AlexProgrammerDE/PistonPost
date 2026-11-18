@@ -92,17 +92,18 @@ function PostDetail() {
   useEffect(() => {
     if (!visiblePostId || trackedPostId.current === visiblePostId) return
     trackedPostId.current = visiblePostId
-    void trackPostViews({ data: { postIds: [visiblePostId], surface: "detail" } })
-      .then(({ views }) => {
-        const trackedView = views.find((view) => view.postId === visiblePostId)
-        if (!trackedView) return
-        queryClient.setQueryData(postQueryOptions(visiblePostId).queryKey, (current) =>
-          current && current.viewCount < trackedView.viewCount
-            ? { ...current, viewCount: trackedView.viewCount }
-            : current,
-        )
+    void (async () => {
+      const { views } = await trackPostViews({
+        data: { postIds: [visiblePostId], surface: "detail" },
       })
-      .catch(() => undefined)
+      const trackedView = views.find((view) => view.postId === visiblePostId)
+      if (!trackedView) return
+      queryClient.setQueryData(postQueryOptions(visiblePostId).queryKey, (current) =>
+        current && current.viewCount < trackedView.viewCount
+          ? { ...current, viewCount: trackedView.viewCount }
+          : current,
+      )
+    })().catch(() => undefined)
   }, [queryClient, visiblePostId])
 
   if (!post) return null

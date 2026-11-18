@@ -206,7 +206,7 @@ function ProfileFeedContent({ normalizedUsername }: { readonly normalizedUsernam
             {profile.bio && (
               <p
                 dir="auto"
-                className="mt-4 max-w-xl overflow-hidden text-base leading-relaxed whitespace-pre-line text-muted-foreground"
+                className="mt-4 max-w-xl overflow-hidden text-base/relaxed whitespace-pre-line text-muted-foreground"
               >
                 {profile.bio}
               </p>

@@ -25,11 +25,12 @@ async function cacheOfflineAsset(cache: Cache, path: string) {
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(OFFLINE_CACHE).then(async (cache) => {
+    (async () => {
+      const cache = await caches.open(OFFLINE_CACHE)
       await Promise.all(OFFLINE_ASSETS.map((path) => cacheOfflineAsset(cache, path)))
       // No application documents or versioned app assets are cached, so taking over is safe.
       await self.skipWaiting()
-    }),
+    })(),
   )
 })
 

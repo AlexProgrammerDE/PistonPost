@@ -1,6 +1,9 @@
 import { Schema } from "effect"
 
-export class CommentEmailJob extends Schema.Class<CommentEmailJob>("CommentEmailJob")({
+export class CommentEmailJob extends Schema.Class<
+  CommentEmailJob,
+  { readonly brand: unique symbol }
+>("CommentEmailJob")({
   version: Schema.Literal(2),
   type: Schema.Literal("email.comment"),
   idempotencyKey: Schema.String,
@@ -8,7 +11,9 @@ export class CommentEmailJob extends Schema.Class<CommentEmailJob>("CommentEmail
   commentId: Schema.String,
 }) {}
 
-export class ReplyEmailJob extends Schema.Class<ReplyEmailJob>("ReplyEmailJob")({
+export class ReplyEmailJob extends Schema.Class<ReplyEmailJob, { readonly brand: unique symbol }>(
+  "ReplyEmailJob",
+)({
   version: Schema.Literal(2),
   type: Schema.Literal("email.reply"),
   idempotencyKey: Schema.String,
@@ -16,7 +21,10 @@ export class ReplyEmailJob extends Schema.Class<ReplyEmailJob>("ReplyEmailJob")(
   commentId: Schema.String,
 }) {}
 
-export class ModerationEmailJob extends Schema.Class<ModerationEmailJob>("ModerationEmailJob")({
+export class ModerationEmailJob extends Schema.Class<
+  ModerationEmailJob,
+  { readonly brand: unique symbol }
+>("ModerationEmailJob")({
   version: Schema.Literal(2),
   type: Schema.Literal("email.moderation"),
   idempotencyKey: Schema.String,
@@ -24,7 +32,10 @@ export class ModerationEmailJob extends Schema.Class<ModerationEmailJob>("Modera
   auditEventId: Schema.String,
 }) {}
 
-export class SecurityEmailJob extends Schema.Class<SecurityEmailJob>("SecurityEmailJob")({
+export class SecurityEmailJob extends Schema.Class<
+  SecurityEmailJob,
+  { readonly brand: unique symbol }
+>("SecurityEmailJob")({
   version: Schema.Literal(2),
   type: Schema.Literal("email.security"),
   idempotencyKey: Schema.String,
@@ -32,7 +43,10 @@ export class SecurityEmailJob extends Schema.Class<SecurityEmailJob>("SecurityEm
   auditEventId: Schema.String,
 }) {}
 
-export class ProductEmailJob extends Schema.Class<ProductEmailJob>("ProductEmailJob")({
+export class ProductEmailJob extends Schema.Class<
+  ProductEmailJob,
+  { readonly brand: unique symbol }
+>("ProductEmailJob")({
   version: Schema.Literal(2),
   type: Schema.Literal("email.product"),
   idempotencyKey: Schema.String,
@@ -40,9 +54,10 @@ export class ProductEmailJob extends Schema.Class<ProductEmailJob>("ProductEmail
   campaignId: Schema.String,
 }) {}
 
-export class ProductEmailBatchJob extends Schema.Class<ProductEmailBatchJob>(
-  "ProductEmailBatchJob",
-)({
+export class ProductEmailBatchJob extends Schema.Class<
+  ProductEmailBatchJob,
+  { readonly brand: unique symbol }
+>("ProductEmailBatchJob")({
   version: Schema.Literal(2),
   type: Schema.Literal("email.product-batch"),
   idempotencyKey: Schema.String,

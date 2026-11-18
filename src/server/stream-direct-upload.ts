@@ -6,14 +6,14 @@ const STREAM_API_ORIGIN = "https://api.cloudflare.com"
 const STREAM_UPLOAD_HOSTS = new Set(["upload.cloudflarestream.com", "upload.videodelivery.net"])
 const STREAM_API_TIMEOUT_MS = 15_000
 
-export class StreamDirectUploadError extends Schema.TaggedError<StreamDirectUploadError>()(
-  "StreamDirectUploadError",
-  {
-    operation: Schema.Literals(["create", "validate-response"]),
-    status: Schema.NullOr(Schema.Finite),
-    cause: Schema.optional(Schema.Defect()),
-  },
-) {}
+export class StreamDirectUploadError extends Schema.TaggedError<
+  StreamDirectUploadError,
+  { readonly brand: unique symbol }
+>()("StreamDirectUploadError", {
+  operation: Schema.Literals(["create", "validate-response"]),
+  status: Schema.NullOr(Schema.Finite),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
 
 export type StreamDirectUpload = {
   readonly uploadUrl: string

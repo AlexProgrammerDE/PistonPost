@@ -12,10 +12,13 @@ export type AccountMediaPurgeServices = {
   deleteRecord: (id: string) => Promise<void>
 }
 
-export class AccountMediaPurgeError extends Schema.TaggedError<AccountMediaPurgeError>()(
-  "AccountMediaPurgeError",
-  { assetId: Schema.String, operation: Schema.Literals(["r2", "stream", "database"]) },
-) {}
+export class AccountMediaPurgeError extends Schema.TaggedError<
+  AccountMediaPurgeError,
+  { readonly brand: unique symbol }
+>()("AccountMediaPurgeError", {
+  assetId: Schema.String,
+  operation: Schema.Literals(["r2", "stream", "database"]),
+}) {}
 
 class AccountMediaPurge extends Context.Service<
   AccountMediaPurge,

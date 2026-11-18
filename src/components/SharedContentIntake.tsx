@@ -24,13 +24,12 @@ export function SharedContentIntake({
   const [busy, setBusy] = useState(false)
   useEffect(() => {
     let cancelled = false
-    void readSharedContent(shareId, userId)
-      .then((share) => {
-        if (!cancelled) setState(share ? { status: "ready", share } : { status: "missing" })
-      })
-      .catch(() => {
-        if (!cancelled) setState({ status: "missing" })
-      })
+    void (async () => {
+      const share = await readSharedContent(shareId, userId)
+      if (!cancelled) setState(share ? { status: "ready", share } : { status: "missing" })
+    })().catch(() => {
+      if (!cancelled) setState({ status: "missing" })
+    })
     return () => {
       cancelled = true
     }

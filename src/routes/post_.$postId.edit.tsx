@@ -189,10 +189,11 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
         onSubmit={(event) => {
           event.preventDefault()
           const formElement = event.currentTarget
-          void form.handleSubmit().then(() => {
+          void (async () => {
+            await form.handleSubmit()
             if (form.state.isValid) return
             requestAnimationFrame(() => focusFirstInvalidField(formElement))
-          })
+          })()
         }}
       >
         <form.AppForm>

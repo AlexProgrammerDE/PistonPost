@@ -9,13 +9,13 @@ const DOWNLOAD_URL_KEY = "streamDownloadUrl"
 
 type VideoDownloadStatus = "ready" | "inprogress" | "error"
 
-export class VideoDownloadError extends Schema.TaggedError<VideoDownloadError>()(
-  "VideoDownloadError",
-  {
-    operation: Schema.Literals(["generate", "get"]),
-    cause: Schema.Defect(),
-  },
-) {}
+export class VideoDownloadError extends Schema.TaggedError<
+  VideoDownloadError,
+  { readonly brand: unique symbol }
+>()("VideoDownloadError", {
+  operation: Schema.Literals(["generate", "get"]),
+  cause: Schema.Defect(),
+}) {}
 
 function storedDownloadStatus(metadata: MediaProviderMetadata): VideoDownloadStatus | null {
   const status = metadata[DOWNLOAD_STATUS_KEY]

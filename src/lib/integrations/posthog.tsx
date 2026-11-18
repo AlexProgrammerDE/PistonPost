@@ -9,9 +9,10 @@ export function PostHogProvider({ children }: { readonly children: ReactNode }) 
   useEffect(() => {
     let active = true
 
-    void postHogReady.then((readyClient) => {
+    void (async () => {
+      const readyClient = await postHogReady
       if (active) setClient(readyClient)
-    })
+    })()
 
     return () => {
       active = false

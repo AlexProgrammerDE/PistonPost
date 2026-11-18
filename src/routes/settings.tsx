@@ -49,7 +49,7 @@ function SettingsLayout() {
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
       <header className="mb-8 border-b pb-6">
         <h1 className="font-heading text-3xl font-bold tracking-tight">Account settings</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+        <p className="mt-2 max-w-2xl text-sm/6 text-muted-foreground">
           Manage your profile, sign-in details, notifications, and account security.
         </p>
       </header>
@@ -76,7 +76,7 @@ function SettingsLayout() {
               params={{ settingsView: view.value }}
               aria-current={active ? "page" : undefined}
               ref={active ? keepTabVisible : undefined}
-              className="inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent px-3 py-3 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground"
+              className="inline-flex shrink-0 items-center gap-1.5 border-b-2 border-transparent p-3 text-sm font-medium whitespace-nowrap text-muted-foreground hover:text-foreground aria-[current=page]:border-primary aria-[current=page]:text-foreground"
             >
               <ViewIcon aria-hidden="true" className="size-4" />
               {view.label}

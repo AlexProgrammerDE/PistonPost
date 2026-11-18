@@ -6,7 +6,10 @@ const TUMBLR_OEMBED_ENDPOINT = "https://www.tumblr.com/oembed/1.0"
 const MAX_OEMBED_RESPONSE_LENGTH = 32_768
 const tumblrOEmbedSchema = Schema.Struct({ html: Schema.String })
 
-export class TumblrEmbedError extends Schema.TaggedError<TumblrEmbedError>()("TumblrEmbedError", {
+export class TumblrEmbedError extends Schema.TaggedError<
+  TumblrEmbedError,
+  { readonly brand: unique symbol }
+>()("TumblrEmbedError", {
   operation: Schema.Literals(["request", "response", "validate"]),
   status: Schema.NullOr(Schema.Finite),
 }) {}

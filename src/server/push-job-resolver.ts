@@ -19,10 +19,10 @@ export type ResolvedPush =
       reason: string
     }>
 
-export class PushResolutionError extends Schema.TaggedError<PushResolutionError>()(
-  "PushResolutionError",
-  { operation: Schema.String },
-) {}
+export class PushResolutionError extends Schema.TaggedError<
+  PushResolutionError,
+  { readonly brand: unique symbol }
+>()("PushResolutionError", { operation: Schema.String }) {}
 
 export class PushJobResolver extends Context.Service<
   PushJobResolver,

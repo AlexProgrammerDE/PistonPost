@@ -9,10 +9,10 @@ const claimsSchema = Schema.Struct({
   expiresAt: Schema.Finite,
 })
 
-export class UnsubscribeTokenError extends Schema.TaggedError<UnsubscribeTokenError>()(
-  "UnsubscribeTokenError",
-  { message: Schema.String },
-) {}
+export class UnsubscribeTokenError extends Schema.TaggedError<
+  UnsubscribeTokenError,
+  { readonly brand: unique symbol }
+>()("UnsubscribeTokenError", { message: Schema.String }) {}
 
 function encodeBase64Url(bytes: Uint8Array) {
   return btoa(String.fromCharCode(...bytes))
