@@ -9,13 +9,14 @@
     "react-perf",
     "jsx-a11y",
     "vitest",
-    "effecttsgo"
+    "effecttsgo",
+    "promise"
   ],
   "jsPlugins": ["@shadcn/lint"],
   "categories": {
     "correctness": "error",
     "suspicious": "error",
-    "perf": "warn"
+    "perf": "error"
   },
   "rules": {
     "shadcn/no-unknown-classes": [
@@ -264,7 +265,65 @@
     "effecttsgo/any-unknown-in-error-context": "off",
     "effecttsgo/unsafe-effect-type-assertion": "off",
     "effecttsgo/strict-effect-provide": "off",
-    "effecttsgo/schema-class-missing-brand": "off"
+    "effecttsgo/schema-class-missing-brand": "off",
+    "typescript/restrict-plus-operands": "error",
+    "typescript/prefer-promise-reject-errors": "error",
+    "typescript/return-await": "error",
+    "typescript/switch-exhaustiveness-check": "error",
+    "typescript/prefer-optional-chain": "error",
+    // TanStack Router control flow throws redirect() and notFound() results.
+    "typescript/only-throw-error": [
+      "error",
+      {
+        "allow": [
+          {
+            "from": "package",
+            "package": "@tanstack/router-core",
+            "name": ["Redirect", "NotFoundError"]
+          }
+        ]
+      }
+    ],
+    "typescript/no-deprecated": "error",
+    "typescript/consistent-type-imports": "error",
+    "typescript/consistent-type-exports": "error",
+    "typescript/no-misused-promises": "error",
+    "typescript/no-explicit-any": "error",
+    "eslint/array-callback-return": "error",
+    "eslint/no-throw-literal": "error",
+    "eslint/no-self-compare": "error",
+    "eslint/no-fallthrough": "error",
+    "eslint/no-loop-func": "error",
+    "eslint/no-promise-executor-return": "error",
+    "eslint/eqeqeq": [
+      "error",
+      "always",
+      {
+        "null": "ignore"
+      }
+    ],
+    "eslint/no-console": "error",
+    "eslint/no-await-in-loop": "off",
+    "import/no-duplicates": "error",
+    "import/no-cycle": "error",
+    "promise/catch-or-return": "error",
+    "unicorn/prefer-at": "error",
+    "unicorn/prefer-string-replace-all": "error",
+    "unicorn/prefer-node-protocol": "error",
+    "unicorn/prefer-top-level-await": "error",
+    "react/jsx-no-target-blank": "error",
+    "react/button-has-type": "error",
+    "react/no-danger": "error",
+    "react/jsx-no-useless-fragment": "error",
+    "react/no-unknown-property": "error",
+    "react/only-export-components": [
+      "error",
+      {
+        "allowConstantExport": true
+      }
+    ],
+    // The promise plugin is new here. Only promise/catch-or-return is part of this rollout.
+    "promise/always-return": "off"
   },
   "overrides": [
     {
@@ -289,6 +348,27 @@
       "rules": {
         "eslint/no-underscore-dangle": "off",
         "typescript/no-unsafe-type-assertion": "off"
+      }
+    },
+    {
+      // Scripts, e2e tests and unit tests print progress and results.
+      "files": ["scripts/**", "tests/**", "**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "eslint/no-console": "off"
+      }
+    },
+    {
+      // TanStack Router route files export Route next to private route components.
+      "files": ["src/routes/**"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    },
+    {
+      // createFormHook and createTableHook files export the generated hooks with their components.
+      "files": ["src/lib/forms/app-form.tsx", "src/lib/table/app-table.tsx"],
+      "rules": {
+        "react/only-export-components": "off"
       }
     }
   ],
