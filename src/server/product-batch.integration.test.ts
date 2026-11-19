@@ -50,7 +50,7 @@ function setup(count: number) {
 describe("product campaign batch workflow", () => {
   test("persists recipients and continuation before dispatch, then completes the final page", async () => {
     const { db, services, job } = setup(101)
-    const sent: Array<Array<{ type: string; idempotencyKey: string }>> = []
+    const sent: { type: string; idempotencyKey: string }[][] = []
     const dispatch = productBatchDispatchLayer((jobs) => {
       if (jobs.length > 100) {
         return Promise.reject(new Error("Queues accepts at most 100 messages per batch."))

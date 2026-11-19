@@ -73,7 +73,7 @@ export function accountMediaPurgeLayer(services: AccountMediaPurgeServices) {
 }
 
 export const purgeAccountMedia = Effect.fn("AccountDeletion.purgeMedia")(function* (
-  assets: ReadonlyArray<OwnedMediaForDeletion>,
+  assets: readonly OwnedMediaForDeletion[],
 ) {
   const services = yield* AccountMediaPurge
   // One failed asset must not block the others. The workflow step retries the remainder.
@@ -87,7 +87,6 @@ export const purgeAccountMedia = Effect.fn("AccountDeletion.purgeMedia")(functio
       }).pipe(Effect.uninterruptible, Effect.exit),
     { concurrency: 5 },
   )
-  const failure = exits.find(Exit.isFailure)
+  const failure = exits.find((exit) => Exit.isFailure(exit))
   if (failure) return yield* Effect.failCause(failure.cause)
-  return undefined
 })

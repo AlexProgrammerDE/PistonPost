@@ -20,7 +20,7 @@ const graphemeSegmenter = new Intl.Segmenter(undefined, {
 })
 
 type JsonLdPrimitive = string | number | boolean | null
-type JsonLdValue = JsonLdPrimitive | JsonLdObject | ReadonlyArray<JsonLdValue>
+type JsonLdValue = JsonLdPrimitive | JsonLdObject | readonly JsonLdValue[]
 export type JsonLdObject = { readonly [key: string]: JsonLdValue | undefined }
 
 export type SeoImage = {
@@ -77,9 +77,9 @@ function truncateSeoText(value: string, maximumGraphemes: number, maximumCodePoi
   const normalized = value
     .normalize("NFC")
     .replaceAll(/\p{Cc}+/gu, " ")
-    .replaceAll(/\s+/g, " ")
+    .replaceAll(/\s+/gu, " ")
     .trim()
-  const accepted: Array<string> = []
+  const accepted: string[] = []
   let codePointCount = 0
   let truncated = false
 
@@ -124,7 +124,7 @@ export function createSeoHead(options: SeoOptions) {
   const image = options.image ?? defaultImage
   const imageUrl = absoluteUrl(socialImagePath(image.url))
   const imageAlt = truncateDescription(image.alt)
-  const imageMeta: Array<ComponentProps<"meta">> = [
+  const imageMeta: ComponentProps<"meta">[] = [
     { property: "og:image", content: imageUrl },
     { property: "og:image:secure_url", content: imageUrl },
   ]
@@ -137,7 +137,7 @@ export function createSeoHead(options: SeoOptions) {
   }
   imageMeta.push({ property: "og:image:alt", content: imageAlt })
 
-  const meta: Array<ComponentProps<"meta">> = [
+  const meta: ComponentProps<"meta">[] = [
     { title },
     { name: "description", content: description },
     { property: "og:title", content: title },

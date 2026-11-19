@@ -220,6 +220,7 @@ async function deliverImage(arguments_: ImageHandlerArguments) {
       : image.variant === "avatar"
         ? { width: image.requestedWidth, height: image.requestedWidth, fit: "cover" }
         : { width: image.requestedWidth, fit: "scale-down" }
+  // oxlint-disable-next-line typescript/no-unsafe-argument -- workers-types declares R2 bodies as ReadableStream<any>
   const transformed = await arguments_.context.env.IMAGES.input(object.body)
     .transform(transform)
     .output({

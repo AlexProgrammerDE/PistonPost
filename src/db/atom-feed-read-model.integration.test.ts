@@ -15,7 +15,9 @@ afterEach(() => {
 describe("Atom feed read model", () => {
   it("returns only recent public posts from search-indexable authors", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     const now = new Date()
     database
       .insert(user)

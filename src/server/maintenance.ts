@@ -133,7 +133,7 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
       )
       .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now(), job.mediaId)
   const inserted = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
-    database.$client.batch([insertJob(firstJob), ...remainingJobs.map(insertJob)]),
+    database.$client.batch([insertJob(firstJob), ...remainingJobs.map((job) => insertJob(job))]),
   )
   yield* Effect.forEach(
     jobs.filter((_, index) => (inserted[index]?.meta.changes ?? 0) > 0),
@@ -249,7 +249,7 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
               width: video.input.width || undefined,
               height: video.input.height || undefined,
               duration: video.duration >= 0 ? Math.round(video.duration * 1_000) : undefined,
-              byteSize: video.size || undefined,
+              byteSize: video.size > 0 ? video.size : undefined,
               finalizedAt: video.readyToStream ? new Date() : undefined,
             })
             .where(eq(schema.mediaAssets.id, asset.id)),

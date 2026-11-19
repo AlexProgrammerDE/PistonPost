@@ -49,7 +49,7 @@ function ready(target: PushTarget, payload: PushNotificationPayload): ResolvedPu
 
 export function pushJobResolverLayer(database: D1DatabaseClient) {
   return Layer.succeed(PushJobResolver, {
-    resolve: Effect.fn("PushJobResolver.resolve")(function* (job) {
+    resolve: Effect.fn("PushJobResolver.resolve")(function* (job: PushDeliveryJob) {
       const now = new Date()
       const subscription = yield* query(() =>
         database

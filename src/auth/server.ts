@@ -19,6 +19,7 @@ import {
   username,
 } from "better-auth/plugins"
 import { tanstackStartCookies } from "better-auth/tanstack-start"
+import { Predicate } from "effect"
 
 import type { D1DatabaseClient, SqliteDatabaseClient } from "@/db"
 import * as schema from "@/db/schema"
@@ -39,7 +40,7 @@ export type AuthRuntime = {
   readonly baseURL: string
   readonly betterAuthApiKey: string
   readonly secret: string
-  readonly trustedOrigins: ReadonlyArray<string>
+  readonly trustedOrigins: readonly string[]
   readonly turnstileSecret: string
   readonly production: boolean
   readonly infraEnabled?: boolean
@@ -121,7 +122,8 @@ async function sendsEmailCodeToNewAddress(request: Request) {
     .clone()
     .json()
     .catch(() => undefined)
-  const type = typeof body === "object" && body !== null ? Reflect.get(body, "type") : undefined
+  const type: unknown =
+    typeof body === "object" && body !== null ? Reflect.get(body, "type") : undefined
   // Verification and change-email codes come from screens that render no
   // captcha. They only reach an address that already belongs to an account.
   return type !== "email-verification" && type !== "change-email"
@@ -223,15 +225,22 @@ export function createAuth(runtime: AuthRuntime) {
         // The Better Auth UI change-email card asks for a "change-email" code
         // for the current address, but Better Auth checks the current address
         // against an "email-verification" code. Translate that one request.
-        if (context.path !== SEND_EMAIL_CODE_PATH || context.body?.type !== "change-email") return
+        const body: unknown = context.body
+        if (
+          context.path !== SEND_EMAIL_CODE_PATH ||
+          !Predicate.isObject(body) ||
+          body["type"] !== "change-email"
+        ) {
+          return
+        }
         const session = await getSessionFromCtx(context)
-        const email: unknown = context.body.email
+        const email = body["email"]
         if (
           session &&
           typeof email === "string" &&
           email.toLowerCase() === session.user.email.toLowerCase()
         ) {
-          context.body.type = "email-verification"
+          body["type"] = "email-verification"
         }
       }),
     },
@@ -252,9 +261,9 @@ export function createAuth(runtime: AuthRuntime) {
         update: {
           before: async (user, context) => {
             if (typeof user["username"] === "string") {
-              const targetUserId =
+              const targetUserId: unknown =
                 context?.path === "/admin/update-user"
-                  ? Reflect.get(Object(context.body), "userId")
+                  ? Reflect.get(new Object(context.body), "userId")
                   : context?.context.session?.user.id
               const owner = await findUsernameOwner(runtime.database, user["username"])
               if (owner !== undefined && owner !== targetUserId) rejectTakenUsername()

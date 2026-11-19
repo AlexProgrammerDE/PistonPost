@@ -9,7 +9,7 @@ export const secretBindings = [
   "VAPID_PRIVATE_KEY",
 ]
 const productionOrigin = "https://post.pistonmaster.net"
-export interface ProductionDeployInput {
+export type ProductionDeployInput = {
   readonly baseUrl: string
   readonly turnstileSiteKey: string
   readonly d1DatabaseId: string
@@ -27,7 +27,7 @@ function requiredEnvironmentVariable(
 }
 
 function validateResourceId(value: string, name: string) {
-  if (!/^[a-f\d-]{32,36}$/i.test(value)) {
+  if (!/^[a-f\d-]{32,36}$/iu.test(value)) {
     throw new Error(`${name} must be a Cloudflare resource ID.`)
   }
   return value
@@ -59,7 +59,7 @@ export function readProductionDeployInput(
     throw new Error("PRODUCTION_TURNSTILE_SITE_KEY must use the production Turnstile widget.")
   }
   const vapidPublicKey = requiredEnvironmentVariable(environment, "PRODUCTION_VAPID_PUBLIC_KEY")
-  if (!/^[A-Za-z0-9_-]{80,100}$/.test(vapidPublicKey)) {
+  if (!/^[A-Za-z0-9_-]{80,100}$/u.test(vapidPublicKey)) {
     throw new Error("PRODUCTION_VAPID_PUBLIC_KEY must be a URL-safe VAPID public key.")
   }
 

@@ -9,7 +9,9 @@ describe("settings route paths", () => {
   it("accepts every Better Auth UI and product settings path", () => {
     const dashActivityPath = dashPlugin({ organization: false }).viewPaths.settings.activity
     const expectedPaths = [
-      ...Object.values(viewPaths.settings),
+      ...Object.values({ ...viewPaths.settings }).filter(
+        (path: unknown) => typeof path === "string",
+      ),
       dashActivityPath,
       "profile",
       "notifications",

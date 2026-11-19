@@ -1,4 +1,5 @@
-import { Effect, Schema } from "effect"
+import { Effect, Result, Schema } from "effect"
+import { Base64Url } from "effect/encoding"
 
 import { InvalidCursorError } from "./errors"
 import type { PublicPostCursor } from "./model"
@@ -8,29 +9,15 @@ const encodedCursorSchema = Schema.Struct({
   id: Schema.String,
 })
 
-function encodeBase64Url(value: string) {
-  const bytes = new TextEncoder().encode(value)
-  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("")
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/, "")
-}
-
-function decodeBase64Url(value: string) {
-  const normalized = value.replaceAll("-", "+").replaceAll("_", "/")
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=")
-  const binary = atob(padded)
-  const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0))
-  return new TextDecoder().decode(bytes)
-}
-
 export function encodePublicPostCursor(cursor: PublicPostCursor) {
-  return encodeBase64Url(
+  return Base64Url.encode(
     JSON.stringify({ publishedAt: cursor.publishedAt.getTime(), id: cursor.id }),
   )
 }
 
 export function decodePublicPostCursor(value: string) {
   return Effect.try({
-    try: () => JSON.parse(decodeBase64Url(value)) as unknown,
+    try: () => JSON.parse(Result.getOrThrow(Base64Url.decodeString(value))) as unknown,
     catch: () => InvalidCursorError.make({ reason: "The cursor is not valid base64 JSON." }),
   }).pipe(
     Effect.flatMap(

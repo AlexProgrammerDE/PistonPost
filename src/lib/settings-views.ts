@@ -8,8 +8,9 @@ const productSettingsPathSegments = {
   notifications: "notifications",
 } as const
 
+// Spreading the interface gives Object.values an index signature. Plugins add optional paths.
 export const validSettingsPathSegments = new Set([
-  ...Object.values(viewPaths.settings),
+  ...Object.values({ ...viewPaths.settings }).filter((path: unknown) => typeof path === "string"),
   dashSettingsPathSegment,
   ...Object.values(productSettingsPathSegments),
 ])

@@ -38,15 +38,29 @@ export function PushDeviceSettings({ vapidPublicKey }: { vapidPublicKey: string 
       if (!controller.signal.aborted && !updatingRef.current) setState(next)
     }
     async function inspect() {
-      if (!vapidPublicKey) return apply("not-configured")
-      if (!supportsPushNotifications()) return apply("unsupported")
-      if (Notification.permission === "denied") return apply("denied")
-      if (!userId) return apply("checking")
+      if (!vapidPublicKey) {
+        apply("not-configured")
+        return
+      }
+      if (!supportsPushNotifications()) {
+        apply("unsupported")
+        return
+      }
+      if (Notification.permission === "denied") {
+        apply("denied")
+        return
+      }
+      if (!userId) {
+        apply("checking")
+        return
+      }
       const subscription = await getOwnedPushSubscription(userId)
       apply(subscription ? "enabled" : "disabled")
     }
     const refresh = () => {
-      void inspect().catch(() => apply("disabled"))
+      void inspect().catch(() => {
+        apply("disabled")
+      })
     }
     // People fix a blocked permission in browser or device settings, then come back.
     const refreshWhenVisible = () => {

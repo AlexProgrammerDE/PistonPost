@@ -17,10 +17,10 @@ function setup(
     publishedPost?: TrackablePost | null
   } = {},
 ) {
-  const rateLimitKeys: Array<string> = []
-  const dataPoints: Array<AnalyticsEngineDataPoint | undefined> = []
-  const incrementedPostIds: Array<string> = []
-  const lookedUpPostIds: Array<string> = []
+  const rateLimitKeys: string[] = []
+  const dataPoints: (AnalyticsEngineDataPoint | undefined)[] = []
+  const incrementedPostIds: string[] = []
+  const lookedUpPostIds: string[] = []
 
   return {
     dataPoints,
@@ -66,7 +66,7 @@ describe("post view tracking", () => {
 
     expect(tracked).toBe(1)
     expect(state.rateLimitKeys).toHaveLength(1)
-    expect(state.rateLimitKeys[0]).toMatch(/^post-view:[a-f0-9]{64}$/)
+    expect(state.rateLimitKeys[0]).toMatch(/^post-view:[a-f0-9]{64}$/u)
     expect(state.rateLimitKeys[0]).not.toContain("203.0.113.42")
     expect(state.dataPoints).toEqual([
       {

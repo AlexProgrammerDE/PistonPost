@@ -424,6 +424,7 @@ export default defineConfig((ctx) => {
         },
       })
     }
+    // oxlint-disable-next-line unicorn/no-useless-switch-case -- switch-exhaustiveness-check needs the explicit case
     case undefined:
     default: {
       return defineConfig({

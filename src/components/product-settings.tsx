@@ -70,7 +70,9 @@ function NotificationPreferenceSwitch({
         name={preference}
         checked={checked}
         disabled={mutation.isPending}
-        onCheckedChange={(enabled) => mutation.mutate(enabled)}
+        onCheckedChange={(enabled) => {
+          mutation.mutate(enabled)
+        }}
         aria-label={label}
         aria-describedby={mutation.isError ? feedbackId : undefined}
         aria-invalid={mutation.isError || undefined}

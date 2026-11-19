@@ -12,7 +12,7 @@ import { classifyPushFailure } from "./transport"
 
 it("delivers encrypted VAPID requests and classifies real expired-provider responses", async () => {
   let status = 201
-  const captured: Array<{ headers: IncomingHttpHeaders; body: Buffer }> = []
+  const captured: { headers: IncomingHttpHeaders; body: Buffer }[] = []
   const server = createServer((request, response) => {
     const chunks: Buffer[] = []
     request.on("data", (chunk: Buffer) => {
@@ -27,7 +27,7 @@ it("delivers encrypted VAPID requests and classifies real expired-provider respo
   server.listen(0, "127.0.0.1")
   await once(server, "listening")
   const address = server.address()
-  assert(address && typeof address === "object")
+  assert.ok(address && typeof address === "object")
   const agent = new Agent()
   // This test agent routes the synthetic provider request to the local mock transport.
   agent.createConnection = () => connect({ host: "127.0.0.1", port: address.port })
@@ -57,10 +57,10 @@ it("delivers encrypted VAPID requests and classifies real expired-provider respo
     const assertExpired = async (statusCode: number) => {
       status = statusCode
       await assert.rejects(sendNotification(target, payload, options), (cause: unknown) => {
-        assert(cause instanceof WebPushError)
+        assert.ok(cause instanceof WebPushError)
         const failure = classifyPushFailure(cause)
         assert.equal(failure._tag, "PushSubscriptionExpired")
-        assert("statusCode" in failure)
+        assert.ok("statusCode" in failure)
         assert.equal(failure.statusCode, statusCode)
         return true
       })
@@ -71,22 +71,28 @@ it("delivers encrypted VAPID requests and classifies real expired-provider respo
     for (const request of captured) {
       assert.equal(request.headers["content-encoding"], "aes128gcm")
       assert.equal(request.headers["ttl"], "86400")
-      assert(request.body.length > 0)
+      assert.ok(request.body.length > 0)
       assert.equal(request.body.includes(payload), false)
-      const token = request.headers.authorization?.match(/t=([^, ]+)/)?.[1]
-      assert(token)
+      const token = request.headers.authorization?.match(/t=([^, ]+)/u)?.[1]
+      assert.ok(token)
       const claimsPayload = token.split(".")[1]
-      assert(claimsPayload)
-      assert(request.headers.authorization?.includes(`k=${vapid.publicKey}`))
+      assert.ok(claimsPayload)
+      assert.ok(request.headers.authorization?.includes(`k=${vapid.publicKey}`))
       const claims: unknown = JSON.parse(Buffer.from(claimsPayload, "base64url").toString())
-      assert(claims && typeof claims === "object" && "aud" in claims && "sub" in claims)
+      assert.ok(claims && typeof claims === "object" && "aud" in claims && "sub" in claims)
       assert.equal(claims.aud, "https://push.invalid")
       assert.equal(claims.sub, options.vapidDetails.subject)
     }
   } finally {
     agent.destroy()
     await new Promise<void>((resolve, reject) => {
-      server.close((error) => (error ? reject(error) : resolve()))
+      server.close((error) => {
+        if (error) {
+          reject(error)
+        } else {
+          resolve()
+        }
+      })
     })
   }
 })

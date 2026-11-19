@@ -1,7 +1,10 @@
 import { describe, expect, it } from "bun:test"
 
+import { Schema } from "effect"
+
 import type { PublicPostRead } from "@/db/public-read-model"
 
+import { parseDiscordEmbedPayload } from "./discord-embed-payload.testing"
 import { createPostSeoHead, millisecondsToIsoDuration } from "./post-seo"
 import { createPostShareLinks } from "./post-share-links"
 import { SITE_URL, absoluteUrl, createSeoHead, truncateDescription, truncateTitle } from "./seo"
@@ -318,14 +321,14 @@ describe("Discord post previews", () => {
       const script = head.scripts.find(
         (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
       )
-      const payload = JSON.parse(script?.children ?? "")
+      const payload = parseDiscordEmbedPayload(script?.children ?? "")
       expect(payload.component.components).toHaveLength(index === 0 ? 2 : 1)
       expect(payload.component.components.at(-1)).toEqual({
         type: 12,
         items: [{ media: { url: `${SITE_URL}/media/image/image-${index}/og?v=3` } }],
       })
       if (index === 0) {
-        expect(payload.component.components[0].content).toBe(
+        expect(payload.component.components[0]?.content).toBe(
           `**[look at this](${url})**\n@Alex · Image 1 of 70`,
         )
       }
@@ -343,16 +346,16 @@ describe("Discord post previews", () => {
       const script = head.scripts.find(
         (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
       )
-      const payload = JSON.parse(script?.children ?? "")
+      const payload = parseDiscordEmbedPayload(script?.children ?? "")
       expect(payload.component.components).toHaveLength(3)
-      expect(payload.component.components[0].content).toStartWith(
+      expect(payload.component.components[0]?.content).toStartWith(
         `## [look at this](${SITE_URL}/post/post%20one)\nAlex`,
       )
-      expect(payload.component.components[0].content).toContain(
+      expect(payload.component.components[0]?.content).toContain(
         `${count} image${count === 1 ? "" : "s"} by Alex`,
       )
-      expect(payload.component.components[0].content).toContain("0 hearts · 0 comments")
-      expect(payload.component.components[1].items).toEqual(
+      expect(payload.component.components[0]?.content).toContain("0 hearts · 0 comments")
+      expect(payload.component.components[1]?.items).toEqual(
         Array.from({ length: Math.min(4, count) }, (_, index) => ({
           media: { url: `${SITE_URL}/media/image/image-${index}/og?v=3` },
         })),
@@ -381,8 +384,8 @@ describe("Discord post previews", () => {
       const script = head.scripts.find(
         (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
       )
-      const payload = JSON.parse(script?.children ?? "")
-      expect(payload.component.components.at(-1).items).toEqual([
+      const payload = parseDiscordEmbedPayload(script?.children ?? "")
+      expect(payload.component.components.at(-1)?.items).toEqual([
         { media: { url: `${SITE_URL}/media/image/image-${expected}/og?v=3` } },
       ])
     }
@@ -398,10 +401,10 @@ describe("Discord post previews", () => {
     const script = head.scripts.find(
       (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
     )
-    const payload = JSON.parse(script?.children ?? "")
-    expect(payload.component.components[0].content).toContain("A fresh post")
-    expect(payload.component.components[0].content).toContain("17 hearts · 3 comments")
-    expect(payload.component.components.at(-1).components[1].url).toBe(
+    const payload = parseDiscordEmbedPayload(script?.children ?? "")
+    expect(payload.component.components[0]?.content).toContain("A fresh post")
+    expect(payload.component.components[0]?.content).toContain("17 hearts · 3 comments")
+    expect(payload.component.components.at(-1)?.components?.[1]?.url).toBe(
       `${SITE_URL}/post/post%20one#discussion`,
     )
     expect(head.scripts[0]?.type).toBe("application/ld+json")
@@ -412,14 +415,16 @@ describe("Discord post previews", () => {
     const script = head.scripts.find(
       (candidate) => "id" in candidate && candidate.id === "discord:component-embed",
     )
-    const payload = JSON.parse(script?.children ?? "")
-    expect(payload.component.components[0].content).toContain("1 heart · 1 comment")
-    expect(payload.component.components[0].content).not.toContain("1 hearts")
+    const payload = parseDiscordEmbedPayload(script?.children ?? "")
+    expect(payload.component.components[0]?.content).toContain("1 heart · 1 comment")
+    expect(payload.component.components[0]?.content).not.toContain("1 hearts")
   })
 
   it("describes structured images with the dimensions of the listed variant", () => {
     const head = createPostSeoHead(galleryPost)
-    const jsonLd = JSON.parse(head.scripts[0]?.children ?? "")
+    const jsonLd = Schema.decodeSync(
+      Schema.fromJsonString(Schema.Struct({ image: Schema.Array(Schema.Unknown) })),
+    )(head.scripts[0]?.children ?? "")
     expect(jsonLd.image[0]).toMatchObject({
       url: `${SITE_URL}/media/image/image-0/feed?v=1`,
       width: 960,

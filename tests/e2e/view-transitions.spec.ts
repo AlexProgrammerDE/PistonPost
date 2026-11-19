@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test"
 
 type TransitionOptions = {
-  readonly types?: ReadonlyArray<string>
+  readonly types?: readonly string[]
   readonly update: () => Promise<void> | void
 }
 

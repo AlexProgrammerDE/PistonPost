@@ -8,7 +8,7 @@ import { isValidUsername } from "@/domain/validation"
 import { initializeUserProfile } from "./profile"
 import { createAuth, type AuthenticationEmail } from "./server"
 
-const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
+const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 
 afterEach(() => {
   for (const database of databases) {
@@ -23,7 +23,7 @@ function setup(
   options: { readonly production?: boolean } = {},
 ) {
   const database = createMigratedTestDatabase()
-  const emails: Array<AuthenticationEmail> = []
+  const emails: AuthenticationEmail[] = []
   databases.push(database)
   const auth = createAuth({
     database,
@@ -74,7 +74,7 @@ async function signUpAndSignIn(
   return responseCookie(signIn)
 }
 
-function lastEmailCode(emails: ReadonlyArray<AuthenticationEmail>, to: string) {
+function lastEmailCode(emails: readonly AuthenticationEmail[], to: string) {
   const content = emails.findLast((email) => email.to === to)?.content
   if (content?.template !== "email-otp") throw new Error(`No email code was sent to ${to}.`)
   return content
@@ -112,8 +112,8 @@ function responseCookie(response: Response) {
 }
 
 function stringProperty(value: unknown, property: string) {
-  if (typeof value !== "object" || value === null) return undefined
-  const result = Reflect.get(value, property)
+  if (typeof value !== "object" || value === null) return
+  const result: unknown = Reflect.get(value, property)
   return typeof result === "string" ? result : undefined
 }
 
@@ -155,8 +155,10 @@ describe("request-scoped Better Auth", () => {
   it("hands Better Auth background work to the configured runtime handler", () => {
     const database = createMigratedTestDatabase()
     databases.push(database)
-    const scheduled: Array<Promise<unknown>> = []
-    const handler = (promise: Promise<unknown>) => scheduled.push(promise)
+    const scheduled: Promise<unknown>[] = []
+    const handler = (promise: Promise<unknown>) => {
+      scheduled.push(promise)
+    }
     const auth = createAuth({
       database,
       baseURL: "http://localhost:3000",
@@ -228,7 +230,7 @@ describe("request-scoped Better Auth", () => {
     expect(database.select().from(schema.session).all()).toHaveLength(1)
 
     const sessionResponse = await auth.handler(sessionRequest(cookie))
-    expect(await sessionResponse.json()).toMatchObject({
+    expect(await sessionResponse.json<unknown>()).toMatchObject({
       user: { email: "verified@example.com", emailVerified: true },
     })
   })
@@ -270,7 +272,7 @@ describe("request-scoped Better Auth", () => {
 
     expect(signInResponse.status).toBe(200)
     expect(cookie).toContain("pistonpost.session_token=")
-    expect(await (await auth.handler(sessionRequest(cookie))).json()).toMatchObject({
+    expect(await (await auth.handler(sessionRequest(cookie))).json<unknown>()).toMatchObject({
       user: { email: "code@example.com", emailVerified: true },
     })
   })
@@ -630,7 +632,7 @@ describe("request-scoped Better Auth", () => {
     )
     const challengeCookie = responseCookie(signInResponse)
 
-    expect(await signInResponse.clone().json()).toMatchObject({
+    expect(await signInResponse.clone().json<unknown>()).toMatchObject({
       twoFactorRedirect: true,
       twoFactorMethods: ["otp"],
     })
@@ -679,7 +681,7 @@ describe("request-scoped Better Auth", () => {
       }),
     )
 
-    expect(await response.clone().json()).toMatchObject({ twoFactorRedirect: true })
+    expect(await response.clone().json<unknown>()).toMatchObject({ twoFactorRedirect: true })
     expect(database.select().from(schema.session).all()).toHaveLength(0)
   })
 
@@ -804,7 +806,7 @@ describe("request-scoped Better Auth", () => {
     expect(usernames).toHaveLength(3)
     expect(new Set(usernames.map(({ normalized }) => normalized)).size).toBe(3)
     expect(usernames.map(({ username }) => username)).toContain("same.name-tag")
-    expect(usernames.some(({ username }) => /^same\.name-tag-[0-9a-f]{6}$/.test(username))).toBe(
+    expect(usernames.some(({ username }) => /^same\.name-tag-[0-9a-f]{6}$/u.test(username))).toBe(
       true,
     )
     expect(usernames.map(({ username }) => username)).toContain("user")

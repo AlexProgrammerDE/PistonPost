@@ -12,7 +12,7 @@ import { DETAIL_IMAGE_WIDTHS, createMediaImageSources, mediaImageUrl } from "@/l
 const lightboxPlugins = [Counter, Zoom]
 
 type ImageLightboxViewerProps = {
-  readonly slides: ReadonlyArray<SlideImage>
+  readonly slides: readonly SlideImage[]
   readonly label: string
   readonly galleryLabel: string
   readonly index: number
@@ -78,7 +78,9 @@ export function ImageLightboxViewer({
         iconZoomOut: ZoomOutIcon,
       }}
       on={{
-        view: ({ index: nextIndex }) => onIndexChange(nextIndex),
+        view: ({ index: nextIndex }) => {
+          onIndexChange(nextIndex)
+        },
       }}
     />
   )
@@ -91,7 +93,7 @@ export function ImageLightbox({
   onClose,
   onIndexChange,
 }: {
-  readonly images: ReadonlyArray<PublicPostMedia>
+  readonly images: readonly PublicPostMedia[]
   readonly title: string
   readonly index: number
   readonly onClose: () => void
@@ -99,7 +101,7 @@ export function ImageLightbox({
 }) {
   const prefersReducedMotion = usePrefersReducedMotion()
   const animation = prefersReducedMotion ? "still" : "auto"
-  const slides = useMemo<ReadonlyArray<SlideImage>>(
+  const slides = useMemo<readonly SlideImage[]>(
     () =>
       images.map((image) => {
         const srcSet = createMediaImageSources(image, "detail", DETAIL_IMAGE_WIDTHS, animation)

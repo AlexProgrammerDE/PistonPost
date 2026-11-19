@@ -10,13 +10,13 @@ export const postMarkdownSchema = Schema.Trim.check(Schema.isMinLength(1)).check
 /** Names made only of dots become "." or ".." path segments and break their URLs. */
 const notOnlyDots = Schema.makeFilter(
   (value: string) =>
-    !/^\.+$/.test(value) || "Use at least one letter, number, or symbol other than a dot",
+    !/^\.+$/u.test(value) || "Use at least one letter, number, or symbol other than a dot",
 )
 
 export const tagSchema = Schema.Trim.check(Schema.isMinLength(1))
   .check(Schema.isMaxLength(64))
   .check(
-    Schema.isPattern(/^[A-Za-z0-9._~-]+$/, {
+    Schema.isPattern(/^[A-Za-z0-9._~-]+$/u, {
       message: "Tags may use letters, numbers, hyphen, dot, underscore, and tilde",
     }),
   )
@@ -68,7 +68,7 @@ export const notificationPreferenceSchema = Schema.Literals([
   "reply-push",
 ])
 export const MAX_USERNAME_LENGTH = 32
-const USERNAME_PATTERN = /^[A-Za-z0-9._~-]+$/
+const USERNAME_PATTERN = /^[A-Za-z0-9._~-]+$/u
 
 export const usernameSchema = Schema.Trim.check(Schema.isMinLength(1))
   .check(Schema.isMaxLength(MAX_USERNAME_LENGTH))
@@ -82,10 +82,10 @@ export const usernameSchema = Schema.Trim.check(Schema.isMinLength(1))
 /** Check an already-trimmed username with the same rules as `usernameSchema`. */
 export function isValidUsername(value: string) {
   return (
-    value.length >= 1 &&
+    value.length > 0 &&
     value.length <= MAX_USERNAME_LENGTH &&
     USERNAME_PATTERN.test(value) &&
-    !/^\.+$/.test(value)
+    !/^\.+$/u.test(value)
   )
 }
 

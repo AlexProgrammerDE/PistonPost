@@ -1,7 +1,7 @@
 export const PUBLIC_CACHE_CONTROL = "no-cache"
 export const PRIVATE_CACHE_CONTROL = "private, no-store, max-age=0, must-revalidate"
 
-const PUBLIC_DOCUMENT_PATH = /^\/(?:post|tag|user)\/[^/]+\/?$/
+const PUBLIC_DOCUMENT_PATH = /^\/(?:post|tag|user)\/[^/]+\/?$/u
 
 function isReadRequest(request: Request) {
   return request.method === "GET" || request.method === "HEAD"
@@ -24,13 +24,13 @@ function hasExplicitCachePolicy(response: Response) {
 }
 
 function appendVary(headers: Headers, value: string) {
-  const values = new Set(
-    (headers.get("Vary") ?? "")
+  const values = new Set([
+    ...(headers.get("Vary") ?? "")
       .split(",")
       .map((item) => item.trim())
       .filter(Boolean),
-  )
-  values.add(value)
+    value,
+  ])
   headers.set("Vary", [...values].join(", "))
 }
 

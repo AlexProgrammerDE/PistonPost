@@ -9,7 +9,7 @@ import {
   type Statement,
 } from "./post-lifecycle-statements"
 
-const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
+const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 afterEach(() => {
   for (const database of databases.splice(0)) database.$client.close()
 })

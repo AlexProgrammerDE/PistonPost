@@ -34,7 +34,9 @@ afterEach(() => {
 describe("following feed read model", () => {
   it("returns heart state only for requested posts visible in a public feed", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database
       .insert(user)
       .values([
@@ -88,7 +90,9 @@ describe("following feed read model", () => {
 
   it("combines followed users and tags without duplicate or private posts", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database
       .insert(user)
       .values([
@@ -170,7 +174,9 @@ describe("following feed read model", () => {
 
   it("leaves the viewer's own posts out of the following feed", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database
       .insert(user)
       .values([
@@ -223,7 +229,9 @@ describe("following feed read model", () => {
 
   it("distinguishes empty tags and probationary content for search discovery", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database
       .insert(user)
       .values([
@@ -290,7 +298,9 @@ describe("following feed read model", () => {
 describe("public sitemap read model", () => {
   it("hydrates ordered media for sitemap pages with more than 100 posts", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     const sitemapPostCount = 125
     const sitemapPosts = Array.from({ length: sitemapPostCount }, (_, index) => {
       const id = `sitemap-post-${index.toString().padStart(3, "0")}`
@@ -314,7 +324,7 @@ describe("public sitemap read model", () => {
     database
       .insert(mediaAssets)
       .values(
-        sitemapPosts.flatMap((post): Array<typeof mediaAssets.$inferInsert> =>
+        sitemapPosts.flatMap((post): (typeof mediaAssets.$inferInsert)[] =>
           [0, 1].map((ordinal) => ({
             id: `${post.id}-media-${ordinal.toString()}`,
             ownerId: "sitemap-author",
@@ -331,7 +341,7 @@ describe("public sitemap read model", () => {
     database
       .insert(postMedia)
       .values(
-        sitemapPosts.flatMap((post): Array<typeof postMedia.$inferInsert> =>
+        sitemapPosts.flatMap((post): (typeof postMedia.$inferInsert)[] =>
           [1, 0].map((ordinal) => ({
             postId: post.id,
             mediaId: `${post.id}-media-${ordinal.toString()}`,
@@ -354,7 +364,9 @@ describe("public sitemap read model", () => {
 
   it("dates profiles by their latest public post and skips dot-only usernames", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     const profileUpdatedAt = new Date("2026-01-01T00:00:00.000Z")
     database
       .insert(user)

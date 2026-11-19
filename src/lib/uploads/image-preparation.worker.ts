@@ -110,20 +110,24 @@ async function prepareImage(request: PrepareImageRequest): Promise<PrepareImageS
   }
 }
 
+async function respond(request: PrepareImageRequest) {
+  try {
+    const response = await prepareImage(request)
+    workerScope.postMessage(response, [response.bytes])
+  } catch (error: unknown) {
+    const response: PrepareImageFailure = {
+      type: "failed",
+      id: request.id,
+      message: error instanceof Error ? error.message : "Image preparation failed.",
+    }
+    // WorkerGlobalScope.postMessage has no target origin because it cannot navigate.
+    // oxlint-disable-next-line unicorn/require-post-message-target-origin
+    workerScope.postMessage(response)
+  }
+}
+
 workerScope.addEventListener("message", (event: MessageEvent<PrepareImageRequest>) => {
-  const request = event.data
-  void prepareImage(request)
-    .then((response) => workerScope.postMessage(response, [response.bytes]))
-    .catch((error: unknown) => {
-      const response: PrepareImageFailure = {
-        type: "failed",
-        id: request.id,
-        message: error instanceof Error ? error.message : "Image preparation failed.",
-      }
-      // WorkerGlobalScope.postMessage has no target origin because it cannot navigate.
-      // oxlint-disable-next-line unicorn/require-post-message-target-origin
-      workerScope.postMessage(response)
-    })
+  void respond(event.data)
 })
 
 export type ImagePreparationWorkerResponse = PrepareImageSuccess | PrepareImageFailure

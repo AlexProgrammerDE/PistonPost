@@ -20,7 +20,7 @@ type ResponsiveMediaImageProps = Omit<
   readonly image: PublicPostMedia
   readonly variant: Exclude<ResponsiveMediaImageVariant, "avatar">
   readonly sizes: string
-  readonly widths?: ReadonlyArray<number>
+  readonly widths?: readonly number[]
 }
 
 export function ResponsiveMediaImage({

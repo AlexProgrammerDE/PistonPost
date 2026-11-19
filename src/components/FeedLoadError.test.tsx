@@ -26,7 +26,7 @@ describe("FeedLoadErrorAlert", () => {
     )
 
     expect(html).toContain("These older posts could not be loaded")
-    expect(html).toMatch(/<a [^>]*href="\/tag\/meme"[^>]*>.*Latest posts<\/a>/)
+    expect(html).toMatch(/<a [^>]*href="\/tag\/meme"[^>]*>.*Latest posts<\/a>/u)
     expect(html).toContain("Try again")
   })
 })

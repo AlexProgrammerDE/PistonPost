@@ -10,7 +10,7 @@ function absoluteXmlUrl(origin: string, path: string) {
   return escapeXml(new URL(path, `${origin}/`).toString())
 }
 
-function feedUpdatedAt(records: ReadonlyArray<PublicAtomFeedRecord>) {
+function feedUpdatedAt(records: readonly PublicAtomFeedRecord[]) {
   return records.reduce(
     (latest, record) => (record.updatedAt > latest ? record.updatedAt : latest),
     EMPTY_FEED_UPDATED_AT,
@@ -44,7 +44,7 @@ function feedEntry(origin: string, record: PublicAtomFeedRecord) {
   </entry>`
 }
 
-export function buildAtomFeedXml(origin: string, records: ReadonlyArray<PublicAtomFeedRecord>) {
+export function buildAtomFeedXml(origin: string, records: readonly PublicAtomFeedRecord[]) {
   const feedUrl = absoluteXmlUrl(origin, "/feed.xml")
   const siteUrl = absoluteXmlUrl(origin, "/")
   const entries = records.map((record) => feedEntry(origin, record)).join("\n")

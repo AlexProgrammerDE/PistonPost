@@ -35,7 +35,7 @@ export function usePostImpressionTracking({
       root.dataset["postIdentity"] !== postIdentity ||
       typeof IntersectionObserver === "undefined"
     ) {
-      return undefined
+      return
     }
 
     const lastViewedAt = lastViewedAtBySurfaceRef.current.get(surface) ?? new Map<string, number>()
@@ -109,7 +109,9 @@ export function usePostImpressionTracking({
 
           exposureTimers.set(
             target,
-            setTimeout(() => queue(target, postId), EXPOSURE_DURATION_MS),
+            setTimeout(() => {
+              queue(target, postId)
+            }, EXPOSURE_DURATION_MS),
           )
         }
       },

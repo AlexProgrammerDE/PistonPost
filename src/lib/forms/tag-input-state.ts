@@ -9,7 +9,7 @@ function normalizeTagInputValue(value: string) {
     .slice(0, MAX_TAG_LENGTH)
 }
 
-export function addTagInputValues(current: ReadonlyArray<string>, rawInput: string, limit = 5) {
+export function addTagInputValues(current: readonly string[], rawInput: string, limit = 5) {
   const next = [...current]
   const normalized = new Set(next.map((tag) => tag.toLocaleLowerCase("en-US")))
 

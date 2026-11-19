@@ -44,7 +44,7 @@ test("receives a share locally and preserves its handoff through the sign-in lin
     document.body.appendChild(form)
     form.submit()
   })
-  await expect(page).toHaveURL(/\/posts\/new\?shareId=/)
+  await expect(page).toHaveURL(/\/posts\/new\?shareId=/u)
   const destination = new URL(page.url())
   const shareId = destination.searchParams.get("shareId")
   expect(shareId).not.toBeNull()
@@ -52,7 +52,7 @@ test("receives a share locally and preserves its handoff through the sign-in lin
   const cookieChoice = page.getByRole("button", { name: "Reject optional", exact: true })
   if (await cookieChoice.isVisible()) await cookieChoice.click()
   await page.getByRole("main").getByRole("link", { name: "Sign in", exact: true }).click()
-  await expect(page).toHaveURL(/\/auth\/sign-in\?redirectTo=/)
+  await expect(page).toHaveURL(/\/auth\/sign-in\?redirectTo=/u)
   expect(new URL(page.url()).searchParams.get("redirectTo")).toBe(
     destination.pathname + destination.search,
   )
@@ -78,6 +78,6 @@ test("rejects unsupported shared files", async ({ page }) => {
     document.body.appendChild(form)
     form.submit()
   })
-  await expect(page).toHaveURL(/shareError=unavailable/)
+  await expect(page).toHaveURL(/shareError=unavailable/u)
   await expect(page.getByText("The share could not be opened")).toBeVisible()
 })

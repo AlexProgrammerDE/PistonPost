@@ -17,7 +17,9 @@ afterEach(() => {
 describe("user settings repository", () => {
   it("updates notification preferences independently", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database.insert(user).values(createUser()).run()
     database
       .insert(userSettings)
@@ -60,7 +62,9 @@ describe("user settings repository", () => {
 
   it("records the source for an email-link opt-out but not for push changes", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database.insert(user).values(createUser()).run()
     const repository = createUserSettingsRepository(database)
 

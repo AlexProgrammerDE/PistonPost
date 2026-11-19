@@ -75,8 +75,12 @@ export async function allowRequest(request: Request, env: RateLimitBindings) {
   const address = request.headers.get("cf-connecting-ip") ?? "local"
   const route = routeClass(pathname)
 
-  if (route === "auth" && !isSessionRead(request, pathname)) {
-    if (!(await Effect.runPromise(allows(env.AUTH_RATE_LIMITER, `auth:${address}`)))) return false
+  if (
+    route === "auth" &&
+    !isSessionRead(request, pathname) &&
+    !(await Effect.runPromise(allows(env.AUTH_RATE_LIMITER, `auth:${address}`)))
+  ) {
+    return false
   }
 
   const credential = route === "media" ? null : requestCredential(request)

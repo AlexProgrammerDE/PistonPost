@@ -35,13 +35,19 @@ export function uploadVideo(
         if (request.status >= 200 && request.status < 300) resolve()
         else reject(new UploadClientError(rejectedUploadMessage(request.status)))
       })
-      request.addEventListener("error", () =>
-        reject(new UploadClientError("The video upload was interrupted. Try again.")),
+      request.addEventListener("error", () => {
+        reject(new UploadClientError("The video upload was interrupted. Try again."))
+      })
+      request.addEventListener("abort", () => {
+        reject(new UploadClientError("The video upload was cancelled."))
+      })
+      signal?.addEventListener(
+        "abort",
+        () => {
+          request.abort()
+        },
+        { once: true },
       )
-      request.addEventListener("abort", () =>
-        reject(new UploadClientError("The video upload was cancelled.")),
-      )
-      signal?.addEventListener("abort", () => request.abort(), { once: true })
       request.send(form)
     })
   }
@@ -63,8 +69,12 @@ export function uploadVideo(
             : new UploadClientError(rejectedUploadMessage(status)),
         )
       },
-      onProgress: (uploaded, total) => onProgress(total > 0 ? (uploaded / total) * 100 : 0),
-      onSuccess: () => resolve(),
+      onProgress: (uploaded, total) => {
+        onProgress(total > 0 ? (uploaded / total) * 100 : 0)
+      },
+      onSuccess: () => {
+        resolve()
+      },
     })
     signal?.addEventListener(
       "abort",
@@ -73,7 +83,9 @@ export function uploadVideo(
         void upload
           .abort(true)
           .catch(() => undefined)
-          .finally(() => reject(new UploadClientError("The video upload was cancelled.")))
+          .finally(() => {
+            reject(new UploadClientError("The video upload was cancelled."))
+          })
       },
       { once: true },
     )

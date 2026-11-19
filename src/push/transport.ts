@@ -52,8 +52,8 @@ export class PushTransport extends Context.Service<PushTransport, PushTransportS
 function retryAfterSeconds(headers: webPush.Headers) {
   const raw = headers["retry-after"]
   if (!raw) return 60
-  const seconds = Number.parseInt(raw, 10)
-  if (Number.isFinite(seconds) && seconds > 0) return Math.min(seconds, 15 * 60)
+  const seconds = Number(raw)
+  if (Number.isInteger(seconds) && seconds > 0) return Math.min(seconds, 15 * 60)
   const date = Date.parse(raw)
   if (Number.isNaN(date)) return 60
   return Math.min(15 * 60, Math.max(1, Math.ceil((date - Date.now()) / 1_000)))

@@ -49,12 +49,13 @@ function writeAnalyticsEvent(
   surface: PostViewSurface,
 ) {
   return Effect.try({
-    try: () =>
+    try: () => {
       dependencies.analytics.writeDataPoint({
         indexes: [post.id],
         blobs: [event, post.id, post.type, post.visibility, surface],
         doubles: [1],
-      }),
+      })
+    },
     catch: (cause) => trackingError("analytics", cause),
   }).pipe(Effect.ignore)
 }

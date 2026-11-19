@@ -91,7 +91,7 @@ function enqueuePreparation<T>(task: () => Promise<T>) {
 }
 
 export async function prepareImageForUpload(file: File): Promise<PreparedImageUpload> {
-  if (file.size < 1 || file.size > MAX_IMAGE_UPLOAD_BYTES) {
+  if (file.size === 0 || file.size > MAX_IMAGE_UPLOAD_BYTES) {
     throw new ImagePreparationError("The image must be no larger than 15 MB.")
   }
 
@@ -115,7 +115,7 @@ export async function prepareImageForUpload(file: File): Promise<PreparedImageUp
     type: response.mimeType,
     lastModified: file.lastModified,
   })
-  if (preparedFile.size < 1 || preparedFile.size > MAX_IMAGE_UPLOAD_BYTES) {
+  if (preparedFile.size === 0 || preparedFile.size > MAX_IMAGE_UPLOAD_BYTES) {
     throw new ImagePreparationError("The cleaned image is still larger than 15 MB.")
   }
 

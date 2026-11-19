@@ -40,8 +40,7 @@ describe("transactional email", () => {
   })
 
   it("captures local messages without external delivery", async () => {
-    const captured: Array<Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0]> =
-      []
+    const captured: Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0][] = []
     const transport = createCaptureEmailTransport(captured)
     const rendered = await renderEmail(
       authenticationMessage({
@@ -215,8 +214,7 @@ describe("transactional email", () => {
   })
 
   it("adds a List-Unsubscribe header to product delivery", async () => {
-    const captured: Array<Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0]> =
-      []
+    const captured: Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0][] = []
     const unsubscribeUrl = "https://post.pistonmaster.net/email/unsubscribe?token=signed"
     await Effect.runPromise(
       deliverEmail({
@@ -248,8 +246,7 @@ describe("transactional email", () => {
   })
 
   it("does not add unsubscribe headers to required authentication email", async () => {
-    const captured: Array<Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0]> =
-      []
+    const captured: Parameters<ReturnType<typeof createCaptureEmailTransport>["send"]>[0][] = []
     await Effect.runPromise(
       deliverEmail({
         content: authenticationMessage({

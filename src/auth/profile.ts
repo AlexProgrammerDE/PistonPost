@@ -26,8 +26,8 @@ function normalizeUsername(username: string) {
 function usernameFromEmail(email: string) {
   const localPart = email.split("@", 1)[0] ?? ""
   const sanitized = localPart
-    .replaceAll(/[^A-Za-z0-9._~-]+/g, "-")
-    .replaceAll(/^-+|-+$/g, "")
+    .replaceAll(/[^A-Za-z0-9._~-]+/gu, "-")
+    .replaceAll(/^-+|-+$/gu, "")
     .slice(0, MAX_USERNAME_LENGTH)
   return isValidUsername(sanitized) ? sanitized : FALLBACK_USERNAME
 }
@@ -88,7 +88,12 @@ export async function initializeUserProfile(database: ProfileDatabase, user: New
     const taken = await database
       .select({ normalizedUsername: schema.profiles.normalizedUsername })
       .from(schema.profiles)
-      .where(inArray(schema.profiles.normalizedUsername, candidates.map(normalizeUsername)))
+      .where(
+        inArray(
+          schema.profiles.normalizedUsername,
+          candidates.map((candidate) => normalizeUsername(candidate)),
+        ),
+      )
       .all()
     const takenNames = new Set(taken.map(({ normalizedUsername }) => normalizedUsername))
     const username = candidates.find((candidate) => !takenNames.has(normalizeUsername(candidate)))

@@ -54,7 +54,7 @@ export function videoAccessJob(
 
 export function cacheInvalidationTagsJob(
   scope: string,
-  tags: ReadonlyArray<string>,
+  tags: readonly string[],
   idempotencyKey = `cache.invalidate:${scope}:${crypto.randomUUID()}`,
 ): InternalJob {
   return Schema.decodeSync(cacheInvalidationJobSchema, { errors: "all" })({

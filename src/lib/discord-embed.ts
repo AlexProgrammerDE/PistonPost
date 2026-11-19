@@ -1,6 +1,6 @@
 import { ButtonStyle, ComponentType, type APIContainerComponent } from "discord-api-types/v10"
 
-export interface DiscordEmbedOptions {
+export type DiscordEmbedOptions = {
   title: string
   label?: string
   description?: string
@@ -25,21 +25,18 @@ function shorten(value: string, length: number) {
 }
 
 function markdown(value: string) {
-  return value.replaceAll(/([\\`*_{}[\]()<>#|~])/g, "\\$1")
+  return value.replaceAll(/([\\`*_{}[\]()<>#|~])/gu, "\\$1")
 }
 
 function publicUrl(value: string, maximum = 512) {
-  try {
-    const url = new URL(value)
-    return ["https:", "http:"].includes(url.protocol) &&
-      !url.username &&
-      !url.password &&
-      url.href.length <= maximum
-      ? url.href
-      : undefined
-  } catch {
-    return undefined
-  }
+  const url = URL.parse(value)
+  return url &&
+    ["https:", "http:"].includes(url.protocol) &&
+    !url.username &&
+    !url.password &&
+    url.href.length <= maximum
+    ? url.href
+    : undefined
 }
 
 export function serializeDiscordEmbed(component: APIContainerComponent) {
@@ -89,7 +86,7 @@ export function createDiscordEmbed(
                   }
                 : text,
             ]),
-        ...(images.length
+        ...(images.length > 0
           ? [
               {
                 type: ComponentType.MediaGallery as const,
@@ -113,9 +110,9 @@ export function createDiscordEmbed(
     }
     if (new TextEncoder().encode(serializeDiscordEmbed(component)).byteLength <= 3000)
       return component
-    if (images.length) images.pop()
+    if (images.length > 0) images.pop()
     else if (links.length > 1) links.pop()
-    else if (description.length)
+    else if (description.length > 0)
       description = shorten(description, Math.floor(graphemes(description).length / 2))
     else if (graphemes(title).length > 16) title = shorten(title, 16)
     else return undefined

@@ -83,9 +83,7 @@ export function scoreVideoThumbnailFrame({ data, width, height }: VideoThumbnail
   )
 }
 
-export function selectBestVideoThumbnailCandidate(
-  candidates: ReadonlyArray<VideoThumbnailCandidate>,
-) {
+export function selectBestVideoThumbnailCandidate(candidates: readonly VideoThumbnailCandidate[]) {
   let bestTimestampPct = DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT
   let bestScore = Number.NEGATIVE_INFINITY
 

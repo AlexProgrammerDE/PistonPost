@@ -16,7 +16,7 @@ describe("Workers Cache tags", () => {
       postCacheTag("post/one"),
     ]
 
-    expect(tags.every(isCacheTag)).toBeTrue()
+    expect(tags.every((tag) => isCacheTag(tag))).toBeTrue()
     expect(tags).toEqual([
       "pistonpost-media-image%2C%20one",
       "pistonpost-owner-Bj%C3%B6rk%20Example",

@@ -32,7 +32,7 @@ const sharedFileSchema = Schema.instanceOf(File).check(
       (file.size > 0 &&
         file.size <= MAX_IMAGE_UPLOAD_BYTES &&
         (IMAGE_UPLOAD_MIME_TYPES.some((type) => type === file.type) ||
-          (file.type === "" && /\.(?:jpe?g|png|gif|webp|avif)$/i.test(file.name)))) ||
+          (file.type === "" && /\.(?:jpe?g|png|gif|webp|avif)$/iu.test(file.name)))) ||
       "Share JPEG, PNG, GIF, WebP, or AVIF images no larger than 15 MB each.",
   ),
 )
@@ -70,7 +70,7 @@ export const sharedContentSchema = Schema.Struct({
   .check(
     Schema.makeFilter(
       (value) =>
-        Boolean(value.title || value.text || value.url || value.files.length) ||
+        Boolean(value.title || value.text || value.url || value.files.length > 0) ||
         "There is nothing to share.",
     ),
   )

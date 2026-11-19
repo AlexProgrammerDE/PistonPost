@@ -173,12 +173,15 @@ const otpLocalization = {
 
 function subscriptionLabel(preference: EmailNotificationPreference) {
   switch (preference) {
-    case "comment-email":
+    case "comment-email": {
       return "comment emails"
-    case "reply-email":
+    }
+    case "reply-email": {
       return "reply emails"
-    case "product-email":
+    }
+    case "product-email": {
       return "product update emails"
+    }
   }
   const exhaustivePreference: never = preference
   return exhaustivePreference
@@ -186,15 +189,19 @@ function subscriptionLabel(preference: EmailNotificationPreference) {
 
 function supportPrompt(template: GenericEmailContent["template"]) {
   switch (template) {
-    case "email-changed":
+    case "email-changed": {
       return "If you did not ask for this change, contact "
-    case "moderation-action":
+    }
+    case "moderation-action": {
       return "Think this was a mistake? Contact "
-    case "product-update":
+    }
+    case "product-update": {
       return "Questions about this update? Contact "
+    }
     case "comment-notification":
-    case "reply-notification":
+    case "reply-notification": {
       return "Questions? Contact "
+    }
   }
   const exhaustiveTemplate: never = template
   return exhaustiveTemplate
@@ -286,7 +293,7 @@ export function PistonPostEmail({ content }: { readonly content: GenericEmailCon
 
 export function AuthenticationEmail({ content }: { readonly content: EmailContent }) {
   switch (content.template) {
-    case "email-verification":
+    case "email-verification": {
       return (
         <EmailVerificationEmail
           {...authenticationTemplateProps}
@@ -295,7 +302,8 @@ export function AuthenticationEmail({ content }: { readonly content: EmailConten
           url={content.url}
         />
       )
-    case "password-reset":
+    }
+    case "password-reset": {
       return (
         <ResetPasswordEmail
           {...authenticationTemplateProps}
@@ -304,7 +312,8 @@ export function AuthenticationEmail({ content }: { readonly content: EmailConten
           url={content.url}
         />
       )
-    case "account-deletion":
+    }
+    case "account-deletion": {
       return (
         <DeleteAccountVerificationEmail
           {...authenticationTemplateProps}
@@ -313,8 +322,9 @@ export function AuthenticationEmail({ content }: { readonly content: EmailConten
           url={content.url}
         />
       )
+    }
     case "email-otp":
-    case "two-factor-otp":
+    case "two-factor-otp": {
       return (
         <OtpEmail
           {...authenticationTemplateProps}
@@ -324,7 +334,8 @@ export function AuthenticationEmail({ content }: { readonly content: EmailConten
           verificationCode={content.code}
         />
       )
-    case "password-changed":
+    }
+    case "password-changed": {
       return (
         <PasswordChangedEmail
           {...authenticationTemplateProps}
@@ -334,7 +345,8 @@ export function AuthenticationEmail({ content }: { readonly content: EmailConten
           timestamp={content.timestamp}
         />
       )
-    case "new-device":
+    }
+    case "new-device": {
       return (
         <NewDeviceEmail
           {...authenticationTemplateProps}
@@ -344,12 +356,14 @@ export function AuthenticationEmail({ content }: { readonly content: EmailConten
           userEmail={content.email}
         />
       )
+    }
     case "email-changed":
     case "comment-notification":
     case "reply-notification":
     case "moderation-action":
-    case "product-update":
+    case "product-update": {
       return <PistonPostEmail content={content} />
+    }
   }
 
   const exhaustiveContent: never = content

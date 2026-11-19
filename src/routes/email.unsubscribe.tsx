@@ -91,7 +91,9 @@ function EmailUnsubscribe() {
           <Button
             className="mt-6"
             disabled={unsubscribe.isPending}
-            onClick={() => unsubscribe.mutate()}
+            onClick={() => {
+              unsubscribe.mutate()
+            }}
           >
             {unsubscribe.isPending ? (
               <>

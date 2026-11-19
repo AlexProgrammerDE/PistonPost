@@ -211,7 +211,7 @@ const enqueueSecurityNotificationEffect = Effect.fn("Auth.enqueueSecurityNotific
   const subscriptions = yield* bindingOperation("auth.security-subscriptions", () =>
     listActivePushSubscriptionIds(database, userId),
   )
-  const jobs: Array<ReturnType<typeof securityEmailJob> | PushDeliveryJob> = [
+  const jobs: (ReturnType<typeof securityEmailJob> | PushDeliveryJob)[] = [
     securityEmailJob(userId, auditEventId),
     ...subscriptions.map(({ subscriptionId }) =>
       securityPushJob({ recipientUserId: userId, subscriptionId }, auditEventId),

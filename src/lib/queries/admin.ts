@@ -3,7 +3,7 @@ import { queryOptions } from "@tanstack/react-query"
 import type { AdminSection } from "@/lib/admin-sections"
 import { getAdminRows } from "@/server/tables"
 
-export interface AdminRowsInput {
+export type AdminRowsInput = {
   readonly section: AdminSection
   readonly query: string
   readonly cursor?: string

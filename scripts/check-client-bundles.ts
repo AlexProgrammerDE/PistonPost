@@ -8,7 +8,7 @@ if (!(await serviceWorker.exists()) || serviceWorker.size === 0) {
 }
 const forbiddenMarkers = ["@/db", "cloudflare:workers"]
 
-const files: Array<{ path: string; bytes: number }> = []
+const files: { path: string; bytes: number }[] = []
 for await (const path of new Bun.Glob("**/*.js").scan({ cwd: clientDirectory, absolute: true })) {
   const details = await stat(path)
   files.push({ path, bytes: details.size })
@@ -19,7 +19,7 @@ if (files.length === 0) throw new Error("No production client JavaScript bundles
 const localSecrets = Bun.file(resolve(".dev.vars"))
 const secretValues = (await localSecrets.exists())
   ? (await localSecrets.text())
-      .split(/\r?\n/)
+      .split(/\r?\n/u)
       .map((line) => line.slice(line.indexOf("=") + 1).trim())
       .filter((value) => value.length >= 8)
   : []

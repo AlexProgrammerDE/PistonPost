@@ -23,7 +23,7 @@ type FallbackFace = {
 const notoSans = (subset: string) =>
   `@fontsource-variable/noto-sans@5.3.0/files/noto-sans-${subset}-wght-normal.woff2`
 
-const fallbackFaces: ReadonlyArray<FallbackFace> = [
+const fallbackFaces: readonly FallbackFace[] = [
   {
     name: "Noto Sans Cyrillic",
     file: notoSans("cyrillic"),

@@ -30,8 +30,8 @@ const streamPayload = Schema.Struct({
 })
 
 function decodeHex(value: string) {
-  if (!/^[a-f0-9]+$/i.test(value) || value.length % 2 !== 0) return null
-  return Uint8Array.from(value.match(/.{2}/g) ?? [], (part) => Number.parseInt(part, 16))
+  if (!/^[a-f0-9]+$/iu.test(value) || value.length % 2 !== 0) return null
+  return Uint8Array.from(value.match(/.{2}/gu) ?? [], (part) => Number.parseInt(part, 16))
 }
 
 function constantTimeEqual(left: Uint8Array, right: Uint8Array) {
@@ -50,14 +50,14 @@ export async function verifyStreamWebhook(
   now = Date.now(),
 ) {
   if (!signatureHeader) return false
-  const parts = Object.fromEntries(
-    signatureHeader.split(",").map((part) => {
-      const [key, value] = part.split("=", 2)
+  const parts = new Map(
+    signatureHeader.split(",").map((part): [string, string | undefined] => {
+      const [key = "", value] = part.split("=", 2)
       return [key, value]
     }),
   )
-  const time = parts.time
-  const signature = parts.sig1
+  const time = parts.get("time")
+  const signature = parts.get("sig1")
   const timestamp = Number(time)
   if (!time || !signature || !Number.isSafeInteger(timestamp)) return false
   if (Math.abs(now - timestamp * 1000) > 5 * 60 * 1000) return false
@@ -159,12 +159,12 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
         )
       }).pipe(
         Effect.catchCause(() =>
-          Effect.sync(() =>
+          Effect.sync(() => {
             logError("stream.download-generation", {
               mediaId: asset.id,
               error: "VideoDownloadError",
-            }),
-          ),
+            })
+          }),
         ),
       )
       context.executionContext.waitUntil(runBackgroundEffect(generateDownload))

@@ -43,7 +43,7 @@ const adminCursor = Schema.Struct({
 })
 
 function decodeAdminCursor(value: string | undefined) {
-  if (!value) return undefined
+  if (!value) return
   try {
     return Schema.decodeUnknownSync(adminCursor, { errors: "all" })(JSON.parse(atob(value)))
   } catch {
@@ -284,7 +284,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
         const cursor = decodeAdminCursor(data.cursor)
         const order = data.direction === "desc" ? desc : asc
         switch (data.section) {
-          case "posts":
+          case "posts": {
             return adminPage(
               yield* bindingOperation("getAdminRows.operation", () =>
                 database
@@ -313,7 +313,8 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   .limit(adminPageSize + 1),
               ),
             )
-          case "comments":
+          }
+          case "comments": {
             return adminPage(
               yield* bindingOperation("getAdminRows.operation", () =>
                 database
@@ -344,7 +345,8 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   .limit(adminPageSize + 1),
               ),
             )
-          case "reports":
+          }
+          case "reports": {
             return adminPage(
               yield* bindingOperation("getAdminRows.operation", () =>
                 database
@@ -387,7 +389,8 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   .limit(adminPageSize + 1),
               ),
             )
-          case "media":
+          }
+          case "media": {
             return adminPage(
               yield* bindingOperation("getAdminRows.operation", () =>
                 database
@@ -415,7 +418,8 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   .limit(adminPageSize + 1),
               ),
             )
-          case "audit":
+          }
+          case "audit": {
             return adminPage(
               yield* bindingOperation("getAdminRows.operation", () =>
                 database
@@ -443,7 +447,8 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   .limit(adminPageSize + 1),
               ),
             )
-          case "jobs":
+          }
+          case "jobs": {
             return adminPage(
               yield* bindingOperation("getAdminRows.operation", () =>
                 database
@@ -471,6 +476,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   .limit(adminPageSize + 1),
               ),
             )
+          }
         }
         return yield* invalidInputFailure("Unsupported administration section.")
       }),
@@ -688,11 +694,11 @@ export const moderateEntity = createServerFn({ method: "POST" })
           const moderationEventId = crypto.randomUUID()
           const jobs: [
             ReturnType<typeof cacheInvalidationJob>,
-            ...Array<
+            ...(
               | ReturnType<typeof moderationEmailJob>
               | ReturnType<typeof videoAccessJob>
               | PushDeliveryJob
-            >,
+            )[],
           ] = [cacheInvalidationJob(target.postId)]
           // Stream videos are uploaded without signed URLs. Hiding a post must also stop playback.
           if ("type" in target && target.type === "video")

@@ -13,7 +13,9 @@ export function createClockStore(intervalMs = 30_000) {
       subscribers += 1
       if (subscribers === 1) {
         clock.set(Date.now())
-        interval = setInterval(() => clock.set(Date.now()), intervalMs)
+        interval = setInterval(() => {
+          clock.set(Date.now())
+        }, intervalMs)
       }
 
       return () => {

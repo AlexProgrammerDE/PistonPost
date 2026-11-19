@@ -35,7 +35,7 @@ export type ActiveSharedViewTransition = {
 let activeSharedViewTransition: ActiveSharedViewTransition | null = null
 
 function normalizedPathname(pathname: string) {
-  return pathname === "/" ? pathname : pathname.replace(/\/+$/, "")
+  return pathname === "/" ? pathname : pathname.replace(/\/+$/u, "")
 }
 
 function decodedRouteValue(pathname: string, routeSegment: string) {
@@ -51,18 +51,21 @@ function decodedRouteValue(pathname: string, routeSegment: string) {
 
 function pathMatchesSharedTarget(pathname: string, target: SharedViewTransitionTarget) {
   switch (target.kind) {
-    case "post":
+    case "post": {
       return decodedRouteValue(pathname, POST_ROUTE_SEGMENT) === target.postId
-    case "profile":
+    }
+    case "profile": {
       return (
         decodedRouteValue(pathname, PROFILE_ROUTE_SEGMENT)?.toLocaleLowerCase("en-US") ===
         target.username.toLocaleLowerCase("en-US")
       )
-    case "tag":
+    }
+    case "tag": {
       return (
         decodedRouteValue(pathname, TAG_ROUTE_SEGMENT)?.toLocaleLowerCase("en-US") ===
         target.tag.toLocaleLowerCase("en-US")
       )
+    }
   }
 
   return false
@@ -72,9 +75,10 @@ function targetsMatch(active: SharedViewTransitionTarget, candidate: SharedViewT
   if (active.kind !== candidate.kind) return false
 
   switch (active.kind) {
-    case "post":
+    case "post": {
       return candidate.kind === "post" && active.postId === candidate.postId
-    case "profile":
+    }
+    case "profile": {
       return (
         candidate.kind === "profile" &&
         active.username.toLocaleLowerCase("en-US") ===
@@ -83,7 +87,8 @@ function targetsMatch(active: SharedViewTransitionTarget, candidate: SharedViewT
           active.sourcePostId === undefined ||
           candidate.sourcePostId === active.sourcePostId)
       )
-    case "tag":
+    }
+    case "tag": {
       return (
         candidate.kind === "tag" &&
         active.tag.toLocaleLowerCase("en-US") === candidate.tag.toLocaleLowerCase("en-US") &&
@@ -91,6 +96,7 @@ function targetsMatch(active: SharedViewTransitionTarget, candidate: SharedViewT
           active.sourcePostId === undefined ||
           candidate.sourcePostId === active.sourcePostId)
       )
+    }
   }
 
   return false
@@ -168,9 +174,9 @@ export function activeSharedViewTransitionKind(
 }
 
 function historyTransitionType(fromLocation: TransitionLocation, toLocation: TransitionLocation) {
-  const fromIndex = Reflect.get(fromLocation.state, ROUTER_HISTORY_INDEX_KEY)
-  const toIndex = Reflect.get(toLocation.state, ROUTER_HISTORY_INDEX_KEY)
-  return fromIndex !== undefined && toIndex !== undefined && fromIndex > toIndex
+  const fromIndex: unknown = Reflect.get(fromLocation.state, ROUTER_HISTORY_INDEX_KEY)
+  const toIndex: unknown = Reflect.get(toLocation.state, ROUTER_HISTORY_INDEX_KEY)
+  return typeof fromIndex === "number" && typeof toIndex === "number" && fromIndex > toIndex
     ? "page-back"
     : "page-forward"
 }
@@ -242,7 +248,7 @@ function settingsTransitionType(fromPathname: string, toPathname: string) {
 export function resolveRouteTransitionTypes(
   info: RouteTransitionInfo,
   activeTransition: ActiveSharedViewTransition | null,
-): Array<string> | false {
+): string[] | false {
   const fromLocation = info.fromLocation
   if (!fromLocation || !info.hrefChanged) return false
 

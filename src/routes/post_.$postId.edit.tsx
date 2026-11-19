@@ -121,11 +121,14 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
         const images =
           post.type === "images"
             ? await uploadPostEditImages(post.id, value.images, {
-                onReady: (clientId, id) =>
+                onReady: (clientId, id) => {
                   form.setFieldValue("images", (items) =>
                     items.map((item) => (item.clientId === clientId ? { ...item, id } : item)),
-                  ),
-                onProgress: (filename, progress) => setUploadProgress({ filename, progress }),
+                  )
+                },
+                onProgress: (filename, progress) => {
+                  setUploadProgress({ filename, progress })
+                },
               })
             : undefined
         await updatePost({
@@ -192,7 +195,9 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
           void (async () => {
             await form.handleSubmit()
             if (form.state.isValid) return
-            requestAnimationFrame(() => focusFirstInvalidField(formElement))
+            requestAnimationFrame(() => {
+              focusFirstInvalidField(formElement)
+            })
           })()
         }}
       >

@@ -39,7 +39,7 @@ export function FileLaunchHandler() {
   })
 
   useEffect(() => {
-    if (!supportsFileLaunches(window)) return undefined
+    if (!supportsFileLaunches(window)) return
     window.launchQueue.setConsumer((params) => void receive(params.files))
     return () => {
       if (supportsFileLaunches(window)) window.launchQueue.setConsumer(() => undefined)

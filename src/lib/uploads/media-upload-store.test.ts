@@ -18,9 +18,15 @@ test("upload progress only notifies the affected row, while picker edits remain 
   let otherUpdates = 0
   let pickerUpdates = 0
   const subscriptions = [
-    row.subscribe(() => rowUpdates++),
-    otherRow.subscribe(() => otherUpdates++),
-    store.pickerItems.subscribe(() => pickerUpdates++),
+    row.subscribe(() => {
+      rowUpdates++
+    }),
+    otherRow.subscribe(() => {
+      otherUpdates++
+    }),
+    store.pickerItems.subscribe(() => {
+      pickerUpdates++
+    }),
   ]
   try {
     store.dispatch({ type: "uploading", clientId: first.clientId, assetId: "asset" })

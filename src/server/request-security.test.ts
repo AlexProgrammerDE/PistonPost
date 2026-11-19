@@ -63,7 +63,7 @@ describe("request security", () => {
     const oversized = mutation("/_serverFn/create", { "content-length": "1048577" })
     const response = validateRequestSecurity(oversized, origin)
     expect(response?.status).toBe(413)
-    expect(await response?.json()).toMatchObject({ error: { code: "INVALID_REQUEST" } })
+    expect(await response?.json<unknown>()).toMatchObject({ error: { code: "INVALID_REQUEST" } })
   })
 
   test("allows verified webhook delivery without a browser origin", () => {

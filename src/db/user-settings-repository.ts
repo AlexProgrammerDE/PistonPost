@@ -29,16 +29,21 @@ function preferenceValues(
   enabled: boolean,
 ): NotificationPreferenceValues {
   switch (preference) {
-    case "comment-email":
+    case "comment-email": {
       return { commentNotifications: enabled }
-    case "reply-email":
+    }
+    case "reply-email": {
       return { replyNotifications: enabled }
-    case "product-email":
+    }
+    case "product-email": {
       return { productNotifications: enabled }
-    case "comment-push":
+    }
+    case "comment-push": {
       return { commentPushNotifications: enabled }
-    case "reply-push":
+    }
+    case "reply-push": {
       return { replyPushNotifications: enabled }
+    }
   }
   const exhaustivePreference: never = preference
   return exhaustivePreference

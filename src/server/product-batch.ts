@@ -27,9 +27,7 @@ export class ProductBatchStore extends Context.Service<
     readonly campaign: (
       id: string,
     ) => Effect.Effect<{ status: "draft" | "sending" | "sent" } | undefined, OperationError>
-    readonly recipients: (
-      cursor: string | null,
-    ) => Effect.Effect<Array<{ id: string }>, OperationError>
+    readonly recipients: (cursor: string | null) => Effect.Effect<{ id: string }[], OperationError>
     readonly stage: (jobs: ProductEmailJob[]) => Effect.Effect<void, OperationError>
     readonly continue: (job: ProductEmailBatchJob) => Effect.Effect<void, OperationError>
     readonly finish: (campaignId: string) => Effect.Effect<void, OperationError>
@@ -89,7 +87,10 @@ export function productBatchStoreLayer(database: D1DatabaseClient | SqliteDataba
                 })
                 .onConflictDoNothing(),
             ] as const
-          await database.batch([...statements(first), ...remaining.flatMap(statements)])
+          await database.batch([
+            ...statements(first),
+            ...remaining.flatMap((job) => statements(job)),
+          ])
           return
         }
         database.transaction((transaction) => {
@@ -118,7 +119,7 @@ export function productBatchStoreLayer(database: D1DatabaseClient | SqliteDataba
           .values({ id: job.idempotencyKey, kind: job.type, payload: job })
           .onConflictDoNothing(),
       ).pipe(Effect.asVoid),
-    finish: Effect.fn("ProductBatch.finish")(function* (campaignId) {
+    finish: Effect.fn("ProductBatch.finish")(function* (campaignId: string) {
       const now = new Date(yield* Clock.currentTimeMillis)
       yield* bindingOperation("product-batch.finish-campaign", () =>
         db

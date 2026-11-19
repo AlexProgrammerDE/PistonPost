@@ -10,7 +10,7 @@ import { getAuthViewLabel, validAuthPathSegments } from "./auth-ui-metadata"
 describe("auth route paths", () => {
   it("accepts every Better Auth UI and enabled plugin path", () => {
     const expectedPaths = [
-      ...Object.values(viewPaths.auth),
+      ...Object.values({ ...viewPaths.auth }).filter((path: unknown) => typeof path === "string"),
       ...Object.values(emailOtpPlugin().viewPaths.auth),
       ...Object.values(twoFactorPlugin().viewPaths.auth),
     ]

@@ -143,7 +143,9 @@ function loadXScript() {
   xScriptPromise = new Promise<void>((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>("script[data-pistonpost-x]")
     const script = existing ?? document.createElement("script")
-    const handleLoad = () => resolve()
+    const handleLoad = () => {
+      resolve()
+    }
     const handleError = () => {
       script.remove()
       reject(new Error("The X embed script could not be loaded."))
@@ -189,7 +191,7 @@ function XEmbed({ embed }: { embed: Extract<MarkdownEmbed, { provider: "x" }> })
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return undefined
+    if (!container) return
 
     const blockquote = document.createElement("blockquote")
     blockquote.className = "twitter-tweet"
@@ -231,7 +233,7 @@ function TumblrWidget({
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return undefined
+    if (!container) return
 
     const post = document.createElement("div")
     post.className = "tumblr-post"
@@ -383,7 +385,13 @@ function EmbedConsent({ embed, label }: { embed: MarkdownEmbed; label: string | 
           <ItemDescription>Load this embed to share data with {providerName}.</ItemDescription>
         </ItemContent>
         <ItemActions>
-          <Button type="button" variant="outline" onClick={() => setLoaded(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => {
+              setLoaded(true)
+            }}
+          >
             <Play aria-hidden="true" data-icon="inline-start" />
             Load
             <span className="sr-only"> {providerName} embed</span>
@@ -441,7 +449,9 @@ function MarkdownSpoiler({ label }: { label: string }) {
           ? "border-border bg-muted/35 text-foreground"
           : "border-foreground/70 bg-foreground text-background",
       )}
-      onClick={() => setRevealed((current) => !current)}
+      onClick={() => {
+        setRevealed((current) => !current)
+      }}
     >
       <span className="sr-only">{revealed ? "Spoiler: " : "Reveal spoiler"}</span>
       {revealed ? (

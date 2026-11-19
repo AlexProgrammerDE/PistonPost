@@ -12,7 +12,7 @@ import {
   outboxRetryDelayMs,
 } from "./outbox-repository"
 
-const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
+const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 
 afterEach(() => {
   for (const testDatabase of databases) testDatabase.$client.close()
@@ -32,15 +32,15 @@ describe("outbox claim policy", () => {
       .values({ id: "job-one", kind: "email.comment", payload: { version: 2 } })
       .run()
     const now = new Date()
-    const claim = () =>
-      db
-        .update(schema.outbox)
+    const claim = () => {
+      db.update(schema.outbox)
         .set({
           attempts: sql`${schema.outbox.attempts} + 1`,
           leaseExpiresAt: new Date(now.getTime() + 60_000),
         })
         .where(outboxClaimCondition("job-one", now))
         .run()
+    }
 
     claim()
     claim()

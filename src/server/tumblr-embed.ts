@@ -78,11 +78,9 @@ export const resolveTumblrEmbedHref = Effect.fn("resolveTumblrEmbedHref")(functi
     return yield* new TumblrEmbedError({ operation: "response", status: response.status })
   }
 
-  const unknownBody = yield* Effect.try({
-    try: () => JSON.parse(responseText),
-    catch: () => new TumblrEmbedError({ operation: "response", status: response.status }),
-  })
-  const body = yield* Schema.decodeUnknownEffect(tumblrOEmbedSchema)(unknownBody).pipe(
+  const body = yield* Schema.decodeEffect(Schema.fromJsonString(tumblrOEmbedSchema))(
+    responseText,
+  ).pipe(
     Effect.mapError(() => new TumblrEmbedError({ operation: "response", status: response.status })),
   )
   const href = validatedEmbedHref(body.html, embed.postId)

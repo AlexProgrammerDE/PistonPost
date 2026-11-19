@@ -19,6 +19,7 @@ export type AppRequestContext = {
 }
 
 declare module "@tanstack/react-router" {
+  // oxlint-disable-next-line typescript/consistent-type-definitions -- declaration merging needs an interface
   interface Register {
     server: {
       requestContext: AppRequestContext

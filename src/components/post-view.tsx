@@ -195,7 +195,9 @@ function PostDetailMetadata({
                 tag: tag.slug,
               })}
               data-view-transition-part="tag-name"
-              onClick={(event) => onOpenTag(event, tag.slug)}
+              onClick={(event) => {
+                onOpenTag(event, tag.slug)
+              }}
             />
           }
         >
@@ -440,7 +442,9 @@ function DetailPostImageMedia({
           aria-label={`Expand ${image.altText ?? post.title}`}
           onPointerEnter={preloadImageLightbox}
           onFocus={preloadImageLightbox}
-          onClick={() => openLightbox(0)}
+          onClick={() => {
+            openLightbox(0)
+          }}
         >
           <ResponsiveMediaImage
             image={image}
@@ -478,7 +482,9 @@ function DetailPostImageMedia({
                 )}
                 onPointerEnter={preloadImageLightbox}
                 onFocus={preloadImageLightbox}
-                onClick={() => openLightbox(index)}
+                onClick={() => {
+                  openLightbox(index)
+                }}
               >
                 <ResponsiveMediaImage
                   image={image}
@@ -582,7 +588,9 @@ function ImageBrowser({
           size="sm"
           className="flex-1 sm:flex-none"
           disabled={selectedIndex === 0}
-          onClick={() => stepImage(selectedIndex - 1)}
+          onClick={() => {
+            stepImage(selectedIndex - 1)
+          }}
         >
           <ArrowLeft aria-hidden="true" data-icon="inline-start" />
           <span className="max-sm:sr-only">Previous</span>
@@ -600,7 +608,9 @@ function ImageBrowser({
           size="sm"
           className="flex-1 sm:flex-none"
           disabled={selectedIndex === post.media.length - 1}
-          onClick={() => stepImage(selectedIndex + 1)}
+          onClick={() => {
+            stepImage(selectedIndex + 1)
+          }}
         >
           <span className="max-sm:sr-only">Next</span>
           <ArrowRight aria-hidden="true" data-icon="inline-end" />
@@ -619,7 +629,9 @@ function ImageBrowser({
         )}
         onPointerEnter={preloadImageLightbox}
         onFocus={preloadImageLightbox}
-        onClick={() => onOpen(selectedIndex)}
+        onClick={() => {
+          onOpen(selectedIndex)
+        }}
       >
         <ResponsiveMediaImage
           image={selectedImage}
@@ -911,7 +923,9 @@ export function PostView({
                       tag: tag.slug,
                     })}
                     data-view-transition-part="tag-name"
-                    onClick={(event) => openTag(event, tag.slug)}
+                    onClick={(event) => {
+                      openTag(event, tag.slug)
+                    }}
                   />
                 }
               >

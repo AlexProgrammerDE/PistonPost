@@ -22,7 +22,9 @@ afterEach(() => {
 describe("email unsubscribe preferences", () => {
   it("accepts a retained signing key, disables only its category, and records the change", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database.insert(user).values(createUser()).run()
     database.insert(userSettings).values({ userId: "test-user" }).run()
     const token = await Effect.runPromise(
@@ -49,7 +51,9 @@ describe("email unsubscribe preferences", () => {
 
   it("treats an unsubscribe for a deleted account as complete", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     const token = await Effect.runPromise(
       signUnsubscribeToken("deleted-user", "reply-email", secret),
     )

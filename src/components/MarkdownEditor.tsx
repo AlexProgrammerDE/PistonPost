@@ -66,10 +66,10 @@ type ToolbarAction = {
   }
 }
 
-const toolbarGroups: ReadonlyArray<{
+const toolbarGroups: readonly {
   readonly label: string
-  readonly actions: ReadonlyArray<ToolbarAction>
-}> = [
+  readonly actions: readonly ToolbarAction[]
+}[] = [
   {
     label: "Text formatting",
     actions: [
@@ -208,7 +208,9 @@ export function MarkdownEditor({
             disabled={disabled}
             className={cn("min-h-72 resize-y", className)}
             onBlur={onBlur}
-            onChange={(event) => onValueChange(event.currentTarget.value)}
+            onChange={(event) => {
+              onValueChange(event.currentTarget.value)
+            }}
             onKeyDown={handleShortcut}
             onPaste={handlePaste}
           />
@@ -232,7 +234,9 @@ export function MarkdownEditor({
                               aria-label={label}
                               aria-keyshortcuts={shortcut?.accessible}
                               disabled={disabled}
-                              onClick={() => runCommand(command)}
+                              onClick={() => {
+                                runCommand(command)
+                              }}
                             />
                           }
                         >

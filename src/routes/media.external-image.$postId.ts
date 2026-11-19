@@ -22,11 +22,15 @@ const allowedImageTypes = new Set([
   "image/webp",
 ])
 
-function limitImageBody(body: ReadableStream<Uint8Array>) {
+function limitImageBody(body: ReadableStream<unknown>) {
   let receivedBytes = 0
   return body.pipeThrough(
-    new TransformStream<Uint8Array, Uint8Array>({
+    new TransformStream<unknown, Uint8Array>({
       transform(chunk, controller) {
+        if (!(chunk instanceof Uint8Array)) {
+          controller.error(new TypeError("External image body is not a byte stream."))
+          return
+        }
         receivedBytes += chunk.byteLength
         if (receivedBytes > MAX_EXTERNAL_IMAGE_BYTES) {
           controller.error(new Error("External image exceeds the upload limit."))

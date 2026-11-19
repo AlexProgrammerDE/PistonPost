@@ -164,7 +164,9 @@ function EmailCampaigns() {
                     type="button"
                     variant="outline"
                     disabled={preview.isPending}
-                    onClick={() => preview.mutate(form.state.values)}
+                    onClick={() => {
+                      preview.mutate(form.state.values)
+                    }}
                   >
                     {preview.isPending ? (
                       <Spinner data-icon="inline-start" />
@@ -262,7 +264,9 @@ function EmailCampaigns() {
                           </CredenzaClose>
                           <Button
                             disabled={send.isPending}
-                            onClick={() => send.mutate(campaign.id)}
+                            onClick={() => {
+                              send.mutate(campaign.id)
+                            }}
                           >
                             {send.isPending ? (
                               <Spinner data-icon="inline-start" />

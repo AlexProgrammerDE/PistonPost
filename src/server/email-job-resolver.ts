@@ -103,7 +103,7 @@ export function emailJobResolverLayer(
   }>,
 ) {
   return Layer.succeed(EmailJobResolver, {
-    resolve: Effect.fn("EmailJobResolver.resolve")(function* (job) {
+    resolve: Effect.fn("EmailJobResolver.resolve")(function* (job: EmailDeliveryJob) {
       const baseURL = new URL(config.baseURL)
       if (job.type === "email.comment" || job.type === "email.reply") {
         const comment = yield* promiseQuery(() =>

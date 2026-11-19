@@ -6,7 +6,7 @@ const graphemeSegmenter = new Intl.Segmenter(undefined, {
   granularity: "grapheme",
 })
 
-interface PostTextPreviewResult {
+type PostTextPreviewResult = {
   readonly text: string
   readonly truncated: boolean
 }

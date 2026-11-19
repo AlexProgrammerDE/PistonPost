@@ -1,4 +1,5 @@
 import { Effect, Schema } from "effect"
+import { Base64 } from "effect/encoding"
 
 import { MAX_VIDEO_DURATION_SECONDS } from "@/lib/uploads/video-upload-policy"
 
@@ -42,9 +43,7 @@ export function isStreamNotFoundError(cause: unknown) {
 }
 
 function encodeMetadataValue(value: string) {
-  const bytes = new TextEncoder().encode(value)
-  const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join("")
-  return btoa(binary)
+  return Base64.encode(value)
 }
 
 export function streamUploadMetadata({

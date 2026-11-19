@@ -68,7 +68,7 @@ describe("push delivery contracts", () => {
 
     expect(first).toHaveLength(64)
     expect(first).not.toBe(second)
-    expect(first).toMatch(/^[a-f0-9]{64}$/)
+    expect(first).toMatch(/^[a-f0-9]{64}$/u)
   })
 
   it("separates expired, rate-limited, terminal, and retryable provider failures", () => {

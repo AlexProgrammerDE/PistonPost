@@ -14,7 +14,9 @@ afterEach(() => {
 
 function seedDatabase() {
   const database = createMigratedTestDatabase()
-  close = () => database.$client.close()
+  close = () => {
+    database.$client.close()
+  }
   database
     .insert(user)
     .values([

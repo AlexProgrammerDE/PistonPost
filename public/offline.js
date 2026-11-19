@@ -1,1 +1,3 @@
-document.getElementById("retry")?.addEventListener("click", () => window.location.reload())
+document.querySelector("#retry")?.addEventListener("click", () => {
+  window.location.reload()
+})

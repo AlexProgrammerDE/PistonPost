@@ -49,12 +49,12 @@ export type PublicPostRead = {
     readonly image: string | null
     readonly searchIndexable: boolean
   }
-  readonly media: ReadonlyArray<PublicPostMedia>
-  readonly tags: ReadonlyArray<{ readonly slug: string; readonly name: string }>
+  readonly media: readonly PublicPostMedia[]
+  readonly tags: readonly { readonly slug: string; readonly name: string }[]
   readonly viewCount: number
   readonly commentCount: number
   readonly heartCount: number
-  readonly structuredComments?: ReadonlyArray<{
+  readonly structuredComments?: readonly {
     readonly id: string
     readonly content: string
     readonly createdAt: Date
@@ -62,7 +62,7 @@ export type PublicPostRead = {
     readonly authorName: string
     readonly authorUsername: string
     readonly authorNormalizedUsername: string
-  }>
+  }[]
 }
 
 export type PublicFeedInput = {
@@ -74,7 +74,7 @@ export type PublicFeedInput = {
 }
 
 export type PublicFeedPage = {
-  readonly posts: ReadonlyArray<PublicPostRead>
+  readonly posts: readonly PublicPostRead[]
   readonly nextCursor: PublicPostCursor | null
 }
 
@@ -84,15 +84,15 @@ export type PublicPostSitemapRecord = {
   readonly type: "text" | "images" | "video"
   readonly publishedAt: Date
   readonly updatedAt: Date
-  readonly media: ReadonlyArray<{
+  readonly media: readonly {
     readonly id: string
     readonly kind: "image" | "video" | "avatar"
     readonly duration: number | null
-  }>
+  }[]
 }
 
 type MutablePublicPostSitemapRecord = Omit<PublicPostSitemapRecord, "media"> & {
-  media: Array<PublicPostSitemapRecord["media"][number]>
+  media: PublicPostSitemapRecord["media"][number][]
 }
 
 export type PublicProfileSitemapRecord = {
@@ -231,7 +231,7 @@ export async function listPublicPostReads(
     .orderBy(desc(posts.publishedAt), desc(posts.id))
     .limit(limit + 1)
 
-  const visibleRows: Array<BasePostRow> = postRows
+  const visibleRows: BasePostRow[] = postRows
     .slice(0, limit)
     .filter((row): row is typeof row & { publishedAt: Date } => row.publishedAt !== null)
   const reads = await hydratePublicPosts(database, visibleRows)
@@ -503,7 +503,7 @@ export async function listPublicPostSitemapRecords(
   database: ReadDatabase,
   offset: number,
   limit: number,
-): Promise<ReadonlyArray<PublicPostSitemapRecord>> {
+): Promise<readonly PublicPostSitemapRecord[]> {
   const sitemapPosts = database
     .select({
       id: posts.id,
@@ -578,7 +578,7 @@ export async function listPublicProfileSitemapRecords(
   database: ReadDatabase,
   offset: number,
   limit: number,
-): Promise<ReadonlyArray<PublicProfileSitemapRecord>> {
+): Promise<readonly PublicProfileSitemapRecord[]> {
   // A profile page lists the author's posts, so it changes when one of them changes.
   const lastModified = sql<number>`max(
     ${profiles.updatedAt},
@@ -604,7 +604,7 @@ export async function listPublicTagSitemapRecords(
   database: ReadDatabase,
   offset: number,
   limit: number,
-): Promise<ReadonlyArray<PublicTagSitemapRecord>> {
+): Promise<readonly PublicTagSitemapRecord[]> {
   const lastModified = sql<number>`max(${posts.updatedAt})`
   const rows = await database
     .select({ tag: tags.normalizedName, updatedAt: lastModified })
@@ -627,7 +627,7 @@ export async function listPublicTagSitemapRecords(
   return rows.map((row) => ({ tag: row.tag, updatedAt: new Date(row.updatedAt) }))
 }
 
-async function hydratePublicPosts(database: ReadDatabase, postRows: ReadonlyArray<BasePostRow>) {
+async function hydratePublicPosts(database: ReadDatabase, postRows: readonly BasePostRow[]) {
   const postIds = postRows.map((post) => post.id)
   if (postIds.length === 0) return []
 

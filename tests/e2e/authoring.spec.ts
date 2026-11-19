@@ -214,7 +214,7 @@ test.describe.serial("authenticated authoring", () => {
       },
       [...VALID_PNG],
     )
-    await expect(page).toHaveURL(/shareId=/)
+    await expect(page).toHaveURL(/shareId=/u)
     await page.locator('[data-hydrated="true"]').waitFor()
     const cookieChoice = page.getByRole("button", { name: "Reject optional", exact: true })
     if (await cookieChoice.isVisible()) await cookieChoice.click()
@@ -246,8 +246,8 @@ test.describe.serial("authenticated authoring", () => {
     const pushComments = preferences.getByRole("switch", {
       name: "Comments by push notification",
     })
-    const security = preferences.getByRole("row", { name: /^Security / })
-    const moderation = preferences.getByRole("row", { name: /^Moderation / })
+    const security = preferences.getByRole("row", { name: /^Security /u })
+    const moderation = preferences.getByRole("row", { name: /^Moderation /u })
     const securityEmail = security.getByRole("switch", {
       name: "Security emails are required and always on",
     })
@@ -418,7 +418,7 @@ Markdown still works **inside** this callout.
     const destinationPage = await destinationPagePromise
     await destinationPage.waitForLoadState("domcontentloaded")
     await expect(destinationPage).toHaveURL("https://example.com/")
-    expect(await destinationPage.evaluate(() => window.opener)).toBeNull()
+    expect(await destinationPage.evaluate(() => window.opener === null)).toBe(true)
     await destinationPage.close()
     await context.unroute("https://example.com/**")
   })

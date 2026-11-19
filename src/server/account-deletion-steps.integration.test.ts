@@ -129,7 +129,7 @@ describe("native account deletion steps", () => {
     // D1 rejects statements with more than 100 bound parameters. Bun's SQLite allows more.
     const prepare = db.$client.prepare.bind(db.$client)
     db.$client.prepare = (query: string) => {
-      if ((query.match(/\?/g)?.length ?? 0) > 100) throw new Error("too many SQL variables")
+      if ((query.match(/\?/gu)?.length ?? 0) > 100) throw new Error("too many SQL variables")
       return prepare(query)
     }
     const layer = Layer.merge(

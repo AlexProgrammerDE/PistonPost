@@ -1,4 +1,5 @@
-import { Schema } from "effect"
+import { Result, Schema } from "effect"
+import { Base64Url } from "effect/encoding"
 
 import { readPushOwner, writePushOwner } from "@/lib/pwa/local-store"
 import { getActiveAppWorker } from "@/lib/pwa/registration"
@@ -15,10 +16,7 @@ export function supportsPushNotifications() {
 }
 
 export function decodeVapidPublicKey(value: string) {
-  const padding = "=".repeat((4 - (value.length % 4)) % 4)
-  const base64 = `${value}${padding}`.replaceAll("-", "+").replaceAll("_", "/")
-  const decoded = atob(base64)
-  return Uint8Array.from(decoded, (character) => character.charCodeAt(0))
+  return Uint8Array.from(Result.getOrThrow(Base64Url.decode(value)))
 }
 
 export async function getExistingPushSubscription() {

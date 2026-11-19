@@ -51,7 +51,7 @@ export function useComposerDraft(userId: string | null, form: DraftForm) {
   })
 
   useEffect(() => {
-    if (!userId) return undefined
+    if (!userId) return
     posted.current = false
     let timer: ReturnType<typeof setTimeout> | undefined
     const subscription = form.store.subscribe(() => {

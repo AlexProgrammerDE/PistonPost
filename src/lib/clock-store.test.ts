@@ -7,18 +7,24 @@ test("shares one clock timer, releases it after the last subscriber, and restart
   const stop = spyOn(globalThis, "clearInterval")
   const now = spyOn(Date, "now").mockReturnValue(1_000)
   const clock = createClockStore()
-  const cleanups: Array<() => void> = []
+  const cleanups: (() => void)[] = []
   try {
     expect(clock.getServerSnapshot()).toBeNull()
     expect(clock.getSnapshot()).toBeNull()
     let notifications = 0
-    cleanups.push(clock.subscribe(() => notifications++))
-    cleanups.push(clock.subscribe(() => notifications++))
+    cleanups.push(
+      clock.subscribe(() => {
+        notifications++
+      }),
+      clock.subscribe(() => {
+        notifications++
+      }),
+    )
     expect(start).toHaveBeenCalledTimes(1)
     expect(clock.getSnapshot()).toBe(1_000)
     const tick = start.mock.calls[0]?.[0]
     now.mockReturnValue(31_000)
-    if (typeof tick !== "function") throw new Error("Clock timer was not started")
+    if (typeof tick !== "function") throw new TypeError("Clock timer was not started")
     const beforeTick = notifications
     tick()
     expect(notifications - beforeTick).toBe(2)
@@ -29,7 +35,11 @@ test("shares one clock timer, releases it after the last subscriber, and restart
     cleanups.pop()?.()
     expect(stop).toHaveBeenCalledTimes(1)
     now.mockReturnValue(99_000)
-    cleanups.push(clock.subscribe(() => notifications++))
+    cleanups.push(
+      clock.subscribe(() => {
+        notifications++
+      }),
+    )
     expect(start).toHaveBeenCalledTimes(2)
     expect(clock.getSnapshot()).toBe(99_000)
   } finally {

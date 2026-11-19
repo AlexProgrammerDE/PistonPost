@@ -28,7 +28,9 @@ afterEach(() => {
 
 function database() {
   const testDatabase = createMigratedTestDatabase()
-  close = () => testDatabase.$client.close()
+  close = () => {
+    testDatabase.$client.close()
+  }
   return testDatabase
 }
 
@@ -38,9 +40,9 @@ describe("domain schema", () => {
     const foreignKeys = db.$client.query("PRAGMA foreign_keys").get() as {
       foreign_keys: number
     }
-    const postIndexes = db.$client.query("PRAGMA index_list('posts')").all() as Array<{
+    const postIndexes = db.$client.query("PRAGMA index_list('posts')").all() as {
       name: string
-    }>
+    }[]
 
     expect(foreignKeys.foreign_keys).toBe(1)
     expect(postIndexes.map((index) => index.name)).toContain("posts_discovery_idx")
@@ -70,12 +72,11 @@ describe("domain schema", () => {
       .values({ userId: "one", username: "Piston", normalizedUsername: "piston" })
       .run()
 
-    expect(() =>
-      db
-        .insert(profiles)
+    expect(() => {
+      db.insert(profiles)
         .values({ userId: "two", username: "piston", normalizedUsername: "piston" })
-        .run(),
-    ).toThrow()
+        .run()
+    }).toThrow()
   })
 
   it("rejects orphaned hearts and relationships", () => {
@@ -85,12 +86,12 @@ describe("domain schema", () => {
       .values(createPost({ id: "post" }))
       .run()
 
-    expect(() =>
-      db.insert(reactions).values({ postId: "missing", userId: "test-user" }).run(),
-    ).toThrow()
-    expect(() =>
-      db.insert(postTags).values({ postId: "missing", tagId: "missing", ordinal: 0 }).run(),
-    ).toThrow()
+    expect(() => {
+      db.insert(reactions).values({ postId: "missing", userId: "test-user" }).run()
+    }).toThrow()
+    expect(() => {
+      db.insert(postTags).values({ postId: "missing", tagId: "missing", ordinal: 0 }).run()
+    }).toThrow()
   })
 
   it("allows only one heart per user and post", () => {
@@ -101,9 +102,9 @@ describe("domain schema", () => {
       .run()
     db.insert(reactions).values({ postId: "post", userId: "test-user" }).run()
 
-    expect(() =>
-      db.insert(reactions).values({ postId: "post", userId: "test-user" }).run(),
-    ).toThrow()
+    expect(() => {
+      db.insert(reactions).values({ postId: "post", userId: "test-user" }).run()
+    }).toThrow()
     expect(db.select().from(reactions).all()).toHaveLength(1)
   })
 
@@ -117,16 +118,16 @@ describe("domain schema", () => {
       .run()
     db.insert(tags).values({ id: "art", displayName: "Art", normalizedName: "art" }).run()
 
-    expect(() =>
-      db.insert(userFollows).values({ followerId: "viewer", followedUserId: "viewer" }).run(),
-    ).toThrow()
+    expect(() => {
+      db.insert(userFollows).values({ followerId: "viewer", followedUserId: "viewer" }).run()
+    }).toThrow()
 
     db.insert(userFollows).values({ followerId: "viewer", followedUserId: "author" }).run()
     db.insert(tagFollows).values({ userId: "viewer", tagId: "art" }).run()
 
-    expect(() =>
-      db.insert(userFollows).values({ followerId: "viewer", followedUserId: "author" }).run(),
-    ).toThrow()
+    expect(() => {
+      db.insert(userFollows).values({ followerId: "viewer", followedUserId: "author" }).run()
+    }).toThrow()
     expect(db.select().from(userFollows).all()).toHaveLength(1)
     expect(db.select().from(tagFollows).all()).toHaveLength(1)
 
@@ -139,12 +140,11 @@ describe("domain schema", () => {
   it("rejects published posts without a publication timestamp", () => {
     const db = database()
     db.insert(user).values(createUser()).run()
-    expect(() =>
-      db
-        .insert(posts)
+    expect(() => {
+      db.insert(posts)
         .values(createPost({ id: "illegal", status: "published" }))
-        .run(),
-    ).toThrow()
+        .run()
+    }).toThrow()
   })
 
   it("cascades post relationships", () => {
@@ -236,9 +236,8 @@ describe("domain schema", () => {
   it("rejects incomplete campaign actions", () => {
     const db = database()
     db.insert(user).values(createUser()).run()
-    expect(() =>
-      db
-        .insert(emailCampaigns)
+    expect(() => {
+      db.insert(emailCampaigns)
         .values({
           id: "invalid-campaign",
           createdBy: "test-user",
@@ -248,7 +247,7 @@ describe("domain schema", () => {
           message: "Here is what changed.",
           actionLabel: "Read more",
         })
-        .run(),
-    ).toThrow()
+        .run()
+    }).toThrow()
   })
 })

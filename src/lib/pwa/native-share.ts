@@ -29,13 +29,15 @@ export async function prepareSharedImage(src: string, signal: AbortSignal) {
   const extension = mimeType ? extensions[mimeType] : undefined
   if (!response.ok || !response.body || !mimeType || !extension)
     throw new Error("This image could not be loaded.")
-  const reader = response.body.getReader()
+  const reader: ReadableStreamDefaultReader<unknown> = response.body.getReader()
   const chunks: Uint8Array<ArrayBuffer>[] = []
   let size = 0
   while (true) {
     // Stream reads are sequential so the byte limit also bounds memory use.
     const { done, value } = await reader.read()
     if (done) break
+    if (!(value instanceof Uint8Array))
+      throw new TypeError("The response stream returned a non-byte chunk.")
     size += value.byteLength
     if (size > 15 * 1024 * 1024) {
       void reader.cancel()

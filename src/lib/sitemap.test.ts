@@ -33,7 +33,7 @@ describe("SEO discovery documents", () => {
 
     expect(sitemapPageCount("posts", SITEMAP_PAGE_SIZES.posts + 1)).toBe(2)
     expect(sitemapPageCount("profiles", SITEMAP_PAGE_SIZES.posts + 1)).toBe(1)
-    expect(xml.match(/\/sitemaps\/posts\//g)).toHaveLength(2)
+    expect(xml.match(/\/sitemaps\/posts\//gu)).toHaveLength(2)
     expect(xml).toContain("<loc>https://post.pistonmaster.net/sitemaps/profiles/1</loc>")
     expect(xml).not.toContain("/sitemaps/tags/")
   })
@@ -83,7 +83,7 @@ describe("SEO discovery documents", () => {
 
   it("keeps static pages in their own sitemap", () => {
     const xml = buildStaticSitemapXml("https://post.pistonmaster.net")
-    expect(xml.match(/<url>/g)).toHaveLength(4)
+    expect(xml.match(/<url>/gu)).toHaveLength(4)
     expect(xml).toContain("<loc>https://post.pistonmaster.net/terms</loc>")
   })
 

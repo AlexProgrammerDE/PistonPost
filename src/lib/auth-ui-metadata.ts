@@ -6,8 +6,9 @@ import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 const emailOtpViewPaths = emailOtpPlugin().viewPaths.auth
 const twoFactorViewPaths = twoFactorPlugin().viewPaths.auth
 
+// Spreading the interface gives Object.values an index signature. Plugins add optional paths.
 export const validAuthPathSegments = new Set([
-  ...Object.values(viewPaths.auth),
+  ...Object.values({ ...viewPaths.auth }).filter((path: unknown) => typeof path === "string"),
   ...Object.values(emailOtpViewPaths),
   ...Object.values(twoFactorViewPaths),
 ])

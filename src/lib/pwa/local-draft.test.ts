@@ -14,7 +14,9 @@ const storage: Storage = {
   get length() {
     return entries.size
   },
-  clear: () => entries.clear(),
+  clear: () => {
+    entries.clear()
+  },
   getItem: (key) => entries.get(key) ?? null,
   key: (index) => [...entries.keys()][index] ?? null,
   removeItem: (key) => {
@@ -25,7 +27,9 @@ const storage: Storage = {
   },
 }
 Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage })
-beforeEach(() => storage.clear())
+beforeEach(() => {
+  storage.clear()
+})
 afterAll(() => {
   if (originalStorage) Object.defineProperty(globalThis, "localStorage", originalStorage)
   else Reflect.deleteProperty(globalThis, "localStorage")

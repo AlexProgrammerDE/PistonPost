@@ -5,7 +5,7 @@ import { isNotFound } from "@tanstack/react-router"
 import { Route } from "./post.$postId"
 
 const loader = Route.options.loader
-if (typeof loader !== "function") throw new Error("The post route must define a loader.")
+if (typeof loader !== "function") throw new TypeError("The post route must define a loader.")
 const postLoader = loader
 
 type LoaderContext = Parameters<typeof postLoader>[0]
@@ -24,9 +24,9 @@ describe("post loader", () => {
     ["too long", "a".repeat(65)],
     ["blank", "   "],
   ])("treats a %s post ID as not found without a lookup", async (_case, postId) => {
-    const lookups: Array<ReadonlyArray<unknown>> = []
+    const lookups: (readonly unknown[])[] = []
     const queryClient = {
-      ensureQueryData: ({ queryKey }: { queryKey: ReadonlyArray<unknown> }) => {
+      ensureQueryData: ({ queryKey }: { queryKey: readonly unknown[] }) => {
         lookups.push(queryKey)
         return Promise.resolve(null)
       },

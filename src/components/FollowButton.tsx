@@ -86,7 +86,9 @@ export function FollowButton({
       className={className}
       aria-pressed={following}
       disabled={mutation.isPending}
-      onClick={() => mutation.mutate(!following)}
+      onClick={() => {
+        mutation.mutate(!following)
+      }}
     >
       {mutation.isPending ? (
         <Spinner aria-hidden="true" data-icon="inline-start" />

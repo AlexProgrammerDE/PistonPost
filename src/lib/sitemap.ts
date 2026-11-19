@@ -28,7 +28,7 @@ function lastModifiedXml(value: Date) {
   return `\n    <lastmod>${value.toISOString()}</lastmod>`
 }
 
-function urlSetXml(entries: ReadonlyArray<string>, media = false) {
+function urlSetXml(entries: readonly string[], media = false) {
   const namespaces = media
     ? ' xmlns:image="http://www.google.com/schemas/sitemap-image/1.1" xmlns:video="http://www.google.com/schemas/sitemap-video/1.1"'
     : ""
@@ -62,10 +62,7 @@ export function buildStaticSitemapXml(origin: string) {
   )
 }
 
-export function buildPostSitemapXml(
-  origin: string,
-  records: ReadonlyArray<PublicPostSitemapRecord>,
-) {
+export function buildPostSitemapXml(origin: string, records: readonly PublicPostSitemapRecord[]) {
   return urlSetXml(
     records.map((post) => {
       const media = post.media
@@ -90,7 +87,7 @@ export function buildPostSitemapXml(
 
 export function buildProfileSitemapXml(
   origin: string,
-  records: ReadonlyArray<PublicProfileSitemapRecord>,
+  records: readonly PublicProfileSitemapRecord[],
 ) {
   return urlSetXml(
     records.map((profile) =>
@@ -99,7 +96,7 @@ export function buildProfileSitemapXml(
   )
 }
 
-export function buildTagSitemapXml(origin: string, records: ReadonlyArray<PublicTagSitemapRecord>) {
+export function buildTagSitemapXml(origin: string, records: readonly PublicTagSitemapRecord[]) {
   return urlSetXml(
     records.map((tag) => basicEntry(origin, `/tag/${encodeURIComponent(tag.tag)}`, tag.updatedAt)),
   )

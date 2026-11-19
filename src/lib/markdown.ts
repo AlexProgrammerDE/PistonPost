@@ -23,7 +23,7 @@ const BLOCK_TEXT_NODES = new Set([
 
 type MarkdownTextNode = {
   readonly alt?: unknown
-  readonly children?: ReadonlyArray<MarkdownTextNode>
+  readonly children?: readonly MarkdownTextNode[]
   readonly data?: {
     readonly hProperties?: {
       readonly dataLabel?: unknown

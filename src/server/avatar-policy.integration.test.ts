@@ -5,7 +5,7 @@ import { mediaImageUrl } from "@/lib/media-image"
 
 import { isManagedUserAvatar } from "./avatar-policy"
 
-const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
+const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 
 afterEach(() => {
   for (const database of databases) database.$client.close()

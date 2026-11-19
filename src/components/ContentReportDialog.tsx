@@ -171,7 +171,9 @@ export function ContentReportDialog({
                   rows={4}
                   placeholder="Add context that will help a moderator…"
                   className="resize-y"
-                  onChange={(event) => setDetails(event.currentTarget.value)}
+                  onChange={(event) => {
+                    setDetails(event.currentTarget.value)
+                  }}
                 />
                 <InputGroupAddon align="block-end" className="justify-end border-t">
                   <InputGroupText className="text-xs tabular-nums">

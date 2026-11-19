@@ -9,7 +9,7 @@ import {
 } from "@/lib/integrations/posthog-client"
 
 let cookieConsentStarted = false
-const POSTHOG_COOKIE_NAMES = [/^ph_/, /^posthog/]
+const POSTHOG_COOKIE_NAMES = [/^ph_/u, /^posthog/u]
 
 function syncAnalyticsConsent() {
   syncPostHogConsent(CookieConsent.acceptedCategory("analytics"))
@@ -68,8 +68,12 @@ export function CookieConsentProvider({ children }: { readonly children: ReactNo
             services: {
               posthog: {
                 label: "PostHog",
-                onAccept: () => syncPostHogConsent(true),
-                onReject: () => syncPostHogConsent(false),
+                onAccept: () => {
+                  syncPostHogConsent(true)
+                },
+                onReject: () => {
+                  syncPostHogConsent(false)
+                },
               },
             },
           },

@@ -5,7 +5,7 @@ import { incrementPostViewCount } from "./post-view-repository"
 import { posts, postViewCounts, user } from "./schema"
 import { createMigratedTestDatabase } from "./test-database"
 
-const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
+const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 
 afterEach(() => {
   for (const database of databases) database.$client.close()

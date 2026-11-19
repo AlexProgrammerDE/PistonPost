@@ -2,7 +2,7 @@ import { Schema } from "effect"
 
 const base64UrlSchema = Schema.Trim.check(Schema.isMinLength(16))
   .check(Schema.isMaxLength(512))
-  .check(Schema.isPattern(/^[A-Za-z0-9_-]+={0,2}$/))
+  .check(Schema.isPattern(/^[A-Za-z0-9_-]+={0,2}$/u))
 
 const trustedPushHostnames = new Set([
   "fcm.googleapis.com",

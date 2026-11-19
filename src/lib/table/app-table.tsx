@@ -118,7 +118,7 @@ export function DataTable<TData extends RowData>({
   showColumnControls = false,
 }: {
   data: TData[]
-  columns: Array<ColumnDef<typeof pistonPostTableFeatures, TData>>
+  columns: ColumnDef<typeof pistonPostTableFeatures, TData>[]
   getRowId: (row: TData) => string
   emptyMessage?: string
   urlState?: DataTableUrlState
@@ -195,7 +195,9 @@ export function DataTable<TData extends RowData>({
                   <DropdownMenuCheckboxItem
                     key={column.id}
                     checked={column.getIsVisible()}
-                    onCheckedChange={(checked) => column.toggleVisibility(checked)}
+                    onCheckedChange={(checked) => {
+                      column.toggleVisibility(checked)
+                    }}
                   >
                     {typeof column.columnDef.header === "string"
                       ? column.columnDef.header
@@ -297,7 +299,9 @@ export function DataTable<TData extends RowData>({
                         variant="outline"
                         size="sm"
                         disabled={cursorPagination !== undefined || !table.getCanPreviousPage()}
-                        onClick={() => table.previousPage()}
+                        onClick={() => {
+                          table.previousPage()
+                        }}
                       >
                         <ChevronLeft aria-hidden="true" data-icon="inline-start" />
                         Previous
@@ -320,7 +324,9 @@ export function DataTable<TData extends RowData>({
                         variant="outline"
                         size="sm"
                         disabled={cursorPagination !== undefined || !table.getCanNextPage()}
-                        onClick={() => table.nextPage()}
+                        onClick={() => {
+                          table.nextPage()
+                        }}
                       >
                         Next
                         <ChevronRight aria-hidden="true" data-icon="inline-end" />

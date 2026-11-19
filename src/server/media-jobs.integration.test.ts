@@ -43,7 +43,7 @@ function setup(status: "published" | "moderated" | "deleted" | "draft") {
 }
 
 function sync(db: ReturnType<typeof setup>["db"]) {
-  const updates: Array<[string, boolean]> = []
+  const updates: [string, boolean][] = []
   return Effect.runPromise(
     syncPostVideoAccess(db, "post", (uid, required) => {
       updates.push([uid, required])

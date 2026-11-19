@@ -46,7 +46,9 @@ const DAY_MS = 24 * 60 * 60 * 1_000
  */
 function seedDatabase() {
   const database = createMigratedTestDatabase()
-  close = () => database.$client.close()
+  close = () => {
+    database.$client.close()
+  }
   database
     .insert(user)
     .values([

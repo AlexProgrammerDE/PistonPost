@@ -34,7 +34,7 @@ import {
 import { PushJobResolver, pushJobResolverLayer } from "./push-job-resolver"
 import { QueueDeliveryError, queueFailure, withOutboxClaim } from "./queue-job"
 
-async function purgeCacheTags(tags: ReadonlyArray<string>) {
+async function purgeCacheTags(tags: readonly string[]) {
   const result = await cache.purge({ tags: [...new Set(tags)] })
   if (!result.success) throw new Error("Workers Cache purge failed.")
 }
@@ -83,11 +83,14 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
             retryAfterSeconds: 30,
           })
       }
-      if (job.type === "media.cleanup" && asset && asset.status !== "deleted") {
-        if (yield* mediaAttachedToLivePost(database, asset.id)) {
-          yield* outbox.complete(job.idempotencyKey, claim.attempt, "media-in-use")
-          return undefined
-        }
+      if (
+        job.type === "media.cleanup" &&
+        asset &&
+        asset.status !== "deleted" &&
+        (yield* mediaAttachedToLivePost(database, asset.id))
+      ) {
+        yield* outbox.complete(job.idempotencyKey, claim.attempt, "media-in-use")
+        return
       }
       return yield* Effect.gen(function* () {
         if (job.type === "media.cleanup") {
@@ -152,7 +155,7 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
           } else {
             yield* outbox.complete(job.idempotencyKey, claim.attempt, resolved.reason)
           }
-          return undefined
+          return
         }
         return yield* Effect.gen(function* () {
           const delivery = yield* deliverEmail({
@@ -181,7 +184,7 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
             } else {
               yield* outbox.complete(job.idempotencyKey, claim.attempt, reason)
             }
-            return undefined
+            return
           }
           if (job.type === "email.product") {
             yield* outbox.completeProduct(
@@ -193,12 +196,10 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
           } else {
             yield* outbox.complete(job.idempotencyKey, claim.attempt, "provider-accepted")
           }
-          return undefined
         }).pipe(Effect.uninterruptible)
       })
 
       yield* operation
-      return undefined
     }),
   )
 })
@@ -222,10 +223,10 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
           )
         if (Predicate.isTagged(resolved, "Skip")) {
           yield* outbox.complete(job.idempotencyKey, claim.attempt, resolved.reason)
-          yield* Effect.sync(() =>
-            writeOperationalEvent(env, "push.delivery", [job.type, "skipped", resolved.reason]),
-          )
-          return undefined
+          yield* Effect.sync(() => {
+            writeOperationalEvent(env, "push.delivery", [job.type, "skipped", resolved.reason])
+          })
+          return
         }
 
         return yield* Effect.gen(function* () {
@@ -274,13 +275,13 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
           } else {
             yield* outbox.complete(job.idempotencyKey, claim.attempt, "provider-rejected")
           }
-          yield* Effect.sync(() => writeOperationalEvent(env, "push.delivery", [job.type, outcome]))
-          return undefined
+          yield* Effect.sync(() => {
+            writeOperationalEvent(env, "push.delivery", [job.type, outcome])
+          })
         }).pipe(Effect.uninterruptible)
       })
 
       yield* operation
-      return undefined
     }),
   )
 })
@@ -300,17 +301,15 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
       const decoded = decodeEmailQueueJob(body)
       if (Result.isFailure(decoded)) {
         return yield* new QueueDeliveryError({ operation: "invalid-job", retryAfterSeconds: 30 })
+      }
+      const job = decoded.success
+      if (job.type === "email.product-batch") {
+        yield* deliverProductBatch(job)
       } else {
-        const job = decoded.success
-        if (job.type === "email.product-batch") {
-          yield* deliverProductBatch(job)
-        } else {
-          yield* deliverEmailJob(job, env)
-        }
+        yield* deliverEmailJob(job, env)
       }
     }
   }
-  return undefined
 })
 
 function originalOutboxId(body: unknown) {

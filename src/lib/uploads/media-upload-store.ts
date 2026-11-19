@@ -24,7 +24,9 @@ export function createMediaUploadStore() {
   return {
     uploads,
     pickerItems,
-    dispatch: (action: UploadAction) => uploads.set((items) => mediaUploadReducer(items, action)),
+    dispatch: (action: UploadAction) => {
+      uploads.set((items) => mediaUploadReducer(items, action))
+    },
   }
 }
 

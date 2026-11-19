@@ -53,7 +53,9 @@ export async function uploadPostEditImages(
           filename: image.filename,
           mimeType: image.file.type,
         },
-        (progress) => callbacks.onProgress(image.filename, progress),
+        (progress) => {
+          callbacks.onProgress(image.filename, progress)
+        },
       )
       ready.set(image.clientId, intent.assetId)
       callbacks.onReady(image.clientId, intent.assetId)

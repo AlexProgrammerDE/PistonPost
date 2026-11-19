@@ -42,13 +42,13 @@ test.describe("authentication", () => {
     await expect(accountAccess.getByRole("link", { name: "Continue with Magic Link" })).toHaveCount(
       0,
     )
-    await expect(accountAccess.getByRole("link", { name: /forgot/i })).toBeVisible()
+    await expect(accountAccess.getByRole("link", { name: /forgot/iu })).toBeVisible()
 
     await page.goto("/auth/email-otp")
-    await expect(accountAccess.getByRole("button", { name: /send code/i })).toBeVisible()
+    await expect(accountAccess.getByRole("button", { name: /send code/iu })).toBeVisible()
 
     await page.goto("/auth/forgot-password")
-    await expect(accountAccess.getByRole("button", { name: /send code/i })).toBeVisible()
+    await expect(accountAccess.getByRole("button", { name: /send code/iu })).toBeVisible()
   })
 
   test("renders a complete registration form with CAPTCHA", async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe("authentication", () => {
     await expect(accountAccess.getByLabel("Username")).toBeVisible()
     await expect(accountAccess.getByLabel("Email")).toBeVisible()
     await expect(accountAccess.getByLabel("Password", { exact: true })).toBeVisible()
-    await expect(accountAccess.getByLabel(/confirm password/i)).toBeVisible()
+    await expect(accountAccess.getByLabel(/confirm password/iu)).toBeVisible()
     await expect(accountAccess.getByRole("group", { name: "Human verification" })).toBeVisible()
     await expect(accountAccess.getByRole("button", { name: "Sign up" })).toBeVisible()
   })

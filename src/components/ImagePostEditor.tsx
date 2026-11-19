@@ -137,9 +137,9 @@ export function ImagePostEditor({
           maxSize={MAX_IMAGE_UPLOAD_BYTES}
           disabled={disabled || preparing}
           onAccept={(files) => void addFiles(files)}
-          onFileReject={(_, message) =>
+          onFileReject={(_, message) => {
             toast.error(fileRejectionMessage(message), { id: "edit-images-file-rejection" })
-          }
+          }}
         >
           <FileUploadDropzone aria-label="Image dropzone">
             <p role="status">
@@ -175,13 +175,13 @@ export function ImagePostEditor({
                 key={image.clientId}
                 image={image}
                 disabled={disabled || preparing}
-                onAltText={(altText) =>
+                onAltText={(altText) => {
                   onChange(
                     images.map((item) =>
                       item.clientId === image.clientId ? { ...item, altText } : item,
                     ),
                   )
-                }
+                }}
                 onRemove={() => {
                   if (image.file) {
                     URL.revokeObjectURL(image.previewUrl)
@@ -280,7 +280,9 @@ function ImageRow({
               onKeyDown={(event) => {
                 if (event.key === "Enter") event.preventDefault()
               }}
-              onChange={(event) => onAltText(event.currentTarget.value)}
+              onChange={(event) => {
+                onAltText(event.currentTarget.value)
+              }}
             />
             <FieldDescription id={`edit-alt-help-${image.clientId}`}>
               Describe what matters in the image, or leave empty for a decorative image.

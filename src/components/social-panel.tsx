@@ -250,10 +250,10 @@ export function SocialPanel({
   )
 
   useEffect(() => {
-    const contentStart = document.getElementById(`post-engagement-start-${postId}`)
+    const contentStart = document.querySelector(`#${CSS.escape(`post-engagement-start-${postId}`)}`)
     const footerActions = footerActionsRef.current
     if (!contentStart || !footerActions || typeof IntersectionObserver === "undefined") {
-      return undefined
+      return
     }
 
     setContentStartPosition(elementPosition(contentStart))
@@ -273,7 +273,9 @@ export function SocialPanel({
 
     observer.observe(contentStart)
     observer.observe(footerActions)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+    }
   }, [postId])
 
   const heartMutation = useMutation({
@@ -613,7 +615,9 @@ export function SocialPanel({
                                       <Button
                                         variant="destructive"
                                         disabled={deleteMutation.isPending}
-                                        onClick={() => deleteMutation.mutate(comment.id)}
+                                        onClick={() => {
+                                          deleteMutation.mutate(comment.id)
+                                        }}
                                       >
                                         {deleteMutation.isPending ? (
                                           <Spinner aria-hidden="true" data-icon="inline-start" />
@@ -640,7 +644,7 @@ export function SocialPanel({
                               size="xs"
                               onClick={() => {
                                 setReplyingTo(comment)
-                                document.getElementById("comment-composer")?.scrollIntoView({
+                                document.querySelector("#comment-composer")?.scrollIntoView({
                                   behavior: reduceMotion ? "auto" : "smooth",
                                   block: "center",
                                 })

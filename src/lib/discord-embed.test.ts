@@ -3,6 +3,7 @@ import { describe, expect, test } from "bun:test"
 import { ComponentType } from "discord-api-types/v10"
 
 import { createDiscordEmbed, discordEmbedScript, serializeDiscordEmbed } from "./discord-embed"
+import { parseDiscordEmbedPayload } from "./discord-embed-payload.testing"
 
 describe("Discord component embeds", () => {
   test("keeps compact image cards to a small linked heading and media", () => {
@@ -59,12 +60,14 @@ describe("Discord component embeds", () => {
       links: [{ label: "Author", url: "https://example.com/user/alice" }],
       images: ["https://example.com/art.png"],
     })
-    const payload = JSON.parse(scripts[0]?.children ?? "")
+    const payload = parseDiscordEmbedPayload(scripts[0]?.children ?? "")
     expect(payload.component.type).toBe(ComponentType.Container)
-    expect(payload.component.components[0].content).toContain("A new post")
-    expect(payload.component.components[0].content).toContain("By Alice")
-    expect(payload.component.components[1].items[0].media.url).toBe("https://example.com/art.png")
-    expect(payload.component.components.at(-1).components).toEqual([
+    expect(payload.component.components[0]?.content).toContain("A new post")
+    expect(payload.component.components[0]?.content).toContain("By Alice")
+    expect(payload.component.components[1]?.items?.[0]?.media.url).toBe(
+      "https://example.com/art.png",
+    )
+    expect(payload.component.components.at(-1)?.components).toEqual([
       { type: 2, style: 5, label: "View page", url: "https://example.com/post/42" },
       { type: 2, style: 5, label: "Author", url: "https://example.com/user/alice" },
     ])
@@ -76,7 +79,9 @@ describe("Discord component embeds", () => {
       url: "https://example.com",
     })
     expect(script?.children ?? "").not.toContain("<")
-    expect(JSON.parse(script?.children ?? "").component.components[0].content).toContain("script")
+    expect(
+      parseDiscordEmbedPayload(script?.children ?? "").component.components[0]?.content,
+    ).toContain("script")
   })
 
   test("keeps Unicode and long media URLs within the serialized byte limit", () => {
@@ -132,6 +137,6 @@ describe("Discord component embeds", () => {
       images: ["file:///tmp/image.png"],
       links: [{ label: "Bad", url: "javascript:alert(1)" }],
     })
-    expect(JSON.parse(script?.children ?? "").component.components).toHaveLength(2)
+    expect(parseDiscordEmbedPayload(script?.children ?? "").component.components).toHaveLength(2)
   })
 })

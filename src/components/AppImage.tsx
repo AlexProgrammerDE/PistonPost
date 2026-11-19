@@ -8,10 +8,10 @@ type AppImageProps = Omit<ComponentProps<"img">, "src" | "srcSet" | "width" | "h
   readonly src: string
   readonly width?: number
   readonly height?: number
-  readonly sources?: ReadonlyArray<MediaImageSource>
+  readonly sources?: readonly MediaImageSource[]
 }
 
-const noSources: ReadonlyArray<MediaImageSource> = []
+const noSources: readonly MediaImageSource[] = []
 
 // Application CSS owns cropping and sizing. Fixed, unstyled output retains intrinsic
 // dimensions without Unpic's inline styles overriding gallery and avatar layouts.

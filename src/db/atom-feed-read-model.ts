@@ -27,7 +27,7 @@ export type PublicAtomFeedRecord = {
 
 export async function listPublicAtomFeedRecords(
   database: ReadDatabase,
-): Promise<ReadonlyArray<PublicAtomFeedRecord>> {
+): Promise<readonly PublicAtomFeedRecord[]> {
   const rows = await database
     .select({
       id: posts.id,
@@ -54,7 +54,7 @@ export async function listPublicAtomFeedRecords(
     .orderBy(desc(posts.publishedAt), desc(posts.id))
     .limit(ATOM_FEED_ITEM_LIMIT)
 
-  return rows.flatMap((row): ReadonlyArray<PublicAtomFeedRecord> =>
+  return rows.flatMap((row): readonly PublicAtomFeedRecord[] =>
     row.publishedAt
       ? [
           {

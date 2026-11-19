@@ -4,7 +4,7 @@ import { createMigratedTestDatabase, createUser, schema } from "@/db"
 
 import { listActivePushSubscriptionIds } from "./push-subscription-queries"
 
-const databases: Array<ReturnType<typeof createMigratedTestDatabase>> = []
+const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 
 afterEach(() => {
   for (const database of databases) database.$client.close()
@@ -113,12 +113,12 @@ describe("push subscription storage", () => {
       .values(createSubscription("first-push", "first", "first-session", endpointHash))
       .run()
 
-    expect(() =>
+    expect(() => {
       database
         .insert(schema.pushSubscriptions)
         .values(createSubscription("second-push", "second", "second-session", endpointHash))
-        .run(),
-    ).toThrow()
+        .run()
+    }).toThrow()
   })
 
   it("defaults comment and reply push preferences on", () => {

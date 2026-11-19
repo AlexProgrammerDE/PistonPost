@@ -19,17 +19,20 @@ export function PwaProvider({ children }: PropsWithChildren) {
 
   useEffect(() => {
     const display = window.matchMedia("(display-mode: standalone)")
-    const update = () =>
+    const update = () => {
       setInstallation((state) => ({
         ...state,
         installed: display.matches || ("standalone" in navigator && navigator.standalone === true),
       }))
+    }
     const beforeInstall = (event: Event) => {
       if (!isInstallPrompt(event)) return
       event.preventDefault()
       setInstallation({ installed: false, prompt: event })
     }
-    const installed = () => setInstallation({ installed: true, prompt: null })
+    const installed = () => {
+      setInstallation({ installed: true, prompt: null })
+    }
     update()
     display.addEventListener("change", update)
     window.addEventListener("beforeinstallprompt", beforeInstall)
@@ -42,7 +45,7 @@ export function PwaProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
-    if (!window.isSecureContext || !("serviceWorker" in navigator)) return undefined
+    if (!window.isSecureContext || !("serviceWorker" in navigator)) return
     const seen = () => {
       if (document.visibilityState !== "visible") return
       if ("clearAppBadge" in navigator) void navigator.clearAppBadge().catch(() => undefined)

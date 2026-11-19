@@ -24,11 +24,11 @@ export const MEDIA_IMAGE_CACHE_VERSIONS: Readonly<Record<MediaImageVariant, numb
   og: 3,
 }
 
-export const AVATAR_IMAGE_WIDTHS: ReadonlyArray<number> = [40, 80, 160, 256]
-export const FEED_IMAGE_WIDTHS: ReadonlyArray<number> = [480, 768, 1280]
-export const DETAIL_IMAGE_WIDTHS: ReadonlyArray<number> = [768, 1280, 1920, 2400]
-export const GALLERY_THUMBNAIL_WIDTHS: ReadonlyArray<number> = [96, 192, 320]
-export const RESPONSIVE_MEDIA_WIDTHS: ReadonlyArray<number> = Array.from(
+export const AVATAR_IMAGE_WIDTHS: readonly number[] = [40, 80, 160, 256]
+export const FEED_IMAGE_WIDTHS: readonly number[] = [480, 768, 1280]
+export const DETAIL_IMAGE_WIDTHS: readonly number[] = [768, 1280, 1920, 2400]
+export const GALLERY_THUMBNAIL_WIDTHS: readonly number[] = [96, 192, 320]
+export const RESPONSIVE_MEDIA_WIDTHS: readonly number[] = Array.from(
   new Set([
     ...AVATAR_IMAGE_WIDTHS,
     ...FEED_IMAGE_WIDTHS,
@@ -62,7 +62,7 @@ export function fitMediaDimensions(
     maximumWidth < 1 ||
     maximumHeight < 1
   ) {
-    return undefined
+    return
   }
 
   const scale = Math.min(1, maximumWidth / image.width, maximumHeight / image.height)
@@ -87,19 +87,19 @@ export function mediaImageUrl(
 }
 
 export function parseManagedAvatarMediaId(source: string) {
-  if (!source.startsWith("/media/image/")) return undefined
+  if (!source.startsWith("/media/image/")) return
   const url = new URL(source, "https://pistonpost.invalid")
   const searchKeys = Array.from(url.searchParams.keys())
   if (searchKeys.some((key) => key !== "v") || searchKeys.filter((key) => key === "v").length > 1) {
-    return undefined
+    return
   }
   const version = url.searchParams.get("v")
-  if (version !== null && !/^\d+$/u.test(version)) return undefined
+  if (version !== null && !/^\d+$/u.test(version)) return
   return managedAvatarPathPattern.exec(url.pathname)?.[1]
 }
 
 export function parseResponsiveMediaWidth(value: string | null) {
-  if (value === null) return undefined
+  if (value === null) return
   if (!/^\d+$/u.test(value)) return null
 
   const width = Number(value)
@@ -166,9 +166,9 @@ export function responsiveMediaImageMaxWidth(
 export function createMediaImageSources(
   image: MediaImageDimensions,
   variant: ResponsiveMediaImageVariant,
-  widths: ReadonlyArray<number>,
+  widths: readonly number[],
   animation: MediaImageAnimation = "auto",
-): ReadonlyArray<MediaImageSource> {
+): readonly MediaImageSource[] {
   const maxWidth = responsiveMediaImageMaxWidth(image, variant)
   if (maxWidth < 1 || !image.width || !image.height) return []
   const sourceWidth = image.width
@@ -200,7 +200,7 @@ export function createMediaImageSources(
 export function createMediaImageSrcSet(
   image: MediaImageDimensions,
   variant: ResponsiveMediaImageVariant,
-  widths: ReadonlyArray<number>,
+  widths: readonly number[],
   animation: MediaImageAnimation = "auto",
 ) {
   const sources = createMediaImageSources(image, variant, widths, animation)
@@ -213,18 +213,18 @@ export function createManagedAvatarSources(
   source: string,
   animation: MediaImageAnimation = "auto",
 ) {
-  if (!source.startsWith("/media/image/")) return undefined
+  if (!source.startsWith("/media/image/")) return
 
   const url = new URL(source, "https://pistonpost.invalid")
   const match = /^\/media\/image\/([^/]+)\/avatar$/u.exec(url.pathname)
-  if (!match?.[1]) return undefined
+  if (!match?.[1]) return
   const searchKeys = Array.from(url.searchParams.keys())
-  if (searchKeys.some((key) => key !== "v")) return undefined
+  if (searchKeys.some((key) => key !== "v")) return
   let mediaId: string
   try {
     mediaId = decodeURIComponent(match[1])
   } catch {
-    return undefined
+    return
   }
 
   return AVATAR_IMAGE_WIDTHS.map((width) => ({

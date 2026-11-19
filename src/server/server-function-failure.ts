@@ -61,10 +61,10 @@ export function internalFailure(cause: unknown, message = "Something went wrong.
   )
 }
 
-type ServerFunctionErrorIssues = Array<{
+type ServerFunctionErrorIssues = {
   readonly path: string
   readonly message: string
-}>
+}[]
 
 function schemaIssues(error: Schema.SchemaError): ServerFunctionErrorIssues {
   return SchemaIssue.makeFormatterStandardSchemaV1()(error.issue)

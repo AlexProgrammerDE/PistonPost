@@ -43,7 +43,7 @@ function postDescription(post: PublicPostRead, authorName: string) {
 }
 
 function formatCompactDuration(duration: number | null) {
-  if (!duration || duration <= 0 || !Number.isFinite(duration)) return undefined
+  if (!duration || duration <= 0 || !Number.isFinite(duration)) return
   const totalSeconds = Math.max(1, Math.round(duration / 1_000))
   const hours = Math.floor(totalSeconds / 3_600)
   const minutes = Math.floor((totalSeconds % 3_600) / 60)
@@ -54,15 +54,15 @@ function formatCompactDuration(duration: number | null) {
 }
 
 export function millisecondsToIsoDuration(duration: number | null) {
-  if (!duration || duration <= 0 || !Number.isFinite(duration)) return undefined
+  if (!duration || duration <= 0 || !Number.isFinite(duration)) return
   const seconds = duration / 1_000
   const value = Number.isInteger(seconds)
     ? seconds.toString()
-    : seconds.toFixed(3).replace(/0+$/, "").replace(/\.$/, "")
+    : seconds.toFixed(3).replace(/0+$/u, "").replace(/\.$/u, "")
   return `PT${value}S`
 }
 
-function postImages(post: PublicPostRead, postTitle: string): ReadonlyArray<SeoImage> {
+function postImages(post: PublicPostRead, postTitle: string): readonly SeoImage[] {
   return post.media
     .filter((media) => media.kind === "image")
     .map((image) => {
@@ -84,10 +84,7 @@ function postImages(post: PublicPostRead, postTitle: string): ReadonlyArray<SeoI
 // The feed variant scales images down to fit 1280 x 1280. Sitemaps list the same variant.
 const STRUCTURED_IMAGE_MAX_SIZE = 1280
 
-function structuredPostImages(
-  post: PublicPostRead,
-  postTitle: string,
-): ReadonlyArray<JsonLdObject> {
+function structuredPostImages(post: PublicPostRead, postTitle: string): readonly JsonLdObject[] {
   return post.media
     .filter((media) => media.kind === "image")
     .map((image) => {
@@ -110,7 +107,7 @@ function structuredPostImages(
 
 function postVideo(post: PublicPostRead, postTitle: string) {
   const media = post.media.find((entry) => entry.kind === "video")
-  if (!media) return undefined
+  if (!media) return
   const width = media.width ?? 1280
   const height = media.height ?? 720
   const fittedThumbnailDimensions = fitMediaDimensions(
@@ -179,7 +176,7 @@ function textPostImage(post: PublicPostRead, postTitle: string, authorName: stri
   }
 }
 
-function postInteractionStatistics(post: PublicPostRead): ReadonlyArray<JsonLdObject> {
+function postInteractionStatistics(post: PublicPostRead): readonly JsonLdObject[] {
   return [
     {
       "@type": "InteractionCounter",

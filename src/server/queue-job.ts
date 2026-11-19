@@ -34,7 +34,7 @@ export function withOutboxClaim<A, E, R>(
           retryAfterSeconds: claim.retryAfterSeconds,
         })
       }
-      if (!Predicate.isTagged(claim, "Claimed")) return undefined
+      if (!Predicate.isTagged(claim, "Claimed")) return
       // The outbox row and the queue message must wait the same time, or the queue spends its
       // retries while the row is still unavailable and dead-letters the job early.
       const retryDelayMs = (error: unknown) =>

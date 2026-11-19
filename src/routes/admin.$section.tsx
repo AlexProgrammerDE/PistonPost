@@ -192,7 +192,9 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
                 autoComplete="off"
                 placeholder="Explain the decision…"
                 className="resize-y"
-                onChange={(event) => setReason(event.currentTarget.value)}
+                onChange={(event) => {
+                  setReason(event.currentTarget.value)
+                }}
               />
               <InputGroupAddon align="block-end" className="justify-end border-t">
                 <InputGroupText className="text-xs tabular-nums">
@@ -211,7 +213,9 @@ function ModerationAction({ row, section }: { row: AdminRow; section: "posts" | 
           <Button
             variant={action === "hide" ? "destructive" : "default"}
             disabled={reason.trim().length < MIN_MODERATION_REASON_LENGTH || mutation.isPending}
-            onClick={() => mutation.mutate()}
+            onClick={() => {
+              mutation.mutate()
+            }}
           >
             {mutation.isPending ? (
               <>
@@ -250,7 +254,9 @@ function MediaAction({ row }: { row: AdminRow }) {
       description="The original file and any incomplete provider upload will be cleaned up."
       destructive
       disabled={mutation.isPending}
-      onConfirm={() => mutation.mutate()}
+      onConfirm={() => {
+        mutation.mutate()
+      }}
     />
   )
 }
@@ -274,7 +280,9 @@ function JobAction({ row }: { row: AdminRow }) {
       title="Retry this job?"
       description="The existing job payload will be sent to the queue again."
       disabled={mutation.isPending}
-      onConfirm={() => mutation.mutate()}
+      onConfirm={() => {
+        mutation.mutate()
+      }}
     />
   )
 }
@@ -298,14 +306,18 @@ function ReportAction({ row }: { row: AdminRow }) {
         title="Mark this report resolved?"
         description="Use this after the reported content has been reviewed and any needed action is complete."
         disabled={mutation.isPending}
-        onConfirm={() => mutation.mutate("resolved")}
+        onConfirm={() => {
+          mutation.mutate("resolved")
+        }}
       />
       <ConfirmationAction
         label="Dismiss"
         title="Dismiss this report?"
         description="The report will be closed without a moderation action."
         disabled={mutation.isPending}
-        onConfirm={() => mutation.mutate("dismissed")}
+        onConfirm={() => {
+          mutation.mutate("dismissed")
+        }}
       />
     </ButtonGroup>
   )
@@ -396,7 +408,7 @@ function AdminTableView({
   }
 
   useEffect(() => {
-    if (query === search.q) return undefined
+    if (query === search.q) return
     const timeout = setTimeout(() => {
       setSubmittedQuery(query)
       void navigate({
@@ -406,7 +418,9 @@ function AdminTableView({
         replace: true,
       })
     }, ADMIN_SEARCH_DELAY_MS)
-    return () => clearTimeout(timeout)
+    return () => {
+      clearTimeout(timeout)
+    }
   }, [query, navigate, search, section])
 
   const columns = column.columns([
@@ -487,7 +501,9 @@ function AdminTableView({
             autoComplete="off"
             placeholder={details.searchPlaceholder}
             value={query}
-            onChange={(event) => setQuery(event.currentTarget.value)}
+            onChange={(event) => {
+              setQuery(event.currentTarget.value)
+            }}
           />
           {refreshing ? (
             <InputGroupAddon align="inline-end">

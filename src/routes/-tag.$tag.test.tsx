@@ -5,14 +5,14 @@ import { isNotFound } from "@tanstack/react-router"
 import { Route } from "./tag.$tag"
 
 const loader = Route.options.loader
-if (typeof loader !== "function") throw new Error("The tag route must define a loader.")
+if (typeof loader !== "function") throw new TypeError("The tag route must define a loader.")
 const tagLoader = loader
 
 type LoaderContext = Parameters<typeof tagLoader>[0]
 
-function loadTag(tag: string, lookups: Array<ReadonlyArray<unknown>>) {
+function loadTag(tag: string, lookups: (readonly unknown[])[]): unknown {
   const queryClient = {
-    ensureQueryData: ({ queryKey }: { queryKey: ReadonlyArray<unknown> }) => {
+    ensureQueryData: ({ queryKey }: { queryKey: readonly unknown[] }) => {
       lookups.push(queryKey)
       return Promise.resolve(null)
     },
@@ -39,13 +39,13 @@ describe("tag loader", () => {
     ["too long", "a".repeat(65)],
     ["blank", "   "],
   ])("treats a %s tag as not found without a lookup", async (_case, tag) => {
-    const lookups: Array<ReadonlyArray<unknown>> = []
+    const lookups: (readonly unknown[])[] = []
     expect(isNotFound(await rejection(loadTag(tag, lookups)))).toBe(true)
     expect(lookups).toEqual([])
   })
 
   test("looks up a trimmed, lowercase tag and reports missing tags as not found", async () => {
-    const lookups: Array<ReadonlyArray<unknown>> = []
+    const lookups: (readonly unknown[])[] = []
     expect(isNotFound(await rejection(loadTag(" Meme ", lookups)))).toBe(true)
     expect(lookups).toHaveLength(1)
     expect(lookups[0]).toContain("meme")

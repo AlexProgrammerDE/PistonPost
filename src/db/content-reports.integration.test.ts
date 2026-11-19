@@ -14,7 +14,9 @@ afterEach(() => {
 describe("content reports", () => {
   it("retains moderation evidence when the reporter account is deleted", () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     const reporter = createUser({ id: "reporter" })
     database.insert(user).values(reporter).run()
     database
@@ -35,9 +37,11 @@ describe("content reports", () => {
 
   it("enforces report details at the database boundary", () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
 
-    expect(() =>
+    expect(() => {
       database
         .insert(contentReports)
         .values({
@@ -47,7 +51,7 @@ describe("content reports", () => {
           reason: "other",
           details: "x".repeat(1001),
         })
-        .run(),
-    ).toThrow()
+        .run()
+    }).toThrow()
   })
 })

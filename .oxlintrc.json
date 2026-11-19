@@ -21,7 +21,8 @@
   "categories": {
     "correctness": "error",
     "suspicious": "error",
-    "perf": "error"
+    "perf": "error",
+    "pedantic": "error"
   },
   "rules": {
     "shadcn/no-unknown-classes": [
@@ -369,7 +370,45 @@
       {
         "allowConstantExport": true
       }
-    ]
+    ],
+    // Pedantic rules that only measure size or encode a style preference.
+    "typescript/prefer-readonly-parameter-types": "off",
+    "eslint/max-lines": "off",
+    "eslint/max-lines-per-function": "off",
+    "eslint/max-depth": "off",
+    "eslint/max-nested-callbacks": "off",
+    "eslint/max-classes-per-file": "off",
+    "import/max-dependencies": "off",
+    "eslint/no-inline-comments": "off",
+    "eslint/no-warning-comments": "off",
+    "eslint/no-negated-condition": "off",
+    "unicorn/no-negated-condition": "off",
+    // Duplicates typescript/require-await, which knows about type information.
+    "eslint/require-await": "off",
+    // Conflicts with the prefer-nullish-coalescing ignorePrimitives setup above.
+    "typescript/strict-boolean-expressions": "off",
+    "typescript/consistent-type-definitions": ["error", "type"],
+    "typescript/array-type": "error",
+    "typescript/no-inferrable-types": "error",
+    "typescript/prefer-function-type": "error",
+    "typescript/consistent-indexed-object-style": "error",
+    "unicorn/switch-case-braces": "error",
+    "eslint/no-useless-assignment": "error",
+    // Effect APIs such as Deferred.succeed and Option.some take the value as a required argument,
+    // and promise/always-return wants `.then(() => undefined)` callbacks to return a value.
+    "unicorn/no-useless-undefined": [
+      "error",
+      { "checkArguments": false, "checkArrowFunctionBody": false }
+    ],
+    // Conflicts with unicorn/no-useless-undefined in functions that return `T | undefined`.
+    // noImplicitReturns in tsconfig.json already reports code paths that forget to return.
+    "typescript/consistent-return": "off",
+    // The Cloudflare HTMLRewriter Element type merges into the DOM Element type, so
+    // Element.append only accepts strings, streams and responses in this project.
+    "unicorn/prefer-dom-node-append": "off",
+    // TypeScript reports real redeclarations. This rule flags Effect Schema values that
+    // share a name with their type, such as `PushDeliveryJob`.
+    "eslint/no-redeclare": "off"
   },
   "overrides": [
     {
@@ -393,7 +432,11 @@
       "files": ["**/*.test.ts", "**/*.test.tsx"],
       "rules": {
         "eslint/no-underscore-dangle": "off",
-        "typescript/no-unsafe-type-assertion": "off"
+        "typescript/no-unsafe-type-assertion": "off",
+        // bun-types declares asymmetric matchers such as expect.any() and
+        // expect.objectContaining() as `any` (AsymmetricMatcher = any).
+        "typescript/no-unsafe-assignment": "off",
+        "typescript/no-unsafe-argument": "off"
       }
     },
     {

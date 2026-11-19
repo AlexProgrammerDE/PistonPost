@@ -18,18 +18,24 @@ export function TurnstileWidget({
 
   useEffect(() => {
     setReset(() => turnstile.current?.reset())
-    return () => setReset(null)
+    return () => {
+      setReset(null)
+    }
   }, [setReset])
 
   useEffect(() => {
     const element = container.current
-    if (!element) return undefined
+    if (!element) return
 
-    const updateSize = () => setSize(getTurnstileWidgetSize(element.clientWidth))
+    const updateSize = () => {
+      setSize(getTurnstileWidgetSize(element.clientWidth))
+    }
     updateSize()
     const observer = new ResizeObserver(updateSize)
     observer.observe(element)
-    return () => observer.disconnect()
+    return () => {
+      observer.disconnect()
+    }
   }, [])
 
   return (

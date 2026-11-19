@@ -49,13 +49,19 @@ export function uploadImage(
       if (request.status >= 200 && request.status < 300) resolve()
       else reject(responseError(request.status, request.responseText))
     })
-    request.addEventListener("error", () =>
-      reject(new UploadClientError("The image upload was interrupted. Try again.")),
+    request.addEventListener("error", () => {
+      reject(new UploadClientError("The image upload was interrupted. Try again."))
+    })
+    request.addEventListener("abort", () => {
+      reject(new UploadClientError("The image upload was cancelled."))
+    })
+    signal?.addEventListener(
+      "abort",
+      () => {
+        request.abort()
+      },
+      { once: true },
     )
-    request.addEventListener("abort", () =>
-      reject(new UploadClientError("The image upload was cancelled.")),
-    )
-    signal?.addEventListener("abort", () => request.abort(), { once: true })
     request.send(file)
   })
 }

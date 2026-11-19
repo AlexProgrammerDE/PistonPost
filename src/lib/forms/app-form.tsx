@@ -81,7 +81,9 @@ function TextField({
         name={field.name}
         value={field.state.value}
         onBlur={field.handleBlur}
-        onChange={(event) => field.handleChange(event.currentTarget.value)}
+        onChange={(event) => {
+          field.handleChange(event.currentTarget.value)
+        }}
         aria-invalid={invalid}
         aria-describedby={ids.describedBy}
         {...props}
@@ -113,7 +115,9 @@ function TextareaField({
         name={field.name}
         value={field.state.value}
         onBlur={field.handleBlur}
-        onChange={(event) => field.handleChange(event.currentTarget.value)}
+        onChange={(event) => {
+          field.handleChange(event.currentTarget.value)
+        }}
         aria-invalid={invalid}
         aria-describedby={ids.describedBy}
         {...props}
@@ -154,7 +158,9 @@ function BoundedTextareaField({
           maxLength={maxLength}
           disabled={disabled}
           onBlur={field.handleBlur}
-          onChange={(event) => field.handleChange(event.currentTarget.value)}
+          onChange={(event) => {
+            field.handleChange(event.currentTarget.value)
+          }}
           aria-describedby={ids.describedBy}
           aria-invalid={invalid}
           className={cn("resize-y", className)}
@@ -201,7 +207,9 @@ function ComposerTextareaField({
           value={field.state.value}
           maxLength={maxLength}
           onBlur={field.handleBlur}
-          onChange={(event) => field.handleChange(event.currentTarget.value)}
+          onChange={(event) => {
+            field.handleChange(event.currentTarget.value)
+          }}
           aria-describedby={ids.describedBy}
           aria-invalid={invalid}
           className={cn("min-h-24 resize-y", className)}
@@ -269,7 +277,7 @@ type FieldOption = {
 }
 
 type SelectFieldProps = FieldChromeProps & {
-  options: ReadonlyArray<FieldOption>
+  options: readonly FieldOption[]
 }
 
 function SelectField({ label, description, options }: SelectFieldProps) {
@@ -284,7 +292,9 @@ function SelectField({ label, description, options }: SelectFieldProps) {
       <Select
         items={options}
         value={field.state.value}
-        onValueChange={(value) => field.handleChange(value ?? "")}
+        onValueChange={(value) => {
+          field.handleChange(value ?? "")
+        }}
       >
         <SelectTrigger id={field.name} className="w-full" aria-invalid={invalid}>
           <SelectValue>
@@ -368,7 +378,9 @@ function TagsField({ label, description }: FieldChromeProps) {
         multiple
         items={field.state.value}
         value={field.state.value}
-        onValueChange={(value) => field.handleChange(value)}
+        onValueChange={(value) => {
+          field.handleChange(value)
+        }}
         inputValue={draft}
         onInputValueChange={(value) => {
           if (/[,\n]/u.test(value)) {
@@ -405,7 +417,9 @@ function TagsField({ label, description }: FieldChromeProps) {
             size="xs"
             variant="secondary"
             disabled={!draft.trim() || field.state.value.length >= 5}
-            onClick={() => commitTags(draft)}
+            onClick={() => {
+              commitTags(draft)
+            }}
           >
             <Plus aria-hidden="true" data-icon="inline-start" />
             Add

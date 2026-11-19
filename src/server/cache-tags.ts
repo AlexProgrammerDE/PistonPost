@@ -1,4 +1,4 @@
-const CACHE_TAG_PATTERN = /^[\u0021-\u007e]{1,1024}$/u
+const CACHE_TAG_PATTERN = /^[\u0021-\u007E]{1,1024}$/u
 
 export const FEED_CACHE_TAG = "pistonpost-feed"
 export const SITEMAP_CACHE_TAG = "pistonpost-sitemap"
@@ -23,7 +23,7 @@ export function ownerCacheTag(userId: string) {
   return scopedCacheTag("owner", userId)
 }
 
-export function cacheTagHeader(tags: ReadonlyArray<string>) {
+export function cacheTagHeader(tags: readonly string[]) {
   const uniqueTags = Array.from(new Set(tags))
   if (uniqueTags.some((tag) => !CACHE_TAG_PATTERN.test(tag) || tag.includes(","))) {
     throw new Error("Cache tags must be printable ASCII without spaces or commas.")

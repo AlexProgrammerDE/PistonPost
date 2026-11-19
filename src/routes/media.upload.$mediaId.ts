@@ -202,7 +202,7 @@ async function uploadImage({
         : asset.providerMetadata["postId"]
       const ordinal = asset.providerMetadata["ordinal"]
       if (typeof postId !== "string" || typeof ordinal !== "number") {
-        throw new Error("Image draft metadata missing")
+        throw new TypeError("Image draft metadata missing")
       }
       const post = await database
         .select({ postId: schema.posts.id, authorId: schema.posts.authorId })

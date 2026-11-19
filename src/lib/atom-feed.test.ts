@@ -4,7 +4,7 @@ import type { PublicAtomFeedRecord } from "@/db/atom-feed-read-model"
 
 import { buildAtomFeedXml } from "./atom-feed"
 
-const records: ReadonlyArray<PublicAtomFeedRecord> = [
+const records: readonly PublicAtomFeedRecord[] = [
   {
     id: "post/one & two",
     type: "text",
@@ -48,6 +48,6 @@ describe("Atom feed", () => {
     const xml = buildAtomFeedXml("https://post.pistonmaster.net", records)
 
     expect(xml).toContain("<updated>2026-07-19T08:00:00.000Z</updated>")
-    expect(xml.match(/<entry>/g)).toHaveLength(2)
+    expect(xml.match(/<entry>/gu)).toHaveLength(2)
   })
 })

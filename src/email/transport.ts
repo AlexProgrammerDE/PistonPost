@@ -112,7 +112,7 @@ export type EmailDelivery = Omit<OutboundEmail, keyof RenderedEmail> & {
 }
 
 function subscriptionHeaders(content: EmailContent) {
-  if (!content.subscription) return undefined
+  if (!content.subscription) return
   return {
     "List-Unsubscribe": `<${content.subscription.unsubscribeUrl}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
@@ -144,7 +144,7 @@ export const deliverImmediateEmail = Effect.fn("Email.deliverImmediate")(functio
   yield* deliverEmail(message)
 })
 
-export function createCaptureEmailTransport(captured: Array<OutboundEmail>): EmailTransportService {
+export function createCaptureEmailTransport(captured: OutboundEmail[]): EmailTransportService {
   return {
     send: (message) =>
       Effect.sync(() => {

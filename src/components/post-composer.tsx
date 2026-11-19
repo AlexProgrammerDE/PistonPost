@@ -351,7 +351,9 @@ export function PostComposer({
                   intent.uploadUrl,
                   item.file,
                   { filename: item.filename, mimeType: item.mimeType },
-                  (progress) => dispatch({ type: "progress", clientId: item.clientId, progress }),
+                  (progress) => {
+                    dispatch({ type: "progress", clientId: item.clientId, progress })
+                  },
                   controller.signal,
                 )
                 dispatch({ type: "ready", clientId: item.clientId })
@@ -387,7 +389,9 @@ export function PostComposer({
               intent.uploadUrl,
               intent.uploadProtocol,
               item.file,
-              (progress) => dispatch({ type: "progress", clientId: item.clientId, progress }),
+              (progress) => {
+                dispatch({ type: "progress", clientId: item.clientId, progress })
+              },
               controller.signal,
             )
             uploadControllers.current.delete(item.clientId)
@@ -423,7 +427,12 @@ export function PostComposer({
   const localDraft = useComposerDraft(userId, form)
   const isSubmitting = useSelector(form.store, (state) => state.isSubmitting)
 
-  useEffect(() => () => releaseUploadPreviews(uploadStore.uploads.get()), [uploadStore])
+  useEffect(
+    () => () => {
+      releaseUploadPreviews(uploadStore.uploads.get())
+    },
+    [uploadStore],
+  )
 
   if (!userId) {
     return (
@@ -587,7 +596,9 @@ export function PostComposer({
         void (async () => {
           await form.handleSubmit()
           if (form.state.isValid) return
-          requestAnimationFrame(() => focusFirstInvalidField(formElement))
+          requestAnimationFrame(() => {
+            focusFirstInvalidField(formElement)
+          })
         })()
       }}
     >
@@ -707,10 +718,12 @@ export function PostComposer({
                     onFiles={async (files, kind) => {
                       await selectFiles(files, kind)
                     }}
-                    onRemove={(item) => cancelUpload(item)}
-                    onAltText={(clientId, altText) =>
+                    onRemove={(item) => {
+                      cancelUpload(item)
+                    }}
+                    onAltText={(clientId, altText) => {
                       dispatch({ type: "alt-text", clientId, altText })
-                    }
+                    }}
                     onDragEnd={handleDragEnd}
                   />
                 )
@@ -895,11 +908,11 @@ function MediaPicker({
           (type === "video" && uploads.length > 0)
         }
         onAccept={(files) => void onFiles(files, type)}
-        onFileReject={(_, message) =>
+        onFileReject={(_, message) => {
           toast.error(fileRejectionMessage(type, message), {
             id: `composer-${type}-file-rejection`,
           })
-        }
+        }}
       >
         <FileUploadDropzone
           aria-label={type === "images" ? "Image dropzone" : "Video dropzone"}
@@ -945,7 +958,9 @@ function MediaPicker({
             label="Selected image viewer"
             galleryLabel="Selected post images"
             index={selectedImageIndex}
-            onClose={() => setSelectedImageId(null)}
+            onClose={() => {
+              setSelectedImageId(null)
+            }}
             onIndexChange={changeLightboxImage}
           />
         </Suspense>
@@ -1029,7 +1044,9 @@ function UploadRow({
             aria-label={`View ${item.filename} full size`}
             onPointerEnter={preloadImageLightbox}
             onFocus={preloadImageLightbox}
-            onClick={() => onView(item.clientId)}
+            onClick={() => {
+              onView(item.clientId)
+            }}
           >
             <AppImage src={item.previewUrl} alt="" className="size-full object-cover" />
             <span className="absolute right-1 bottom-1 grid size-5 place-items-center bg-background/90 text-foreground">
@@ -1069,7 +1086,9 @@ function UploadRow({
           size="icon"
           aria-label={`${item.status === "uploading" || item.status === "processing" ? "Cancel upload of" : "Remove"} ${item.filename}`}
           disabled={removeDisabled}
-          onClick={() => onRemove(item)}
+          onClick={() => {
+            onRemove(item)
+          }}
         >
           <Trash2 aria-hidden="true" />
         </Button>
@@ -1092,7 +1111,9 @@ function UploadRow({
                     disabled={editDisabled}
                     aria-describedby={altTextDescriptionId}
                     onKeyDown={ignoreEnterKey}
-                    onChange={(event) => onAltText(item.clientId, event.currentTarget.value)}
+                    onChange={(event) => {
+                      onAltText(item.clientId, event.currentTarget.value)
+                    }}
                   />
                   <InputGroupAddon align="inline-end">
                     <InputGroupText className="text-xs tabular-nums">

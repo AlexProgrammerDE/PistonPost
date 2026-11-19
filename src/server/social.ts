@@ -337,9 +337,11 @@ export const createComment = createServerFn({ method: "POST" })
         if (parent?.parentId)
           return yield* invalidInputFailure("Replies can only be one level deep.")
         const id = crypto.randomUUID()
-        const jobs: Array<
-          ReturnType<typeof replyEmailJob> | ReturnType<typeof commentEmailJob> | PushDeliveryJob
-        > = []
+        const jobs: (
+          | ReturnType<typeof replyEmailJob>
+          | ReturnType<typeof commentEmailJob>
+          | PushDeliveryJob
+        )[] = []
         if (parent && parent.authorId !== session.user.id) {
           jobs.push(replyEmailJob(parent.authorId, id))
           const subscriptions = yield* bindingOperation("createComment.subscriptions", () =>

@@ -86,7 +86,7 @@ export function initializePostHogWithConsent(
 }
 
 const sensitivePropertyName =
-  /(?:comment|content|element|email|error|exception|hash|href|message|name|path|post|query|referr|search|stack|text|title|url|user.agent)/i
+  /(?:comment|content|element|email|error|exception|hash|href|message|name|path|post|query|referr|search|stack|text|title|url|user.agent)/iu
 
 export function classifyAnalyticsPath(pathname: string) {
   if (pathname === "/") return "home"
@@ -120,7 +120,7 @@ export function sanitizePostHogCapture(
   const routePath = `/__route/${route}`
   const properties: Properties = {}
 
-  for (const [name, value] of Object.entries(capture.properties)) {
+  for (const [name, value] of Object.entries<unknown>(capture.properties)) {
     if (!sensitivePropertyName.test(name)) properties[name] = value
   }
 

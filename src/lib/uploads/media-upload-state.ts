@@ -37,10 +37,12 @@ function updateItem(
 
 export function mediaUploadReducer(items: UploadItem[], action: UploadAction): UploadItem[] {
   switch (action.type) {
-    case "add":
+    case "add": {
       return [...items, ...action.items]
-    case "remove":
+    }
+    case "remove": {
       return items.filter((item) => item.clientId !== action.clientId)
+    }
     case "reorder": {
       const from = items.findIndex((item) => item.clientId === action.activeId)
       const to = items.findIndex((item) => item.clientId === action.overId)
@@ -51,7 +53,7 @@ export function mediaUploadReducer(items: UploadItem[], action: UploadAction): U
       reordered.splice(to, 0, moved)
       return reordered
     }
-    case "uploading":
+    case "uploading": {
       return updateItem(items, action.clientId, (item) => ({
         ...item,
         assetId: action.assetId,
@@ -59,34 +61,41 @@ export function mediaUploadReducer(items: UploadItem[], action: UploadAction): U
         status: "uploading",
         error: null,
       }))
-    case "progress":
+    }
+    case "progress": {
       return updateItem(items, action.clientId, (item) => ({
         ...item,
         progress: Math.min(100, Math.max(0, action.progress)),
       }))
-    case "alt-text":
+    }
+    case "alt-text": {
       return updateItem(items, action.clientId, (item) => ({ ...item, altText: action.altText }))
-    case "processing":
+    }
+    case "processing": {
       return updateItem(items, action.clientId, (item) => ({
         ...item,
         progress: 100,
         status: "processing",
       }))
-    case "ready":
+    }
+    case "ready": {
       return updateItem(items, action.clientId, (item) => ({
         ...item,
         progress: 100,
         status: "ready",
         error: null,
       }))
-    case "failed":
+    }
+    case "failed": {
       return updateItem(items, action.clientId, (item) => ({
         ...item,
         status: "failed",
         error: action.error,
       }))
-    case "reset":
+    }
+    case "reset": {
       return []
+    }
   }
 
   const exhaustiveAction: never = action

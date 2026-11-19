@@ -44,7 +44,7 @@ const config = defineConfig(({ command, mode }) => ({
           groups: [
             {
               name: "react-vendor",
-              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/,
+              test: /node_modules[\\/](?:react|react-dom|scheduler)[\\/]/u,
               priority: 20,
             },
           ],

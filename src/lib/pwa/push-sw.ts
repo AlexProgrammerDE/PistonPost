@@ -58,13 +58,15 @@ async function receiveShare(request: Request) {
       throw new Error("Unsupported share")
     }
     // Content-Length is not reliable. Bound the streamed body before parsing multipart data.
-    const reader = request.body.getReader()
+    const reader: ReadableStreamDefaultReader<unknown> = request.body.getReader()
     const chunks: Uint8Array<ArrayBuffer>[] = []
     let bytes = 0
     while (true) {
       // Read incrementally to enforce the limit without buffering an unbounded body.
       const { done, value } = await reader.read()
       if (done) break
+      if (!(value instanceof Uint8Array))
+        throw new TypeError("The request stream returned a non-byte chunk.")
       bytes += value.byteLength
       if (bytes > MAX_SHARED_BYTES + 128 * 1024) {
         void reader.cancel()

@@ -9,7 +9,7 @@ function videoClient({
   dashPlaybackUrl = "https://customer-example.cloudflarestream.com/video-id/manifest/video.mpd",
   hlsPlaybackUrl = "https://customer-example.cloudflarestream.com/video-id/manifest/video.m3u8",
 }: {
-  allowedOrigins?: Array<string>
+  allowedOrigins?: string[]
   dashPlaybackUrl?: string
   hlsPlaybackUrl?: string
 } = {}) {

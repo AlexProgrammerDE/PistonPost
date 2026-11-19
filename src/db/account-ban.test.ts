@@ -43,7 +43,9 @@ describe("account ban rule", () => {
 
   test("the SQL condition agrees with the runtime rule", () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database
       .insert(user)
       .values(

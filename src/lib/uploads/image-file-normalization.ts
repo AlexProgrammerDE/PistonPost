@@ -18,7 +18,7 @@ function bytesMatch(bytes: Uint8Array, offset: number, expected: readonly number
 function asciiMatches(bytes: Uint8Array, offset: number, expected: string) {
   if (bytes.length < offset + expected.length) return false
   for (let index = 0; index < expected.length; index += 1) {
-    if (bytes[offset + index] !== expected.charCodeAt(index)) return false
+    if (bytes[offset + index] !== expected.codePointAt(index)) return false
   }
   return true
 }

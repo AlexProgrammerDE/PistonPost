@@ -86,20 +86,23 @@ const securityCopy = {
 
 export function securityNotificationMessage(input: SecurityNotificationInput): EmailContent {
   switch (input.template) {
-    case "password-changed":
+    case "password-changed": {
       return {
         ...input,
         template: "password-changed",
         subject: securityCopy[input.template],
       }
-    case "new-device":
+    }
+    case "new-device": {
       return {
         ...input,
         template: "new-device",
         subject: securityCopy[input.template],
       }
-    case "email-changed":
+    }
+    case "email-changed": {
       break
+    }
   }
 
   return {

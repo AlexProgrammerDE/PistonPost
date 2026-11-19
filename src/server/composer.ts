@@ -165,7 +165,7 @@ export const createPostDraft = createServerFn({ method: "POST" })
             }),
           { concurrency: 4 },
         )
-        const statements: Array<D1PreparedStatement> = [
+        const statements: D1PreparedStatement[] = [
           context.database.$client
             .prepare(
               `insert into posts
@@ -340,7 +340,7 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
 const videoIntentInput = Schema.Struct({
   postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
   filename: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(255)),
-  mimeType: Schema.Trim.check(Schema.isPattern(/^video\//)),
+  mimeType: Schema.Trim.check(Schema.isPattern(/^video\//u)),
   byteSize: Schema.Finite.check(Schema.isInt())
     .check(Schema.isGreaterThanOrEqualTo(1))
     .check(Schema.isLessThanOrEqualTo(MAX_VIDEO_UPLOAD_BYTES)),
@@ -616,7 +616,7 @@ export const publishPost = createServerFn({ method: "POST" })
               ),
             ),
         )
-        if (post.type === "images" && (media.length < 1 || media.length > MAX_IMAGES_PER_POST)) {
+        if (post.type === "images" && (media.length === 0 || media.length > MAX_IMAGES_PER_POST)) {
           return yield* invalidInputFailure(
             `An image post needs between 1 and ${MAX_IMAGES_PER_POST.toString()} ready images.`,
           )

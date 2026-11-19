@@ -17,7 +17,9 @@ afterEach(() => {
 describe("follow repository", () => {
   it("sets and clears user and tag follows idempotently", async () => {
     const database = createMigratedTestDatabase()
-    close = () => database.$client.close()
+    close = () => {
+      database.$client.close()
+    }
     database
       .insert(user)
       .values([
