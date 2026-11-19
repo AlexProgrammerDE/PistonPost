@@ -1,0 +1,47 @@
+[package]
+name = "pistonpost-image-sanitizer-fuzz"
+version = "0.0.0"
+publish = false
+edition = "2024"
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+gif = { version = "=0.14.2", default-features = false, features = ["std"] }
+img-parts = { version = "=0.4.0", default-features = false }
+libfuzzer-sys = "0.4"
+libjpeg-turbo-rs = { version = "=0.8.0", default-features = false }
+pistonpost-image-sanitizer = { path = ".." }
+
+# Keep the fuzz crate out of any parent workspace.
+[workspace]
+members = []
+
+[[bin]]
+name = "sanitize_jpeg"
+path = "fuzz_targets/sanitize_jpeg.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sanitize_png"
+path = "fuzz_targets/sanitize_png.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sanitize_gif"
+path = "fuzz_targets/sanitize_gif.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "sanitize_webp"
+path = "fuzz_targets/sanitize_webp.rs"
+test = false
+doc = false
+bench = false
