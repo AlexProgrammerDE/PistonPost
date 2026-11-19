@@ -11,6 +11,28 @@ export const IMAGE_UPLOAD_MIME_TYPES = [
 
 export type ImageUploadMimeType = (typeof IMAGE_UPLOAD_MIME_TYPES)[number]
 
+// The upload route runs the WASM sanitizer in a Worker with a 128 MB memory limit. At these limits
+// the measured peak stays near 96 MB. The Rust sanitizer enforces the same numbers.
+// JPEG keeps every DCT coefficient in memory, so the browser converts larger JPEGs to WebP.
+export const MAX_JPEG_PIXELS = 2_000_000
+export const MAX_GIF_PIXELS = 8_000_000
+export const MAX_IMAGE_PIXELS = 80_000_000
+
+export function maxImagePixels(mimeType: ImageUploadMimeType) {
+  if (mimeType === "image/jpeg") return MAX_JPEG_PIXELS
+  if (mimeType === "image/gif") return MAX_GIF_PIXELS
+  return MAX_IMAGE_PIXELS
+}
+
+export function isWithinImagePixelLimit(
+  mimeType: ImageUploadMimeType,
+  width: number,
+  height: number,
+) {
+  const pixels = width * height
+  return pixels > 0 && pixels <= maxImagePixels(mimeType)
+}
+
 export const IMAGE_UPLOAD_ACCEPT = IMAGE_UPLOAD_MIME_TYPES.join(",")
 
 export function createImageUploadBatches<T>(files: readonly T[]) {

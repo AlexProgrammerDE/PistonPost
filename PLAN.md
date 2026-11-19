@@ -1295,3 +1295,16 @@ Record future changes here with date, decision, reason, and affected phases.
   collapse to other URLs. Migration `0027_rename-dot-only-usernames` renames existing dot-only
   usernames to `user-<8 hex characters>` in both `profiles` and `user`. The owner can choose a
   new name in settings.
+
+- 2026-11-20: Lower the image pixel limits so the WASM sanitizer fits in the Worker's 128 MB
+  memory limit. Measured peaks (WASM linear memory plus the JavaScript input and output) stay near
+  96 MB at these limits: JPEG 2 megapixels, GIF 8 megapixels per canvas, and PNG and WebP
+  80 megapixels. JPEG is the lowest, because the lossless rewrite keeps every DCT coefficient in
+  memory: a CMYK JPEG with dense coefficients peaks at 79 MB at 2 megapixels and 114 MB at
+  3 megapixels. The GIF animation limit stays at 50 megapixels for all frames. The sanitizer now
+  also checks PNG and WebP dimensions. To keep phone photos working, the browser converts a JPEG
+  above 2 megapixels to WebP from the original file, with EXIF orientation applied, before it
+  sanitizes anything. JPEGs above 80 megapixels are rejected. The upload route still enforces the
+  per-format limits, so a direct JPEG upload above 2 megapixels fails. A file-size term remains:
+  a 15 MB file costs about 5 to 7 bytes of memory per file byte in the sanitizer and its buffers,
+  so some files near 15 MB can still pass 96 MB. This affects Phases 6 and 9.

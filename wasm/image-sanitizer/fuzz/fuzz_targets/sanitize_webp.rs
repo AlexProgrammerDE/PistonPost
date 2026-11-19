@@ -11,6 +11,8 @@ use libfuzzer_sys::fuzz_target;
 const IMAGE_CHUNKS: &[[u8; 4]] = &[
     *b"VP8 ", *b"VP8L", *b"VP8X", *b"ALPH", *b"ANIM", *b"ANMF", *b"ICCP",
 ];
+/// The sanitizer rejects WebP canvases above this many pixels.
+const MAX_IMAGE_PIXELS: u64 = 80_000_000;
 /// VP8X flags that may stay set: ICC profile, alpha, and animation.
 const ALLOWED_VP8X_FLAGS: u8 = 0x20 | 0x10 | 0x02;
 
@@ -47,6 +49,23 @@ fuzz_target!(|data: &[u8]| {
             &contents[1..4],
             &[0, 0, 0],
             "sanitized VP8X keeps reserved bytes"
+        );
+        let width = u64::from(u32::from_le_bytes([
+            contents[4],
+            contents[5],
+            contents[6],
+            0,
+        ])) + 1;
+        let height = u64::from(u32::from_le_bytes([
+            contents[7],
+            contents[8],
+            contents[9],
+            0,
+        ])) + 1;
+        assert!(
+            width * height <= MAX_IMAGE_PIXELS,
+            "sanitized WebP canvas has {} pixels",
+            width * height
         );
     }
 

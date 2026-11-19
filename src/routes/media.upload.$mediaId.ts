@@ -12,6 +12,7 @@ import {
   MAX_IMAGE_UPLOAD_BYTES,
   imageFilenameMatchesMime,
   isImageUploadMimeType,
+  isWithinImagePixelLimit,
 } from "@/lib/uploads/image-upload-policy"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
@@ -120,7 +121,9 @@ async function uploadImage({
     const info = await context.env.IMAGES.info(new Blob([body]).stream())
     if (!isImageUploadMimeType(info.format)) throw new Error("Unsupported image format")
     if (!("width" in info) || !("height" in info)) throw new Error("Image dimensions missing")
-    if (info.width * info.height > 80_000_000) throw new Error("Image pixel limit exceeded")
+    if (!isWithinImagePixelLimit(info.format, info.width, info.height)) {
+      throw new Error("Image pixel limit exceeded")
+    }
     if (info.format !== asset.mimeType) throw new Error("Image MIME mismatch")
     if (!imageFilenameMatchesMime(asset.originalFilename, info.format))
       throw new Error("Image extension mismatch")

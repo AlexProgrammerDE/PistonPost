@@ -66,14 +66,15 @@ jobs:
       - name: Build fuzz targets
         run: cargo +nightly-2026-11-01 fuzz build --target "$TRIPLE"
 
-      # The largest JPEG the sanitizer accepts takes about 40 seconds under AddressSanitizer,
-      # so the per-input timeout is longer than libFuzzer's usual hang threshold.
+      # Under AddressSanitizer, a JPEG at the 2 megapixel limit takes about 2.5 seconds. A GIF at the
+      # 50 megapixel animation limit takes about 11 seconds, so the GIF target gets a longer timeout.
       - name: Run fuzz target
         run: |
           if [ "$LONG_RUN" = true ]; then seconds=600; else seconds=60; fi
+          if [ "$TARGET" = sanitize_gif ]; then timeout=30; else timeout=10; fi
           mkdir -p "fuzz/corpus/$TARGET"
           cargo +nightly-2026-11-01 fuzz run --target "$TRIPLE" "$TARGET" "fuzz/corpus/$TARGET" "fuzz/seeds/$TARGET" -- \
-            -max_total_time="$seconds" -rss_limit_mb=2048 -timeout=60
+            -max_total_time="$seconds" -rss_limit_mb=2048 -timeout="$timeout"
 
       - name: Upload crash artifacts
         if: failure()

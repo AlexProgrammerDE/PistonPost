@@ -1,10 +1,15 @@
 /// <reference lib="webworker" />
 
-import { imageTranscodePlan, shouldUseImageTranscode } from "./image-preparation-policy"
+import {
+  imagePreparationStrategy,
+  imageTranscodePlan,
+  shouldUseImageTranscode,
+} from "./image-preparation-policy"
 import initImageSanitizer, {
   sanitize_image,
 } from "./image-sanitizer-wasm/pistonpost_image_sanitizer"
 import type { ImageUploadMimeType } from "./image-upload-policy"
+import { readJpegDimensions } from "./jpeg-inspection"
 
 export type PrepareImageRequest = {
   type: "prepare"
@@ -46,7 +51,8 @@ async function transcodeToWebp(
   if (sourceMimeType !== "image/jpeg" && sourceMimeType !== "image/avif") return null
 
   const blob = new Blob([exactArrayBuffer(bytes)], { type: sourceMimeType })
-  const bitmap = await createImageBitmap(blob)
+  // Bake EXIF orientation into the pixels. The WebP output has no metadata to carry it.
+  const bitmap = await createImageBitmap(blob, { imageOrientation: "from-image" })
 
   try {
     const plan = imageTranscodePlan({
@@ -81,10 +87,27 @@ async function transcodeToWebp(
 
 async function prepareImage(request: PrepareImageRequest): Promise<PrepareImageSuccess> {
   const input = new Uint8Array(request.bytes)
+  const strategy = imagePreparationStrategy(
+    request.mimeType,
+    request.mimeType === "image/jpeg" ? readJpegDimensions(input) : null,
+  )
 
-  if (request.mimeType === "image/avif") {
-    const transcoded = await transcodeToWebp(input, request.mimeType, request.bytes.byteLength)
-    if (!transcoded) throw new Error("This browser could not convert the AVIF image.")
+  if (strategy === "too-large") {
+    throw new Error("The image must be no larger than 80 megapixels.")
+  }
+  if (strategy === "transcode") {
+    const transcoded = await transcodeToWebp(
+      input,
+      request.mimeType,
+      request.bytes.byteLength,
+    ).catch(() => null)
+    if (!transcoded) {
+      throw new Error(
+        request.mimeType === "image/avif"
+          ? "This browser could not convert the AVIF image."
+          : "This browser could not convert the large JPEG image.",
+      )
+    }
     return {
       type: "prepared",
       id: request.id,

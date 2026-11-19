@@ -140,7 +140,20 @@ uploads the previous batch. Before upload, a lazy browser worker removes private
 PNG, GIF, and WebP files. It converts AVIF files to WebP and bounds oversized JPEG photos to 4096
 pixels on their longest edge. The upload route runs the same Rust WASM sanitizer and rejects any
 non-canonical bytes before writing to R2. A new post can contain 150 images, with a limit of 15 MB
-and 80 megapixels per image. Image bytes have a dedicated per-user limit of 180 requests per minute.
+per image.
+
+The Worker has 128 MB of memory, and the sanitizer must fit in it. So the pixel limits differ by
+format:
+
+| Format    | Pixel limit                                           | Reason                                                      |
+| --------- | ----------------------------------------------------- | ----------------------------------------------------------- |
+| JPEG      | 2 megapixels                                          | The lossless rewrite keeps every DCT coefficient in memory. |
+| GIF       | 8 megapixels per canvas, 50 megapixels for all frames | Each frame is decoded.                                      |
+| PNG, WebP | 80 megapixels                                         | The sanitizer rewrites only the container.                  |
+
+The browser converts a JPEG above 2 megapixels to WebP before upload, and it applies the EXIF
+orientation first. A JPEG above 80 megapixels is rejected. The upload route rejects any file above
+its format limit, so a direct JPEG upload above 2 megapixels fails. Image bytes have a dedicated per-user limit of 180 requests per minute.
 
 Video bytes go directly from the browser to Cloudflare Stream. When the Stream credentials above
 are configured, the Worker creates a resumable TUS upload URL with a 2 GB file-size limit and a

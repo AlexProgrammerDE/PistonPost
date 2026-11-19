@@ -876,7 +876,7 @@ function MediaPicker({
   const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
   const limit =
     type === "images"
-      ? `JPG, PNG, GIF, WebP, or AVIF. Up to ${MAX_IMAGES_PER_POST.toString()} files, 15 MB and 80 megapixels each.`
+      ? `JPG, PNG, GIF, WebP, or AVIF. Up to ${MAX_IMAGES_PER_POST.toString()} files, 15 MB and 80 megapixels each, or 8 megapixels for GIFs.`
       : "One video, up to 2 GB and 10 minutes."
   const inputLabel = `Choose ${type === "images" ? "images" : "a video"} to upload`
   const imageUploads = uploads.filter(

@@ -12,6 +12,9 @@ const METADATA_CHUNKS: &[[u8; 4]] = &[
     *b"sTER", *b"dSIG", *b"caBX",
 ];
 
+/// The sanitizer rejects PNG images above this many pixels.
+const MAX_IMAGE_PIXELS: u64 = 80_000_000;
+
 /// Animation chunks registered in PNG Third Edition despite their private-looking names.
 const APNG_CHUNKS: &[[u8; 4]] = &[*b"acTL", *b"fcTL", *b"fdAT"];
 
@@ -32,6 +35,18 @@ fuzz_target!(|data: &[u8]| {
         kinds.last(),
         Some(b"IEND"),
         "sanitized PNG must end with IEND"
+    );
+    let header = png
+        .chunks()
+        .first()
+        .expect("sanitized PNG has IHDR")
+        .contents();
+    let width = u32::from_be_bytes(header[0..4].try_into().expect("IHDR width"));
+    let height = u32::from_be_bytes(header[4..8].try_into().expect("IHDR height"));
+    let pixels = u64::from(width) * u64::from(height);
+    assert!(
+        pixels > 0 && pixels <= MAX_IMAGE_PIXELS,
+        "sanitized PNG has {pixels} pixels"
     );
     for kind in &kinds {
         assert!(

@@ -14,8 +14,19 @@ use libjpeg_turbo_rs::decode::marker::MarkerReader;
 use libjpeg_turbo_rs::{MarkerCopyMode, TransformOp, TransformOptions};
 use wasm_bindgen::prelude::{JsError, wasm_bindgen};
 
+// The upload route runs this sanitizer inside a Worker with a 128 MB memory limit. These limits keep
+// the measured peak (WASM linear memory plus the JavaScript input and output) near 96 MB. JPEG holds
+// every DCT coefficient in memory, so its limit is the lowest. PNG and WebP memory depends only on
+// the file size, so their limit matches the Cloudflare Images check in the upload route.
+const MAX_JPEG_PIXELS: u64 = 2_000_000;
+const MAX_GIF_PIXELS: u64 = 8_000_000;
 const MAX_IMAGE_PIXELS: u64 = 80_000_000;
 const MAX_GIF_ANIMATION_PIXELS: u64 = 50_000_000;
+
+fn is_within_pixel_limit(width: u32, height: u32, limit: u64) -> bool {
+    let pixels = u64::from(width).saturating_mul(u64::from(height));
+    pixels > 0 && pixels <= limit
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SanitizeError {
@@ -86,10 +97,11 @@ fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     let metadata = MarkerReader::new(input)
         .read_markers()
         .map_err(SanitizeError::invalid_image_with_cause)?;
-    let pixels = u64::from(metadata.frame.width)
-        .checked_mul(u64::from(metadata.frame.height))
-        .ok_or(SanitizeError::InvalidImage)?;
-    if pixels == 0 || pixels > MAX_IMAGE_PIXELS {
+    if !is_within_pixel_limit(
+        u32::from(metadata.frame.width),
+        u32::from(metadata.frame.height),
+        MAX_JPEG_PIXELS,
+    ) {
         return Err(SanitizeError::InvalidImage);
     }
     let transform = metadata
@@ -134,6 +146,18 @@ fn sanitize_png(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     {
         return Err(SanitizeError::InvalidImage);
     }
+    let [w0, w1, w2, w3, h0, h1, h2, h3] = *png
+        .chunks()
+        .first()
+        .and_then(|header| header.contents().first_chunk::<8>())
+        .ok_or(SanitizeError::InvalidImage)?;
+    if !is_within_pixel_limit(
+        u32::from_be_bytes([w0, w1, w2, w3]),
+        u32::from_be_bytes([h0, h1, h2, h3]),
+        MAX_IMAGE_PIXELS,
+    ) {
+        return Err(SanitizeError::InvalidImage);
+    }
 
     png.chunks_mut()
         .retain(|chunk| PRESERVED_PNG_CHUNKS.contains(&chunk.kind()));
@@ -152,6 +176,9 @@ fn sanitize_webp(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         .iter()
         .any(|chunk| matches!(&chunk.id(), b"VP8 " | b"VP8L" | b"ANMF"))
     {
+        return Err(SanitizeError::InvalidImage);
+    }
+    if !is_webp_within_pixel_limit(&webp) {
         return Err(SanitizeError::InvalidImage);
     }
 
@@ -177,6 +204,63 @@ fn sanitize_webp(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     Ok(webp.encoder().bytes().to_vec())
 }
 
+fn read_u24_le(bytes: &[u8]) -> Option<u32> {
+    let [first, second, third] = *bytes.first_chunk::<3>()?;
+    Some(u32::from_le_bytes([first, second, third, 0]))
+}
+
+fn vp8x_canvas(contents: &[u8]) -> Option<(u32, u32)> {
+    let width = read_u24_le(contents.get(4..7)?)?.checked_add(1)?;
+    let height = read_u24_le(contents.get(7..10)?)?.checked_add(1)?;
+    Some((width, height))
+}
+
+fn vp8_frame(contents: &[u8]) -> Option<(u32, u32)> {
+    // A key frame starts with a 3-byte frame tag and the 9d 01 2a start code.
+    if contents.get(3..6)? != [0x9d, 0x01, 0x2a] {
+        return None;
+    }
+    let [width_low, width_high, height_low, height_high] = *contents.get(6..)?.first_chunk()?;
+    let width = u16::from_le_bytes([width_low, width_high]) & 0x3fff;
+    let height = u16::from_le_bytes([height_low, height_high]) & 0x3fff;
+    Some((u32::from(width), u32::from(height)))
+}
+
+fn vp8l_frame(contents: &[u8]) -> Option<(u32, u32)> {
+    let (signature, rest) = contents.split_first()?;
+    if *signature != 0x2f {
+        return None;
+    }
+    let bits = u32::from_le_bytes(*rest.first_chunk::<4>()?);
+    let width = (bits & 0x3fff).checked_add(1)?;
+    let height = ((bits >> 14) & 0x3fff).checked_add(1)?;
+    Some((width, height))
+}
+
+/// Checks every VP8X canvas of an extended WebP, or every frame header of a simple one.
+fn is_webp_within_pixel_limit(webp: &WebP) -> bool {
+    let has_canvas = webp.chunks().iter().any(|chunk| chunk.id() == *b"VP8X");
+    let sizes: Vec<Option<(u32, u32)>> = webp
+        .chunks()
+        .iter()
+        .filter_map(|chunk| {
+            let contents = chunk.content().data();
+            match (&chunk.id(), has_canvas) {
+                (b"VP8X", true) => Some(contents.and_then(|data| vp8x_canvas(data))),
+                (b"VP8 ", false) => Some(contents.and_then(|data| vp8_frame(data))),
+                (b"VP8L", false) => Some(contents.and_then(|data| vp8l_frame(data))),
+                _ => None,
+            }
+        })
+        .collect();
+    !sizes.is_empty()
+        && sizes.iter().all(|size| {
+            size.is_some_and(|(width, height)| {
+                is_within_pixel_limit(width, height, MAX_IMAGE_PIXELS)
+            })
+        })
+}
+
 const fn remap_palette_index(index: &mut u8, first: u8, second: u8) {
     if *index == first {
         *index = second;
@@ -196,7 +280,7 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     let canvas_pixels = u64::from(width)
         .checked_mul(u64::from(height))
         .ok_or(SanitizeError::InvalidImage)?;
-    if canvas_pixels == 0 || canvas_pixels > MAX_IMAGE_PIXELS {
+    if canvas_pixels == 0 || canvas_pixels > MAX_GIF_PIXELS {
         return Err(SanitizeError::InvalidImage);
     }
     let repeat = decoder.repeat();
@@ -432,6 +516,161 @@ mod tests {
 
         assert_eq!((metadata.frame.width, metadata.frame.height), (8, 16));
         assert!(metadata.exif_data.is_none());
+    }
+
+    /// Encodes a small JPEG and patches its frame header to declare `width` by `height`.
+    /// The decoder fills the missing scan data with zeros, like a truncated upload.
+    fn jpeg_declaring(width: u16, height: u16) -> Vec<u8> {
+        let pixels = vec![128; 16 * 16 * 3];
+        let mut jpeg = JpegEncoder::new(&pixels, 16, 16, PixelFormat::Rgb)
+            .encode()
+            .expect("encode jpeg");
+        let sof = jpeg
+            .windows(2)
+            .position(|window| window == [0xff, 0xc0])
+            .expect("baseline frame header");
+        let size = [height.to_be_bytes(), width.to_be_bytes()].concat();
+        jpeg.splice(sof.saturating_add(5)..sof.saturating_add(9), size);
+        jpeg
+    }
+
+    #[test]
+    fn jpeg_pixel_limit_boundary() {
+        // 2000 x 1000 is exactly MAX_JPEG_PIXELS.
+        sanitize_image_bytes(&jpeg_declaring(2000, 1000), "image/jpeg")
+            .expect("accept a JPEG at the pixel limit");
+        assert_eq!(
+            sanitize_image_bytes(&jpeg_declaring(2001, 1000), "image/jpeg"),
+            Err(SanitizeError::InvalidImage)
+        );
+    }
+
+    fn png_declaring(width: u32, height: u32) -> Vec<u8> {
+        let mut header = [width.to_be_bytes(), height.to_be_bytes()].concat();
+        header.extend_from_slice(&[8, 6, 0, 0, 0]);
+        let mut png = b"\x89PNG\r\n\x1a\n".to_vec();
+        png.extend(png_chunk(*b"IHDR", &header));
+        png.extend(png_chunk(*b"IDAT", &[1, 2, 3, 4]));
+        png.extend(png_chunk(*b"IEND", &[]));
+        png
+    }
+
+    #[test]
+    fn png_pixel_limit_boundary() {
+        // 10000 x 8000 is exactly MAX_IMAGE_PIXELS.
+        sanitize_image_bytes(&png_declaring(10_000, 8_000), "image/png")
+            .expect("accept a PNG at the pixel limit");
+        for (width, height) in [(10_000, 8_001), (0, 1), (u32::MAX, u32::MAX)] {
+            assert_eq!(
+                sanitize_image_bytes(&png_declaring(width, height), "image/png"),
+                Err(SanitizeError::InvalidImage),
+                "{width}x{height} PNG"
+            );
+        }
+    }
+
+    fn webp_with(chunks: Vec<RiffChunk>) -> Vec<u8> {
+        let riff = RiffChunk::new(
+            *b"RIFF",
+            RiffContent::List {
+                kind: Some(*b"WEBP"),
+                subchunks: chunks,
+            },
+        );
+        WebP::new(riff)
+            .expect("valid webp")
+            .encoder()
+            .bytes()
+            .to_vec()
+    }
+
+    fn data_chunk(id: [u8; 4], contents: Vec<u8>) -> RiffChunk {
+        RiffChunk::new(id, RiffContent::Data(Bytes::from(contents)))
+    }
+
+    fn extended_webp_declaring(width: u32, height: u32) -> Vec<u8> {
+        let mut vp8x = vec![0; 4];
+        for size in [width, height] {
+            let [low, middle, high, _] = size.saturating_sub(1).to_le_bytes();
+            vp8x.extend_from_slice(&[low, middle, high]);
+        }
+        webp_with(vec![
+            data_chunk(*b"VP8X", vp8x),
+            data_chunk(*b"VP8L", vec![0x2f, 0, 0, 0, 0]),
+        ])
+    }
+
+    fn lossless_webp_declaring(width: u32, height: u32) -> Vec<u8> {
+        let bits = width.saturating_sub(1) | (height.saturating_sub(1) << 14);
+        let mut vp8l = vec![0x2f];
+        vp8l.extend_from_slice(&bits.to_le_bytes());
+        webp_with(vec![data_chunk(*b"VP8L", vp8l)])
+    }
+
+    fn lossy_webp_declaring(width: u16, height: u16) -> Vec<u8> {
+        let mut vp8 = vec![0x10, 0x02, 0x00, 0x9d, 0x01, 0x2a];
+        vp8.extend_from_slice(&width.to_le_bytes());
+        vp8.extend_from_slice(&height.to_le_bytes());
+        webp_with(vec![data_chunk(*b"VP8 ", vp8)])
+    }
+
+    #[test]
+    fn webp_pixel_limit_boundary() {
+        // 10000 x 8000 and 16384 x 4882 are at or just under MAX_IMAGE_PIXELS.
+        let accepted = [
+            extended_webp_declaring(10_000, 8_000),
+            lossless_webp_declaring(16_384, 4_882),
+            lossy_webp_declaring(16_383, 4_883),
+        ];
+        let rejected = [
+            extended_webp_declaring(10_000, 8_001),
+            lossless_webp_declaring(16_384, 4_883),
+            lossy_webp_declaring(16_383, 4_884),
+            lossy_webp_declaring(0, 1),
+            // Fuzzer finding: a second VP8X chunk declared a canvas far above the limit.
+            {
+                let mut chunks = vec![
+                    data_chunk(*b"VP8X", vec![0; 10]),
+                    data_chunk(
+                        *b"VP8X",
+                        vec![0, 0, 0, 0, 0xff, 0xff, 0x0f, 0xff, 0xff, 0x0f],
+                    ),
+                ];
+                chunks.push(data_chunk(*b"VP8L", vec![0x2f, 0, 0, 0, 0]));
+                webp_with(chunks)
+            },
+            webp_with(vec![data_chunk(*b"VP8 ", vec![1, 2, 3, 4])]),
+        ];
+        for input in &accepted {
+            sanitize_image_bytes(input, "image/webp").expect("accept a WebP at the pixel limit");
+        }
+        for input in &rejected {
+            assert_eq!(
+                sanitize_image_bytes(input, "image/webp"),
+                Err(SanitizeError::InvalidImage)
+            );
+        }
+    }
+
+    fn gif_declaring(width: u16, height: u16) -> Vec<u8> {
+        let mut gif = b"GIF89a".to_vec();
+        gif.extend_from_slice(&width.to_le_bytes());
+        gif.extend_from_slice(&height.to_le_bytes());
+        gif.extend_from_slice(&[0x80, 0, 0, 0, 0, 0, 0xff, 0xff, 0xff]);
+        // One 1x1 frame with LZW data for a single index-0 pixel.
+        gif.extend_from_slice(&[0x2c, 0, 0, 0, 0, 1, 0, 1, 0, 0, 2, 2, 0x44, 0x01, 0, 0x3b]);
+        gif
+    }
+
+    #[test]
+    fn gif_pixel_limit_boundary() {
+        // 4000 x 2000 is exactly MAX_GIF_PIXELS.
+        sanitize_image_bytes(&gif_declaring(4_000, 2_000), "image/gif")
+            .expect("accept a GIF at the pixel limit");
+        assert_eq!(
+            sanitize_image_bytes(&gif_declaring(4_000, 2_001), "image/gif"),
+            Err(SanitizeError::InvalidImage)
+        );
     }
 
     #[test]

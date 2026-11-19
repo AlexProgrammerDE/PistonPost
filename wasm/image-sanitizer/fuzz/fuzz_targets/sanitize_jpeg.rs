@@ -7,7 +7,7 @@ use libjpeg_turbo_rs::MarkerSaveConfig;
 use libjpeg_turbo_rs::decode::marker::MarkerReader;
 
 /// The sanitizer rejects JPEG frames above this many pixels.
-const MAX_IMAGE_PIXELS: u64 = 80_000_000;
+const MAX_IMAGE_PIXELS: u64 = 2_000_000;
 
 fuzz_target!(|data: &[u8]| {
     let Some(output) = common::sanitize_checked(data, "image/jpeg") else {

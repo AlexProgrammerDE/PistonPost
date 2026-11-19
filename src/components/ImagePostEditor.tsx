@@ -150,7 +150,8 @@ export function ImagePostEditor({
               Add images
             </FileUploadTrigger>
             <p className="text-xs text-muted-foreground">
-              JPG, PNG, GIF, WebP, or AVIF. Up to 15 MB and 80 megapixels each.
+              JPG, PNG, GIF, WebP, or AVIF. Up to 15 MB and 80 megapixels each, or 8 megapixels for
+              GIFs.
             </p>
           </FileUploadDropzone>
         </FileUpload>

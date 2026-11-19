@@ -686,6 +686,51 @@ https://youtu.be/dQw4w9WgXcQ`
     ).toBeVisible()
   })
 
+  test("converts a rotated JPEG above the sanitizer pixel limit to an upright WebP", async ({
+    context,
+    page,
+  }) => {
+    await createVerifiedSession(context)
+    await page.goto("/posts/new")
+    await selectFormat(page, "Images")
+    await fillPost(page, "a big sideways photo", "photos")
+
+    // A 2400 x 1000 JPEG (2.4 megapixels) whose EXIF orientation 6 makes it upright at 1000 x 2400.
+    const jpeg = await page.evaluate(async () => {
+      const canvas = new OffscreenCanvas(2400, 1000)
+      const drawing = canvas.getContext("2d")
+      if (!drawing) throw new Error("Canvas rendering is unavailable.")
+      drawing.fillStyle = "#e8735a"
+      drawing.fillRect(0, 0, 2400, 1000)
+      const encoded = new Uint8Array(
+        await (await canvas.convertToBlob({ type: "image/jpeg", quality: 0.9 })).arrayBuffer(),
+      )
+      const tiff = [0x4d, 0x4d, 0, 0x2a, 0, 0, 0, 8, 0, 1, 1, 0x12, 0, 3, 0, 0, 0, 1, 0, 6, 0, 0]
+      const payload = [0x45, 0x78, 0x69, 0x66, 0, 0, ...tiff, 0, 0, 0, 0]
+      const exif = [0xff, 0xe1, 0, payload.length + 2, ...payload]
+      return [...encoded.slice(0, 2), ...exif, ...encoded.slice(2)]
+    })
+
+    const uploadResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/media/upload/") && response.request().method() === "PUT",
+    )
+    await page.getByLabel("Choose images to upload").setInputFiles({
+      name: "sideways.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.from(jpeg),
+    })
+    await page.getByLabel("Alt text").fill("A coral photo standing upright")
+    await page.getByRole("button", { name: "Post it" }).click()
+
+    const upload = await uploadResponse
+    expect(upload.request().headers()["content-type"]).toBe("image/webp")
+    expect(upload.status()).toBe(200)
+    expect(await upload.json()).toMatchObject({ status: "ready", width: 1000, height: 2400 })
+    await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
+    await expect(page.getByRole("img", { name: "A coral photo standing upright" })).toBeVisible()
+  })
+
   test("posts text and images and recovers failed image and video uploads", async ({
     context,
     page,

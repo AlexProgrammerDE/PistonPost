@@ -59,9 +59,10 @@ rustup toolchain install nightly-2026-11-01 --profile minimal
 cargo install cargo-fuzz --version 0.13.2 --locked
 cargo +nightly-2026-11-01 fuzz list
 mkdir -p fuzz/corpus/sanitize_jpeg
-cargo +nightly-2026-11-01 fuzz run sanitize_jpeg fuzz/corpus/sanitize_jpeg fuzz/seeds/sanitize_jpeg -- -max_total_time=300 -rss_limit_mb=2048 -timeout=60
+cargo +nightly-2026-11-01 fuzz run sanitize_jpeg fuzz/corpus/sanitize_jpeg fuzz/seeds/sanitize_jpeg -- -max_total_time=300 -rss_limit_mb=2048 -timeout=10
 ```
 
+For `sanitize_gif`, use `-timeout=30`. A GIF at the 50 megapixel animation limit takes about 11 seconds under AddressSanitizer.
 Put the ignored `fuzz/corpus/<target>` directory first so that new inputs do not go into the committed seeds.
 To reproduce or minimize a finding, pass the file from `fuzz/artifacts/<target>/`:
 

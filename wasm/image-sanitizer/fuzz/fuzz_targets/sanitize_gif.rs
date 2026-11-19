@@ -8,7 +8,7 @@ use gif::{ColorOutput, DecodeOptions, DisposalMethod, MemoryLimit, Repeat};
 use libfuzzer_sys::fuzz_target;
 
 /// The sanitizer rejects GIF canvases above this many pixels.
-const MAX_IMAGE_PIXELS: u64 = 80_000_000;
+const MAX_IMAGE_PIXELS: u64 = 8_000_000;
 /// The sanitizer rejects animated GIFs whose canvas area times frame count is above this.
 const MAX_GIF_ANIMATION_PIXELS: u64 = 50_000_000;
 
