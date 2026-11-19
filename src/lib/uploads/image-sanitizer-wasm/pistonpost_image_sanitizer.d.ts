@@ -1,6 +1,13 @@
 /* tslint:disable */
 /* eslint-disable */
 
+/**
+ * Removes private metadata from a supported image.
+ *
+ * # Errors
+ *
+ * Returns a JavaScript error if the image is invalid or requires transcoding.
+ */
 export function sanitize_image(input: Uint8Array, mime_type: string): Uint8Array;
 
 export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;

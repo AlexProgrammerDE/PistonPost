@@ -3,27 +3,37 @@ use std::io::Cursor;
 
 use gif::{DecodeOptions, Encoder as GifEncoder, Repeat};
 use img_parts::Bytes;
-use img_parts::png::Png;
+use img_parts::png::{Png, PngChunk};
 use img_parts::riff::{RiffChunk, RiffContent};
 use img_parts::webp::WebP;
 use libjpeg_turbo_rs::common::exif::parse_orientation;
 use libjpeg_turbo_rs::decode::marker::MarkerReader;
 use libjpeg_turbo_rs::{MarkerCopyMode, TransformOp, TransformOptions};
-use wasm_bindgen::prelude::*;
+use wasm_bindgen::prelude::{JsError, wasm_bindgen};
 
 const MAX_IMAGE_PIXELS: u64 = 80_000_000;
 const MAX_GIF_ANIMATION_PIXELS: u64 = 50_000_000;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SanitizeError {
     InvalidImage,
+    InvalidImageWithCause(String),
     UnsupportedFormat,
+}
+
+impl SanitizeError {
+    fn invalid_image_with_cause(error: impl fmt::Display) -> Self {
+        Self::InvalidImageWithCause(error.to_string())
+    }
 }
 
 impl fmt::Display for SanitizeError {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::InvalidImage => formatter.write_str("The image container is invalid."),
+            Self::InvalidImageWithCause(cause) => {
+                write!(formatter, "The image container is invalid. {cause}")
+            }
             Self::UnsupportedFormat => formatter.write_str("The image format must be transcoded."),
         }
     }
@@ -31,23 +41,32 @@ impl fmt::Display for SanitizeError {
 
 impl std::error::Error for SanitizeError {}
 
+/// Removes private metadata from a supported image.
+///
+/// # Errors
+///
+/// Returns a JavaScript error if the image is invalid or requires transcoding.
 #[wasm_bindgen]
 pub fn sanitize_image(input: &[u8], mime_type: &str) -> Result<Vec<u8>, JsError> {
     sanitize_image_bytes(input, mime_type).map_err(|error| JsError::new(&error.to_string()))
 }
 
+/// Removes private metadata from a supported image.
+///
+/// # Errors
+///
+/// Returns a sanitization error if the image is invalid or requires transcoding.
 pub fn sanitize_image_bytes(input: &[u8], mime_type: &str) -> Result<Vec<u8>, SanitizeError> {
     match mime_type {
         "image/jpeg" => sanitize_jpeg(input),
         "image/png" => sanitize_png(input),
         "image/gif" => sanitize_gif(input),
         "image/webp" => sanitize_webp(input),
-        "image/avif" => Err(SanitizeError::UnsupportedFormat),
         _ => Err(SanitizeError::UnsupportedFormat),
     }
 }
 
-fn orientation_transform(orientation: u8) -> TransformOp {
+const fn orientation_transform(orientation: u8) -> TransformOp {
     match orientation {
         2 => TransformOp::HFlip,
         3 => TransformOp::Rot180,
@@ -63,7 +82,7 @@ fn orientation_transform(orientation: u8) -> TransformOp {
 fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     let metadata = MarkerReader::new(input)
         .read_markers()
-        .map_err(|_| SanitizeError::InvalidImage)?;
+        .map_err(SanitizeError::invalid_image_with_cause)?;
     let pixels = u64::from(metadata.frame.width) * u64::from(metadata.frame.height);
     if pixels == 0 || pixels > MAX_IMAGE_PIXELS {
         return Err(SanitizeError::InvalidImage);
@@ -72,8 +91,7 @@ fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         .exif_data
         .as_deref()
         .and_then(parse_orientation)
-        .map(orientation_transform)
-        .unwrap_or(TransformOp::None);
+        .map_or(TransformOp::None, orientation_transform);
 
     libjpeg_turbo_rs::transform_jpeg_with_options(
         input,
@@ -84,7 +102,7 @@ fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
             ..TransformOptions::default()
         },
     )
-    .map_err(|_| SanitizeError::InvalidImage)
+    .map_err(SanitizeError::invalid_image_with_cause)
 }
 
 const PRESERVED_PNG_CHUNKS: &[[u8; 4]] = &[
@@ -94,10 +112,10 @@ const PRESERVED_PNG_CHUNKS: &[[u8; 4]] = &[
 ];
 
 fn sanitize_png(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
-    let mut png =
-        Png::from_bytes(Bytes::copy_from_slice(input)).map_err(|_| SanitizeError::InvalidImage)?;
-    if png.chunks().first().map(|chunk| chunk.kind()) != Some(*b"IHDR")
-        || png.chunks().last().map(|chunk| chunk.kind()) != Some(*b"IEND")
+    let mut png = Png::from_bytes(Bytes::copy_from_slice(input))
+        .map_err(SanitizeError::invalid_image_with_cause)?;
+    if png.chunks().first().map(PngChunk::kind) != Some(*b"IHDR")
+        || png.chunks().last().map(PngChunk::kind) != Some(*b"IEND")
     {
         return Err(SanitizeError::InvalidImage);
     }
@@ -112,8 +130,8 @@ const PRESERVED_WEBP_CHUNKS: &[[u8; 4]] = &[
 ];
 
 fn sanitize_webp(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
-    let mut webp =
-        WebP::from_bytes(Bytes::copy_from_slice(input)).map_err(|_| SanitizeError::InvalidImage)?;
+    let mut webp = WebP::from_bytes(Bytes::copy_from_slice(input))
+        .map_err(SanitizeError::invalid_image_with_cause)?;
     if !webp
         .chunks()
         .iter()
@@ -147,7 +165,7 @@ fn swap_palette_entries(palette: &mut [u8], first: usize, second: usize) {
     }
 }
 
-fn remap_palette_index(index: &mut u8, first: u8, second: u8) {
+const fn remap_palette_index(index: &mut u8, first: u8, second: u8) {
     if *index == first {
         *index = second;
     } else if *index == second {
@@ -160,7 +178,7 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     options.check_frame_consistency(true);
     let mut decoder = options
         .read_info(Cursor::new(input))
-        .map_err(|_| SanitizeError::InvalidImage)?;
+        .map_err(SanitizeError::invalid_image_with_cause)?;
     let width = decoder.width();
     let height = decoder.height();
     let canvas_pixels = u64::from(width) * u64::from(height);
@@ -187,17 +205,17 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         height,
         &global_palette,
     )
-    .map_err(|_| SanitizeError::InvalidImage)?;
+    .map_err(SanitizeError::invalid_image_with_cause)?;
     if repeat != Repeat::Finite(0) {
         encoder
             .set_repeat(repeat)
-            .map_err(|_| SanitizeError::InvalidImage)?;
+            .map_err(SanitizeError::invalid_image_with_cause)?;
     }
 
     let mut frame_count = 0_u64;
     while let Some(frame) = decoder
         .read_next_frame()
-        .map_err(|_| SanitizeError::InvalidImage)?
+        .map_err(SanitizeError::invalid_image_with_cause)?
     {
         frame_count += 1;
         if frame_count > 1 && canvas_pixels.saturating_mul(frame_count) > MAX_GIF_ANIMATION_PIXELS {
@@ -216,12 +234,12 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         }
         encoder
             .write_frame(&frame)
-            .map_err(|_| SanitizeError::InvalidImage)?;
+            .map_err(SanitizeError::invalid_image_with_cause)?;
     }
 
     encoder
         .into_inner()
-        .map_err(|_| SanitizeError::InvalidImage)
+        .map_err(SanitizeError::invalid_image_with_cause)
 }
 
 #[cfg(test)]
@@ -230,6 +248,18 @@ mod tests {
     use crc32fast::Hasher;
     use gif::{AnyExtension, Extension};
     use libjpeg_turbo_rs::{Encoder as JpegEncoder, MarkerSaveConfig, PixelFormat, SavedMarker};
+
+    #[test]
+    fn malformed_image_reports_parser_cause() {
+        let parser_error =
+            Png::from_bytes(Bytes::from_static(b"bad PNG")).expect_err("invalid PNG");
+        let error = sanitize_image_bytes(b"bad PNG", "image/png").expect_err("reject invalid PNG");
+
+        assert_eq!(
+            error.to_string(),
+            format!("The image container is invalid. {parser_error}")
+        );
+    }
 
     fn minimal_exif(orientation: u8) -> Vec<u8> {
         vec![
@@ -399,7 +429,7 @@ mod tests {
             parsed
                 .chunks()
                 .iter()
-                .map(|chunk| chunk.id())
+                .map(RiffChunk::id)
                 .collect::<Vec<_>>(),
             vec![*b"VP8X", *b"VP8 "]
         );
@@ -434,9 +464,6 @@ mod tests {
         assert_eq!(decoder.repeat(), Repeat::Infinite);
         assert_eq!(decoder.into_iter().count(), 1);
         assert!(!output.windows(7).any(|window| window == b"private"));
-        assert_eq!(
-            sanitize_image_bytes(&output, "image/gif"),
-            Ok(output.clone())
-        );
+        assert_eq!(sanitize_image_bytes(&output, "image/gif"), Ok(output));
     }
 }

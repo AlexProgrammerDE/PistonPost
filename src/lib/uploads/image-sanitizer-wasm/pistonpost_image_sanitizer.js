@@ -1,6 +1,11 @@
 /* @ts-self-types="./pistonpost_image_sanitizer.d.ts" */
 
 /**
+ * Removes private metadata from a supported image.
+ *
+ * # Errors
+ *
+ * Returns a JavaScript error if the image is invalid or requires transcoding.
  * @param {Uint8Array} input
  * @param {string} mime_type
  * @returns {Uint8Array}
