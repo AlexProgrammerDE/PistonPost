@@ -1,3 +1,5 @@
+#![warn(clippy::indexing_slicing, clippy::arithmetic_side_effects)]
+
 use std::fmt;
 use std::io::Cursor;
 
@@ -83,7 +85,9 @@ fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     let metadata = MarkerReader::new(input)
         .read_markers()
         .map_err(SanitizeError::invalid_image_with_cause)?;
-    let pixels = u64::from(metadata.frame.width) * u64::from(metadata.frame.height);
+    let pixels = u64::from(metadata.frame.width)
+        .checked_mul(u64::from(metadata.frame.height))
+        .ok_or(SanitizeError::InvalidImage)?;
     if pixels == 0 || pixels > MAX_IMAGE_PIXELS {
         return Err(SanitizeError::InvalidImage);
     }
@@ -152,17 +156,14 @@ fn sanitize_webp(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
             .filter(|contents| contents.len() == 10)
             .ok_or(SanitizeError::InvalidImage)?
             .to_vec();
-        contents[0] &= 0x32;
-        contents[1..4].fill(0);
+        *contents.first_mut().ok_or(SanitizeError::InvalidImage)? &= 0x32;
+        contents
+            .get_mut(1..4)
+            .ok_or(SanitizeError::InvalidImage)?
+            .fill(0);
         *chunk = RiffChunk::new(*b"VP8X", RiffContent::Data(Bytes::from(contents)));
     }
     Ok(webp.encoder().bytes().to_vec())
-}
-
-fn swap_palette_entries(palette: &mut [u8], first: usize, second: usize) {
-    for channel in 0..3 {
-        palette.swap(first * 3 + channel, second * 3 + channel);
-    }
 }
 
 const fn remap_palette_index(index: &mut u8, first: u8, second: u8) {
@@ -181,7 +182,9 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         .map_err(SanitizeError::invalid_image_with_cause)?;
     let width = decoder.width();
     let height = decoder.height();
-    let canvas_pixels = u64::from(width) * u64::from(height);
+    let canvas_pixels = u64::from(width)
+        .checked_mul(u64::from(height))
+        .ok_or(SanitizeError::InvalidImage)?;
     if canvas_pixels == 0 || canvas_pixels > MAX_IMAGE_PIXELS {
         return Err(SanitizeError::InvalidImage);
     }
@@ -192,11 +195,19 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
     let mut global_palette = decoder.global_palette().unwrap_or_default().to_vec();
 
     if let Some(background) = background.filter(|index| *index != 0) {
-        let background = usize::from(background);
-        if background >= global_palette.len() / 3 {
-            return Err(SanitizeError::InvalidImage);
-        }
-        swap_palette_entries(&mut global_palette, 0, background);
+        let offset = usize::from(background)
+            .checked_mul(3)
+            .ok_or(SanitizeError::InvalidImage)?;
+        let (before_background, from_background) = global_palette
+            .split_at_mut_checked(offset)
+            .ok_or(SanitizeError::InvalidImage)?;
+        let first = before_background
+            .first_chunk_mut::<3>()
+            .ok_or(SanitizeError::InvalidImage)?;
+        let background = from_background
+            .first_chunk_mut::<3>()
+            .ok_or(SanitizeError::InvalidImage)?;
+        std::mem::swap(first, background);
     }
 
     let mut encoder = GifEncoder::new(
@@ -217,8 +228,14 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         .read_next_frame()
         .map_err(SanitizeError::invalid_image_with_cause)?
     {
-        frame_count += 1;
-        if frame_count > 1 && canvas_pixels.saturating_mul(frame_count) > MAX_GIF_ANIMATION_PIXELS {
+        frame_count = frame_count
+            .checked_add(1)
+            .ok_or(SanitizeError::InvalidImage)?;
+        if frame_count > 1
+            && canvas_pixels
+                .checked_mul(frame_count)
+                .is_none_or(|pixels| pixels > MAX_GIF_ANIMATION_PIXELS)
+        {
             return Err(SanitizeError::InvalidImage);
         }
         let mut frame = frame.clone();
@@ -456,13 +473,30 @@ mod tests {
                 ..gif::Frame::default()
             })
             .expect("write frame");
-        let input = encoder.into_inner().expect("finish gif");
+        let mut input = encoder.into_inner().expect("finish gif");
+        // The logical screen descriptor stores the background color index at byte 11.
+        *input.get_mut(11).expect("GIF background index") = 1;
 
         let output = sanitize_image_bytes(&input, "image/gif").expect("sanitize gif");
-        let decoder = gif::Decoder::new(Cursor::new(&output)).expect("decode output");
+        let mut decoder = gif::Decoder::new(Cursor::new(&output)).expect("decode output");
 
         assert_eq!(decoder.repeat(), Repeat::Infinite);
-        assert_eq!(decoder.into_iter().count(), 1);
+        assert_eq!(decoder.bg_color(), Some(0));
+        assert_eq!(
+            decoder.global_palette(),
+            Some([255, 255, 255, 0, 0, 0].as_slice())
+        );
+        let frame = decoder
+            .read_next_frame()
+            .expect("read sanitized frame")
+            .expect("sanitized frame exists");
+        assert_eq!(frame.buffer.as_ref(), &[0]);
+        assert!(
+            decoder
+                .read_next_frame()
+                .expect("read end of GIF")
+                .is_none()
+        );
         assert!(!output.windows(7).any(|window| window == b"private"));
         assert_eq!(sanitize_image_bytes(&output, "image/gif"), Ok(output));
     }

@@ -1,3 +1,8 @@
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-panic-in-tests = true
+
+disallowed-methods = [
+  { path = "std::env::set_var", reason = "Pass configuration explicitly instead of mutating the process environment across threads." },
+  { path = "std::env::remove_var", reason = "Pass configuration explicitly instead of mutating the process environment across threads." },
+]
