@@ -12,6 +12,7 @@
 - Never bypass hooks with `--no-verify`, `-n`, environment variables, or configuration changes.
 - Pre-commit runs Oxfmt, Oxlint, TypeScript, and rustfmt for relevant changes.
 - Pre-push runs Clippy for changes to the image sanitizer or its Rust toolchain configuration.
+- Pre-push runs cargo-deny 0.20.2 when the sanitizer's Cargo manifest, lockfile, or root `deny.toml` changes.
 - Commit-msg checks the first line for a Conventional Commit or a supported Git-generated prefix.
 - Let the hooks finish and fix failures before committing or pushing.
 

@@ -39,6 +39,8 @@ bun run generated:check
 Use ignored development variables and synthetic accounts/media. Keep the checked-in generated sanitizer for normal installs. For Rust sanitizer changes, use `bun run wasm:build`. For critical journeys, run the matching Playwright tests. Keep auth responses and private content outside public caches. Change schema sources before generating named migrations. Never hand-edit generated migration SQL or metadata. Keep Lefthook enabled. Use `bun run ci` for application changes that need the complete CI gate.
 
 Run the relevant checks before review. State the command and result in the pull request.
+Install cargo-deny 0.20.2 before pushing changes to `Cargo.toml`, `Cargo.lock`, or `deny.toml`.
+Run the check from the root with `cargo deny --locked --manifest-path wasm/image-sanitizer/Cargo.toml --config deny.toml check`.
 If a check cannot run, explain the missing dependency or service. Do not claim it passed.
 Keep generated artifacts consistent with their source and review their diff.
 

@@ -23,6 +23,11 @@ pre-push:
     clippy:
       glob: *rust_files
       run: RUSTUP_TOOLCHAIN=stable cargo clippy --manifest-path wasm/image-sanitizer/Cargo.toml --all-targets --locked -- -D warnings
+    cargo-deny:
+      glob:
+        - "wasm/image-sanitizer/{Cargo.toml,Cargo.lock}"
+        - "deny.toml"
+      run: RUSTUP_TOOLCHAIN=stable cargo deny --locked --manifest-path wasm/image-sanitizer/Cargo.toml --config deny.toml check
 
 commit-msg:
   commands:
