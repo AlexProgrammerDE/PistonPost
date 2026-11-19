@@ -5,7 +5,7 @@ const runtimeConfigSchema = Schema.Struct({
   PUBLIC_APP_URL: Schema.URLFromString,
 })
 
-export type RuntimeConfig = Schema.Schema.Type<typeof runtimeConfigSchema>
+export type RuntimeConfig = typeof runtimeConfigSchema.Type
 
 export type RuntimeEnv = {
   readonly bindings: Cloudflare.Env

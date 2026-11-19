@@ -53,7 +53,7 @@ type AdminAudit = {
 }
 
 function stringField(value: unknown, field: string) {
-  if (typeof value !== "object" || value === null) return
+  if (typeof value !== "object" || value === null) return undefined
   const result: unknown = Reflect.get(value, field)
   return typeof result === "string" && result ? result : undefined
 }

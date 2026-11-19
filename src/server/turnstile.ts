@@ -46,7 +46,7 @@ type TurnstileVerificationInput = {
 }
 
 function verificationError(reason: TurnstileVerificationReason) {
-  return new TurnstileVerificationError({
+  return TurnstileVerificationError.make({
     reason,
     message: HUMAN_VERIFICATION_ERROR_MESSAGE,
   })

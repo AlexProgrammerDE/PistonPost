@@ -45,7 +45,7 @@ export function PwaProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
-    if (!window.isSecureContext || !("serviceWorker" in navigator)) return
+    if (!window.isSecureContext || !("serviceWorker" in navigator)) return undefined
     const seen = () => {
       if (document.visibilityState !== "visible") return
       if ("clearAppBadge" in navigator) void navigator.clearAppBadge().catch(() => undefined)

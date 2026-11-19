@@ -73,7 +73,7 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
             .get(),
         )
         if (currentAvatar)
-          return yield* new QueueDeliveryError({
+          return yield* QueueDeliveryError.make({
             operation: "media-current-avatar",
             retryAfterSeconds: 30,
           })
@@ -85,7 +85,7 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
         (yield* mediaAttachedToLivePost(database, asset.id))
       ) {
         yield* outbox.complete(job.idempotencyKey, claim.attempt, "media-in-use")
-        return
+        return undefined
       }
       return yield* Effect.gen(function* () {
         if (job.type === "media.cleanup") {
@@ -101,12 +101,13 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
                   if (!missingProviderObject(cause)) throw cause
                 }
               })
+            const deletedAt = yield* DateTime.nowAsDate
             yield* bindingOperation("media-cleanup.delete-record", () =>
               database.batch([
                 database.delete(schema.postMedia).where(eq(schema.postMedia.mediaId, asset.id)),
                 database
                   .update(schema.mediaAssets)
-                  .set({ status: "deleted", deletedAt: new Date() })
+                  .set({ status: "deleted", deletedAt })
                   .where(eq(schema.mediaAssets.id, asset.id)),
               ]),
             )
@@ -150,7 +151,7 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
           } else {
             yield* outbox.complete(job.idempotencyKey, claim.attempt, resolved.reason)
           }
-          return
+          return undefined
         }
         return yield* Effect.gen(function* () {
           const delivery = yield* deliverEmail({
@@ -212,8 +213,8 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
         const resolved = yield* resolver
           .resolve(job)
           .pipe(
-            Effect.mapError(
-              () => new QueueDeliveryError({ operation: "push-resolution", retryAfterSeconds: 30 }),
+            Effect.mapError(() =>
+              QueueDeliveryError.make({ operation: "push-resolution", retryAfterSeconds: 30 }),
             ),
           )
         if (Predicate.isTagged(resolved, "Skip")) {
@@ -221,7 +222,7 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
           yield* Effect.sync(() => {
             writeOperationalEvent(env, "push.delivery", [job.type, "skipped", resolved.reason])
           })
-          return
+          return undefined
         }
 
         return yield* Effect.gen(function* () {
@@ -231,7 +232,7 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
               PushSubscriptionExpired: () => Effect.succeed("expired" as const),
               PushRateLimited: (error) =>
                 Effect.fail(
-                  new QueueDeliveryError({
+                  QueueDeliveryError.make({
                     operation: "push-rate-limited",
                     retryAfterSeconds: error.retryAfterSeconds,
                   }),
@@ -239,7 +240,7 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
               PushDeliveryError: (error) =>
                 error.retryable
                   ? Effect.fail(
-                      new QueueDeliveryError({
+                      QueueDeliveryError.make({
                         operation: `push-${error.code}`,
                         retryAfterSeconds: 30,
                       }),
@@ -296,7 +297,7 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
     } else {
       const decoded = decodeEmailQueueJob(body)
       if (Result.isFailure(decoded)) {
-        return yield* new QueueDeliveryError({ operation: "invalid-job", retryAfterSeconds: 30 })
+        return yield* QueueDeliveryError.make({ operation: "invalid-job", retryAfterSeconds: 30 })
       }
       const job = decoded.success
       if (job.type === "email.product-batch") {
@@ -306,6 +307,7 @@ const processQueueBody = Effect.fn("Queue.processBody")(function* (
       }
     }
   }
+  return undefined
 })
 
 function originalOutboxId(body: unknown) {

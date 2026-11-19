@@ -72,10 +72,6 @@ const postColumns = {
   version: schema.posts.version,
 }
 
-function nextPublicId() {
-  return crypto.randomUUID().replaceAll("-", "").slice(0, 16)
-}
-
 function userRateLimit(limiter: RateLimit, key: string, message: string) {
   return bindingOperation(`userRateLimit.${key.split(":", 1)[0] ?? "action"}`, () =>
     limiter.limit({ key }),
@@ -87,30 +83,34 @@ function userRateLimit(limiter: RateLimit, key: string, message: string) {
 }
 
 function enforceRecentPostLimit(database: D1DatabaseClient, userId: string) {
-  const recentWindow = new Date(Date.now() - RECENT_POST_WINDOW_MS)
-  return bindingOperation("recentPostLimit.count", () =>
-    database
-      .select({ value: count() })
-      .from(schema.posts)
-      .where(
-        and(
-          eq(schema.posts.authorId, userId),
-          eq(schema.posts.status, "published"),
-          gte(schema.posts.publishedAt, recentWindow),
+  return Clock.currentTimeMillis.pipe(
+    Effect.flatMap((now) => {
+      const recentWindow = DateTime.toDateUtc(DateTime.makeUnsafe(now - RECENT_POST_WINDOW_MS))
+      return bindingOperation("recentPostLimit.count", () =>
+        database
+          .select({ value: count() })
+          .from(schema.posts)
+          .where(
+            and(
+              eq(schema.posts.authorId, userId),
+              eq(schema.posts.status, "published"),
+              gte(schema.posts.publishedAt, recentWindow),
+            ),
+          )
+          .get(),
+      ).pipe(
+        Effect.flatMap((recentPublishes) =>
+          (recentPublishes?.value ?? 0) < RECENT_POST_LIMIT
+            ? Effect.void
+            : Effect.fail(
+                rateLimitedFailure(
+                  "You can post up to 10 times every 10 minutes. Try again in a bit.",
+                  RECENT_POST_WINDOW_MS / 1000,
+                ),
+              ),
         ),
       )
-      .get(),
-  ).pipe(
-    Effect.flatMap((recentPublishes) =>
-      (recentPublishes?.value ?? 0) < RECENT_POST_LIMIT
-        ? Effect.void
-        : Effect.fail(
-            rateLimitedFailure(
-              "You can post up to 10 times every 10 minutes. Try again in a bit.",
-              RECENT_POST_WINDOW_MS / 1000,
-            ),
-          ),
-    ),
+    }),
   )
 }
 
@@ -149,7 +149,7 @@ export const createPostDraft = createServerFn({ method: "POST" })
         yield* enforceRecentPostLimit(context.database, session.user.id)
         yield* verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createPost)
         const input = data.draft
-        const id = nextPublicId()
+        const id = (yield* randomUuid).replaceAll("-", "").slice(0, 16)
         const normalizedTags = [...new Set(input.tags.map((tag) => tag.toLocaleLowerCase("en-US")))]
         const tagsWithIds = yield* Effect.forEach(
           normalizedTags,
@@ -295,30 +295,35 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
 
         const now = yield* Clock.currentTimeMillis
         const expiresAt = now + IMAGE_UPLOAD_INTENT_TTL_SECONDS * 1000
-        const intents = data.files.map((file, index) => {
-          const assetId = crypto.randomUUID()
-          return {
-            assetId,
-            uploadUrl: `/media/upload/${assetId}`,
-            expiresInSeconds: IMAGE_UPLOAD_INTENT_TTL_SECONDS,
-            values: {
-              id: assetId,
-              ownerId: session.user.id,
-              kind: "image",
-              provider: "r2",
-              status: "pending",
-              originalFilename: file.filename,
-              mimeType: file.mimeType,
-              byteSize: file.byteSize,
-              altText: file.altText || null,
-              providerMetadata: {
-                ...(data.editing ? { editPostId: data.postId } : { postId: data.postId }),
-                expiresAt,
-                ordinal: firstOrdinal + index,
-              },
-            } satisfies typeof schema.mediaAssets.$inferInsert,
-          }
-        })
+        const intents = yield* Effect.forEach(
+          data.files,
+          (file, index) =>
+            Effect.gen(function* () {
+              const assetId = yield* randomUuid
+              return {
+                assetId,
+                uploadUrl: `/media/upload/${assetId}`,
+                expiresInSeconds: IMAGE_UPLOAD_INTENT_TTL_SECONDS,
+                values: {
+                  id: assetId,
+                  ownerId: session.user.id,
+                  kind: "image",
+                  provider: "r2",
+                  status: "pending",
+                  originalFilename: file.filename,
+                  mimeType: file.mimeType,
+                  byteSize: file.byteSize,
+                  altText: file.altText || null,
+                  providerMetadata: {
+                    ...(data.editing ? { editPostId: data.postId } : { postId: data.postId }),
+                    expiresAt,
+                    ordinal: firstOrdinal + index,
+                  },
+                } satisfies typeof schema.mediaAssets.$inferInsert,
+              }
+            }),
+          { concurrency: 1 },
+        )
         const [firstIntent, ...remainingIntents] = intents
         if (!firstIntent) return yield* invalidInputFailure("Choose at least one image.")
         return yield* Effect.gen(function* () {

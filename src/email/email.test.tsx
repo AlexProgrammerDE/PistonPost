@@ -99,7 +99,7 @@ describe("transactional email", () => {
           attempts += 1
           return attempts < 3
             ? Effect.fail(
-                new EmailDeliveryError({
+                EmailDeliveryError.make({
                   message: "Temporary failure",
                   code: "E_INTERNAL_SERVER_ERROR",
                   retryable: true,
@@ -120,7 +120,7 @@ describe("transactional email", () => {
         to: "recipient@example.com",
         from: "auth@example.com",
         idempotencyKey: "password-reset:test",
-      }).pipe(Effect.flip, Effect.provide(Layer.mergeAll(EmailRenderer.layer, transportLayer))),
+      }).pipe(Effect.flip, Effect.provide([EmailRenderer.layer, transportLayer])),
     )
 
     expect(failure).toMatchObject({
@@ -229,12 +229,10 @@ describe("transactional email", () => {
         from: "notifications@example.com",
         idempotencyKey: "product:test",
       }).pipe(
-        Effect.provide(
-          Layer.mergeAll(
-            EmailRenderer.layer,
-            Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
-          ),
-        ),
+        Effect.provide([
+          EmailRenderer.layer,
+          Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
+        ]),
       ),
     )
 
@@ -259,12 +257,10 @@ describe("transactional email", () => {
         from: "auth@example.com",
         idempotencyKey: "authentication:test",
       }).pipe(
-        Effect.provide(
-          Layer.mergeAll(
-            EmailRenderer.layer,
-            Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
-          ),
-        ),
+        Effect.provide([
+          EmailRenderer.layer,
+          Layer.succeed(EmailTransport, createCaptureEmailTransport(captured)),
+        ]),
       ),
     )
 

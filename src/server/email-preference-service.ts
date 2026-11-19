@@ -18,7 +18,7 @@ class EmailPreferenceQueryError extends Schema.TaggedError<
 >()("EmailPreferenceQueryError", { cause: Schema.Unknown, message: Schema.String }) {}
 
 function repositoryQueryError(cause: unknown) {
-  return new EmailPreferenceQueryError({
+  return EmailPreferenceQueryError.make({
     cause,
     message: cause instanceof Error ? cause.message : "The email preference could not be loaded.",
   })

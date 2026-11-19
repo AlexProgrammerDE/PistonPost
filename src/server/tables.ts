@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, asc, count, desc, eq, gt, isNull, like, lt, or, sql, type SQL } from "drizzle-orm"
-import { Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
+import { Clock, Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
 
 import { createD1Database, type D1DatabaseClient } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
@@ -49,7 +49,7 @@ const adminCursor = Schema.Struct({
 })
 
 function decodeAdminCursor(value: string | undefined) {
-  if (!value) return
+  if (!value) return undefined
   try {
     return Schema.decodeUnknownSync(adminCursor, { errors: "all" })(JSON.parse(atob(value)))
   } catch {
@@ -569,13 +569,12 @@ export const retryAdminJob = createServerFn({ method: "POST" })
         if (!job) return yield* notFoundFailure("The job was not found.")
         if (job.processedAt) return yield* conflictFailure("This job has already completed.")
         return yield* Effect.gen(function* () {
+          const auditId = yield* randomUuid
+          const now = yield* Clock.currentTimeMillis
           const results = yield* bindingOperation("retryAdminJob.operation", () =>
             runAdminStatements(
               database,
-              retryJobStatements(
-                { id: data.id, actorId: session.user.id, auditId: crypto.randomUUID() },
-                Date.now(),
-              ),
+              retryJobStatements({ id: data.id, actorId: session.user.id, auditId }, now),
             ),
           )
           if (results.at(-1)?.meta.changes !== 1) {
@@ -615,12 +614,14 @@ export const cleanupAdminMedia = createServerFn({ method: "POST" })
         }
         const job = mediaCleanupJob(data.id)
         return yield* Effect.gen(function* () {
+          const auditId = yield* randomUuid
+          const now = yield* Clock.currentTimeMillis
           const results = yield* bindingOperation("cleanupAdminMedia.operation", () =>
             runAdminStatements(
               database,
               adminMediaCleanupStatements(
-                { mediaId: data.id, actorId: session.user.id, auditId: crypto.randomUUID() },
-                Date.now(),
+                { mediaId: data.id, actorId: session.user.id, auditId },
+                now,
               ),
             ),
           )
@@ -717,6 +718,7 @@ export const moderateEntity = createServerFn({ method: "POST" })
               ),
             )
           }
+          const now = yield* Clock.currentTimeMillis
           const results = yield* bindingOperation("moderateEntity.operation", () =>
             runAdminStatements(
               database,
@@ -732,7 +734,7 @@ export const moderateEntity = createServerFn({ method: "POST" })
                   nextStatus,
                 },
                 jobs,
-                Date.now(),
+                now,
               ),
             ),
           )

@@ -48,7 +48,7 @@ function preferenceValues(
 }
 
 function repositoryError(cause: unknown) {
-  return new RepositoryError({
+  return RepositoryError.make({
     operation: "userSettings.setNotificationPreference",
     message: cause instanceof Error ? cause.message : "The database operation failed.",
   })

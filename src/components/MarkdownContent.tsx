@@ -191,7 +191,7 @@ function XEmbed({ embed }: { embed: Extract<MarkdownEmbed, { provider: "x" }> })
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return
+    if (!container) return undefined
 
     const blockquote = document.createElement("blockquote")
     blockquote.className = "twitter-tweet"
@@ -233,7 +233,7 @@ function TumblrWidget({
 
   useEffect(() => {
     const container = containerRef.current
-    if (!container) return
+    if (!container) return undefined
 
     const post = document.createElement("div")
     post.className = "tumblr-post"

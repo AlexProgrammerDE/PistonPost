@@ -9,7 +9,7 @@ export class QueueDeliveryError extends Schema.TaggedError<
 >()("QueueDeliveryError", { operation: Schema.String, retryAfterSeconds: Schema.Finite }) {}
 
 export function queueFailure(operation: string, retryAfterSeconds = 30) {
-  return () => new QueueDeliveryError({ operation, retryAfterSeconds })
+  return () => QueueDeliveryError.make({ operation, retryAfterSeconds })
 }
 
 function errorCode(error: unknown) {
@@ -29,12 +29,12 @@ export function withOutboxClaim<A, E, R>(
       yield* outbox.ensure(job.idempotencyKey, job.type, job)
       const claim = yield* outbox.claim(job.idempotencyKey)
       if (Predicate.isTagged(claim, "Deferred")) {
-        return yield* new QueueDeliveryError({
+        return yield* QueueDeliveryError.make({
           operation: "outbox-deferred",
           retryAfterSeconds: claim.retryAfterSeconds,
         })
       }
-      if (!Predicate.isTagged(claim, "Claimed")) return
+      if (!Predicate.isTagged(claim, "Claimed")) return undefined
       // The outbox row and the queue message must wait the same time, or the queue spends its
       // retries while the row is still unavailable and dead-letters the job early.
       const retryDelayMs = (error: unknown) =>
@@ -53,12 +53,11 @@ export function withOutboxClaim<A, E, R>(
             retryDelayMs(error),
           )
         }),
-        Effect.mapError(
-          (error) =>
-            new QueueDeliveryError({
-              operation: error instanceof QueueDeliveryError ? error.operation : errorCode(error),
-              retryAfterSeconds: Math.ceil(retryDelayMs(error) / 1000),
-            }),
+        Effect.mapError((error) =>
+          QueueDeliveryError.make({
+            operation: error instanceof QueueDeliveryError ? error.operation : errorCode(error),
+            retryAfterSeconds: Math.ceil(retryDelayMs(error) / 1000),
+          }),
         ),
       )
     }),

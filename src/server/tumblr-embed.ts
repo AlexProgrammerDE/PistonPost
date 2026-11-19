@@ -53,7 +53,7 @@ export const resolveTumblrEmbedHref = Effect.fn("resolveTumblrEmbedHref")(functi
 ) {
   const embed = parseMarkdownEmbed(input.url)
   if (embed?.provider !== "tumblr") {
-    return yield* new TumblrEmbedError({ operation: "validate", status: null })
+    return yield* TumblrEmbedError.make({ operation: "validate", status: null })
   }
 
   const endpoint = new URL(TUMBLR_OEMBED_ENDPOINT)
@@ -64,28 +64,30 @@ export const resolveTumblrEmbedHref = Effect.fn("resolveTumblrEmbedHref")(functi
         headers: { Accept: "application/json" },
         signal: AbortSignal.timeout(5000),
       }),
-    catch: () => new TumblrEmbedError({ operation: "request", status: null }),
+    catch: () => TumblrEmbedError.make({ operation: "request", status: null }),
   })
   if (!response.ok) {
-    return yield* new TumblrEmbedError({ operation: "request", status: response.status })
+    return yield* TumblrEmbedError.make({ operation: "request", status: response.status })
   }
 
   const responseText = yield* Effect.tryPromise({
     try: () => response.text(),
-    catch: () => new TumblrEmbedError({ operation: "response", status: response.status }),
+    catch: () => TumblrEmbedError.make({ operation: "response", status: response.status }),
   })
   if (responseText.length > MAX_OEMBED_RESPONSE_LENGTH) {
-    return yield* new TumblrEmbedError({ operation: "response", status: response.status })
+    return yield* TumblrEmbedError.make({ operation: "response", status: response.status })
   }
 
   const body = yield* Schema.decodeEffect(Schema.fromJsonString(tumblrOEmbedSchema))(
     responseText,
   ).pipe(
-    Effect.mapError(() => new TumblrEmbedError({ operation: "response", status: response.status })),
+    Effect.mapError(() =>
+      TumblrEmbedError.make({ operation: "response", status: response.status }),
+    ),
   )
   const href = validatedEmbedHref(body.html, embed.postId)
   if (!href) {
-    return yield* new TumblrEmbedError({ operation: "validate", status: response.status })
+    return yield* TumblrEmbedError.make({ operation: "validate", status: response.status })
   }
   return href
 })

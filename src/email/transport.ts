@@ -38,18 +38,18 @@ export type EmailRendererService = {
 }
 
 export class EmailTransport extends Context.Service<EmailTransport, EmailTransportService>()(
-  "@pistonpost/email/EmailTransport",
+  "pistonpost/email/transport/EmailTransport",
 ) {}
 
 export class EmailRenderer extends Context.Service<EmailRenderer, EmailRendererService>()(
-  "@pistonpost/email/EmailRenderer",
+  "pistonpost/email/transport/EmailRenderer",
 ) {
   static readonly layer = Layer.succeed(EmailRenderer, {
     render: (content) =>
       Effect.tryPromise({
         try: () => renderEmail(content),
         catch: (cause) =>
-          new EmailRenderError({
+          EmailRenderError.make({
             message: cause instanceof Error ? cause.message : "Email rendering failed.",
           }),
       }),
@@ -93,7 +93,7 @@ export function createCloudflareEmailTransport(
         },
         catch: (cause) => {
           const code = providerErrorCode(cause)
-          return new EmailDeliveryError({
+          return EmailDeliveryError.make({
             message: cause instanceof Error ? cause.message : "Email delivery failed.",
             code,
             retryable: code !== "E_RECIPIENT_SUPPRESSED",
@@ -112,7 +112,7 @@ export type EmailDelivery = Omit<OutboundEmail, keyof RenderedEmail> & {
 }
 
 function subscriptionHeaders(content: EmailContent) {
-  if (!content.subscription) return
+  if (!content.subscription) return undefined
   return {
     "List-Unsubscribe": `<${content.subscription.unsubscribeUrl}>`,
     "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",

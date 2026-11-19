@@ -4,4 +4,4 @@ export const POST_VIEW_SURFACES = ["timeline", "following", "tag", "profile", "d
 
 export const postViewSurfaceSchema = Schema.Literals(POST_VIEW_SURFACES)
 
-export type PostViewSurface = Schema.Schema.Type<typeof postViewSurfaceSchema>
+export type PostViewSurface = typeof postViewSurfaceSchema.Type

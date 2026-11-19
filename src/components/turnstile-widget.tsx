@@ -25,7 +25,7 @@ export function TurnstileWidget({
 
   useEffect(() => {
     const element = container.current
-    if (!element) return
+    if (!element) return undefined
 
     const updateSize = () => {
       setSize(getTurnstileWidgetSize(element.clientWidth))

@@ -36,13 +36,13 @@ export const resolveVideoPlaybackUrl = Effect.fn("resolveVideoPlaybackUrl")(func
 ) {
   let video = yield* Effect.tryPromise({
     try: () => client.details(),
-    catch: (cause) => new VideoPlaybackError({ operation: "details", cause }),
+    catch: (cause) => VideoPlaybackError.make({ operation: "details", cause }),
   })
 
   if (video.allowedOrigins.length > 0) {
     video = yield* Effect.tryPromise({
       try: () => client.update({ allowedOrigins: [] }),
-      catch: (cause) => new VideoPlaybackError({ operation: "update", cause }),
+      catch: (cause) => VideoPlaybackError.make({ operation: "update", cause }),
     })
   }
 
@@ -50,7 +50,7 @@ export const resolveVideoPlaybackUrl = Effect.fn("resolveVideoPlaybackUrl")(func
     format === "hls" ? video.hlsPlaybackUrl : video.dashPlaybackUrl,
   )
   if (!playbackUrl) {
-    return yield* new VideoPlaybackError({
+    return yield* VideoPlaybackError.make({
       operation: "validate",
       cause: new Error(`Cloudflare returned an invalid ${format.toUpperCase()} playback URL.`),
     })

@@ -677,32 +677,30 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: readonly Bas
       .groupBy(comments.postId),
   ])
 
-  return postRows.map<PublicPostRead>((post) => {
-    return {
-      id: post.id,
-      type: post.type,
-      title: post.title,
-      textContent: post.textContent,
-      visibility: post.visibility,
-      publishedAt: post.publishedAt,
-      updatedAt: post.updatedAt,
-      author: {
-        id: post.authorId,
-        username: post.authorUsername,
-        normalizedUsername: post.authorNormalizedUsername,
-        name: post.authorName,
-        image: post.authorImage,
-        searchIndexable: isSearchIndexingTrusted({
-          createdAt: post.authorCreatedAt,
-          emailVerified: post.authorEmailVerified,
-          role: post.authorRole,
-        }),
-      },
-      media: mediaRows.filter((media) => media.postId === post.id),
-      tags: tagRows.filter((tag) => tag.postId === post.id),
-      viewCount: post.viewCount,
-      commentCount: commentRows.find((row) => row.postId === post.id)?.count ?? 0,
-      heartCount: reactionRows.find((row) => row.postId === post.id)?.count ?? 0,
-    }
-  })
+  return postRows.map<PublicPostRead>((post) => ({
+    id: post.id,
+    type: post.type,
+    title: post.title,
+    textContent: post.textContent,
+    visibility: post.visibility,
+    publishedAt: post.publishedAt,
+    updatedAt: post.updatedAt,
+    author: {
+      id: post.authorId,
+      username: post.authorUsername,
+      normalizedUsername: post.authorNormalizedUsername,
+      name: post.authorName,
+      image: post.authorImage,
+      searchIndexable: isSearchIndexingTrusted({
+        createdAt: post.authorCreatedAt,
+        emailVerified: post.authorEmailVerified,
+        role: post.authorRole,
+      }),
+    },
+    media: mediaRows.filter((media) => media.postId === post.id),
+    tags: tagRows.filter((tag) => tag.postId === post.id),
+    viewCount: post.viewCount,
+    commentCount: commentRows.find((row) => row.postId === post.id)?.count ?? 0,
+    heartCount: reactionRows.find((row) => row.postId === post.id)?.count ?? 0,
+  }))
 }

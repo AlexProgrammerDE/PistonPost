@@ -1,16 +1,17 @@
 import { and, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm"
-import { DateTime, Clock, Effect } from "effect"
+import { DateTime, Clock, Effect, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 
-import { mediaCleanupJob } from "./jobs"
+import { mediaCleanupJob, mediaCleanupJobSchema } from "./jobs"
 import { runMaintenanceTasks } from "./maintenance-runner"
 import { bindingOperation } from "./operation"
 import { synchronizeVideoDownload } from "./video-download"
 
 const drainOutbox = Effect.fn("Maintenance.drainOutbox")(function* (env: Cloudflare.Env) {
   const database = createD1Database(env.DB)
+  const now = yield* DateTime.nowAsDate
   const pending = yield* bindingOperation("maintenance.drainOutbox", () =>
     database
       .select({ payload: schema.outbox.payload })
@@ -19,8 +20,8 @@ const drainOutbox = Effect.fn("Maintenance.drainOutbox")(function* (env: Cloudfl
         and(
           isNull(schema.outbox.processedAt),
           isNull(schema.outbox.deadLetteredAt),
-          lte(schema.outbox.availableAt, new Date()),
-          or(isNull(schema.outbox.leaseExpiresAt), lte(schema.outbox.leaseExpiresAt, new Date())),
+          lte(schema.outbox.availableAt, now),
+          or(isNull(schema.outbox.leaseExpiresAt), lte(schema.outbox.leaseExpiresAt, now)),
         ),
       )
       .limit(100),
@@ -100,6 +101,9 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
   env: Cloudflare.Env,
 ) {
   const database = createD1Database(env.DB)
+  const cutoff = DateTime.toDateUtc(
+    DateTime.makeUnsafe((yield* Clock.currentTimeMillis) - 24 * 60 * 60 * 1000),
+  )
   const abandoned = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
     database
       .select({ id: schema.mediaAssets.id })
@@ -114,7 +118,7 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
               sql`not exists (select 1 from post_media where media_id = ${schema.mediaAssets.id})`,
             ),
           ),
-          lt(schema.mediaAssets.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
+          lt(schema.mediaAssets.createdAt, cutoff),
         ),
       )
       .limit(100),
@@ -122,7 +126,10 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
   const jobs = abandoned.map(({ id }) => mediaCleanupJob(id))
   const [firstJob, ...remainingJobs] = jobs
   if (!firstJob) return
-  const insertJob = (job: (typeof jobs)[number]) =>
+  const now = yield* Clock.currentTimeMillis
+  const encodeJob = (job: (typeof jobs)[number]) =>
+    Schema.encodeEffect(Schema.fromJsonString(mediaCleanupJobSchema))(job).pipe(Effect.orDie)
+  const insertJob = (job: (typeof jobs)[number], payload: string) =>
     database.$client
       .prepare(
         `insert into outbox (id, kind, payload, attempts, available_at, created_at)
@@ -131,9 +138,16 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
          or not exists (select 1 from post_media where media_id = m.id))
      on conflict(id) do nothing`,
       )
-      .bind(job.idempotencyKey, job.type, JSON.stringify(job), Date.now(), Date.now(), job.mediaId)
+      .bind(job.idempotencyKey, job.type, payload, now, now, job.mediaId)
+  const firstPayload = yield* encodeJob(firstJob)
+  const firstStatement = insertJob(firstJob, firstPayload)
+  const remainingStatements = yield* Effect.forEach(
+    remainingJobs,
+    (job) => encodeJob(job).pipe(Effect.map((payload) => insertJob(job, payload))),
+    { concurrency: 1 },
+  )
   const inserted = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
-    database.$client.batch([insertJob(firstJob), ...remainingJobs.map((job) => insertJob(job))]),
+    database.$client.batch([firstStatement, ...remainingStatements]),
   )
   yield* Effect.forEach(
     jobs.filter((_, index) => (inserted[index]?.meta.changes ?? 0) > 0),
@@ -189,7 +203,10 @@ const removeAbandonedDrafts = Effect.fn("Maintenance.removeAbandonedDrafts")(fun
       .where(
         and(
           eq(schema.posts.status, "draft"),
-          lt(schema.posts.updatedAt, new Date(now - ABANDONED_DRAFT_AGE_MS)),
+          lt(
+            schema.posts.updatedAt,
+            DateTime.toDateUtc(DateTime.makeUnsafe(now - ABANDONED_DRAFT_AGE_MS)),
+          ),
         ),
       )
       .limit(25),
@@ -240,6 +257,7 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
         const video = yield* bindingOperation("maintenance.reconcileStream", () =>
           env.STREAM.video(streamUid).details(),
         )
+        const finalizedAt = video.readyToStream ? yield* DateTime.nowAsDate : undefined
         const failed = video.status.state.toLocaleLowerCase("en-US").includes("error")
         yield* bindingOperation("maintenance.reconcileStream", () =>
           database
@@ -250,7 +268,7 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
               height: video.input.height || undefined,
               duration: video.duration >= 0 ? Math.round(video.duration * 1000) : undefined,
               byteSize: video.size > 0 ? video.size : undefined,
-              finalizedAt: video.readyToStream ? new Date() : undefined,
+              finalizedAt,
             })
             .where(eq(schema.mediaAssets.id, asset.id)),
         )
@@ -332,8 +350,9 @@ const cleanStagingObjects = Effect.fn("Maintenance.cleanStagingObjects")(functio
     const listed = yield* bindingOperation("maintenance.staging.list", () =>
       env.MEDIA.list({ prefix: "staging/", cursor: pageCursor, limit: 100 }),
     )
+    const now = yield* Clock.currentTimeMillis
     const stale = listed.objects.filter(
-      (object) => object.uploaded.getTime() < Date.now() - 24 * 60 * 60 * 1000,
+      (object) => object.uploaded.getTime() < now - 24 * 60 * 60 * 1000,
     )
     if (stale.length > 0)
       yield* bindingOperation("maintenance.staging.delete", () =>

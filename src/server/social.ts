@@ -25,19 +25,19 @@ import {
 } from "@/server/server-function-failure"
 import { authenticatedServerFunctionMiddleware } from "@/server/server-function-middleware"
 
-const commentCursorSchema = Schema.Struct({ createdAt: Schema.Finite, id: Schema.String })
+const commentCursorSchema = Schema.fromJsonString(
+  Schema.Struct({ createdAt: Schema.Finite, id: Schema.String }),
+)
 
 function encodeCommentCursor(createdAt: Date, id: string) {
-  return btoa(JSON.stringify({ createdAt: createdAt.getTime(), id }))
+  return btoa(Schema.encodeSync(commentCursorSchema)({ createdAt: createdAt.getTime(), id }))
 }
 
 function decodeCommentCursor(cursor: string | undefined) {
   if (!cursor) return null
   try {
-    const value = Schema.decodeUnknownSync(commentCursorSchema, { errors: "all" })(
-      JSON.parse(atob(cursor)),
-    )
-    return { createdAt: new Date(value.createdAt), id: value.id }
+    const value = Schema.decodeSync(commentCursorSchema, { errors: "all" })(atob(cursor))
+    return { createdAt: DateTime.toDateUtc(DateTime.makeUnsafe(value.createdAt)), id: value.id }
   } catch {
     return null
   }
@@ -434,11 +434,12 @@ export const deleteComment = createServerFn({ method: "POST" })
           if (comment.authorId === session.user.id) {
             yield* bindingOperation("deleteComment.operation", () => deleteRow)
           } else {
+            const auditId = yield* randomUuid
             yield* bindingOperation("deleteComment.operation", () =>
               database.batch([
                 deleteRow,
                 database.insert(schema.auditEvents).values({
-                  id: crypto.randomUUID(),
+                  id: auditId,
                   actorId: session.user.id,
                   action: "comment.delete",
                   entityType: "comment",

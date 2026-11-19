@@ -29,6 +29,7 @@ export function runMaintenanceTasks<E, R>(
     const failures = outcomes.flatMap(({ name, result }) =>
       Exit.isFailure(result) ? [{ task: name, cause: result.cause }] : [],
     )
-    if (failures.length > 0) return yield* new MaintenanceError({ failures })
+    if (failures.length > 0) return yield* MaintenanceError.make({ failures })
+    return undefined
   })
 }

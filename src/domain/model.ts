@@ -20,7 +20,7 @@ export const actorSchema = Schema.Union([
   }),
 ])
 
-export type Actor = Schema.Schema.Type<typeof actorSchema>
+export type Actor = typeof actorSchema.Type
 
 export const postSchema = Schema.Struct({
   id: Schema.String,
@@ -38,7 +38,7 @@ export const postSchema = Schema.Struct({
   version: Schema.Int,
 })
 
-export type Post = Schema.Schema.Type<typeof postSchema>
+export type Post = typeof postSchema.Type
 
 export type PublicPostCursor = {
   readonly publishedAt: Date

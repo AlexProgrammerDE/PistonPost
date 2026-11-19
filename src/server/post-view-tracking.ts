@@ -30,7 +30,7 @@ class PostViewTrackingError extends Schema.TaggedError<
 }) {}
 
 function trackingError(operation: PostViewTrackingError["operation"], cause: unknown) {
-  return new PostViewTrackingError({ operation, cause })
+  return PostViewTrackingError.make({ operation, cause })
 }
 
 async function createRateLimitKey(kind: "open" | "view", address: string, postId: string) {

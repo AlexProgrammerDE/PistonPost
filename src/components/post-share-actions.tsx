@@ -143,7 +143,7 @@ function CopyPostLinkButton({
   const copied = copyConfirmationVersion > 0
 
   useEffect(() => {
-    if (copyConfirmationVersion === 0) return
+    if (copyConfirmationVersion === 0) return undefined
 
     const timeout = window.setTimeout(() => {
       setCopyConfirmationVersion(0)

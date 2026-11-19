@@ -62,7 +62,7 @@ export function fitMediaDimensions(
     maximumWidth < 1 ||
     maximumHeight < 1
   ) {
-    return
+    return undefined
   }
 
   const scale = Math.min(1, maximumWidth / image.width, maximumHeight / image.height)
@@ -87,19 +87,19 @@ export function mediaImageUrl(
 }
 
 export function parseManagedAvatarMediaId(source: string) {
-  if (!source.startsWith("/media/image/")) return
+  if (!source.startsWith("/media/image/")) return undefined
   const url = new URL(source, "https://pistonpost.invalid")
   const searchKeys = Array.from(url.searchParams.keys())
   if (searchKeys.some((key) => key !== "v") || searchKeys.filter((key) => key === "v").length > 1) {
-    return
+    return undefined
   }
   const version = url.searchParams.get("v")
-  if (version !== null && !/^\d+$/u.test(version)) return
+  if (version !== null && !/^\d+$/u.test(version)) return undefined
   return managedAvatarPathPattern.exec(url.pathname)?.[1]
 }
 
 export function parseResponsiveMediaWidth(value: string | null) {
-  if (value === null) return
+  if (value === null) return undefined
   if (!/^\d+$/u.test(value)) return null
 
   const width = Number(value)
@@ -213,18 +213,18 @@ export function createManagedAvatarSources(
   source: string,
   animation: MediaImageAnimation = "auto",
 ) {
-  if (!source.startsWith("/media/image/")) return
+  if (!source.startsWith("/media/image/")) return undefined
 
   const url = new URL(source, "https://pistonpost.invalid")
   const match = /^\/media\/image\/([^/]+)\/avatar$/u.exec(url.pathname)
-  if (!match?.[1]) return
+  if (!match?.[1]) return undefined
   const searchKeys = Array.from(url.searchParams.keys())
-  if (searchKeys.some((key) => key !== "v")) return
+  if (searchKeys.some((key) => key !== "v")) return undefined
   let mediaId: string
   try {
     mediaId = decodeURIComponent(match[1])
   } catch {
-    return
+    return undefined
   }
 
   return AVATAR_IMAGE_WIDTHS.map((width) => ({

@@ -96,7 +96,7 @@ describe("outbox job lifetime", () => {
     await Effect.runPromiseExit(
       withOutboxClaim(job, () =>
         Effect.fail(
-          new QueueDeliveryError({ operation: "provider-limit", retryAfterSeconds: 120 }),
+          QueueDeliveryError.make({ operation: "provider-limit", retryAfterSeconds: 120 }),
         ),
       ).pipe(Effect.provide(layer)),
     )
@@ -110,7 +110,7 @@ describe("outbox job lifetime", () => {
     const now = Date.now()
     const failure = await Effect.runPromise(
       withOutboxClaim(job, () =>
-        Effect.fail(new QueueDeliveryError({ operation: "provider-busy", retryAfterSeconds: 5 })),
+        Effect.fail(QueueDeliveryError.make({ operation: "provider-busy", retryAfterSeconds: 5 })),
       ).pipe(Effect.flip, Effect.provide(layer)),
     )
     expect(failure).toMatchObject({

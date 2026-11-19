@@ -30,7 +30,7 @@ class AccountMediaPurge extends Context.Service<
     ) => Effect.Effect<void, AccountMediaPurgeError>
     readonly deleteRecord: (id: string) => Effect.Effect<void, AccountMediaPurgeError>
   }
->()("@pistonpost/media/AccountMediaPurge") {}
+>()("pistonpost/server/account-media-purge/AccountMediaPurge") {}
 
 /** Stream bindings throw `NotFoundError` with `statusCode: 404` once a video is gone. */
 export function missingProviderObject(cause: unknown) {
@@ -49,7 +49,7 @@ function providerDelete(assetId: string, operation: "r2" | "stream", task: () =>
   return Effect.tryPromise({
     try: task,
     catch: (cause) =>
-      missingProviderObject(cause) ? null : new AccountMediaPurgeError({ assetId, operation }),
+      missingProviderObject(cause) ? null : AccountMediaPurgeError.make({ assetId, operation }),
   }).pipe(
     Effect.catchIf(
       (error) => error === null,
@@ -67,7 +67,7 @@ export function accountMediaPurgeLayer(services: AccountMediaPurgeServices) {
     deleteRecord: (assetId) =>
       Effect.tryPromise({
         try: () => services.deleteRecord(assetId),
-        catch: () => new AccountMediaPurgeError({ assetId, operation: "database" }),
+        catch: () => AccountMediaPurgeError.make({ assetId, operation: "database" }),
       }).pipe(Effect.uninterruptible),
   })
 }
@@ -89,4 +89,5 @@ export const purgeAccountMedia = Effect.fn("AccountDeletion.purgeMedia")(functio
   )
   const failure = exits.find((exit) => Exit.isFailure(exit))
   if (failure) return yield* Effect.failCause(failure.cause)
+  return undefined
 })

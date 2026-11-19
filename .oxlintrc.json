@@ -25,6 +25,27 @@
     "pedantic": "error"
   },
   "rules": {
+    // The style preset also suggests explicit conditions and pipeable signatures.
+    // Those rules report 2,907 and 169 findings in the full probe.
+    "effecttsgo/deterministic-keys": "error",
+    "effecttsgo/effect-do-notation": "error",
+    "effecttsgo/effect-try-without-catch": "error",
+    "effecttsgo/for-loop-push-to-for-each": "error",
+    "effecttsgo/map-map-error-to-map-both": "error",
+    "effecttsgo/missed-pipeable-opportunity": "error",
+    "effecttsgo/missing-concurrency-option": "error",
+    "effecttsgo/missing-effect-service-dependency": "error",
+    "effecttsgo/nested-effect-gen-yield": "error",
+    "effecttsgo/new-schema-class": "error",
+    "effecttsgo/prefer-barrel-import": "error",
+    "effecttsgo/prefer-namespace-import": "error",
+    "effecttsgo/prefer-schema-type-property": "error",
+    "effecttsgo/provide-merge-all-to-array": "error",
+    "effecttsgo/schema-union-of-literals": "error",
+    "effecttsgo/service-not-as-class": "error",
+    "effecttsgo/type-union-to-schema-union": "error",
+    "effecttsgo/unnecessary-arrow-block": "error",
+
     "effecttsgo/global-date-in-effect": "error",
     "effecttsgo/global-json-in-effect": "error",
     "effecttsgo/process-env-in-effect": "error",
@@ -370,7 +391,7 @@
     "better-tailwindcss/no-deprecated-classes": "error",
     "better-tailwindcss/enforce-canonical-classes": "error",
     "import/no-duplicates": "error",
-    "import/no-cycle": "error",
+    "import/no-cycle": ["error", { "ignoreTypes": true }],
     "promise/catch-or-return": "error",
     "unicorn/prefer-at": "error",
     "unicorn/prefer-string-replace-all": "error",
@@ -438,15 +459,9 @@
     "typescript/consistent-indexed-object-style": "error",
     "unicorn/switch-case-braces": "error",
     "eslint/no-useless-assignment": "error",
-    // Effect APIs such as Deferred.succeed and Option.some take the value as a required argument,
-    // and promise/always-return wants `.then(() => undefined)` callbacks to return a value.
-    "unicorn/no-useless-undefined": [
-      "error",
-      { "checkArguments": false, "checkArrowFunctionBody": false }
-    ],
-    // Conflicts with unicorn/no-useless-undefined in functions that return `T | undefined`.
-    // noImplicitReturns in tsconfig.json already reports code paths that forget to return.
-    "typescript/consistent-return": "off",
+    // consistent-return requires explicit undefined in functions with multiple return paths.
+    "unicorn/no-useless-undefined": "off",
+    "typescript/consistent-return": "error",
     // The Cloudflare HTMLRewriter Element type merges into the DOM Element type, so
     // Element.append only accepts strings, streams and responses in this project.
     "unicorn/prefer-dom-node-append": "off",
@@ -455,6 +470,129 @@
     "eslint/no-redeclare": "off"
   },
   "overrides": [
+    {
+      "files": [
+        "src/server.ts",
+        "src/server/**",
+        "src/db/**",
+        "src/auth/*.server.ts",
+        "src/auth/server.ts",
+        "src/lib/**/*.server.ts",
+        "src/lib/server-uuid.ts",
+        "src/routes/**/*.ts",
+        "src/email/*.ts",
+        "src/push/**",
+        "scripts/**/*.ts"
+      ],
+      "rules": {
+        "effecttsgo/global-date": "error",
+        "effecttsgo/global-json": "error",
+        "effecttsgo/global-fetch": "error",
+        "effecttsgo/global-timers": "error",
+        "effecttsgo/global-random": "error",
+        "effecttsgo/crypto-random-uuid": "error",
+        "effecttsgo/process-env": "error",
+        "effecttsgo/global-console": "error",
+        "effecttsgo/node-builtin-import": "error"
+      }
+    },
+    {
+      // Tests use native fixture APIs and exercise the platform boundaries directly.
+      "files": ["**/*.test.ts", "**/*.test.tsx"],
+      "rules": {
+        "effecttsgo/global-date": "off",
+        "effecttsgo/global-json": "off",
+        "effecttsgo/global-fetch": "off",
+        "effecttsgo/global-timers": "off",
+        "effecttsgo/global-random": "off",
+        "effecttsgo/crypto-random-uuid": "off",
+        "effecttsgo/process-env": "off",
+        "effecttsgo/global-console": "off",
+        "effecttsgo/node-builtin-import": "off"
+      }
+    },
+    {
+      // The CLI entry points preserve their output and use native build and network tooling.
+      "files": [
+        "scripts/check-client-bundles.ts",
+        "scripts/check-generated.ts",
+        "scripts/load-test.ts",
+        "scripts/smoke-production.ts"
+      ],
+      "rules": {
+        "effecttsgo/global-date": "off",
+        "effecttsgo/global-json": "off",
+        "effecttsgo/global-fetch": "off",
+        "effecttsgo/global-timers": "off",
+        "effecttsgo/global-random": "off",
+        "effecttsgo/crypto-random-uuid": "off",
+        "effecttsgo/process-env": "off",
+        "effecttsgo/global-console": "off",
+        "effecttsgo/node-builtin-import": "off"
+      }
+    },
+    {
+      // Date values are constructed at synchronous query, statement, and framework boundaries.
+      "files": [
+        "src/db/account-ban.ts",
+        "src/db/factories.ts",
+        "src/db/post-edit-statements.ts",
+        "src/db/public-read-model.ts",
+        "src/db/push-subscription-queries.ts",
+        "src/push/transport.ts",
+        "src/server/image-upload-statements.ts",
+        "src/server/media-access.ts",
+        "src/server/post-lifecycle-statements.ts",
+        "src/server/request-session.ts",
+        "src/server/tables.ts"
+      ],
+      "rules": {
+        "effecttsgo/global-date": "off"
+      }
+    },
+    {
+      // These synchronous SQL and cursor builders serialize the values bound to the existing storage format.
+      "files": [
+        "src/db/media-read-model.ts",
+        "src/db/post-edit-statements.ts",
+        "src/server/image-upload-statements.ts",
+        "src/server/post-lifecycle-statements.ts",
+        "src/server/tables.ts"
+      ],
+      "rules": {
+        "effecttsgo/global-json": "off"
+      }
+    },
+    {
+      // These synchronous helpers supply IDs to framework error and job payloads.
+      "files": ["src/server/jobs.ts", "src/server/server-function-failure.ts"],
+      "rules": {
+        "effecttsgo/crypto-random-uuid": "off"
+      }
+    },
+    {
+      // Workers Logs consumes a single structured console line from synchronous callers.
+      "files": ["src/server/error-log.ts"],
+      "rules": {
+        "effecttsgo/global-console": "off",
+        "effecttsgo/global-json": "off"
+      }
+    },
+    {
+      // Native streaming routes hand Fetch responses directly to the Worker framework.
+      "files": ["src/routes/media.external-image.$postId.ts"],
+      "rules": {
+        "effecttsgo/global-fetch": "off"
+      }
+    },
+    {
+      // The upload route owns the request timing and staging identifiers at the streaming boundary.
+      "files": ["src/routes/media.upload.$mediaId.ts"],
+      "rules": {
+        "effecttsgo/global-date": "off",
+        "effecttsgo/crypto-random-uuid": "off"
+      }
+    },
     {
       // Vite targets Safari 16.4. Response.json() is available starting in Safari 17.
       "files": [
@@ -589,7 +727,10 @@
     "browser": true,
     "node": true
   },
-  "extends": ["./node_modules/@effect/tsgo/oxlint-presets/strict.json"],
+  "extends": [
+    "./node_modules/@effect/tsgo/oxlint-presets/antipattern.json",
+    "./node_modules/@effect/tsgo/oxlint-presets/strict.json"
+  ],
   "options": {
     "typeAware": true,
     "typeCheck": true,

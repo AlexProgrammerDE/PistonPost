@@ -3,6 +3,7 @@ import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Context, Effect, Layer, Schema } from "effect"
 
 import * as schema from "@/db/schema"
+import { randomUuid } from "@/lib/server-uuid"
 
 import { purgeAccountMedia, type OwnedMediaForDeletion } from "./account-media-purge"
 import { FEED_CACHE_TAG, ownerCacheTag, SITEMAP_CACHE_TAG } from "./cache-tags"
@@ -33,7 +34,7 @@ class AccountDeletionStore extends Context.Service<
     readonly scheduleCachePurge: (job: InternalJob) => Effect.Effect<void, OperationError>
     readonly complete: (input: AccountDeletionParams) => Effect.Effect<void, OperationError>
   }
->()("@pistonpost/media/AccountDeletionStore") {}
+>()("pistonpost/server/account-deletion-steps/AccountDeletionStore") {}
 
 export function accountDeletionStoreLayer(
   database: BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>,
@@ -63,23 +64,28 @@ export function accountDeletionStoreLayer(
                 // One JSON parameter keeps large accounts within D1's bound-parameter limit.
                 inArray(
                   schema.mediaAssets.id,
-                  sql`(select value from json_each(${JSON.stringify(ids)}))`,
+                  sql`(select value from json_each(${Schema.encodeSync(Schema.fromJsonString(Schema.Array(Schema.String)))(ids)}))`,
                 ),
               ),
           ),
     scheduleCachePurge: (job) =>
       bindingOperation("account-deletion.cache-purge", () => send(job)).pipe(Effect.asVoid),
     complete: (input) =>
-      bindingOperation("account-deletion.audit", () =>
-        database.insert(schema.auditEvents).values({
-          id: crypto.randomUUID(),
-          actorId: null,
-          action: "account.deletion-complete",
-          entityType: "user",
-          entityId: input.userId,
-          metadata: { mediaCount: input.mediaIds.length },
-        }),
-      ).pipe(Effect.asVoid),
+      randomUuid.pipe(
+        Effect.flatMap((id) =>
+          bindingOperation("account-deletion.audit", () =>
+            database.insert(schema.auditEvents).values({
+              id,
+              actorId: null,
+              action: "account.deletion-complete",
+              entityType: "user",
+              entityId: input.userId,
+              metadata: { mediaCount: input.mediaIds.length },
+            }),
+          ),
+        ),
+        Effect.asVoid,
+      ),
   })
 }
 
@@ -91,7 +97,7 @@ export const confirmAccountDeleted = Effect.fn("AccountDeletion.confirmAccountDe
   input: AccountDeletionParams,
 ) {
   const store = yield* AccountDeletionStore
-  if (yield* store.accountExists(input.userId)) return yield* new AccountStillExists({})
+  if (yield* store.accountExists(input.userId)) return yield* AccountStillExists.make({})
   return { deleted: true }
 })
 
@@ -124,7 +130,7 @@ export const verifyAccountPurge = Effect.fn("AccountDeletion.verifyPurge")(funct
 ) {
   const store = yield* AccountDeletionStore
   const remaining = yield* store.media(input.mediaIds)
-  if (remaining.length > 0) return yield* new AccountDeletionIncomplete({})
+  if (remaining.length > 0) return yield* AccountDeletionIncomplete.make({})
   yield* store.complete(input)
   return { complete: true }
 })

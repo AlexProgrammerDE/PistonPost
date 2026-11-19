@@ -43,7 +43,7 @@ export function readyVideoDownloadUrl(metadata: MediaProviderMetadata) {
 function requestDownloads(client: VideoDownloadClient, operation: "generate" | "get") {
   return Effect.tryPromise({
     try: () => (operation === "generate" ? client.generate() : client.get()),
-    catch: (cause) => new VideoDownloadError({ operation, cause }),
+    catch: (cause) => VideoDownloadError.make({ operation, cause }),
   })
 }
 

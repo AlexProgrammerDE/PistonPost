@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm"
-import { Effect, Result, Schema } from "effect"
+import { Clock, DateTime, Effect, Result, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -47,7 +47,7 @@ export async function verifyStreamWebhook(
   body: string,
   signatureHeader: string | null,
   secret: string,
-  now = Date.now(),
+  now: number,
 ) {
   if (!signatureHeader) return false
   const parts = new Map(
@@ -94,8 +94,9 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
   const secret = yield* bindingOperation("processStreamWebhook", () =>
     readSecret(context.env.STREAM_WEBHOOK_SECRET),
   )
+  const now = yield* Clock.currentTimeMillis
   const valid = yield* bindingOperation("processStreamWebhook", () =>
-    verifyStreamWebhook(body, request.headers.get("Webhook-Signature"), secret),
+    verifyStreamWebhook(body, request.headers.get("Webhook-Signature"), secret, now),
   )
   if (!valid) return new Response("Invalid signature", { status: 403 })
 
@@ -130,6 +131,7 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
       : {}),
   }
   return yield* Effect.gen(function* () {
+    const finalizedAt = payload.readyToStream ? yield* DateTime.nowAsDate : undefined
     yield* bindingOperation("processStreamWebhook", () =>
       database
         .update(schema.mediaAssets)
@@ -140,7 +142,7 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
           duration:
             payload.duration === undefined ? undefined : Math.round(payload.duration * 1000),
           byteSize: payload.size,
-          finalizedAt: payload.readyToStream ? new Date() : undefined,
+          finalizedAt,
           providerMetadata,
         })
         .where(eq(schema.mediaAssets.id, asset.id)),

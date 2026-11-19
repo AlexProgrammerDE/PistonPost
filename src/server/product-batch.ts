@@ -32,14 +32,14 @@ export class ProductBatchStore extends Context.Service<
     readonly continue: (job: ProductEmailBatchJob) => Effect.Effect<void, OperationError>
     readonly finish: (campaignId: string) => Effect.Effect<void, OperationError>
   }
->()("@pistonpost/email/ProductBatchStore") {}
+>()("pistonpost/server/product-batch/ProductBatchStore") {}
 
 export class ProductBatchDispatch extends Context.Service<
   ProductBatchDispatch,
   {
     readonly send: (jobs: ProductJob[]) => Effect.Effect<void, OperationError>
   }
->()("@pistonpost/email/ProductBatchDispatch") {}
+>()("pistonpost/server/product-batch/ProductBatchDispatch") {}
 
 export function productBatchStoreLayer(database: D1DatabaseClient | SqliteDatabaseClient) {
   const db: BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema> = database

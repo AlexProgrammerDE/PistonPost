@@ -253,7 +253,7 @@ export function SocialPanel({
     const contentStart = document.querySelector(`#${CSS.escape(`post-engagement-start-${postId}`)}`)
     const footerActions = footerActionsRef.current
     if (!contentStart || !footerActions || typeof IntersectionObserver === "undefined") {
-      return
+      return undefined
     }
 
     setContentStartPosition(elementPosition(contentStart))

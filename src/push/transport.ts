@@ -48,7 +48,7 @@ export type PushTransportService = {
 }
 
 export class PushTransport extends Context.Service<PushTransport, PushTransportService>()(
-  "@pistonpost/push/PushTransport",
+  "pistonpost/push/transport/PushTransport",
 ) {}
 
 function retryAfterSeconds(headers: webPush.Headers) {
@@ -64,17 +64,17 @@ function retryAfterSeconds(headers: webPush.Headers) {
 export function classifyPushFailure(cause: unknown): PushTransportError {
   if (cause instanceof webPush.WebPushError) {
     if (cause.statusCode === 404 || cause.statusCode === 410) {
-      return new PushSubscriptionExpired({ statusCode: cause.statusCode })
+      return PushSubscriptionExpired.make({ statusCode: cause.statusCode })
     }
     if (cause.statusCode === 429) {
-      return new PushRateLimited({ retryAfterSeconds: retryAfterSeconds(cause.headers) })
+      return PushRateLimited.make({ retryAfterSeconds: retryAfterSeconds(cause.headers) })
     }
-    return new PushDeliveryError({
+    return PushDeliveryError.make({
       code: `provider-${cause.statusCode}`,
       retryable: cause.statusCode >= 500,
     })
   }
-  return new PushDeliveryError({ code: "transport", retryable: true })
+  return PushDeliveryError.make({ code: "transport", retryable: true })
 }
 
 export function createWebPushTransport(config: {
@@ -85,7 +85,7 @@ export function createWebPushTransport(config: {
   return {
     send: (target, payload) => {
       if (!isTrustedPushEndpoint(target.endpoint)) {
-        return Effect.fail(new PushDeliveryError({ code: "endpoint-rejected", retryable: false }))
+        return Effect.fail(PushDeliveryError.make({ code: "endpoint-rejected", retryable: false }))
       }
       return Schema.encodeEffect(Schema.fromJsonString(pushPayloadSchema))(payload).pipe(
         Effect.mapError(classifyPushFailure),

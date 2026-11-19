@@ -172,6 +172,7 @@ export const resolveContentReport = createServerFn({ method: "POST" })
 
         const now = yield* DateTime.nowAsDate
         return yield* Effect.gen(function* () {
+          const auditId = yield* randomUuid
           yield* bindingOperation("resolveContentReport.operation", () =>
             database.batch([
               database
@@ -189,7 +190,7 @@ export const resolveContentReport = createServerFn({ method: "POST" })
                   ),
                 ),
               database.insert(schema.auditEvents).values({
-                id: crypto.randomUUID(),
+                id: auditId,
                 actorId: session.user.id,
                 action: `report.${data.resolution}`,
                 entityType: "content-report",

@@ -56,7 +56,8 @@ export const sharedContentSchema = Schema.Struct({
       }),
     )
     .pipe(Schema.withDecodingDefaultType(Effect.sync(() => "" as const))),
-  files: Schema.mutable(Schema.Array(sharedFileSchema))
+  files: sharedFileSchema
+    .pipe(Schema.Array, Schema.mutable)
     .check(Schema.isMaxLength(MAX_SHARED_FILES))
     .pipe(Schema.withDecodingDefaultType(Effect.sync(() => []))),
 })

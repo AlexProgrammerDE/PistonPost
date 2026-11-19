@@ -35,7 +35,7 @@ export function usePostImpressionTracking({
       root.dataset["postIdentity"] !== postIdentity ||
       typeof IntersectionObserver === "undefined"
     ) {
-      return
+      return undefined
     }
 
     const lastViewedAt = lastViewedAtBySurfaceRef.current.get(surface) ?? new Map<string, number>()

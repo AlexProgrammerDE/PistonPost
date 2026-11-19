@@ -23,10 +23,10 @@ async function rejectedValue(promise: Promise<unknown>) {
 describe("server function failure mapping", () => {
   test("maps expected Effect failures to the public wire contract", async () => {
     const cursorFailure = await rejectedValue(
-      runServerEffect(Effect.fail(InvalidCursorError.make({ reason: "bad encoding" }))),
+      Effect.fail(InvalidCursorError.make({ reason: "bad encoding" })).pipe(runServerEffect),
     )
     const missingFailure = await rejectedValue(
-      runServerEffect(Effect.fail(NotFoundError.make({ entity: "post", id: "post-1" }))),
+      Effect.fail(NotFoundError.make({ entity: "post", id: "post-1" })).pipe(runServerEffect),
     )
 
     expect(cursorFailure).toMatchObject({
@@ -41,7 +41,7 @@ describe("server function failure mapping", () => {
 
   test("keeps repository failures private", async () => {
     const cause = RepositoryError.make({ operation: "read secret row", message: "SQL text" })
-    const failure = await rejectedValue(runServerEffect(Effect.fail(cause)))
+    const failure = await rejectedValue(Effect.fail(cause).pipe(runServerEffect))
 
     expect(failure).toMatchObject({
       error: {
@@ -84,10 +84,10 @@ describe("server function failure mapping", () => {
 
 test("preserves composed application failures and hides operational causes", async () => {
   const expected = conflictFailure("The draft changed in another session.")
-  expect(await rejectedValue(runServerEffect(Effect.fail(expected)))).toBe(expected)
+  expect(await rejectedValue(Effect.fail(expected).pipe(runServerEffect))).toBe(expected)
   const privateFailure = await rejectedValue(
-    runServerEffect(
-      bindingOperation("save-draft", () => Promise.reject(new Error("private database detail"))),
+    bindingOperation("save-draft", () => Promise.reject(new Error("private database detail"))).pipe(
+      runServerEffect,
     ),
   )
   expect(privateFailure).toMatchObject({
@@ -99,7 +99,7 @@ test("preserves composed application failures and hides operational causes", asy
 })
 
 test("the public middleware envelope strips causes before error serialization", () => {
-  const cause = new OperationError({
+  const cause = OperationError.make({
     operation: "write",
     cause: { sql: "private SQL text", providerToken: "private-token" },
   })
@@ -114,7 +114,7 @@ test("the public middleware envelope strips causes before error serialization", 
   expect(JSON.stringify(publicError)).not.toContain("private")
   const expected = conflictFailure("The draft changed in another session.")
   Object.assign(expected.error, { cause, debug: "private SQL text" })
-  expect(publicServerFunctionError(expected)).toEqual({
+  expect(expected.pipe(publicServerFunctionError)).toEqual({
     code: "CONFLICT",
     message: "The draft changed in another session.",
   })

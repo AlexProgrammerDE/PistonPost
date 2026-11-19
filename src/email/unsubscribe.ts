@@ -30,7 +30,7 @@ function signingKey(secret: string) {
         false,
         ["sign", "verify"],
       ),
-    catch: () => new UnsubscribeTokenError({ message: "The signing key is unavailable." }),
+    catch: () => UnsubscribeTokenError.make({ message: "The signing key is unavailable." }),
   })
 }
 
@@ -47,13 +47,15 @@ export const signUnsubscribeToken = Effect.fn("Email.signUnsubscribeToken")(func
     preference,
     expiresAt: Number.isFinite(expiry) ? expiry : null,
   }).pipe(
-    Effect.mapError(() => new UnsubscribeTokenError({ message: "The token could not be signed." })),
+    Effect.mapError(() =>
+      UnsubscribeTokenError.make({ message: "The token could not be signed." }),
+    ),
   )
   const payload = Base64Url.encode(json)
   const key = yield* signingKey(secret)
   const signature = yield* Effect.tryPromise({
     try: () => crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)),
-    catch: () => new UnsubscribeTokenError({ message: "The token could not be signed." }),
+    catch: () => UnsubscribeTokenError.make({ message: "The token could not be signed." }),
   })
   return `${payload}.${Base64Url.encode(new Uint8Array(signature))}`
 })
@@ -66,11 +68,11 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
   const currentTime = now ?? (yield* Clock.currentTimeMillis)
   const parts = token.split(".")
   if (parts.length !== 2) {
-    return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
+    return yield* UnsubscribeTokenError.make({ message: "The link is invalid." })
   }
   const [payload, signature] = parts
   if (!payload || !signature) {
-    return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
+    return yield* UnsubscribeTokenError.make({ message: "The link is invalid." })
   }
   const key = yield* signingKey(secret)
   const valid = yield* Effect.tryPromise({
@@ -81,22 +83,22 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
         Uint8Array.from(Result.getOrThrow(Base64Url.decode(signature))),
         new TextEncoder().encode(payload),
       ),
-    catch: () => new UnsubscribeTokenError({ message: "The link is invalid." }),
+    catch: () => UnsubscribeTokenError.make({ message: "The link is invalid." }),
   })
   if (!valid) {
-    return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
+    return yield* UnsubscribeTokenError.make({ message: "The link is invalid." })
   }
   const claims = yield* Effect.try({
     try: () => Result.getOrThrow(Base64Url.decodeString(payload)),
-    catch: () => new UnsubscribeTokenError({ message: "The link is invalid." }),
+    catch: () => UnsubscribeTokenError.make({ message: "The link is invalid." }),
   }).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(Schema.fromJsonString(claimsSchema))),
     Effect.catchTag("SchemaError", () =>
-      Effect.fail(new UnsubscribeTokenError({ message: "The link is invalid." })),
+      Effect.fail(UnsubscribeTokenError.make({ message: "The link is invalid." })),
     ),
   )
   if (claims.expiresAt <= currentTime) {
-    return yield* new UnsubscribeTokenError({ message: "The link has expired." })
+    return yield* UnsubscribeTokenError.make({ message: "The link has expired." })
   }
   return claims
 })

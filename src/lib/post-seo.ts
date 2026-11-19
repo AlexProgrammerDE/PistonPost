@@ -43,7 +43,7 @@ function postDescription(post: PublicPostRead, authorName: string) {
 }
 
 function formatCompactDuration(duration: number | null) {
-  if (!duration || duration <= 0 || !Number.isFinite(duration)) return
+  if (!duration || duration <= 0 || !Number.isFinite(duration)) return undefined
   const totalSeconds = Math.max(1, Math.round(duration / 1000))
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
@@ -54,7 +54,7 @@ function formatCompactDuration(duration: number | null) {
 }
 
 export function millisecondsToIsoDuration(duration: number | null) {
-  if (!duration || duration <= 0 || !Number.isFinite(duration)) return
+  if (!duration || duration <= 0 || !Number.isFinite(duration)) return undefined
   const seconds = duration / 1000
   const value = Number.isInteger(seconds)
     ? seconds.toString()
@@ -107,7 +107,7 @@ function structuredPostImages(post: PublicPostRead, postTitle: string): readonly
 
 function postVideo(post: PublicPostRead, postTitle: string) {
   const media = post.media.find((entry) => entry.kind === "video")
-  if (!media) return
+  if (!media) return undefined
   const width = media.width ?? 1280
   const height = media.height ?? 720
   const fittedThumbnailDimensions = fitMediaDimensions(

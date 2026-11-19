@@ -408,7 +408,7 @@ function AdminTableView({
   }
 
   useEffect(() => {
-    if (query === search.q) return
+    if (query === search.q) return undefined
     const timeout = setTimeout(() => {
       setSubmittedQuery(query)
       void navigate({

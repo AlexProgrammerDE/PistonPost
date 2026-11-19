@@ -6,6 +6,7 @@ import type { D1DatabaseClient } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import {
   hashPushEndpoint,
   pushSubscriptionInputSchema,
@@ -74,18 +75,23 @@ const saveSubscription = Effect.fn("saveSubscription")(function* (
   }
 
   const now = yield* DateTime.nowAsDate
+  const id = existing?.id ?? (yield* randomUuid)
+  const expirationTime =
+    input.expirationTime === null
+      ? null
+      : DateTime.toDateUtc(DateTime.makeUnsafe(input.expirationTime))
   yield* bindingOperation("saveSubscription.operation", () =>
     database
       .insert(schema.pushSubscriptions)
       .values({
-        id: existing?.id ?? crypto.randomUUID(),
+        id,
         userId,
         sessionId,
         endpoint: input.endpoint,
         endpointHash,
         p256dh: input.keys.p256dh,
         auth: input.keys.auth,
-        expirationTime: input.expirationTime === null ? null : new Date(input.expirationTime),
+        expirationTime,
       })
       .onConflictDoUpdate({
         target: schema.pushSubscriptions.endpointHash,
@@ -95,7 +101,7 @@ const saveSubscription = Effect.fn("saveSubscription")(function* (
           endpoint: input.endpoint,
           p256dh: input.keys.p256dh,
           auth: input.keys.auth,
-          expirationTime: input.expirationTime === null ? null : new Date(input.expirationTime),
+          expirationTime,
           lastSuccessAt: null,
           disabledAt: null,
           createdAt: now,

@@ -9,7 +9,7 @@ import * as schema from "./schema"
 type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
 
 function repositoryError(operation: string, cause: unknown) {
-  return new RepositoryError({
+  return RepositoryError.make({
     operation,
     message: cause instanceof Error ? cause.message : "The database operation failed.",
   })

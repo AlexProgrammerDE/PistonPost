@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, desc, eq, sql } from "drizzle-orm"
-import { Schema, Effect } from "effect"
+import { DateTime, Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { productEmailBatchJob } from "@/email/jobs"
@@ -96,6 +96,7 @@ export const createEmailCampaign = createServerFn({ method: "POST" })
         const { database, session } = context
         const id = yield* randomUuid
         return yield* Effect.gen(function* () {
+          const auditId = yield* randomUuid
           yield* bindingOperation("createEmailCampaign.operation", () =>
             database.batch([
               database.insert(schema.emailCampaigns).values({
@@ -109,7 +110,7 @@ export const createEmailCampaign = createServerFn({ method: "POST" })
                 actionUrl: data.actionUrl || null,
               }),
               database.insert(schema.auditEvents).values({
-                id: crypto.randomUUID(),
+                id: auditId,
                 actorId: session.user.id,
                 action: "email-campaign.create",
                 entityType: "email-campaign",
@@ -144,11 +145,13 @@ export const sendEmailCampaign = createServerFn({ method: "POST" })
         }
         const job = productEmailBatchJob(data.id, null)
         return yield* Effect.gen(function* () {
+          const auditId = yield* randomUuid
+          const updatedAt = yield* DateTime.nowAsDate
           yield* bindingOperation("sendEmailCampaign.operation", () =>
             database.batch([
               database
                 .update(schema.emailCampaigns)
-                .set({ status: "sending", updatedAt: new Date() })
+                .set({ status: "sending", updatedAt })
                 .where(
                   and(
                     eq(schema.emailCampaigns.id, data.id),
@@ -160,7 +163,7 @@ export const sendEmailCampaign = createServerFn({ method: "POST" })
                 .values({ id: job.idempotencyKey, kind: job.type, payload: job })
                 .onConflictDoNothing(),
               database.insert(schema.auditEvents).values({
-                id: crypto.randomUUID(),
+                id: auditId,
                 actorId: session.user.id,
                 action: "email-campaign.send",
                 entityType: "email-campaign",

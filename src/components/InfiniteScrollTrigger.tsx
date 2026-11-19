@@ -32,7 +32,7 @@ export function InfiniteScrollTrigger({
   useEffect(() => {
     const trigger = triggerRef.current
     if (!trigger || !canAutomaticallyLoad || typeof IntersectionObserver === "undefined") {
-      return
+      return undefined
     }
 
     const observer = new IntersectionObserver(

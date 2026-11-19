@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq, ne, or } from "drizzle-orm"
-import { Schema, Effect } from "effect"
+import { DateTime, Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { createUserSettingsRepository } from "@/db/user-settings-repository"
@@ -125,6 +125,7 @@ export const updateProfile = createServerFn({ method: "POST" })
         if (profileCollision || userCollision)
           return yield* conflictFailure("That username is already in use.")
         return yield* Effect.gen(function* () {
+          const updatedAt = yield* DateTime.nowAsDate
           yield* bindingOperation("updateProfile.operation", () =>
             database.batch([
               database
@@ -144,7 +145,7 @@ export const updateProfile = createServerFn({ method: "POST" })
                   bio: data.bio || null,
                   website: data.website || null,
                   location: data.location || null,
-                  updatedAt: new Date(),
+                  updatedAt,
                 })
                 .where(eq(schema.profiles.userId, session.user.id)),
             ]),

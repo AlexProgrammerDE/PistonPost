@@ -18,9 +18,9 @@ export async function readUnsubscribeKeyring(binding: string | SecretsStoreSecre
     return { current: value, verificationKeys: [value] } as const
   }
 
-  const parsed = Schema.decodeUnknownSync(unsubscribeKeyringSchema, { errors: "all" })(
-    JSON.parse(value),
-  )
+  const parsed = Schema.decodeSync(Schema.fromJsonString(unsubscribeKeyringSchema), {
+    errors: "all",
+  })(value)
   const verificationKeys: [string, ...string[]] = [
     parsed.current,
     ...new Set(parsed.previous.filter((key) => key !== parsed.current)),

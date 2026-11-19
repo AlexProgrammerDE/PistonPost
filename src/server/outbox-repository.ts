@@ -48,7 +48,7 @@ export class OutboxRepository extends Context.Service<
       minimumDelayMs?: number,
     ) => Effect.Effect<void, OutboxRepositoryError>
   }
->()("@pistonpost/email/OutboxRepository") {}
+>()("pistonpost/server/outbox-repository/OutboxRepository") {}
 
 const leaseDurationMs = 5 * 60 * 1000
 
@@ -82,7 +82,7 @@ export function outboxRetryAfterSeconds(availableAt: Date, now: Date) {
 
 function repositoryOperation<A>(operation: string, task: () => A | PromiseLike<A>) {
   return bindingOperation(`outbox.${operation}`, task).pipe(
-    Effect.mapError(() => new OutboxRepositoryError({ operation })),
+    Effect.mapError(() => OutboxRepositoryError.make({ operation })),
   )
 }
 
@@ -103,7 +103,9 @@ export function createOutboxRepository(
           .update(schema.outbox)
           .set({
             attempts: sql`${schema.outbox.attempts} + 1`,
-            leaseExpiresAt: new Date(now.getTime() + leaseDurationMs),
+            leaseExpiresAt: DateTime.toDateUtc(
+              DateTime.makeUnsafe(now.getTime() + leaseDurationMs),
+            ),
             lastError: null,
           })
           .where(outboxClaimCondition(id, now))
@@ -202,7 +204,7 @@ export function createOutboxRepository(
         db
           .update(schema.outbox)
           .set({
-            availableAt: new Date(now + delayMs),
+            availableAt: DateTime.toDateUtc(DateTime.makeUnsafe(now + delayMs)),
             leaseExpiresAt: null,
             lastError: errorCode.slice(0, 120),
           })

@@ -28,5 +28,5 @@ export class InvalidMediaTransition extends Schema.TaggedError<
 export function transitionMediaStatus(current: MediaStatus, next: MediaStatus) {
   return allowedTransitions[current].has(next)
     ? Effect.succeed(next)
-    : Effect.fail(new InvalidMediaTransition({ current, next }))
+    : Effect.fail(InvalidMediaTransition.make({ current, next }))
 }

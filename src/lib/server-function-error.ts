@@ -65,7 +65,8 @@ export class ServerFunctionClientError extends Error {
  * errors that never reached the server. Callers show their own fallback in that case.
  */
 export function userFacingServerMessage(error: unknown) {
-  if (!(error instanceof ServerFunctionClientError) || error.code === "INTERNAL_ERROR") return
+  if (!(error instanceof ServerFunctionClientError) || error.code === "INTERNAL_ERROR")
+    return undefined
   return error.message
 }
 

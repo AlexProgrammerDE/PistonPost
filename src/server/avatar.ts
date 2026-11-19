@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { Schema, Effect } from "effect"
+import { Clock, DateTime, Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -64,6 +64,7 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
 
         const assetId = yield* randomUuid
         return yield* Effect.gen(function* () {
+          const now = yield* Clock.currentTimeMillis
           yield* bindingOperation("createAvatarUploadIntent.operation", () =>
             database.insert(schema.mediaAssets).values({
               id: assetId,
@@ -74,7 +75,7 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
               originalFilename: data.filename,
               mimeType: data.mimeType,
               byteSize: data.byteSize,
-              providerMetadata: { expiresAt: Date.now() + 15 * 60 * 1000 },
+              providerMetadata: { expiresAt: now + 15 * 60 * 1000 },
             }),
           )
 
@@ -148,11 +149,13 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
 
         const cleanup = profile.avatarMediaId ? mediaCleanupJob(profile.avatarMediaId) : null
         return yield* Effect.gen(function* () {
+          const updatedAt = yield* DateTime.nowAsDate
+          const auditId = yield* randomUuid
           yield* bindingOperation("deleteManagedAvatar.operation", () =>
             database.batch([
               database
                 .update(schema.profiles)
-                .set({ avatarMediaId: null, updatedAt: new Date() })
+                .set({ avatarMediaId: null, updatedAt })
                 .where(eq(schema.profiles.userId, session.user.id)),
               database
                 .update(schema.user)
@@ -167,7 +170,7 @@ export const deleteManagedAvatar = createServerFn({ method: "POST" })
                   ]
                 : []),
               database.insert(schema.auditEvents).values({
-                id: crypto.randomUUID(),
+                id: auditId,
                 actorId: session.user.id,
                 action: "avatar.deleted",
                 entityType: "user",

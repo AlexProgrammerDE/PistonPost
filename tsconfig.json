@@ -31,8 +31,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
-    // exactOptionalPropertyTypes stays off. With it, Better Auth stops inferring plugin fields
-    // such as `role` and `username` on the session user, and its plugin types conflict.
+    // exactOptionalPropertyTypes requires compatible Better Auth plugin types and
+    // updates to the upstream-owned auth UI, which passes explicit undefined.
     "noPropertyAccessFromIndexSignature": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,

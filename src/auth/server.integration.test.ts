@@ -113,7 +113,7 @@ function responseCookie(response: Response) {
 }
 
 function stringProperty(value: unknown, property: string) {
-  if (typeof value !== "object" || value === null) return
+  if (typeof value !== "object" || value === null) return undefined
   const result: unknown = Reflect.get(value, property)
   return typeof result === "string" ? result : undefined
 }

@@ -23,7 +23,7 @@ export class ServerFunctionFailure extends Schema.TaggedError<
 >()("ServerFunctionFailure", { error: serverFunctionErrorSchema, cause: Schema.Unknown }) {}
 
 function failure(error: ServerFunctionError, cause: unknown = error) {
-  return new ServerFunctionFailure({ error, cause })
+  return ServerFunctionFailure.make({ error, cause })
 }
 
 export function invalidInputFailure(message: string, issues: ServerFunctionErrorIssues = []) {

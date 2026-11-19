@@ -29,10 +29,10 @@ export class PushJobResolver extends Context.Service<
   {
     readonly resolve: (job: PushDeliveryJob) => Effect.Effect<ResolvedPush, PushResolutionError>
   }
->()("@pistonpost/push/PushJobResolver") {}
+>()("pistonpost/server/push-job-resolver/PushJobResolver") {}
 
 function queryFailure() {
-  return new PushResolutionError({ operation: "query" })
+  return PushResolutionError.make({ operation: "query" })
 }
 
 function query<T>(run: () => Promise<T>) {

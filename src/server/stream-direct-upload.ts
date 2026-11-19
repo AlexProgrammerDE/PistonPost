@@ -95,11 +95,11 @@ export const createStreamDirectUpload = Effect.fn("createStreamDirectUpload")(fu
           "Upload-Metadata": streamUploadMetadata(input),
         },
       }),
-    catch: (cause) => new StreamDirectUploadError({ operation: "create", status: null, cause }),
+    catch: (cause) => StreamDirectUploadError.make({ operation: "create", status: null, cause }),
   })
 
   if (!response.ok) {
-    return yield* new StreamDirectUploadError({
+    return yield* StreamDirectUploadError.make({
       operation: "create",
       status: response.status,
     })
@@ -108,7 +108,7 @@ export const createStreamDirectUpload = Effect.fn("createStreamDirectUpload")(fu
   const uploadUrl = validUploadUrl(response.headers.get("location"))
   const streamUid = response.headers.get("stream-media-id")?.trim()
   if (!uploadUrl || !streamUid) {
-    return yield* new StreamDirectUploadError({
+    return yield* StreamDirectUploadError.make({
       operation: "validate-response",
       status: response.status,
     })

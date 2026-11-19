@@ -35,7 +35,7 @@ const readSecret = Effect.fn("Auth.readSecret")(function* (
       ? secret
       : yield* bindingOperation(`auth.secret.${name}`, () => secret.get())
   ).trim()
-  if (!value) return yield* new AuthSecretError({ binding: name })
+  if (!value) return yield* AuthSecretError.make({ binding: name })
   return value
 })
 
@@ -135,16 +135,21 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
       ),
     audit: (action, userId) =>
       runAuthEffect(
-        bindingOperation("auth.audit", () =>
-          database.insert(schema.auditEvents).values({
-            id: crypto.randomUUID(),
-            actorId: userId,
-            action,
-            entityType: "user",
-            entityId: userId,
-            metadata: {},
-          }),
-        ).pipe(Effect.asVoid),
+        randomUuid.pipe(
+          Effect.flatMap((id) =>
+            bindingOperation("auth.audit", () =>
+              database.insert(schema.auditEvents).values({
+                id,
+                actorId: userId,
+                action,
+                entityType: "user",
+                entityId: userId,
+                metadata: {},
+              }),
+            ),
+          ),
+          Effect.asVoid,
+        ),
       ),
     notifyNewDevice: (userId, sessionId) => {
       context.executionContext.waitUntil(
@@ -184,9 +189,10 @@ const recordAuthAuditEffect = Effect.fn("Auth.recordAudit")(function* (
   action: string,
   userId: string,
 ) {
+  const id = yield* randomUuid
   yield* bindingOperation("auth.audit", () =>
     createD1Database(context.env.DB).insert(schema.auditEvents).values({
-      id: crypto.randomUUID(),
+      id,
       actorId: userId,
       action,
       entityType: "user",

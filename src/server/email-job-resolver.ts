@@ -37,7 +37,7 @@ export class EmailJobResolver extends Context.Service<
   {
     readonly resolve: (job: EmailDeliveryJob) => Effect.Effect<ResolvedEmail, EmailResolutionError>
   }
->()("@pistonpost/email/EmailJobResolver") {}
+>()("pistonpost/server/email-job-resolver/EmailJobResolver") {}
 
 function skip(reason: string, campaignId?: string): ResolvedEmail {
   return campaignId ? { _tag: "Skip", reason, campaignId } : { _tag: "Skip", reason }
@@ -48,7 +48,7 @@ function ready(value: Omit<Extract<ResolvedEmail, { _tag: "Ready" }>, "_tag">): 
 }
 
 function queryFailure() {
-  return new EmailResolutionError({ message: "Email delivery data could not be loaded." })
+  return EmailResolutionError.make({ message: "Email delivery data could not be loaded." })
 }
 
 function promiseQuery<T>(query: () => Promise<T>) {

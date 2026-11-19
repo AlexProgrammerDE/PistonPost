@@ -20,9 +20,9 @@ export function PushSubscriptionSync({ vapidPublicKey }: { vapidPublicKey: strin
 
   useEffect(() => {
     if (isPending || !sessionId || !userId || !vapidPublicKey || !supportsPushNotifications()) {
-      return
+      return undefined
     }
-    if (Notification.permission !== "granted") return
+    if (Notification.permission !== "granted") return undefined
 
     const controller = new AbortController()
     async function synchronize(accountId: string, key: string) {

@@ -9,6 +9,6 @@ export class OperationError extends Schema.TaggedError<
 export function bindingOperation<A>(operation: string, task: () => A | PromiseLike<A>) {
   return Effect.tryPromise({
     try: async () => task(),
-    catch: (cause) => new OperationError({ operation, cause }),
+    catch: (cause) => OperationError.make({ operation, cause }),
   }).pipe(Effect.uninterruptible)
 }

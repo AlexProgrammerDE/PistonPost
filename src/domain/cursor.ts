@@ -32,11 +32,12 @@ export function decodePublicPostCursor(value: string) {
         onExcessProperty: "error",
       }),
     ),
-    Effect.map(({ id, publishedAt }) => ({ id, publishedAt: new Date(publishedAt) })),
-    Effect.mapError((error) =>
-      error instanceof InvalidCursorError
-        ? error
-        : InvalidCursorError.make({ reason: "The cursor has an invalid shape." }),
-    ),
+    Effect.mapBoth({
+      onSuccess: ({ id, publishedAt }) => ({ id, publishedAt: new Date(publishedAt) }),
+      onFailure: (error) =>
+        error instanceof InvalidCursorError
+          ? error
+          : InvalidCursorError.make({ reason: "The cursor has an invalid shape." }),
+    }),
   )
 }
