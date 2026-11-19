@@ -61,11 +61,14 @@ export function FeedPostActionsProvider({
   const session = useSession(authClient)
   const sessionPending = !hydrated || session.isPending
   const viewerId = sessionPending ? null : (session.data?.user.id ?? null)
-  const batches = batchFeedPostIds(postIds)
-  const states = useQueries({
+  const batches = useMemo(() => batchFeedPostIds(postIds), [postIds])
+  const { states } = useQueries({
     queries: batches.map((batch) =>
       feedHeartStatesQueryOptions(batch, viewerId ?? "anonymous", viewerId !== null),
     ),
+    combine: (results) => ({
+      states: results.map(({ data, isError }) => ({ data, isError })),
+    }),
   })
   const feedHeartState = useMemo<FeedHeartState>(() => {
     if (!viewerId) return { viewerId, heartStates: new Map(), sessionPending }

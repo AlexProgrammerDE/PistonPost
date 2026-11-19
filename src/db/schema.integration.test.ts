@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import { createPost, createUser } from "./factories"
 import {
@@ -157,7 +157,9 @@ describe("domain schema", () => {
     db.insert(postTags).values({ postId: "post", tagId: "tag", ordinal: 0 }).run()
     db.insert(reactions).values({ postId: "post", userId: "test-user" }).run()
 
-    db.delete(posts).run()
+    db.delete(posts)
+      .where(sql`true`)
+      .run()
 
     expect(db.select().from(postTags).all()).toHaveLength(0)
     expect(db.select().from(reactions).all()).toHaveLength(0)
@@ -229,7 +231,9 @@ describe("domain schema", () => {
     const payload = db.select({ payload: outbox.payload }).from(outbox).get()?.payload
     expect(JSON.stringify(payload)).not.toContain("@example.com")
     expect(db.select().from(emailCampaignDeliveries).all()).toHaveLength(1)
-    db.delete(outbox).run()
+    db.delete(outbox)
+      .where(sql`true`)
+      .run()
     expect(db.select().from(emailCampaignDeliveries).all()).toHaveLength(0)
   })
 

@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
+import { sql } from "drizzle-orm"
+
 import { createUser } from "@/db/factories"
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
@@ -91,7 +93,10 @@ describe("push subscription storage", () => {
       .values(createSubscription("push", "test-user", "session", "a".repeat(64)))
       .run()
 
-    database.delete(schema.session).run()
+    database
+      .delete(schema.session)
+      .where(sql`true`)
+      .run()
 
     expect(database.select().from(schema.pushSubscriptions).all()).toHaveLength(0)
   })

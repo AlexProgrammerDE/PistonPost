@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 import { Cause, Deferred, Effect, Exit } from "effect"
 
 import * as schema from "@/db/schema"
@@ -91,6 +91,7 @@ describe("outbox job lifetime", () => {
     expect(db.select().from(schema.outbox).get()?.leaseExpiresAt).toBeNull()
     db.update(schema.outbox)
       .set({ availableAt: new Date(0) })
+      .where(sql`true`)
       .run()
     const now = Date.now()
     await Effect.runPromiseExit(
@@ -128,6 +129,7 @@ describe("outbox job lifetime", () => {
     await Effect.runPromise(repository.ensure(job.idempotencyKey, job.type, job))
     db.update(schema.outbox)
       .set({ availableAt: new Date(Date.now() + 120_000) })
+      .where(sql`true`)
       .run()
     let called = false
     const run = withOutboxClaim(job, () =>

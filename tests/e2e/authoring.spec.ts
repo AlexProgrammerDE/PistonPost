@@ -712,19 +712,17 @@ https://youtu.be/dQw4w9WgXcQ`
 
     await page.goto("/posts/new")
     await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
-    await page.waitForTimeout(1000)
-    expect(pageErrors).toEqual([])
-    expect(consoleErrors).toEqual([])
-    expect(requestFailures).toEqual([])
     await fillPost(page, "look at this little guy", "art")
     await page
       .getByRole("textbox", { name: "Text", exact: true })
       .fill("found this earlier and had to put it somewhere")
     await page.getByRole("button", { name: "Post it" }).click()
-    await page.waitForTimeout(1000)
-    expect(errorResponses).toEqual([])
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "look at this little guy" })).toBeVisible()
+    expect(pageErrors).toEqual([])
+    expect(consoleErrors).toEqual([])
+    expect(requestFailures).toEqual([])
+    expect(errorResponses).toEqual([])
 
     await page.goto("/posts/new")
     await selectFormat(page, "Images")

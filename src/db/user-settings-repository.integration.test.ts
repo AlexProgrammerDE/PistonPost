@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
+import { sql } from "drizzle-orm"
 import { Effect } from "effect"
 
 import { createUser } from "./factories"
@@ -83,7 +84,10 @@ describe("user settings repository", () => {
       }),
     ])
 
-    database.delete(user).run()
+    database
+      .delete(user)
+      .where(sql`true`)
+      .run()
     expect(database.select().from(emailPreferenceChanges).all()).toHaveLength(0)
   })
 })

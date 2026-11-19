@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
+import { sql } from "drizzle-orm"
+
 import { createUser } from "./factories"
 import { contentReports, user } from "./schema"
 import { createMigratedTestDatabase } from "./test-database"
@@ -30,7 +32,10 @@ describe("content reports", () => {
       })
       .run()
 
-    database.delete(user).run()
+    database
+      .delete(user)
+      .where(sql`true`)
+      .run()
 
     expect(database.select().from(contentReports).get()?.reporterId).toBeNull()
   })

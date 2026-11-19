@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
+import { sql as drizzleSql } from "drizzle-orm"
+
 import { createPost, createUser } from "@/db/factories"
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
@@ -89,6 +91,7 @@ describe("abandoned draft cleanup", () => {
     const { db } = setup(new Date(now - 2 * day))
     db.update(schema.posts)
       .set({ status: "published", publishedAt: new Date(now) })
+      .where(drizzleSql`true`)
       .run()
     run(db, abandonedDraftStatements("draft", now))
 

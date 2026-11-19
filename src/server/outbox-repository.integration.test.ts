@@ -50,6 +50,7 @@ describe("outbox claim policy", () => {
 
     db.update(schema.outbox)
       .set({ leaseExpiresAt: new Date(now.getTime() - 1) })
+      .where(sql`true`)
       .run()
     claim()
     expect(db.select().from(schema.outbox).get()?.attempts).toBe(2)
@@ -112,6 +113,7 @@ describe("outbox owner settlement", () => {
     expect(first).toEqual({ _tag: "Claimed", attempt: 1 })
     db.update(schema.outbox)
       .set({ leaseExpiresAt: new Date(0) })
+      .where(sql`true`)
       .run()
     expect(await Effect.runPromise(repository.claim("owned"))).toEqual({
       _tag: "Claimed",
@@ -153,6 +155,7 @@ describe("outbox owner settlement", () => {
     await Effect.runPromise(repository.claim("delivery"))
     db.update(schema.outbox)
       .set({ leaseExpiresAt: new Date(0) })
+      .where(sql`true`)
       .run()
     await Effect.runPromise(repository.claim("delivery"))
     await Effect.runPromise(repository.completeProduct("delivery", 1, "stale", "sent"))

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
-import { eq } from "drizzle-orm"
+import { eq, sql } from "drizzle-orm"
 
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
@@ -246,7 +246,11 @@ describe("request-scoped Better Auth", () => {
         password: "correct-horse-battery-staple",
       }),
     )
-    database.update(schema.user).set({ emailVerified: true }).run()
+    database
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(sql`true`)
+      .run()
     emails.length = 0
 
     const sendResponse = await auth.handler(
@@ -288,7 +292,11 @@ describe("request-scoped Better Auth", () => {
         password: "correct-horse-battery-staple",
       }),
     )
-    database.update(schema.user).set({ emailVerified: true }).run()
+    database
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(sql`true`)
+      .run()
     emails.length = 0
 
     const requestResponse = await auth.handler(
@@ -331,7 +339,11 @@ describe("request-scoped Better Auth", () => {
         password: "correct-horse-battery-staple",
       }),
     )
-    database.update(schema.user).set({ emailVerified: true }).run()
+    database
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(sql`true`)
+      .run()
     const initialSignIn = await auth.handler(
       authRequest("/sign-in/email", {
         email: "two-factor@example.com",
@@ -355,8 +367,16 @@ describe("request-scoped Better Auth", () => {
     expect(new URL(totpUri).protocol).toBe("otpauth:")
     expect(database.select().from(schema.twoFactor).get()?.verified).toBeFalse()
 
-    database.update(schema.user).set({ twoFactorEnabled: true }).run()
-    database.update(schema.twoFactor).set({ verified: true }).run()
+    database
+      .update(schema.user)
+      .set({ twoFactorEnabled: true })
+      .where(sql`true`)
+      .run()
+    database
+      .update(schema.twoFactor)
+      .set({ verified: true })
+      .where(sql`true`)
+      .run()
     emails.length = 0
 
     const challengedSignIn = await auth.handler(
@@ -532,7 +552,11 @@ describe("request-scoped Better Auth", () => {
         password: "correct-horse-battery-staple",
       }),
     )
-    database.update(schema.user).set({ emailVerified: true }).run()
+    database
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(sql`true`)
+      .run()
 
     const signInResponse = await auth.handler(
       authRequest("/sign-in/email", {
@@ -586,7 +610,11 @@ describe("request-scoped Better Auth", () => {
         password: "correct-horse-battery-staple",
       }),
     )
-    database.update(schema.user).set({ emailVerified: true }).run()
+    database
+      .update(schema.user)
+      .set({ emailVerified: true })
+      .where(sql`true`)
+      .run()
 
     const signInResponse = await auth.handler(
       authRequest("/sign-in/email", {
@@ -618,8 +646,15 @@ describe("request-scoped Better Auth", () => {
     const context = setup()
     const { auth, database, emails } = context
     await signUpAndSignIn(context, { email: "guarded@example.com" })
-    database.delete(schema.session).run()
-    database.update(schema.user).set({ twoFactorEnabled: true }).run()
+    database
+      .delete(schema.session)
+      .where(sql`true`)
+      .run()
+    database
+      .update(schema.user)
+      .set({ twoFactorEnabled: true })
+      .where(sql`true`)
+      .run()
 
     await auth.handler(
       authRequest("/email-otp/send-verification-otp", {
@@ -665,8 +700,15 @@ describe("request-scoped Better Auth", () => {
     const context = setup()
     const { auth, database, emails } = context
     await signUpAndSignIn(context, { email: "verified-guard@example.com" })
-    database.delete(schema.session).run()
-    database.update(schema.user).set({ twoFactorEnabled: true }).run()
+    database
+      .delete(schema.session)
+      .where(sql`true`)
+      .run()
+    database
+      .update(schema.user)
+      .set({ twoFactorEnabled: true })
+      .where(sql`true`)
+      .run()
 
     await auth.handler(
       authRequest("/email-otp/send-verification-otp", {
@@ -694,13 +736,24 @@ describe("request-scoped Better Auth", () => {
 
     expect(await auth.api.getSession({ headers })).toMatchObject({ user: { role: "user" } })
 
-    database.update(schema.user).set({ role: "admin" }).run()
+    database
+      .update(schema.user)
+      .set({ role: "admin" })
+      .where(sql`true`)
+      .run()
     expect(await auth.api.getSession({ headers })).toMatchObject({ user: { role: "admin" } })
 
-    database.update(schema.user).set({ banned: true }).run()
+    database
+      .update(schema.user)
+      .set({ banned: true })
+      .where(sql`true`)
+      .run()
     expect(await auth.api.getSession({ headers })).toMatchObject({ user: { banned: true } })
 
-    database.delete(schema.session).run()
+    database
+      .delete(schema.session)
+      .where(sql`true`)
+      .run()
     expect(await auth.api.getSession({ headers })).toBeNull()
     expect(await sessionBody(auth, cookie)).toBeNull()
   })
