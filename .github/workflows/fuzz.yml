@@ -35,6 +35,9 @@ jobs:
     env:
       LONG_RUN: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
       TARGET: ${{ matrix.target }}
+      # The prebuilt cargo-fuzz is a static musl binary and defaults to its own target,
+      # which AddressSanitizer does not support.
+      TRIPLE: x86_64-unknown-linux-gnu
     defaults:
       run:
         working-directory: wasm/image-sanitizer
@@ -61,7 +64,7 @@ jobs:
           restore-keys: fuzz-corpus-${{ matrix.target }}-
 
       - name: Build fuzz targets
-        run: cargo +nightly-2026-11-01 fuzz build
+        run: cargo +nightly-2026-11-01 fuzz build --target "$TRIPLE"
 
       # The largest JPEG the sanitizer accepts takes about 40 seconds under AddressSanitizer,
       # so the per-input timeout is longer than libFuzzer's usual hang threshold.
@@ -69,7 +72,7 @@ jobs:
         run: |
           if [ "$LONG_RUN" = true ]; then seconds=600; else seconds=60; fi
           mkdir -p "fuzz/corpus/$TARGET"
-          cargo +nightly-2026-11-01 fuzz run "$TARGET" "fuzz/corpus/$TARGET" "fuzz/seeds/$TARGET" -- \
+          cargo +nightly-2026-11-01 fuzz run --target "$TRIPLE" "$TARGET" "fuzz/corpus/$TARGET" "fuzz/seeds/$TARGET" -- \
             -max_total_time="$seconds" -rss_limit_mb=2048 -timeout=60
 
       - name: Upload crash artifacts
