@@ -11,13 +11,25 @@ pre-commit:
     typecheck:
       glob: "*.{ts,tsx}"
       run: bun run typecheck
+    rustfmt:
+      glob: &rust_files
+        - "wasm/image-sanitizer/**/*.rs"
+        - "wasm/image-sanitizer/{Cargo.toml,Cargo.lock,clippy.toml,rust-toolchain,rust-toolchain.toml}"
+        - "{rust-toolchain,rust-toolchain.toml}"
+      run: RUSTUP_TOOLCHAIN=stable cargo fmt --manifest-path wasm/image-sanitizer/Cargo.toml --check
+
+pre-push:
+  commands:
+    clippy:
+      glob: *rust_files
+      run: RUSTUP_TOOLCHAIN=stable cargo clippy --manifest-path wasm/image-sanitizer/Cargo.toml --all-targets --locked -- -D warnings
 
 commit-msg:
   commands:
     conventional:
       run: |
-        message=$(head -n 1 {1})
-        if ! echo "$message" | grep -qE '^(feat|fix|docs|refactor|test|chore|ci|build|perf|style|revert)(\([a-z0-9._/-]+\))?: .+'; then
-          echo "Commit message must follow Conventional Commit format: type(scope): subject"
+        message=$(head -n 1 "{1}")
+        if ! printf '%s\n' "$message" | grep -qE '^(Merge |Revert "|fixup! |squash! |amend! |(feat|fix|docs|refactor|test|chore|ci|build|perf|style|revert)(\([a-z0-9._/-]+\))?!?: .+)'; then
+          echo "Use a Conventional Commit message, for example: fix(parser): handle empty input"
           exit 1
         fi

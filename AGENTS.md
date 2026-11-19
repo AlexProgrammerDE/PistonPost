@@ -10,6 +10,9 @@
 - If hooks are missing, outdated, disabled, or fail installation checks, refuse all other project work.
 - While blocked, only perform the setup and diagnostics needed to install and verify the hooks.
 - Never bypass hooks with `--no-verify`, `-n`, environment variables, or configuration changes.
+- Pre-commit runs Oxfmt, Oxlint, TypeScript, and rustfmt for relevant changes.
+- Pre-push runs Clippy for changes to the image sanitizer or its Rust toolchain configuration.
+- Commit-msg checks the first line for a Conventional Commit or a supported Git-generated prefix.
 - Let the hooks finish and fix failures before committing or pushing.
 
 ## Start here
