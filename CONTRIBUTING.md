@@ -44,6 +44,34 @@ Run the check from the root with `cargo deny --locked --manifest-path wasm/image
 If a check cannot run, explain the missing dependency or service. Do not claim it passed.
 Keep generated artifacts consistent with their source and review their diff.
 
+## Fuzzing
+
+The image sanitizer has one coverage-guided fuzz target for each supported format in `wasm/image-sanitizer/fuzz/`.
+Each target checks that the sanitizer does not crash, removes metadata, and keeps its output within the pixel limits.
+It also checks that sanitizing the output again returns the same bytes. The upload route depends on this.
+
+Fuzzing needs the `nightly-2026-11-01` toolchain and cargo-fuzz 0.13.2, so Lefthook does not run it.
+The Fuzz workflow runs each target for one minute when the sanitizer changes and for ten minutes every week.
+
+```bash
+cd wasm/image-sanitizer
+rustup toolchain install nightly-2026-11-01 --profile minimal
+cargo install cargo-fuzz --version 0.13.2 --locked
+cargo +nightly-2026-11-01 fuzz list
+mkdir -p fuzz/corpus/sanitize_jpeg
+cargo +nightly-2026-11-01 fuzz run sanitize_jpeg fuzz/corpus/sanitize_jpeg fuzz/seeds/sanitize_jpeg -- -max_total_time=300 -rss_limit_mb=2048 -timeout=60
+```
+
+Put the ignored `fuzz/corpus/<target>` directory first so that new inputs do not go into the committed seeds.
+To reproduce or minimize a finding, pass the file from `fuzz/artifacts/<target>/`:
+
+```bash
+cargo +nightly-2026-11-01 fuzz run sanitize_jpeg fuzz/artifacts/sanitize_jpeg/<file>
+cargo +nightly-2026-11-01 fuzz tmin sanitize_jpeg fuzz/artifacts/sanitize_jpeg/<file>
+```
+
+When you fix a finding, add the minimized input as a regression test in `src/lib.rs` and run `bun run wasm:build`.
+
 ## Style and documentation
 
 Follow the existing code conventions and repository formatter. Keep commit hooks enabled.
