@@ -5,6 +5,7 @@
     "scripts/**/*.ts",
     "tests/**/*.ts",
     "*.config.ts",
+    "public/offline.js",
     ".cloudflare/types/index.d.ts"
   ],
   "compilerOptions": {
@@ -18,6 +19,9 @@
     },
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    // public/offline.js is served to the browser as-is, so it stays JavaScript and is checked with checkJs.
+    "allowJs": true,
+    "checkJs": true,
     "verbatimModuleSyntax": true,
     "erasableSyntaxOnly": true,
     "noEmit": true,
