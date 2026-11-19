@@ -1,4 +1,4 @@
-import { MAX_IMAGES_PER_POST } from "@/domain"
+import { MAX_IMAGES_PER_POST } from "@/domain/validation"
 import type { InternalJob } from "@/server/jobs"
 
 type Statement = { sql: string; params: (string | number | null)[] }

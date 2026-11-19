@@ -3,7 +3,9 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { eq } from "drizzle-orm"
 import { Effect } from "effect"
 
-import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
+import { createPost, createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import { authorVideoPostIds, mediaAttachedToLivePost, syncPostVideoAccess } from "./media-jobs"
 
@@ -95,7 +97,7 @@ describe("post video access", () => {
           Promise.reject(
             Object.assign(new Error("Video not found"), {
               name: "NotFoundError",
-              code: 10003,
+              code: 10_003,
               statusCode: 404,
             }),
           ),

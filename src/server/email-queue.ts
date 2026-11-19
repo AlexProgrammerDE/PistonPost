@@ -1,16 +1,11 @@
 import { cache } from "cloudflare:workers"
 import { and, eq, isNull } from "drizzle-orm"
-import { Cause, Effect, Result, Exit, Layer, Option, Predicate, Schema } from "effect"
+import { DateTime, Cause, Effect, Result, Exit, Layer, Option, Predicate, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import {
-  cloudflareEmailTransportLayer,
-  decodeEmailQueueJob,
-  deliverEmail,
-  EmailRenderer,
-  type EmailDeliveryJob,
-} from "@/email"
+import { decodeEmailQueueJob, type EmailDeliveryJob } from "@/email/jobs"
+import { cloudflareEmailTransportLayer, deliverEmail, EmailRenderer } from "@/email/transport"
 import { decodePushDeliveryJob, type PushDeliveryJob } from "@/push/jobs"
 import { PushTransport, webPushTransportLayer } from "@/push/transport"
 import { logError } from "@/server/error-log"
@@ -254,11 +249,12 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
           )
 
           if (outcome === "accepted") {
+            const now = yield* DateTime.nowAsDate
             yield* Effect.tryPromise({
               try: () =>
                 createD1Database(env.DB)
                   .update(schema.pushSubscriptions)
-                  .set({ lastSuccessAt: new Date(), updatedAt: new Date() })
+                  .set({ lastSuccessAt: now, updatedAt: now })
                   .where(eq(schema.pushSubscriptions.id, job.subscriptionId)),
               catch: queueFailure("push-mark-success"),
             })
@@ -360,7 +356,7 @@ const handleDeadLetter = Effect.fn("handleDeadLetter")(function* (
         const metadata = deadLetterMetadata(batch.queue, message)
         const originalId = originalOutboxId(message.body)
         const redactLegacy = isLegacyEmailJob(message.body)
-        const now = new Date()
+        const now = yield* DateTime.nowAsDate
         const insertDeadLetter = database
           .insert(schema.outbox)
           .values({

@@ -96,7 +96,7 @@ let xScriptPromise: Promise<void> | null = null
 type XWindow = Window & {
   readonly twttr?: {
     readonly widgets?: {
-      readonly load: (element?: HTMLElement) => Promise<unknown> | void
+      readonly load: (element?: HTMLElement) => unknown
     }
   }
 }
@@ -117,7 +117,7 @@ function MarkdownLink({ href, children, node, ...props }: ComponentProps<"a"> & 
   if (!href) return <span>{children}</span>
   return (
     <UserGeneratedLink {...props} href={href}>
-      <InsideLinkContext value={true}>{children}</InsideLinkContext>
+      <InsideLinkContext value>{children}</InsideLinkContext>
     </UserGeneratedLink>
   )
 }

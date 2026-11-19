@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm"
-import { Effect } from "effect"
+import { DateTime, Clock, Effect } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
@@ -67,7 +67,7 @@ const redactProcessedLegacyEmailJobs = Effect.fn("Maintenance.redactProcessedLeg
 const cleanExpiredPushSubscriptions = Effect.fn("Maintenance.cleanExpiredPushSubscriptions")(
   function* (env: Cloudflare.Env) {
     const database = createD1Database(env.DB)
-    const now = new Date()
+    const now = yield* DateTime.nowAsDate
     const expired = yield* bindingOperation("maintenance.cleanExpiredPushSubscriptions", () =>
       database
         .select({ id: schema.pushSubscriptions.id })
@@ -114,7 +114,7 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
               sql`not exists (select 1 from post_media where media_id = ${schema.mediaAssets.id})`,
             ),
           ),
-          lt(schema.mediaAssets.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1_000)),
+          lt(schema.mediaAssets.createdAt, new Date(Date.now() - 24 * 60 * 60 * 1000)),
         ),
       )
       .limit(100),
@@ -144,7 +144,7 @@ const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(functio
 
 export type MaintenanceStatement = { sql: string; params: (string | number | null)[] }
 
-const ABANDONED_DRAFT_AGE_MS = 24 * 60 * 60 * 1_000
+const ABANDONED_DRAFT_AGE_MS = 24 * 60 * 60 * 1000
 
 /**
  * Deletes one draft that nobody touched for a day and queues cleanup for its uploads. Both
@@ -181,7 +181,7 @@ const removeAbandonedDrafts = Effect.fn("Maintenance.removeAbandonedDrafts")(fun
   env: Cloudflare.Env,
 ) {
   const database = createD1Database(env.DB)
-  const now = Date.now()
+  const now = yield* Clock.currentTimeMillis
   const drafts = yield* bindingOperation("maintenance.removeAbandonedDrafts", () =>
     database
       .select({ id: schema.posts.id })
@@ -248,7 +248,7 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
               status: video.readyToStream ? "ready" : failed ? "failed" : "processing",
               width: video.input.width || undefined,
               height: video.input.height || undefined,
-              duration: video.duration >= 0 ? Math.round(video.duration * 1_000) : undefined,
+              duration: video.duration >= 0 ? Math.round(video.duration * 1000) : undefined,
               byteSize: video.size > 0 ? video.size : undefined,
               finalizedAt: video.readyToStream ? new Date() : undefined,
             })
@@ -333,7 +333,7 @@ const cleanStagingObjects = Effect.fn("Maintenance.cleanStagingObjects")(functio
       env.MEDIA.list({ prefix: "staging/", cursor: pageCursor, limit: 100 }),
     )
     const stale = listed.objects.filter(
-      (object) => object.uploaded.getTime() < Date.now() - 24 * 60 * 60 * 1_000,
+      (object) => object.uploaded.getTime() < Date.now() - 24 * 60 * 60 * 1000,
     )
     if (stale.length > 0)
       yield* bindingOperation("maintenance.staging.delete", () =>

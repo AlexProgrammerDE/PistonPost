@@ -13,7 +13,7 @@ import { parseMarkdownEmbed, type MarkdownEmbed } from "./markdown-embeds"
 import { safeExternalUserGeneratedUrl } from "./user-generated-link"
 
 const MAX_DIRECTIVE_LABEL_LENGTH = 200
-const MAX_SPOILER_LENGTH = 1_000
+const MAX_SPOILER_LENGTH = 1000
 const CALLOUT_KINDS = ["note", "tip", "warning"] as const
 
 export type MarkdownCalloutKind = (typeof CALLOUT_KINDS)[number]

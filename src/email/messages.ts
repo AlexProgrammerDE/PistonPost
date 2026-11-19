@@ -1,4 +1,4 @@
-import type { EmailNotificationPreference } from "@/domain"
+import type { EmailNotificationPreference } from "@/domain/validation"
 
 import type { EmailContent, EmailOtpPurpose, EmailSubscription } from "./email"
 

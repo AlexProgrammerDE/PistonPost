@@ -10,7 +10,7 @@ export const getTumblrEmbed = createServerFn({ method: "GET" })
       Schema.Struct({
         url: Schema.Trim.check(
           Schema.makeFilter((value) => URL.canParse(value) || "Invalid URL"),
-        ).check(Schema.isMaxLength(2_048)),
+        ).check(Schema.isMaxLength(2048)),
       }),
     ),
   )

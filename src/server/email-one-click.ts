@@ -1,7 +1,7 @@
 import { Effect, Result } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
-import { UnsubscribeTokenError } from "@/email"
+import { UnsubscribeTokenError } from "@/email/unsubscribe"
 import type { AppRequestContext } from "@/server"
 import { readUnsubscribeKeyring } from "@/server/email-config"
 import { applyUnsubscribeToken } from "@/server/email-preference-service"

@@ -10,10 +10,13 @@ const embedHref =
   "https://embed.tumblr.com/embed/post/t:0aY0xL2Fi1OFJg4YxpmegQ/699744158019190784/v2"
 
 function oEmbedResponse(html: string, status = 200) {
-  return new Response(JSON.stringify({ html }), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  })
+  return Response.json(
+    { html },
+    {
+      status,
+      headers: { "Content-Type": "application/json" },
+    },
+  )
 }
 
 describe("Tumblr embed resolver", () => {

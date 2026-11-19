@@ -4,7 +4,7 @@ import { user } from "@/db/schema"
 
 export const SEARCH_INDEXING_PROBATION_DAYS = 7
 
-const SEARCH_INDEXING_PROBATION_MS = SEARCH_INDEXING_PROBATION_DAYS * 24 * 60 * 60 * 1_000
+const SEARCH_INDEXING_PROBATION_MS = SEARCH_INDEXING_PROBATION_DAYS * 24 * 60 * 60 * 1000
 
 type SearchIndexingAccount = {
   readonly createdAt: Date

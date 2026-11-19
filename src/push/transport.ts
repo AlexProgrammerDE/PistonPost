@@ -3,12 +3,14 @@ import * as webPush from "web-push"
 
 import { isTrustedPushEndpoint } from "./subscription"
 
-export type PushNotificationPayload = Readonly<{
-  title: string
-  body: string
-  url: string
-  tag: string
-}>
+const pushPayloadSchema = Schema.Struct({
+  title: Schema.String,
+  body: Schema.String,
+  url: Schema.String,
+  tag: Schema.String,
+})
+
+export type PushNotificationPayload = typeof pushPayloadSchema.Type
 
 export type PushTarget = Readonly<{
   endpoint: string
@@ -56,7 +58,7 @@ function retryAfterSeconds(headers: webPush.Headers) {
   if (Number.isInteger(seconds) && seconds > 0) return Math.min(seconds, 15 * 60)
   const date = Date.parse(raw)
   if (Number.isNaN(date)) return 60
-  return Math.min(15 * 60, Math.max(1, Math.ceil((date - Date.now()) / 1_000)))
+  return Math.min(15 * 60, Math.max(1, Math.ceil((date - Date.now()) / 1000)))
 }
 
 export function classifyPushFailure(cause: unknown): PushTransportError {
@@ -85,23 +87,28 @@ export function createWebPushTransport(config: {
       if (!isTrustedPushEndpoint(target.endpoint)) {
         return Effect.fail(new PushDeliveryError({ code: "endpoint-rejected", retryable: false }))
       }
-      return Effect.tryPromise({
-        try: async () => {
-          const privateKey = await config.getPrivateKey()
-          await webPush.sendNotification(target, JSON.stringify(payload), {
-            TTL: 24 * 60 * 60,
-            urgency: "normal",
-            topic: payload.tag.slice(0, 32),
-            timeout: 10_000,
-            vapidDetails: {
-              subject: config.subject,
-              publicKey: config.publicKey,
-              privateKey,
+      return Schema.encodeEffect(Schema.fromJsonString(pushPayloadSchema))(payload).pipe(
+        Effect.mapError(classifyPushFailure),
+        Effect.flatMap((json) =>
+          Effect.tryPromise({
+            try: async () => {
+              const privateKey = await config.getPrivateKey()
+              await webPush.sendNotification(target, json, {
+                TTL: 24 * 60 * 60,
+                urgency: "normal",
+                topic: payload.tag.slice(0, 32),
+                timeout: 10_000,
+                vapidDetails: {
+                  subject: config.subject,
+                  publicKey: config.publicKey,
+                  privateKey,
+                },
+              })
             },
-          })
-        },
-        catch: classifyPushFailure,
-      })
+            catch: classifyPushFailure,
+          }),
+        ),
+      )
     },
   }
 }

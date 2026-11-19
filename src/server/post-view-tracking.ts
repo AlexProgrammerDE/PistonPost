@@ -1,6 +1,6 @@
 import { Effect, Schema } from "effect"
 
-import type { PostViewSurface } from "@/domain"
+import type { PostViewSurface } from "@/domain/post-view"
 
 export type TrackablePost = {
   readonly id: string

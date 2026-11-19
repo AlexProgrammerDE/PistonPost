@@ -3,7 +3,8 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { eq } from "drizzle-orm"
 import { Cause, Deferred, Effect, Exit } from "effect"
 
-import { createMigratedTestDatabase, schema } from "@/db"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import {
   createOutboxRepository,
@@ -25,7 +26,7 @@ function setup() {
 describe("outbox job lifetime", () => {
   test("releases a claim when an interruptible lookup is cancelled before submission", async () => {
     const { db, layer, job } = setup()
-    const started = Deferred.makeUnsafe<void>()
+    const started = Deferred.makeUnsafe<undefined>()
     const controller = new AbortController()
     const result = Effect.runPromiseExit(
       withOutboxClaim(job, () =>
@@ -49,8 +50,8 @@ describe("outbox job lifetime", () => {
 
   test("waits for a submitted delivery and its checkpoint before interruption returns", async () => {
     const { db, layer, job } = setup()
-    const submitted = Deferred.makeUnsafe<void>()
-    const finish = Deferred.makeUnsafe<void>()
+    const submitted = Deferred.makeUnsafe<undefined>()
+    const finish = Deferred.makeUnsafe<undefined>()
     const controller = new AbortController()
     let settled = false
     const result = Effect.runPromiseExit(

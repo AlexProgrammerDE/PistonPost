@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
-import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
+import { createPost, createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import {
   finalizeImageUploadStatements,

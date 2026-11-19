@@ -40,7 +40,7 @@ export function withOutboxClaim<A, E, R>(
       const retryDelayMs = (error: unknown) =>
         Math.max(
           outboxRetryDelayMs(claim.attempt),
-          error instanceof QueueDeliveryError ? error.retryAfterSeconds * 1_000 : 0,
+          error instanceof QueueDeliveryError ? error.retryAfterSeconds * 1000 : 0,
         )
       return yield* restore(use(claim)).pipe(
         Effect.onExit((exit) => {
@@ -57,7 +57,7 @@ export function withOutboxClaim<A, E, R>(
           (error) =>
             new QueueDeliveryError({
               operation: error instanceof QueueDeliveryError ? error.operation : errorCode(error),
-              retryAfterSeconds: Math.ceil(retryDelayMs(error) / 1_000),
+              retryAfterSeconds: Math.ceil(retryDelayMs(error) / 1000),
             }),
         ),
       )

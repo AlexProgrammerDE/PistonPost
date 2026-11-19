@@ -56,7 +56,7 @@ export function uploadVideo(
     const upload = new Upload(file, {
       uploadUrl,
       chunkSize: 50 * 1024 * 1024,
-      retryDelays: [0, 1_000, 3_000, 5_000, 10_000],
+      retryDelays: [0, 1000, 3000, 5000, 10_000],
       storeFingerprintForResuming: false,
       removeFingerprintOnSuccess: true,
       metadata: { filename: file.name, filetype: file.type },

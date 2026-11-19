@@ -38,7 +38,7 @@ describe("image placeholder colors", () => {
       height: 1,
       channels: 3,
       depth: 16,
-      data: new Uint16Array([32768, 32768, 32768]),
+      data: new Uint16Array([32_768, 32_768, 32_768]),
     })
     expect(placeholderColorFromPng(png)).toBeNull()
   })

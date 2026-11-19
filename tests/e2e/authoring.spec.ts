@@ -63,7 +63,7 @@ async function createVerifiedSession(context: BrowserContext) {
     "cf-connecting-ip": clientAddress,
     "x-captcha-response": CAPTCHA_TEST_TOKEN,
   }
-  const startedAt = Date.now() - 1_000
+  const startedAt = Date.now() - 1000
   const signUp = await context.request.post("/api/auth/sign-up/email", {
     headers: authHeaders,
     data: {
@@ -712,7 +712,7 @@ https://youtu.be/dQw4w9WgXcQ`
 
     await page.goto("/posts/new")
     await expect(page.getByRole("heading", { name: "Make a post" })).toBeVisible()
-    await page.waitForTimeout(1_000)
+    await page.waitForTimeout(1000)
     expect(pageErrors).toEqual([])
     expect(consoleErrors).toEqual([])
     expect(requestFailures).toEqual([])
@@ -721,7 +721,7 @@ https://youtu.be/dQw4w9WgXcQ`
       .getByRole("textbox", { name: "Text", exact: true })
       .fill("found this earlier and had to put it somewhere")
     await page.getByRole("button", { name: "Post it" }).click()
-    await page.waitForTimeout(1_000)
+    await page.waitForTimeout(1000)
     expect(errorResponses).toEqual([])
     await expect(page).toHaveURL(/\/post\/[a-z0-9]+$/u)
     await expect(page.getByRole("heading", { name: "look at this little guy" })).toBeVisible()

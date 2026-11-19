@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, count, eq, gte, ne } from "drizzle-orm"
-import { Schema, Struct, Effect } from "effect"
+import { Clock, DateTime, Schema, Struct, Effect } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
 import { ownedMediaStatusQuery } from "@/db/media-read-model"
@@ -11,8 +11,9 @@ import {
   MAX_POST_MARKDOWN_LENGTH,
   postDraftInputSchema,
   tagSchema,
-} from "@/domain"
+} from "@/domain/validation"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import {
   IMAGE_UPLOAD_MIME_TYPES,
@@ -53,7 +54,7 @@ const BASIC_STREAM_UPLOAD_MAX_BYTES = 200_000_000
 // One intent batch holds up to 20 images. Slow connections need time to send all of them.
 const IMAGE_UPLOAD_INTENT_TTL_SECONDS = 60 * 60
 const RECENT_POST_LIMIT = 10
-const RECENT_POST_WINDOW_MS = 10 * 60 * 1_000
+const RECENT_POST_WINDOW_MS = 10 * 60 * 1000
 
 const postColumns = {
   id: schema.posts.id,
@@ -106,7 +107,7 @@ function enforceRecentPostLimit(database: D1DatabaseClient, userId: string) {
         : Effect.fail(
             rateLimitedFailure(
               "You can post up to 10 times every 10 minutes. Try again in a bit.",
-              RECENT_POST_WINDOW_MS / 1_000,
+              RECENT_POST_WINDOW_MS / 1000,
             ),
           ),
     ),
@@ -165,6 +166,7 @@ export const createPostDraft = createServerFn({ method: "POST" })
             }),
           { concurrency: 4 },
         )
+        const now = yield* Clock.currentTimeMillis
         const statements: D1PreparedStatement[] = [
           context.database.$client
             .prepare(
@@ -179,8 +181,8 @@ export const createPostDraft = createServerFn({ method: "POST" })
               input.visibility,
               input.title,
               input.type === "text" ? input.textContent : null,
-              Date.now(),
-              Date.now(),
+              now,
+              now,
             ),
         ]
 
@@ -192,7 +194,7 @@ export const createPostDraft = createServerFn({ method: "POST" })
            values (?, ?, ?, ?)
            on conflict(normalized_name) do update set display_name = excluded.display_name`,
               )
-              .bind(tag.id, tag.display, tag.normalized, Date.now()),
+              .bind(tag.id, tag.display, tag.normalized, now),
             context.database.$client
               .prepare(
                 `insert into post_tags (post_id, tag_id, ordinal)
@@ -291,7 +293,8 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
           )
         }
 
-        const expiresAt = Date.now() + IMAGE_UPLOAD_INTENT_TTL_SECONDS * 1_000
+        const now = yield* Clock.currentTimeMillis
+        const expiresAt = now + IMAGE_UPLOAD_INTENT_TTL_SECONDS * 1000
         const intents = data.files.map((file, index) => {
           const assetId = crypto.randomUUID()
           return {
@@ -404,9 +407,10 @@ export const createVideoUploadIntent = createServerFn({ method: "POST" })
         )
         if (existing) return yield* conflictFailure("A video draft can contain one video.")
 
-        const assetId = crypto.randomUUID()
-        const expiresAt = new Date(Date.now() + 60 * 60 * 1000)
-        const scheduledDeletion = new Date(Date.now() + 31 * 24 * 60 * 60 * 1000)
+        const assetId = yield* randomUuid
+        const now = yield* DateTime.now
+        const expiresAt = DateTime.toDateUtc(DateTime.addDuration(now, "1 hour"))
+        const scheduledDeletion = DateTime.toDateUtc(DateTime.addDuration(now, "31 days"))
         const [accountId, apiToken] = yield* Effect.all(
           [
             readOptionalSecret(context.env.STREAM_ACCOUNT_ID),
@@ -803,14 +807,15 @@ export const updatePost = createServerFn({ method: "POST" })
           },
           invalidate,
         )
+        const auditId = post.authorId === session.user.id ? null : yield* randomUuid
         const statements = prepareStatements(database, [
           ...editStatements,
-          ...(post.authorId === session.user.id
+          ...(auditId === null
             ? []
             : [
                 guardedAuditStatement(
                   {
-                    id: crypto.randomUUID(),
+                    id: auditId,
                     actorId: session.user.id,
                     action: "post.edit",
                     entityType: "post",
@@ -878,6 +883,7 @@ export const deletePost = createServerFn({ method: "POST" })
         )
         const cleanupJobs = media.map(({ id }) => mediaCleanupJob(id))
         const invalidate = cacheInvalidationJob(data.id)
+        const auditId = post.authorId === session.user.id ? null : yield* randomUuid
         const statements = prepareStatements(
           database,
           postDeleteStatements(
@@ -887,10 +893,10 @@ export const deletePost = createServerFn({ method: "POST" })
               actorId: session.user.id,
               mediaIds: media.map(({ id }) => id),
               audit:
-                post.authorId === session.user.id
+                auditId === null
                   ? null
                   : {
-                      id: crypto.randomUUID(),
+                      id: auditId,
                       actorId: session.user.id,
                       action: "post.delete",
                       entityType: "post",

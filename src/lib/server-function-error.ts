@@ -47,6 +47,7 @@ export function serverFunctionErrorStatus(error: ServerFunctionError) {
   return serverFunctionErrorStatuses[error.code]
 }
 
+// oxlint-disable-next-line effecttsgo/extends-native-error -- This error crosses a browser Promise boundary outside Effect.
 export class ServerFunctionClientError extends Error {
   readonly code: ServerFunctionError["code"]
   readonly details: ServerFunctionError

@@ -1,7 +1,7 @@
 import { and, count, countDistinct, desc, eq, inArray, lt, ne, or, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 
-import type { PublicPostCursor } from "@/domain"
+import type { PublicPostCursor } from "@/domain/model"
 import { isSearchIndexingTrusted, searchIndexingTrustCondition } from "@/lib/search-indexing"
 
 import { notBannedAccount } from "./account-ban"

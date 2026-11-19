@@ -17,7 +17,7 @@ import { createPostShareLinks } from "@/lib/post-share-links"
 import { shareNatively } from "@/lib/pwa/native-share"
 import { cn } from "@/lib/utils"
 
-const COPY_CONFIRMATION_DURATION_MS = 2_000
+const COPY_CONFIRMATION_DURATION_MS = 2000
 
 async function copyToClipboard(value: string, failureMessage = "The link could not be copied.") {
   try {

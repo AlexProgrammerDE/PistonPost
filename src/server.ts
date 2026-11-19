@@ -28,22 +28,25 @@ declare module "@tanstack/react-router" {
 }
 
 function healthResponse() {
-  return new Response(JSON.stringify({ status: "ok" }), {
-    headers: {
-      "Cache-Control": "no-store",
-      "Content-Type": "application/json; charset=utf-8",
+  return Response.json(
+    { status: "ok" },
+    {
+      headers: {
+        "Cache-Control": "no-store",
+        "Content-Type": "application/json; charset=utf-8",
+      },
     },
-  })
+  )
 }
 
 function rateLimitResponse() {
-  return new Response(
-    JSON.stringify({
+  return Response.json(
+    {
       error: {
         code: "RATE_LIMITED",
         message: "Rate limit exceeded. Please try again soon.",
       },
-    }),
+    },
     {
       headers: {
         "Cache-Control": "no-store",

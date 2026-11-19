@@ -35,14 +35,14 @@ describe("post impression visibility", () => {
       isMeaningfulPostExposure({
         intersectionHeight: 319,
         isIntersecting: true,
-        targetHeight: 1_200,
+        targetHeight: 1200,
       }),
     ).toBe(false)
     expect(
       isMeaningfulPostExposure({
         intersectionHeight: 320,
         isIntersecting: true,
-        targetHeight: 1_200,
+        targetHeight: 1200,
       }),
     ).toBe(true)
   })

@@ -1,6 +1,6 @@
 import { ulid } from "ulid"
 
-import type { Post } from "@/domain"
+import type { Post } from "@/domain/model"
 
 import type { user } from "./schema"
 

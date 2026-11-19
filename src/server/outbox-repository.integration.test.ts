@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it } from "bun:test"
 import { sql } from "drizzle-orm"
 import { Effect } from "effect"
 
-import { createMigratedTestDatabase, createUser, schema } from "@/db"
+import { createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import {
   createOutboxRepository,
@@ -91,7 +93,7 @@ describe("outbox claim policy", () => {
   it("caps retry spacing at fifteen minutes", () => {
     expect(outboxRetryDelayMs(1)).toBe(30_000)
     expect(outboxRetryDelayMs(2)).toBe(60_000)
-    expect(outboxRetryDelayMs(20)).toBe(15 * 60 * 1_000)
+    expect(outboxRetryDelayMs(20)).toBe(15 * 60 * 1000)
   })
 
   it("delays a queue retry until deferred outbox work is available", () => {

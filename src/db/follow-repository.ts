@@ -2,7 +2,7 @@ import { and, eq } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Effect } from "effect"
 
-import { RepositoryError } from "@/domain"
+import { RepositoryError } from "@/domain/errors"
 
 import * as schema from "./schema"
 

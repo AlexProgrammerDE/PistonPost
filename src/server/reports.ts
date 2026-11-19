@@ -1,9 +1,10 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { Schema, Effect } from "effect"
+import { DateTime, Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import { TURNSTILE_ACTIONS } from "@/lib/turnstile"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
@@ -125,7 +126,7 @@ export const createContentReport = createServerFn({ method: "POST" })
         )
         if (existing) return yield* conflictFailure("You already reported this content.")
 
-        const id = crypto.randomUUID()
+        const id = yield* randomUuid
         return yield* Effect.gen(function* () {
           yield* bindingOperation("createContentReport.operation", () =>
             database.insert(schema.contentReports).values({
@@ -169,7 +170,7 @@ export const resolveContentReport = createServerFn({ method: "POST" })
           return yield* conflictFailure("This report has already been reviewed.")
         }
 
-        const now = new Date()
+        const now = yield* DateTime.nowAsDate
         return yield* Effect.gen(function* () {
           yield* bindingOperation("resolveContentReport.operation", () =>
             database.batch([

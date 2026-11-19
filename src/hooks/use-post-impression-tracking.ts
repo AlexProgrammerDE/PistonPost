@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react"
 
-import type { PostViewSurface } from "@/domain"
+import type { PostViewSurface } from "@/domain/post-view"
 import { isMeaningfulPostExposure } from "@/lib/post-impression"
 import { trackPostViews } from "@/server/posts"
 

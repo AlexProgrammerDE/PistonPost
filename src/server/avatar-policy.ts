@@ -1,6 +1,7 @@
 import { and, eq, isNotNull, isNull, sql } from "drizzle-orm"
 
-import type { D1DatabaseClient, SqliteDatabaseClient } from "@/db"
+import type { D1DatabaseClient } from "@/db/d1-database"
+import type { SqliteDatabaseClient } from "@/db/database"
 import * as schema from "@/db/schema"
 import { parseManagedAvatarMediaId } from "@/lib/media-image"
 

@@ -45,7 +45,7 @@ it("delivers encrypted VAPID requests and classifies real expired-provider respo
   const options = {
     agent,
     TTL: 24 * 60 * 60,
-    timeout: 5_000,
+    timeout: 5000,
     vapidDetails: {
       subject: "mailto:validation@example.invalid",
       publicKey: vapid.publicKey,

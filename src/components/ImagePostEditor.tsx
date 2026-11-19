@@ -39,7 +39,7 @@ import {
   ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { MAX_IMAGES_PER_POST } from "@/domain"
+import { MAX_IMAGES_PER_POST } from "@/domain/validation"
 import { ImagePreparationError, prepareImageForUpload } from "@/lib/uploads/image-preparation"
 import { IMAGE_UPLOAD_ACCEPT, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import type { EditablePostImage } from "@/lib/uploads/post-edit-images"

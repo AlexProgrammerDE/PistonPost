@@ -21,10 +21,12 @@ import {
 import { tanstackStartCookies } from "better-auth/tanstack-start"
 import { Predicate } from "effect"
 
-import type { D1DatabaseClient, SqliteDatabaseClient } from "@/db"
+import type { D1DatabaseClient } from "@/db/d1-database"
+import type { SqliteDatabaseClient } from "@/db/database"
 import * as schema from "@/db/schema"
 import { isValidUsername } from "@/domain/validation"
-import { authenticationMessage, type EmailContent } from "@/email"
+import type { EmailContent } from "@/email/email"
+import { authenticationMessage } from "@/email/messages"
 
 import { createAuthRedirectUrl } from "./auth-redirect"
 import { findUsernameOwner, syncProfileUsername } from "./profile"

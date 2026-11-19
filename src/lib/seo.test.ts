@@ -27,7 +27,7 @@ const basePost: PublicPostRead = {
   },
   media: [],
   tags: [{ slug: "friends", name: "friends" }],
-  viewCount: 1_234,
+  viewCount: 1234,
   commentCount: 0,
   heartCount: 0,
 }
@@ -279,7 +279,7 @@ describe("SEO metadata", () => {
   })
 
   it("converts stored millisecond durations to ISO seconds", () => {
-    expect(millisecondsToIsoDuration(9_700)).toBe("PT9.7S")
+    expect(millisecondsToIsoDuration(9700)).toBe("PT9.7S")
     expect(millisecondsToIsoDuration(12_000)).toBe("PT12S")
     expect(millisecondsToIsoDuration(null)).toBeUndefined()
   })
@@ -295,7 +295,7 @@ describe("SEO metadata", () => {
     const script = head.scripts[0]
 
     expect(script?.children).not.toContain("</script>")
-    expect(script?.children).toContain("\\u003c/script>")
+    expect(script?.children).toContain(String.raw`\u003c/script>`)
   })
 })
 

@@ -19,7 +19,7 @@ const post: PublicPostSitemapRecord = {
   updatedAt: new Date("2026-07-16T12:00:00.000Z"),
   media: [
     { id: "image one", kind: "image", duration: null },
-    { id: "video-one", kind: "video", duration: 9_700 },
+    { id: "video-one", kind: "video", duration: 9700 },
   ],
 }
 

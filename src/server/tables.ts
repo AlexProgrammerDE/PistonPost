@@ -5,8 +5,9 @@ import { Schema, SchemaGetter, Effect, SchemaIssue } from "effect"
 import { createD1Database, type D1DatabaseClient } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
-import { moderationEmailJob } from "@/email"
+import { moderationEmailJob } from "@/email/jobs"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import { moderationPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
@@ -28,9 +29,14 @@ const adminCursor = Schema.Struct({
       decode: SchemaGetter.transformEffect((value) =>
         Effect.try({
           try: () => {
-            if (value instanceof Date || typeof value === "string" || typeof value === "number")
+            if (value instanceof Date || typeof value === "string" || typeof value === "number") {
+              // oxlint-disable-next-line effecttsgo/global-date-in-effect -- Decode the supplied cursor timestamp without consulting the clock.
               return new Date(value)
-            if (value === null || typeof value === "boolean") return new Date(Number(value))
+            }
+            if (value === null || typeof value === "boolean") {
+              // oxlint-disable-next-line effecttsgo/global-date-in-effect -- Preserve coercion of historical cursor values.
+              return new Date(Number(value))
+            }
             throw new Error("Invalid date")
           },
           catch: () => new SchemaIssue.InvalidValue({ message: "Invalid date" }),
@@ -285,76 +291,73 @@ export const getAdminRows = createServerFn({ method: "GET" })
         const order = data.direction === "desc" ? desc : asc
         switch (data.section) {
           case "posts": {
-            return adminPage(
-              yield* bindingOperation("getAdminRows.operation", () =>
-                database
-                  .select({
-                    id: schema.posts.id,
-                    primary: schema.posts.title,
-                    secondary: schema.user.name,
-                    href: sql<string | null>`'/post/' || ${schema.posts.id}`,
-                    status: schema.posts.status,
-                    createdAt: schema.posts.createdAt,
-                  })
-                  .from(schema.posts)
-                  .innerJoin(schema.user, eq(schema.user.id, schema.posts.authorId))
-                  .where(
-                    and(
-                      data.query ? like(schema.posts.title, search) : undefined,
-                      adminCursorCondition(
-                        schema.posts.createdAt,
-                        schema.posts.id,
-                        cursor,
-                        data.direction,
-                      ),
+            const rows = yield* bindingOperation("getAdminRows.operation", () =>
+              database
+                .select({
+                  id: schema.posts.id,
+                  primary: schema.posts.title,
+                  secondary: schema.user.name,
+                  href: sql<string | null>`'/post/' || ${schema.posts.id}`,
+                  status: schema.posts.status,
+                  createdAt: schema.posts.createdAt,
+                })
+                .from(schema.posts)
+                .innerJoin(schema.user, eq(schema.user.id, schema.posts.authorId))
+                .where(
+                  and(
+                    data.query ? like(schema.posts.title, search) : undefined,
+                    adminCursorCondition(
+                      schema.posts.createdAt,
+                      schema.posts.id,
+                      cursor,
+                      data.direction,
                     ),
-                  )
-                  .orderBy(order(schema.posts.createdAt), order(schema.posts.id))
-                  .limit(adminPageSize + 1),
-              ),
+                  ),
+                )
+                .orderBy(order(schema.posts.createdAt), order(schema.posts.id))
+                .limit(adminPageSize + 1),
             )
+            return adminPage(rows)
           }
           case "comments": {
-            return adminPage(
-              yield* bindingOperation("getAdminRows.operation", () =>
-                database
-                  .select({
-                    id: schema.comments.id,
-                    primary: schema.comments.content,
-                    secondary: schema.user.name,
-                    href: sql<
-                      string | null
-                    >`'/post/' || ${schema.comments.postId} || '#comment-' || ${schema.comments.id}`,
-                    status: schema.comments.status,
-                    createdAt: schema.comments.createdAt,
-                  })
-                  .from(schema.comments)
-                  .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
-                  .where(
-                    and(
-                      data.query ? like(schema.comments.content, search) : undefined,
-                      adminCursorCondition(
-                        schema.comments.createdAt,
-                        schema.comments.id,
-                        cursor,
-                        data.direction,
-                      ),
+            const rows = yield* bindingOperation("getAdminRows.operation", () =>
+              database
+                .select({
+                  id: schema.comments.id,
+                  primary: schema.comments.content,
+                  secondary: schema.user.name,
+                  href: sql<
+                    string | null
+                  >`'/post/' || ${schema.comments.postId} || '#comment-' || ${schema.comments.id}`,
+                  status: schema.comments.status,
+                  createdAt: schema.comments.createdAt,
+                })
+                .from(schema.comments)
+                .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
+                .where(
+                  and(
+                    data.query ? like(schema.comments.content, search) : undefined,
+                    adminCursorCondition(
+                      schema.comments.createdAt,
+                      schema.comments.id,
+                      cursor,
+                      data.direction,
                     ),
-                  )
-                  .orderBy(order(schema.comments.createdAt), order(schema.comments.id))
-                  .limit(adminPageSize + 1),
-              ),
+                  ),
+                )
+                .orderBy(order(schema.comments.createdAt), order(schema.comments.id))
+                .limit(adminPageSize + 1),
             )
+            return adminPage(rows)
           }
           case "reports": {
-            return adminPage(
-              yield* bindingOperation("getAdminRows.operation", () =>
-                database
-                  .select({
-                    id: schema.contentReports.id,
-                    href: sql<string | null>`null`,
-                    primary: sql<string>`${schema.contentReports.reason} || case when ${schema.contentReports.details} is null then '' else ': ' || ${schema.contentReports.details} end`,
-                    secondary: sql<string>`case
+            const rows = yield* bindingOperation("getAdminRows.operation", () =>
+              database
+                .select({
+                  id: schema.contentReports.id,
+                  href: sql<string | null>`null`,
+                  primary: sql<string>`${schema.contentReports.reason} || case when ${schema.contentReports.details} is null then '' else ': ' || ${schema.contentReports.details} end`,
+                  secondary: sql<string>`case
                 when ${schema.contentReports.targetType} = 'post'
                   then '/post/' || ${schema.contentReports.targetId}
                 when ${schema.contentReports.targetType} = 'profile'
@@ -364,118 +367,115 @@ export const getAdminRows = createServerFn({ method: "GET" })
                   ''
                 ) || '#discussion'
               end`,
-                    status: schema.contentReports.status,
-                    createdAt: schema.contentReports.createdAt,
-                  })
-                  .from(schema.contentReports)
-                  .where(
-                    and(
-                      data.query
-                        ? or(
-                            like(schema.contentReports.reason, search),
-                            like(schema.contentReports.details, search),
-                            like(schema.contentReports.targetId, search),
-                          )
-                        : undefined,
-                      adminCursorCondition(
-                        schema.contentReports.createdAt,
-                        schema.contentReports.id,
-                        cursor,
-                        data.direction,
-                      ),
+                  status: schema.contentReports.status,
+                  createdAt: schema.contentReports.createdAt,
+                })
+                .from(schema.contentReports)
+                .where(
+                  and(
+                    data.query
+                      ? or(
+                          like(schema.contentReports.reason, search),
+                          like(schema.contentReports.details, search),
+                          like(schema.contentReports.targetId, search),
+                        )
+                      : undefined,
+                    adminCursorCondition(
+                      schema.contentReports.createdAt,
+                      schema.contentReports.id,
+                      cursor,
+                      data.direction,
                     ),
-                  )
-                  .orderBy(order(schema.contentReports.createdAt), order(schema.contentReports.id))
-                  .limit(adminPageSize + 1),
-              ),
+                  ),
+                )
+                .orderBy(order(schema.contentReports.createdAt), order(schema.contentReports.id))
+                .limit(adminPageSize + 1),
             )
+            return adminPage(rows)
           }
           case "media": {
-            return adminPage(
-              yield* bindingOperation("getAdminRows.operation", () =>
-                database
-                  .select({
-                    id: schema.mediaAssets.id,
-                    href: sql<string | null>`null`,
-                    primary: schema.mediaAssets.originalFilename,
-                    secondary: schema.mediaAssets.kind,
-                    status: schema.mediaAssets.status,
-                    createdAt: schema.mediaAssets.createdAt,
-                  })
-                  .from(schema.mediaAssets)
-                  .where(
-                    and(
-                      data.query ? like(schema.mediaAssets.originalFilename, search) : undefined,
-                      adminCursorCondition(
-                        schema.mediaAssets.createdAt,
-                        schema.mediaAssets.id,
-                        cursor,
-                        data.direction,
-                      ),
+            const rows = yield* bindingOperation("getAdminRows.operation", () =>
+              database
+                .select({
+                  id: schema.mediaAssets.id,
+                  href: sql<string | null>`null`,
+                  primary: schema.mediaAssets.originalFilename,
+                  secondary: schema.mediaAssets.kind,
+                  status: schema.mediaAssets.status,
+                  createdAt: schema.mediaAssets.createdAt,
+                })
+                .from(schema.mediaAssets)
+                .where(
+                  and(
+                    data.query ? like(schema.mediaAssets.originalFilename, search) : undefined,
+                    adminCursorCondition(
+                      schema.mediaAssets.createdAt,
+                      schema.mediaAssets.id,
+                      cursor,
+                      data.direction,
                     ),
-                  )
-                  .orderBy(order(schema.mediaAssets.createdAt), order(schema.mediaAssets.id))
-                  .limit(adminPageSize + 1),
-              ),
+                  ),
+                )
+                .orderBy(order(schema.mediaAssets.createdAt), order(schema.mediaAssets.id))
+                .limit(adminPageSize + 1),
             )
+            return adminPage(rows)
           }
           case "audit": {
-            return adminPage(
-              yield* bindingOperation("getAdminRows.operation", () =>
-                database
-                  .select({
-                    id: schema.auditEvents.id,
-                    href: sql<string | null>`null`,
-                    primary: schema.auditEvents.action,
-                    secondary: schema.auditEvents.entityType,
-                    status: schema.auditEvents.entityId,
-                    createdAt: schema.auditEvents.createdAt,
-                  })
-                  .from(schema.auditEvents)
-                  .where(
-                    and(
-                      data.query ? like(schema.auditEvents.action, search) : undefined,
-                      adminCursorCondition(
-                        schema.auditEvents.createdAt,
-                        schema.auditEvents.id,
-                        cursor,
-                        data.direction,
-                      ),
+            const rows = yield* bindingOperation("getAdminRows.operation", () =>
+              database
+                .select({
+                  id: schema.auditEvents.id,
+                  href: sql<string | null>`null`,
+                  primary: schema.auditEvents.action,
+                  secondary: schema.auditEvents.entityType,
+                  status: schema.auditEvents.entityId,
+                  createdAt: schema.auditEvents.createdAt,
+                })
+                .from(schema.auditEvents)
+                .where(
+                  and(
+                    data.query ? like(schema.auditEvents.action, search) : undefined,
+                    adminCursorCondition(
+                      schema.auditEvents.createdAt,
+                      schema.auditEvents.id,
+                      cursor,
+                      data.direction,
                     ),
-                  )
-                  .orderBy(order(schema.auditEvents.createdAt), order(schema.auditEvents.id))
-                  .limit(adminPageSize + 1),
-              ),
+                  ),
+                )
+                .orderBy(order(schema.auditEvents.createdAt), order(schema.auditEvents.id))
+                .limit(adminPageSize + 1),
             )
+            return adminPage(rows)
           }
           case "jobs": {
-            return adminPage(
-              yield* bindingOperation("getAdminRows.operation", () =>
-                database
-                  .select({
-                    id: schema.outbox.id,
-                    href: sql<string | null>`null`,
-                    primary: schema.outbox.kind,
-                    secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
-                    status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.leaseExpiresAt} > (unixepoch() * 1000) then 'running' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
-                    createdAt: schema.outbox.createdAt,
-                  })
-                  .from(schema.outbox)
-                  .where(
-                    and(
-                      data.query ? like(schema.outbox.kind, search) : undefined,
-                      adminCursorCondition(
-                        schema.outbox.createdAt,
-                        schema.outbox.id,
-                        cursor,
-                        data.direction,
-                      ),
+            const rows = yield* bindingOperation("getAdminRows.operation", () =>
+              database
+                .select({
+                  id: schema.outbox.id,
+                  href: sql<string | null>`null`,
+                  primary: schema.outbox.kind,
+                  secondary: sql<string>`cast(${schema.outbox.attempts} as text) || ' attempts'`,
+                  status: sql<string>`case when ${schema.outbox.processedAt} is not null then 'complete' when ${schema.outbox.deadLetteredAt} is not null then 'dead-lettered' when ${schema.outbox.leaseExpiresAt} > (unixepoch() * 1000) then 'running' when ${schema.outbox.lastError} is not null then 'failed' else 'pending' end`,
+                  createdAt: schema.outbox.createdAt,
+                })
+                .from(schema.outbox)
+                .where(
+                  and(
+                    data.query ? like(schema.outbox.kind, search) : undefined,
+                    adminCursorCondition(
+                      schema.outbox.createdAt,
+                      schema.outbox.id,
+                      cursor,
+                      data.direction,
                     ),
-                  )
-                  .orderBy(order(schema.outbox.createdAt), order(schema.outbox.id))
-                  .limit(adminPageSize + 1),
-              ),
+                  ),
+                )
+                .orderBy(order(schema.outbox.createdAt), order(schema.outbox.id))
+                .limit(adminPageSize + 1),
             )
+            return adminPage(rows)
           }
         }
         return yield* invalidInputFailure("Unsupported administration section.")
@@ -691,7 +691,7 @@ export const moderateEntity = createServerFn({ method: "POST" })
         const expectedStatus = data.action === "hide" ? "published" : "moderated"
 
         return yield* Effect.gen(function* () {
-          const moderationEventId = crypto.randomUUID()
+          const moderationEventId = yield* randomUuid
           const jobs: [
             ReturnType<typeof cacheInvalidationJob>,
             ...(

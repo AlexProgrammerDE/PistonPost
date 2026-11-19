@@ -11,8 +11,8 @@ function bindingNotStarted() {
 
 describe("scheduled maintenance lifetime", () => {
   test("collects failures and defects after independent cleanup finishes", async () => {
-    const started = Deferred.makeUnsafe<void>()
-    const finish = Deferred.makeUnsafe<void>()
+    const started = Deferred.makeUnsafe<undefined>()
+    const finish = Deferred.makeUnsafe<undefined>()
     let cleaned = false
     let settled = false
     const result = Effect.runPromiseExit(
@@ -47,7 +47,7 @@ describe("scheduled maintenance lifetime", () => {
   })
 
   test("caller cancellation stops interruptible work and waits for an executing binding", async () => {
-    const started = Deferred.makeUnsafe<void>()
+    const started = Deferred.makeUnsafe<undefined>()
     let finish: () => void = bindingNotStarted
     const controller = new AbortController()
     let readerStopped = false

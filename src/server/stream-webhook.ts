@@ -3,7 +3,7 @@ import { Effect, Result, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import { transitionMediaStatus } from "@/domain"
+import { transitionMediaStatus } from "@/domain/media-state"
 import type { AppRequestContext } from "@/server"
 import { logError } from "@/server/error-log"
 import { synchronizeVideoDownload } from "@/server/video-download"
@@ -84,7 +84,8 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
   request: Request,
   context: AppRequestContext,
 ) {
-  const runBackgroundEffect = Effect.runPromiseWith(yield* Effect.context())
+  const effectContext = yield* Effect.context()
+  const runBackgroundEffect = Effect.runPromiseWith(effectContext)
   const length = Number(request.headers.get("content-length") ?? 0)
   if (length > 64 * 1024) return new Response("Payload too large", { status: 413 })
   const body = yield* bindingOperation("processStreamWebhook", () => request.text())

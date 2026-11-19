@@ -3,8 +3,11 @@ import { and, desc, eq, sql } from "drizzle-orm"
 import { Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
-import { productEmailBatchJob, productUpdateMessage, renderEmail } from "@/email"
+import { productEmailBatchJob } from "@/email/jobs"
+import { productUpdateMessage } from "@/email/messages"
+import { renderEmail } from "@/email/render-email"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
 import { conflictFailure, notFoundFailure } from "@/server/server-function-failure"
@@ -91,7 +94,7 @@ export const createEmailCampaign = createServerFn({ method: "POST" })
     runRequestEffect(
       Effect.gen(function* () {
         const { database, session } = context
-        const id = crypto.randomUUID()
+        const id = yield* randomUuid
         return yield* Effect.gen(function* () {
           yield* bindingOperation("createEmailCampaign.operation", () =>
             database.batch([

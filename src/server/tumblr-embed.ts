@@ -62,7 +62,7 @@ export const resolveTumblrEmbedHref = Effect.fn("resolveTumblrEmbedHref")(functi
     try: () =>
       (input.fetch ?? globalThis.fetch)(endpoint, {
         headers: { Accept: "application/json" },
-        signal: AbortSignal.timeout(5_000),
+        signal: AbortSignal.timeout(5000),
       }),
     catch: () => new TumblrEmbedError({ operation: "request", status: null }),
   })

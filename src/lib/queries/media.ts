@@ -8,6 +8,6 @@ export function ownedMediaStatusQueryOptions(ids: string[]) {
     queryKey: ["media", "owned-status", stableIds] as const,
     queryFn: () => getOwnedMediaStatus({ data: { ids: stableIds } }),
     staleTime: 0,
-    gcTime: 5 * 60 * 1_000,
+    gcTime: 5 * 60 * 1000,
   })
 }

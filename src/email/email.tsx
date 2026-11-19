@@ -18,7 +18,7 @@ import { NewDeviceEmail } from "@/components/auth/email/new-device"
 import { OtpEmail } from "@/components/auth/email/otp-email"
 import { PasswordChangedEmail } from "@/components/auth/email/password-changed"
 import { ResetPasswordEmail } from "@/components/auth/email/reset-password"
-import type { EmailNotificationPreference } from "@/domain"
+import type { EmailNotificationPreference } from "@/domain/validation"
 
 export type EmailSubscription = Readonly<{
   preference: EmailNotificationPreference

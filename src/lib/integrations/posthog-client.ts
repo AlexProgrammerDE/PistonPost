@@ -67,6 +67,7 @@ function forgetPostHogConsent(token: string) {
     /* Storage can be blocked. PostHog then has no stored opt-in either. */
   }
   // PostHog migrates a cookie copy of the flag into local storage, so clear that copy too.
+  // oxlint-disable-next-line unicorn/no-document-cookie -- Cookie Store is unavailable in the supported Safari versions.
   document.cookie = `${key}=; Max-Age=0; Path=/; SameSite=Lax`
 }
 

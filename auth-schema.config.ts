@@ -1,4 +1,4 @@
-import { createSqliteDatabase } from "@/db"
+import { createSqliteDatabase } from "@/db/database"
 
 import { createAuth } from "./src/auth/server"
 

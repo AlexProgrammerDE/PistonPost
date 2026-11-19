@@ -1,9 +1,9 @@
-import { Data, Effect } from "effect"
+import { Effect, Schema } from "effect"
 
-export class OperationError extends Data.TaggedError("OperationError")<{
-  readonly operation: string
-  readonly cause: unknown
-}> {}
+export class OperationError extends Schema.TaggedError<
+  OperationError,
+  { readonly brand: unique symbol }
+>()("OperationError", { operation: Schema.String, cause: Schema.Unknown }) {}
 
 /** An executing binding operation must settle before its owner can finish. */
 export function bindingOperation<A>(operation: string, task: () => A | PromiseLike<A>) {

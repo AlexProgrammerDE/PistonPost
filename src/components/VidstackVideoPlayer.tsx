@@ -55,7 +55,7 @@ export function VidstackVideoPlayer({
   const downloadUrl =
     typeof window === "undefined" ? downloadPath : new URL(downloadPath, window.location.href).href
   const durationSeconds =
-    duration !== null && Number.isFinite(duration) && duration > 0 ? duration / 1_000 : undefined
+    duration !== null && Number.isFinite(duration) && duration > 0 ? duration / 1000 : undefined
   const previewThumbnails = createVideoPreviewThumbnails({
     mediaId,
     durationMilliseconds: duration,

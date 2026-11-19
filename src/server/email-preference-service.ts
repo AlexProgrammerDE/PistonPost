@@ -1,5 +1,5 @@
 import { eq } from "drizzle-orm"
-import { Data, Effect } from "effect"
+import { Effect, Schema } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
 import type { SqliteDatabaseClient } from "@/db/database"
@@ -8,14 +8,14 @@ import {
   createUserSettingsRepository,
   type EmailPreferenceChangeSource,
 } from "@/db/user-settings-repository"
-import { verifyUnsubscribeToken } from "@/email"
+import { verifyUnsubscribeToken } from "@/email/unsubscribe"
 
 type PreferenceDatabase = D1DatabaseClient | SqliteDatabaseClient
 
-class EmailPreferenceQueryError extends Data.TaggedError("EmailPreferenceQueryError")<{
-  readonly cause: unknown
-  readonly message: string
-}> {}
+class EmailPreferenceQueryError extends Schema.TaggedError<
+  EmailPreferenceQueryError,
+  { readonly brand: unique symbol }
+>()("EmailPreferenceQueryError", { cause: Schema.Unknown, message: Schema.String }) {}
 
 function repositoryQueryError(cause: unknown) {
   return new EmailPreferenceQueryError({

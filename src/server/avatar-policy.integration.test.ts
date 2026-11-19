@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
-import { createMigratedTestDatabase, createUser, schema } from "@/db"
+import { createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 import { mediaImageUrl } from "@/lib/media-image"
 
 import { isManagedUserAvatar } from "./avatar-policy"

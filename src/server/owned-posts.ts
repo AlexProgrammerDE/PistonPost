@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { Effect, Schema } from "effect"
 
 import { listOwnedUnlistedPostReads } from "@/db/owned-post-read-model"
-import { decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
+import { decodePublicPostCursor, encodePublicPostCursor } from "@/domain/cursor"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"

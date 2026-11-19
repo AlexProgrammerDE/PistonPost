@@ -8,8 +8,8 @@ describe("image preparation policy", () => {
       imageTranscodePlan({
         mimeType: "image/jpeg",
         byteSize: 1_000_000,
-        width: 2_000,
-        height: 1_000,
+        width: 2000,
+        height: 1000,
       }),
     ).toBeNull()
   })
@@ -19,10 +19,10 @@ describe("image preparation policy", () => {
       imageTranscodePlan({
         mimeType: "image/jpeg",
         byteSize: 5_000_000,
-        width: 8_000,
-        height: 6_000,
+        width: 8000,
+        height: 6000,
       }),
-    ).toEqual({ width: 4_096, height: 3_072, required: true })
+    ).toEqual({ width: 4096, height: 3072, required: true })
   })
 
   test("requires AVIF conversion but only keeps optional compression with real savings", () => {
@@ -30,10 +30,10 @@ describe("image preparation policy", () => {
       imageTranscodePlan({
         mimeType: "image/avif",
         byteSize: 500_000,
-        width: 1_200,
+        width: 1200,
         height: 800,
       }),
-    ).toEqual({ width: 1_200, height: 800, required: true })
+    ).toEqual({ width: 1200, height: 800, required: true })
     expect(
       shouldUseImageTranscode({
         sourceByteSize: 4_000_000,

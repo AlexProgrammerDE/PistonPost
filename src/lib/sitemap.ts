@@ -15,7 +15,7 @@ export type SitemapCounts = Readonly<Record<PagedSitemapKind, number>>
 // A sitemap file may hold 50,000 URLs and 50 MB. A post can list up to 150 images at
 // roughly 150 bytes each, so post pages stay small enough to fit the byte limit.
 export const SITEMAP_PAGE_SIZES: Readonly<Record<PagedSitemapKind, number>> = {
-  posts: 1_000,
+  posts: 1000,
   profiles: 10_000,
   tags: 10_000,
 }
@@ -72,7 +72,7 @@ export function buildPostSitemapXml(origin: string, records: readonly PublicPost
           }
           if (asset.kind === "video") {
             const duration = asset.duration
-              ? `\n      <video:duration>${Math.max(1, Math.round(asset.duration / 1_000)).toString()}</video:duration>`
+              ? `\n      <video:duration>${Math.max(1, Math.round(asset.duration / 1000)).toString()}</video:duration>`
               : ""
             return `\n    <video:video>\n      <video:thumbnail_loc>${absoluteXmlUrl(origin, `/media/video/${asset.id}/thumbnail?v=${VIDEO_THUMBNAIL_CACHE_VERSION.toString()}`)}</video:thumbnail_loc>\n      <video:title>${escapeXml(post.title)}</video:title>\n      <video:description>${escapeXml(`${post.title}, a video on PistonPost.`)}</video:description>\n      <video:player_loc allow_embed="yes">${absoluteXmlUrl(origin, `/media/video/${asset.id}/player?v=${VIDEO_PLAYER_CACHE_VERSION.toString()}`)}</video:player_loc>${duration}\n      <video:publication_date>${post.publishedAt.toISOString()}</video:publication_date>\n    </video:video>`
           }

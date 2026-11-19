@@ -44,9 +44,9 @@ function postDescription(post: PublicPostRead, authorName: string) {
 
 function formatCompactDuration(duration: number | null) {
   if (!duration || duration <= 0 || !Number.isFinite(duration)) return
-  const totalSeconds = Math.max(1, Math.round(duration / 1_000))
-  const hours = Math.floor(totalSeconds / 3_600)
-  const minutes = Math.floor((totalSeconds % 3_600) / 60)
+  const totalSeconds = Math.max(1, Math.round(duration / 1000))
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
   return hours > 0
     ? `${hours.toString()}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`
@@ -55,7 +55,7 @@ function formatCompactDuration(duration: number | null) {
 
 export function millisecondsToIsoDuration(duration: number | null) {
   if (!duration || duration <= 0 || !Number.isFinite(duration)) return
-  const seconds = duration / 1_000
+  const seconds = duration / 1000
   const value = Number.isInteger(seconds)
     ? seconds.toString()
     : seconds.toFixed(3).replace(/0+$/u, "").replace(/\.$/u, "")
@@ -141,17 +141,17 @@ function postVideo(post: PublicPostRead, postTitle: string) {
     duration: millisecondsToIsoDuration(media.duration),
     durationSeconds:
       media.duration && media.duration > 0 && Number.isFinite(media.duration)
-        ? Math.max(1, Math.round(media.duration / 1_000))
+        ? Math.max(1, Math.round(media.duration / 1000))
         : undefined,
   }
 }
 
 // FNV-1a keeps the card version short and stable without async hashing.
 function shortHash(value: string) {
-  let hash = 0x811c9dc5
+  let hash = 0x81_1c_9d_c5
   for (const character of value) {
     hash ^= character.codePointAt(0) ?? 0
-    hash = Math.imul(hash, 0x01000193)
+    hash = Math.imul(hash, 0x01_00_01_93)
   }
   return (hash >>> 0).toString(36)
 }

@@ -25,7 +25,7 @@ import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
-import { MAX_POST_MARKDOWN_LENGTH } from "@/domain"
+import { MAX_POST_MARKDOWN_LENGTH } from "@/domain/validation"
 import { useAppForm } from "@/lib/forms/app-form"
 import { mediaImageUrl } from "@/lib/media-image"
 import { ownedRouteFailure } from "@/lib/owned-route-failure"

@@ -1,6 +1,6 @@
 import { and, eq, gt } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
-import { Clock, Context, Effect, Layer } from "effect"
+import { DateTime, Context, Effect, Layer } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
 import type { SqliteDatabaseClient } from "@/db/database"
@@ -120,7 +120,7 @@ export function productBatchStoreLayer(database: D1DatabaseClient | SqliteDataba
           .onConflictDoNothing(),
       ).pipe(Effect.asVoid),
     finish: Effect.fn("ProductBatch.finish")(function* (campaignId: string) {
-      const now = new Date(yield* Clock.currentTimeMillis)
+      const now = yield* DateTime.nowAsDate
       yield* bindingOperation("product-batch.finish-campaign", () =>
         db
           .update(schema.emailCampaigns)

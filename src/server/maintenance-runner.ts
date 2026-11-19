@@ -1,9 +1,13 @@
-import type { Cause } from "effect"
-import { Data, Effect, Exit } from "effect"
+import { Effect, Exit, Schema } from "effect"
 
-export class MaintenanceError extends Data.TaggedError("MaintenanceError")<{
-  readonly failures: readonly { readonly task: string; readonly cause: Cause.Cause<unknown> }[]
-}> {}
+export class MaintenanceError extends Schema.TaggedError<
+  MaintenanceError,
+  { readonly brand: unique symbol }
+>()("MaintenanceError", {
+  failures: Schema.Array(
+    Schema.Struct({ task: Schema.String, cause: Schema.Cause(Schema.Unknown, Schema.Unknown) }),
+  ),
+}) {}
 
 /** A failed maintenance task must not interrupt independent cleanup work. */
 export function runMaintenanceTasks<E, R>(

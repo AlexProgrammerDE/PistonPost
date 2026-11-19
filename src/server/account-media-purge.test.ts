@@ -39,7 +39,7 @@ describe("account media purge", () => {
               Promise.reject(
                 Object.assign(new Error("Video not found"), {
                   name: "NotFoundError",
-                  code: 10003,
+                  code: 10_003,
                   statusCode: 404,
                 }),
               ),

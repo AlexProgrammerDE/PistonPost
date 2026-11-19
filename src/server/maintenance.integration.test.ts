@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
-import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
+import { createPost, createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import { mediaCleanupJob } from "./jobs"
 import { abandonedDraftStatements, type MaintenanceStatement } from "./maintenance"
@@ -10,7 +12,7 @@ afterEach(() => {
   for (const db of databases.splice(0)) db.$client.close()
 })
 
-const day = 24 * 60 * 60 * 1_000
+const day = 24 * 60 * 60 * 1000
 const now = Date.parse("2026-02-01T00:00:00.000Z")
 
 function image(id: string, providerMetadata: Record<string, string>) {

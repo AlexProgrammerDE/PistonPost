@@ -80,7 +80,11 @@ import {
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
-import { MAX_IMAGES_PER_POST, MAX_POST_MARKDOWN_LENGTH, postDraftInputSchema } from "@/domain"
+import {
+  MAX_IMAGES_PER_POST,
+  MAX_POST_MARKDOWN_LENGTH,
+  postDraftInputSchema,
+} from "@/domain/validation"
 import { useComposerDraft } from "@/hooks/use-composer-draft"
 import { useAppForm } from "@/lib/forms/app-form"
 import { sharedText, type SharedContent } from "@/lib/pwa/share-intake"
@@ -241,7 +245,7 @@ async function waitForVideo(queryClient: QueryClient, assetId: string) {
     }
     // The delay is part of the bounded reconciliation protocol.
     await new Promise((resolve) => {
-      setTimeout(resolve, 5_000)
+      setTimeout(resolve, 5000)
     })
   }
   throw new Error("The video is still processing. Try posting again in a few minutes.")
@@ -258,6 +262,7 @@ export function PostComposer({
 }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  // oxlint-disable-next-line react/hook-use-state -- The value is initialized once and remains stable for the mount.
   const [uploadStore] = useState(createMediaUploadStore)
   const { dispatch } = uploadStore
   const uploadCount = useSelector(uploadStore.uploads, (items) => items.length)

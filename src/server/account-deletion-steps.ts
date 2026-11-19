@@ -1,6 +1,6 @@
 import { eq, inArray, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
-import { Context, Data, Effect, Layer } from "effect"
+import { Context, Effect, Layer, Schema } from "effect"
 
 import * as schema from "@/db/schema"
 
@@ -11,11 +11,17 @@ import { bindingOperation, type OperationError } from "./operation"
 
 export type AccountDeletionParams = { userId: string; mediaIds: string[] }
 
-class AccountDeletionIncomplete extends Data.TaggedError("AccountDeletionIncomplete") {
+class AccountDeletionIncomplete extends Schema.TaggedError<
+  AccountDeletionIncomplete,
+  { readonly brand: unique symbol }
+>()("AccountDeletionIncomplete", {}) {
   override readonly message = "Owned media still requires deletion."
 }
 
-class AccountStillExists extends Data.TaggedError("AccountStillExists") {
+class AccountStillExists extends Schema.TaggedError<
+  AccountStillExists,
+  { readonly brand: unique symbol }
+>()("AccountStillExists", {}) {
   override readonly message = "The account row has not been deleted yet."
 }
 
@@ -85,7 +91,7 @@ export const confirmAccountDeleted = Effect.fn("AccountDeletion.confirmAccountDe
   input: AccountDeletionParams,
 ) {
   const store = yield* AccountDeletionStore
-  if (yield* store.accountExists(input.userId)) return yield* new AccountStillExists()
+  if (yield* store.accountExists(input.userId)) return yield* new AccountStillExists({})
   return { deleted: true }
 })
 
@@ -118,7 +124,7 @@ export const verifyAccountPurge = Effect.fn("AccountDeletion.verifyPurge")(funct
 ) {
   const store = yield* AccountDeletionStore
   const remaining = yield* store.media(input.mediaIds)
-  if (remaining.length > 0) return yield* new AccountDeletionIncomplete()
+  if (remaining.length > 0) return yield* new AccountDeletionIncomplete({})
   yield* store.complete(input)
   return { complete: true }
 })

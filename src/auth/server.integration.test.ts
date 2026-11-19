@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test"
 
 import { eq } from "drizzle-orm"
 
-import { createMigratedTestDatabase, schema } from "@/db"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 import { isValidUsername } from "@/domain/validation"
 
 import { initializeUserProfile } from "./profile"

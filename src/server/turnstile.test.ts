@@ -28,13 +28,13 @@ function siteverifyResponse(
     action: string | undefined
   }> = {},
 ) {
-  return new Response(
-    JSON.stringify({
+  return Response.json(
+    {
       success: true,
       hostname: "post.pistonmaster.net",
       action: TURNSTILE_ACTIONS.createPost,
       ...overrides,
-    }),
+    },
     { headers: { "Content-Type": "application/json" } },
   )
 }
@@ -142,7 +142,7 @@ describe("Turnstile verification", () => {
 })
 
 test("cancels a pending response body when its caller is interrupted", async () => {
-  const bodyRead = Deferred.makeUnsafe<void>()
+  const bodyRead = Deferred.makeUnsafe<undefined>()
   let aborted = false
   const controller = new AbortController()
   const result = Effect.runPromiseExit(
@@ -180,7 +180,7 @@ test("cancels a pending response body when its caller is interrupted", async () 
 test("the provider deadline aborts the transport without retrying", async () => {
   let attempts = 0
   let aborted = false
-  const started = Deferred.makeUnsafe<void>()
+  const started = Deferred.makeUnsafe<undefined>()
   const program = Effect.gen(function* () {
     const fiber = yield* Effect.forkChild(
       verifyTurnstile({
@@ -196,7 +196,7 @@ test("the provider deadline aborts the transport without retrying", async () => 
               },
               { once: true },
             )
-            Deferred.doneUnsafe(started, Effect.void)
+            Deferred.doneUnsafe(started, Effect.undefined)
           }),
       }).pipe(Effect.exit),
     )

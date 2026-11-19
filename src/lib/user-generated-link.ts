@@ -1,6 +1,6 @@
 import { SITE_URL } from "./seo"
 
-export const MAX_USER_GENERATED_URL_LENGTH = 2_048
+export const MAX_USER_GENERATED_URL_LENGTH = 2048
 
 export type UserGeneratedLinkRelationship = "me"
 

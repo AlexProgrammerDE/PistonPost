@@ -218,9 +218,9 @@ export function createSeoHead(options: SeoOptions) {
             {
               type: "application/ld+json",
               children: JSON.stringify(options.jsonLd)
-                .replaceAll("<", "\\u003c")
-                .replaceAll("\u2028", "\\u2028")
-                .replaceAll("\u2029", "\\u2029"),
+                .replaceAll("<", String.raw`\u003c`)
+                .replaceAll("\u2028", String.raw`\u2028`)
+                .replaceAll("\u2029", String.raw`\u2029`),
             },
           ]
         : []),

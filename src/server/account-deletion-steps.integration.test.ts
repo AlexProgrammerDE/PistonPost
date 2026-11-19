@@ -3,7 +3,9 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { eq } from "drizzle-orm"
 import { Effect, Layer } from "effect"
 
-import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
+import { createPost, createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import {
   accountDeletionStoreLayer,

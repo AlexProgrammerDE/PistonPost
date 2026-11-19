@@ -1,7 +1,7 @@
 import { and, eq, gt, isNull, or } from "drizzle-orm"
-import { Context, Effect, Layer, Schema } from "effect"
+import { DateTime, Context, Effect, Layer, Schema } from "effect"
 
-import type { D1DatabaseClient } from "@/db"
+import type { D1DatabaseClient } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 import type { PushDeliveryJob } from "@/push/jobs"
 import type { PushNotificationPayload, PushTarget } from "@/push/transport"
@@ -50,7 +50,7 @@ function ready(target: PushTarget, payload: PushNotificationPayload): ResolvedPu
 export function pushJobResolverLayer(database: D1DatabaseClient) {
   return Layer.succeed(PushJobResolver, {
     resolve: Effect.fn("PushJobResolver.resolve")(function* (job: PushDeliveryJob) {
-      const now = new Date()
+      const now = yield* DateTime.nowAsDate
       const subscription = yield* query(() =>
         database
           .select({

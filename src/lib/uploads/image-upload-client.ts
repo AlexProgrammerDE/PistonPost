@@ -1,3 +1,4 @@
+// oxlint-disable-next-line effecttsgo/extends-native-error -- This error crosses a browser Promise boundary outside Effect.
 export class UploadClientError extends Error {
   override name = "UploadClientError"
 }

@@ -5,7 +5,7 @@ import { Effect } from "effect"
 import { createUser } from "@/db/factories"
 import { emailPreferenceChanges, user, userSettings } from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
-import { signUnsubscribeToken } from "@/email"
+import { signUnsubscribeToken } from "@/email/unsubscribe"
 
 import { parseOneClickUnsubscribeRequest } from "./email-one-click"
 import { applyUnsubscribeToken } from "./email-preference-service"

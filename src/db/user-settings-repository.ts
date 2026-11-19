@@ -1,12 +1,10 @@
-import { Effect } from "effect"
+import { DateTime, Effect } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
 import type { SqliteDatabaseClient } from "@/db/database"
-import {
-  RepositoryError,
-  type EmailNotificationPreference,
-  type NotificationPreference,
-} from "@/domain"
+import { RepositoryError } from "@/domain/errors"
+import type { EmailNotificationPreference, NotificationPreference } from "@/domain/validation"
+import { randomUuid } from "@/lib/server-uuid"
 
 import * as schema from "./schema"
 
@@ -76,6 +74,10 @@ export function createUserSettingsRepository(database: Database) {
         source: EmailPreferenceChangeSource = "settings",
       ) {
         const values = preferenceValues(preference, enabled)
+        const updatedAt = yield* DateTime.nowAsDate
+        const change = isEmailPreference(preference)
+          ? { id: yield* randomUuid, userId, preference, enabled, source }
+          : null
         yield* Effect.tryPromise({
           try: async () => {
             if (isD1Database(database)) {
@@ -84,21 +86,15 @@ export function createUserSettingsRepository(database: Database) {
                 .values({ userId, ...values })
                 .onConflictDoUpdate({
                   target: schema.userSettings.userId,
-                  set: { ...values, updatedAt: new Date() },
+                  set: { ...values, updatedAt },
                 })
-              if (!isEmailPreference(preference)) {
+              if (!change) {
                 await updatePreference
                 return
               }
               await database.batch([
                 updatePreference,
-                database.insert(schema.emailPreferenceChanges).values({
-                  id: crypto.randomUUID(),
-                  userId,
-                  preference,
-                  enabled,
-                  source,
-                }),
+                database.insert(schema.emailPreferenceChanges).values(change),
               ])
               return
             }
@@ -109,20 +105,11 @@ export function createUserSettingsRepository(database: Database) {
                 .values({ userId, ...values })
                 .onConflictDoUpdate({
                   target: schema.userSettings.userId,
-                  set: { ...values, updatedAt: new Date() },
+                  set: { ...values, updatedAt },
                 })
                 .run()
-              if (isEmailPreference(preference)) {
-                transaction
-                  .insert(schema.emailPreferenceChanges)
-                  .values({
-                    id: crypto.randomUUID(),
-                    userId,
-                    preference,
-                    enabled,
-                    source,
-                  })
-                  .run()
+              if (change) {
+                transaction.insert(schema.emailPreferenceChanges).values(change).run()
               }
             })
           },

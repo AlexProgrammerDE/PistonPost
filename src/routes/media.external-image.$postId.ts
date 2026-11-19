@@ -74,7 +74,7 @@ async function deliverExternalImage({
       postId: Schema.String.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)),
       source: Schema.String.check(
         Schema.makeFilter((value) => URL.canParse(value) || "Invalid URL"),
-      ).check(Schema.isMaxLength(2_048)),
+      ).check(Schema.isMaxLength(2048)),
     }),
     { errors: "all" },
   )({
@@ -129,7 +129,7 @@ async function deliverExternalImage({
   }
 
   const transformed = await context.env.IMAGES.input(limitImageBody(source.body))
-    .transform({ width: 1_600, height: 1_600, fit: "scale-down" })
+    .transform({ width: 1600, height: 1600, fit: "scale-down" })
     .output({ format: "image/webp", quality: 82, anim: false })
     .catch(() => null)
   if (!transformed) return new Response("Unsupported image", { status: 415 })

@@ -6,7 +6,7 @@ import { MarkdownContent } from "./MarkdownContent"
 
 describe("MarkdownContent", () => {
   test("names a hidden spoiler by its action without overriding its revealed text", () => {
-    const html = renderToStaticMarkup(<MarkdownContent>{":spoiler[the ending]"}</MarkdownContent>)
+    const html = renderToStaticMarkup(<MarkdownContent>:spoiler[the ending]</MarkdownContent>)
 
     expect(html).toContain('aria-pressed="false"')
     expect(html).toContain('<span class="sr-only">Reveal spoiler</span>')
@@ -15,7 +15,7 @@ describe("MarkdownContent", () => {
 
   test("does not promise proxying for external images on saved posts", () => {
     const html = renderToStaticMarkup(
-      <MarkdownContent postId="saved-post">{"![cat](http://example.com/cat.png)"}</MarkdownContent>,
+      <MarkdownContent postId="saved-post">![cat](http://example.com/cat.png)</MarkdownContent>,
     )
 
     expect(html).not.toContain("will be proxied")
@@ -24,7 +24,7 @@ describe("MarkdownContent", () => {
   test("renders external image cards inside paragraphs with inline elements only", () => {
     const html = renderToStaticMarkup(
       <MarkdownContent postId="saved-post">
-        {"Look ![cat](http://example.com/cat.png) here"}
+        Look ![cat](http://example.com/cat.png) here
       </MarkdownContent>,
     )
     const paragraph = /<p>(.*)<\/p>/su.exec(html)?.[1] ?? ""
@@ -36,7 +36,7 @@ describe("MarkdownContent", () => {
   test("does not nest links when an external image sits inside a link", () => {
     const html = renderToStaticMarkup(
       <MarkdownContent postId="saved-post">
-        {"[![cat](http://example.com/cat.png)](https://example.org/page)"}
+        [![cat](http://example.com/cat.png)](https://example.org/page)
       </MarkdownContent>,
     )
 
@@ -49,7 +49,7 @@ describe("MarkdownContent", () => {
   test("does not nest a link inside a link for comment images", () => {
     const html = renderToStaticMarkup(
       <MarkdownContent variant="comment">
-        {"[![cat](https://example.com/cat.png)](https://example.org/page)"}
+        [![cat](https://example.com/cat.png)](https://example.org/page)
       </MarkdownContent>,
     )
 
@@ -59,7 +59,7 @@ describe("MarkdownContent", () => {
 
   test("keeps a spoiler inside a link covered without nesting a button", () => {
     const html = renderToStaticMarkup(
-      <MarkdownContent>{"[see :spoiler[the ending]](https://example.org)"}</MarkdownContent>,
+      <MarkdownContent>[see :spoiler[the ending]](https://example.org)</MarkdownContent>,
     )
 
     expect(html).not.toContain("<button")

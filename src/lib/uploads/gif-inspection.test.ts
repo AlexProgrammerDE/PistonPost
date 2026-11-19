@@ -58,8 +58,8 @@ describe("GIF inspection", () => {
   })
 
   test("accepts a large still GIF but bounds animated GIF work", () => {
-    const still = inspectGif(gifWithFrames(10_000, 6_000, 1))
-    const animation = inspectGif(gifWithFrames(1_000, 1_000, 51))
+    const still = inspectGif(gifWithFrames(10_000, 6000, 1))
+    const animation = inspectGif(gifWithFrames(1000, 1000, 51))
 
     expect(still).not.toBeNull()
     expect(animation?.totalPixels).toBeGreaterThan(MAX_GIF_ANIMATION_PIXELS)

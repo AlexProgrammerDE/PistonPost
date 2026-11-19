@@ -3,7 +3,9 @@ import { afterEach, describe, expect, test } from "bun:test"
 import { eq } from "drizzle-orm"
 import { Deferred, Effect, Layer } from "effect"
 
-import { createMigratedTestDatabase, createUser, schema } from "@/db"
+import { createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 import { productEmailBatchJob, productEmailJob } from "@/email/jobs"
 
 import { outboxRepositoryLayer } from "./outbox-repository"
@@ -124,8 +126,8 @@ describe("product campaign batch workflow", () => {
 
   test("interruption during dispatch waits for settlement and a replay does not submit again", async () => {
     const { db, services, job } = setup(1)
-    const started = Deferred.makeUnsafe<void>()
-    const finish = Deferred.makeUnsafe<void>()
+    const started = Deferred.makeUnsafe<undefined>()
+    const finish = Deferred.makeUnsafe<undefined>()
     let submissions = 0
     const layer = Layer.merge(
       services,

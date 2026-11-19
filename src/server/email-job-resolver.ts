@@ -3,15 +3,15 @@ import { Context, Effect, Layer, Schema } from "effect"
 
 import type { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import type { EmailNotificationPreference } from "@/domain"
+import type { EmailNotificationPreference } from "@/domain/validation"
+import type { EmailContent } from "@/email/email"
+import type { EmailDeliveryJob } from "@/email/jobs"
 import {
   emailSubscription,
   productUpdateMessage,
   securityNotificationMessage,
-  signUnsubscribeToken,
-  type EmailContent,
-  type EmailDeliveryJob,
-} from "@/email"
+} from "@/email/messages"
+import { signUnsubscribeToken } from "@/email/unsubscribe"
 
 import { notificationEnabled, optInNotificationEnabled } from "./notification-policy"
 

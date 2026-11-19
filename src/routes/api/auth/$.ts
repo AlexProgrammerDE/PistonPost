@@ -4,6 +4,7 @@ import { Effect } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
+import { randomUuid } from "@/lib/server-uuid"
 import type { AppRequestContext } from "@/server"
 import {
   createRequestAuth,
@@ -128,7 +129,7 @@ const recordAdminAuditEffect = Effect.fn("Auth.recordAdminAudit")(function* (
   audit: AdminAudit,
 ) {
   const database = createD1Database(context.env.DB)
-  const auditEventId = crypto.randomUUID()
+  const auditEventId = yield* randomUuid
   const changesVisibility = contentVisibilityActions.has(audit.action)
   // Stream videos are reachable by their public UID, so a ban must also switch them to signed
   // URLs. Each job re-reads the ban state when it runs, so ban and unban jobs converge.

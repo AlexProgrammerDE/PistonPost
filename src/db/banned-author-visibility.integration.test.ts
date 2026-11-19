@@ -38,7 +38,7 @@ afterEach(() => {
   close = undefined
 })
 
-const DAY_MS = 24 * 60 * 60 * 1_000
+const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
  * Two established authors post in the same tag and comment on each other's posts. The

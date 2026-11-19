@@ -65,6 +65,7 @@ function AccountMenuFallback() {
 export function AppSidebar() {
   const { pathname } = useLocation()
   const { isMobile, setOpenMobile, state } = useSidebar()
+  // oxlint-disable-next-line react/hook-use-state -- The value is initialized once and remains stable for the mount.
   const [currentYear] = useState(() => new Date().getUTCFullYear())
   const [installOpen, setInstallOpen] = useState(false)
 

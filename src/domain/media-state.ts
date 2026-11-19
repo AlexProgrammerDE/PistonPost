@@ -1,6 +1,15 @@
-import { Data, Effect } from "effect"
+import { Effect, Schema } from "effect"
 
-export type MediaStatus = "pending" | "uploading" | "processing" | "ready" | "failed" | "deleted"
+const mediaStatusSchema = Schema.Literals([
+  "pending",
+  "uploading",
+  "processing",
+  "ready",
+  "failed",
+  "deleted",
+])
+
+export type MediaStatus = typeof mediaStatusSchema.Type
 
 const allowedTransitions: Readonly<Record<MediaStatus, ReadonlySet<MediaStatus>>> = {
   pending: new Set(["pending", "uploading", "processing", "ready", "failed", "deleted"]),
@@ -11,10 +20,10 @@ const allowedTransitions: Readonly<Record<MediaStatus, ReadonlySet<MediaStatus>>
   deleted: new Set(["deleted"]),
 }
 
-export class InvalidMediaTransition extends Data.TaggedError("InvalidMediaTransition")<{
-  readonly current: MediaStatus
-  readonly next: MediaStatus
-}> {}
+export class InvalidMediaTransition extends Schema.TaggedError<
+  InvalidMediaTransition,
+  { readonly brand: unique symbol }
+>()("InvalidMediaTransition", { current: mediaStatusSchema, next: mediaStatusSchema }) {}
 
 export function transitionMediaStatus(current: MediaStatus, next: MediaStatus) {
   return allowedTransitions[current].has(next)

@@ -1,17 +1,18 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
 import { and, count, desc, eq, lt, or } from "drizzle-orm"
-import { Schema, Effect } from "effect"
+import { DateTime, Schema, Effect } from "effect"
 
 import { notBannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
 import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
-import { commentInputSchema } from "@/domain"
-import { commentEmailJob, replyEmailJob } from "@/email"
+import { commentInputSchema } from "@/domain/validation"
+import { commentEmailJob, replyEmailJob } from "@/email/jobs"
 import { FEED_HEART_BATCH_SIZE } from "@/lib/feed-heart-state"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import { commentPushJob, replyPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { createRequestAuthEffect } from "@/server/auth"
 import { bindingOperation } from "@/server/operation"
@@ -336,7 +337,7 @@ export const createComment = createServerFn({ method: "POST" })
         }
         if (parent?.parentId)
           return yield* invalidInputFailure("Replies can only be one level deep.")
-        const id = crypto.randomUUID()
+        const id = yield* randomUuid
         const jobs: (
           | ReturnType<typeof replyEmailJob>
           | ReturnType<typeof commentEmailJob>
@@ -387,7 +388,8 @@ export const createComment = createServerFn({ method: "POST" })
               context.env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
             )
           }
-          return { id, content: data.content, parentId: parent?.id ?? null, createdAt: new Date() }
+          const createdAt = yield* DateTime.nowAsDate
+          return { id, content: data.content, parentId: parent?.id ?? null, createdAt }
         }).pipe(Effect.uninterruptible)
       }),
     ),
@@ -423,9 +425,10 @@ export const deleteComment = createServerFn({ method: "POST" })
         if (comment.authorId !== session.user.id && session.user.role !== "admin") {
           return yield* forbiddenFailure("You cannot delete this comment.")
         }
+        const deletedAt = yield* DateTime.nowAsDate
         const deleteRow = database
           .update(schema.comments)
-          .set({ status: "deleted", deletedAt: new Date(), content: "[deleted]" })
+          .set({ status: "deleted", deletedAt, content: "[deleted]" })
           .where(eq(schema.comments.id, comment.id))
         return yield* Effect.gen(function* () {
           if (comment.authorId === session.user.id) {

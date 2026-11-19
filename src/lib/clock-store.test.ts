@@ -5,7 +5,7 @@ import { createClockStore } from "./clock-store"
 test("shares one clock timer, releases it after the last subscriber, and restarts fresh", () => {
   const start = spyOn(globalThis, "setInterval")
   const stop = spyOn(globalThis, "clearInterval")
-  const now = spyOn(Date, "now").mockReturnValue(1_000)
+  const now = spyOn(Date, "now").mockReturnValue(1000)
   const clock = createClockStore()
   const cleanups: (() => void)[] = []
   try {
@@ -21,7 +21,7 @@ test("shares one clock timer, releases it after the last subscriber, and restart
       }),
     )
     expect(start).toHaveBeenCalledTimes(1)
-    expect(clock.getSnapshot()).toBe(1_000)
+    expect(clock.getSnapshot()).toBe(1000)
     const tick = start.mock.calls[0]?.[0]
     now.mockReturnValue(31_000)
     if (typeof tick !== "function") throw new TypeError("Clock timer was not started")

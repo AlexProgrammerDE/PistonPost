@@ -4,6 +4,7 @@ import { Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
+import { randomUuid } from "@/lib/server-uuid"
 import { IMAGE_UPLOAD_MIME_TYPES, MAX_IMAGE_UPLOAD_BYTES } from "@/lib/uploads/image-upload-policy"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
@@ -61,7 +62,7 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
         )
         if (!profile) return yield* notFoundFailure("Your profile could not be found.")
 
-        const assetId = crypto.randomUUID()
+        const assetId = yield* randomUuid
         return yield* Effect.gen(function* () {
           yield* bindingOperation("createAvatarUploadIntent.operation", () =>
             database.insert(schema.mediaAssets).values({
@@ -73,7 +74,7 @@ export const createAvatarUploadIntent = createServerFn({ method: "POST" })
               originalFilename: data.filename,
               mimeType: data.mimeType,
               byteSize: data.byteSize,
-              providerMetadata: { expiresAt: Date.now() + 15 * 60 * 1_000 },
+              providerMetadata: { expiresAt: Date.now() + 15 * 60 * 1000 },
             }),
           )
 

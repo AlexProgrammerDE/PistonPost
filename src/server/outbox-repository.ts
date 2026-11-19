@@ -1,6 +1,6 @@
 import { and, eq, isNotNull, isNull, lte, or, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
-import { Clock, Context, Effect, Layer, Schema } from "effect"
+import { DateTime, Clock, Context, Effect, Layer, Schema } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
 import type { SqliteDatabaseClient } from "@/db/database"
@@ -50,7 +50,7 @@ export class OutboxRepository extends Context.Service<
   }
 >()("@pistonpost/email/OutboxRepository") {}
 
-const leaseDurationMs = 5 * 60 * 1_000
+const leaseDurationMs = 5 * 60 * 1000
 
 export function outboxClaimCondition(id: string, now: Date) {
   return and(
@@ -73,11 +73,11 @@ function outboxOwnerCondition(id: string, attempt: number) {
 }
 
 export function outboxRetryDelayMs(attempt: number) {
-  return Math.min(15 * 60 * 1_000, 30_000 * 2 ** Math.max(0, attempt - 1))
+  return Math.min(15 * 60 * 1000, 30_000 * 2 ** Math.max(0, attempt - 1))
 }
 
 export function outboxRetryAfterSeconds(availableAt: Date, now: Date) {
-  return Math.max(1, Math.ceil((availableAt.getTime() - now.getTime()) / 1_000))
+  return Math.max(1, Math.ceil((availableAt.getTime() - now.getTime()) / 1000))
 }
 
 function repositoryOperation<A>(operation: string, task: () => A | PromiseLike<A>) {
@@ -96,7 +96,7 @@ export function createOutboxRepository(
         db.insert(schema.outbox).values({ id, kind, payload }).onConflictDoNothing(),
       ).pipe(Effect.asVoid),
     claim: Effect.fn("Outbox.claim")(function* (id) {
-      const now = new Date(yield* Clock.currentTimeMillis)
+      const now = yield* DateTime.nowAsDate
       // Return the attempt from the claiming statement. A later read could observe a successor.
       const claimed = yield* repositoryOperation("claim", () =>
         db
@@ -131,7 +131,7 @@ export function createOutboxRepository(
         : ({ _tag: "Unavailable" } satisfies OutboxClaim)
     }),
     complete: Effect.fn("Outbox.complete")(function* (id, attempt, reason) {
-      const now = new Date(yield* Clock.currentTimeMillis)
+      const now = yield* DateTime.nowAsDate
       yield* repositoryOperation("complete", () =>
         db
           .update(schema.outbox)
@@ -140,7 +140,7 @@ export function createOutboxRepository(
       )
     }),
     completeProduct: Effect.fn("Outbox.completeProduct")(function* (id, attempt, reason, status) {
-      const completedAt = new Date(yield* Clock.currentTimeMillis)
+      const completedAt = yield* DateTime.nowAsDate
       const values = {
         status,
         skipReason: status === "skipped" ? reason : null,

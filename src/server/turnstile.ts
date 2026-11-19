@@ -1,5 +1,6 @@
 import { Effect, Schema } from "effect"
 
+import { randomUuid } from "@/lib/server-uuid"
 import type { TurnstileAction } from "@/lib/turnstile"
 import { HUMAN_VERIFICATION_ERROR_MESSAGE } from "@/lib/turnstile"
 import type { AppRequestContext } from "@/server"
@@ -9,6 +10,14 @@ const TURNSTILE_ALWAYS_PASS_TEST_SECRET = "1x0000000000000000000000000000000AA"
 
 export const turnstileTokenSchema = Schema.String.check(Schema.isMinLength(1)).check(
   Schema.isMaxLength(2048),
+)
+
+const turnstileRequestSchema = Schema.fromJsonString(
+  Schema.Struct({
+    secret: Schema.String,
+    response: Schema.String,
+    idempotency_key: Schema.String,
+  }),
 )
 
 const turnstileResponseSchema = Schema.Struct({
@@ -65,16 +74,18 @@ export const verifyTurnstile = Effect.fn("verifyTurnstile")(function* (
     catch: () => verificationError("configuration"),
   })
   const requestFetch = input.fetch ?? globalThis.fetch
+  const idempotencyKey = input.idempotencyKey ?? (yield* randomUuid)
+  const requestBody = yield* Schema.encodeEffect(turnstileRequestSchema)({
+    secret,
+    response: input.token,
+    idempotency_key: idempotencyKey,
+  }).pipe(Effect.mapError(() => verificationError("provider")))
   const body = yield* Effect.tryPromise({
     try: async (signal) => {
       const response = await requestFetch(TURNSTILE_SITEVERIFY_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          secret,
-          response: input.token,
-          idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
-        }),
+        body: requestBody,
         signal,
       })
       if (!response.ok) {

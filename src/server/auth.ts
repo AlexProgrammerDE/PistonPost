@@ -1,17 +1,18 @@
 import { eq } from "drizzle-orm"
-import { Cause, Data, Effect, Layer, Option } from "effect"
+import { Cause, Effect, Layer, Option, Schema } from "effect"
 
 import { initializeUserProfile } from "@/auth/profile"
 import { createAuth } from "@/auth/server"
 import { createD1Database } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
+import { securityEmailJob } from "@/email/jobs"
 import {
   cloudflareEmailTransportLayer,
   deliverImmediateEmail,
   EmailRenderer,
-  securityEmailJob,
-} from "@/email"
+} from "@/email/transport"
+import { randomUuid } from "@/lib/server-uuid"
 import { securityPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { logError } from "@/server/error-log"
 
@@ -20,7 +21,10 @@ import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
 import { bindingOperation } from "./operation"
 
-class AuthSecretError extends Data.TaggedError("AuthSecretError")<{ readonly binding: string }> {}
+class AuthSecretError extends Schema.TaggedError<
+  AuthSecretError,
+  { readonly brand: unique symbol }
+>()("AuthSecretError", { binding: Schema.String }) {}
 
 const readSecret = Effect.fn("Auth.readSecret")(function* (
   secret: string | SecretsStoreSecret,
@@ -207,7 +211,7 @@ const enqueueSecurityNotificationEffect = Effect.fn("Auth.enqueueSecurityNotific
   entityId: string,
 ) {
   const database = createD1Database(context.env.DB)
-  const auditEventId = crypto.randomUUID()
+  const auditEventId = yield* randomUuid
   const subscriptions = yield* bindingOperation("auth.security-subscriptions", () =>
     listActivePushSubscriptionIds(database, userId),
   )

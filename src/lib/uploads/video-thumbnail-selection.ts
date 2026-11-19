@@ -4,8 +4,9 @@ import { MAX_VIDEO_DURATION_SECONDS } from "./video-upload-policy"
 
 const VIDEO_THUMBNAIL_CANDIDATE_PERCENTAGES = [0.1, 0.25, 0.5, 0.7, 0.85] as const
 const VIDEO_THUMBNAIL_SAMPLE_WIDTH = 160
-const VIDEO_THUMBNAIL_ANALYSIS_TIMEOUT_MS = 8_000
+const VIDEO_THUMBNAIL_ANALYSIS_TIMEOUT_MS = 8000
 
+// oxlint-disable-next-line effecttsgo/extends-native-error -- This error crosses a browser Promise boundary outside Effect.
 export class VideoPreparationError extends Error {
   override name = "VideoPreparationError"
 }

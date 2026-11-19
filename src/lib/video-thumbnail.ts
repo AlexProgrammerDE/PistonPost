@@ -84,7 +84,7 @@ export function createVideoPreviewThumbnails({
     return []
   }
 
-  const durationSeconds = durationMilliseconds / 1_000
+  const durationSeconds = durationMilliseconds / 1000
   const intervalSeconds = Math.max(
     VIDEO_PREVIEW_MIN_INTERVAL_SECONDS,
     Math.ceil(durationSeconds / VIDEO_PREVIEW_TARGET_COUNT),

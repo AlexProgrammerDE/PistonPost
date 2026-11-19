@@ -11,7 +11,7 @@ import {
   TimelineItem,
 } from "@/components/ui/timeline"
 import type { PublicPostRead } from "@/db/public-read-model"
-import type { PostViewSurface } from "@/domain"
+import type { PostViewSurface } from "@/domain/post-view"
 import { usePostImpressionTracking } from "@/hooks/use-post-impression-tracking"
 import { activeSharedViewTransitionKind } from "@/lib/view-transitions"
 

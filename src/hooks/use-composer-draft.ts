@@ -35,6 +35,7 @@ function initialDraftReader(userId: string | null) {
 
 export function useComposerDraft(userId: string | null, form: DraftForm) {
   // Read the browser's initial draft once after hydration. Autosaves must not become recovery prompts.
+  // oxlint-disable-next-line react/hook-use-state -- The value is initialized once and remains stable for the mount.
   const [readInitialDraft] = useState(() => initialDraftReader(userId))
   const initial = useSyncExternalStore(subscribe, readInitialDraft, () => pendingDraft)
   const [resolved, setResolved] = useState(false)

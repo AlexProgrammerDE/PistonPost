@@ -27,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import type { NotificationPreference } from "@/domain"
+import type { NotificationPreference } from "@/domain/validation"
 import { useAppForm } from "@/lib/forms/app-form"
 import { profileSaveErrorMessage } from "@/lib/profile-save-error"
 import type { getMyProductSettings } from "@/server/settings"

@@ -1,8 +1,8 @@
 import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
-import { Schema, Effect } from "effect"
+import { DateTime, Clock, Schema, Effect } from "effect"
 
-import type { D1DatabaseClient } from "@/db"
+import type { D1DatabaseClient } from "@/db/d1-database"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
@@ -53,7 +53,7 @@ const saveSubscription = Effect.fn("saveSubscription")(function* (
   sessionId: string,
   input: PushSubscriptionInput,
 ) {
-  if (input.expirationTime !== null && input.expirationTime <= Date.now()) {
+  if (input.expirationTime !== null && input.expirationTime <= (yield* Clock.currentTimeMillis)) {
     return yield* invalidInputFailure("This push subscription has already expired.")
   }
   const endpointHash = yield* bindingOperation("saveSubscription.endpointHash", () =>
@@ -73,7 +73,7 @@ const saveSubscription = Effect.fn("saveSubscription")(function* (
     return yield* conflictFailure("Remove another push-enabled device before adding this one.")
   }
 
-  const now = new Date()
+  const now = yield* DateTime.nowAsDate
   yield* bindingOperation("saveSubscription.operation", () =>
     database
       .insert(schema.pushSubscriptions)

@@ -1,4 +1,4 @@
-import { Data, Effect, Result, Schema, SchemaIssue } from "effect"
+import { Effect, Result, Schema, SchemaIssue } from "effect"
 
 import {
   AuthorizationError,
@@ -17,10 +17,10 @@ import { HUMAN_VERIFICATION_ERROR_MESSAGE } from "@/lib/turnstile"
 import { StreamDirectUploadError } from "@/server/stream-direct-upload"
 import { TurnstileVerificationError } from "@/server/turnstile"
 
-export class ServerFunctionFailure extends Data.TaggedError("ServerFunctionFailure")<{
-  readonly error: ServerFunctionError
-  readonly cause: unknown
-}> {}
+export class ServerFunctionFailure extends Schema.TaggedError<
+  ServerFunctionFailure,
+  { readonly brand: unique symbol }
+>()("ServerFunctionFailure", { error: serverFunctionErrorSchema, cause: Schema.Unknown }) {}
 
 function failure(error: ServerFunctionError, cause: unknown = error) {
   return new ServerFunctionFailure({ error, cause })

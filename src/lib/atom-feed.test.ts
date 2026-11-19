@@ -9,7 +9,7 @@ const records: readonly PublicAtomFeedRecord[] = [
     id: "post/one & two",
     type: "text",
     title: "Cats & <dogs>\u0000",
-    textContent: "Hello **friends** & \\<neighbors\\>.",
+    textContent: String.raw`Hello **friends** & \<neighbors\>.`,
     publishedAt: new Date("2026-07-18T12:00:00.000Z"),
     updatedAt: new Date("2026-07-18T12:30:00.000Z"),
     author: {

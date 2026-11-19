@@ -17,9 +17,16 @@ export function encodePublicPostCursor(cursor: PublicPostCursor) {
 
 export function decodePublicPostCursor(value: string) {
   return Effect.try({
-    try: () => JSON.parse(Result.getOrThrow(Base64Url.decodeString(value))) as unknown,
+    try: () => Result.getOrThrow(Base64Url.decodeString(value)),
     catch: () => InvalidCursorError.make({ reason: "The cursor is not valid base64 JSON." }),
   }).pipe(
+    Effect.flatMap((json) =>
+      Schema.decodeEffect(Schema.fromJsonString(Schema.Unknown))(json).pipe(
+        Effect.mapError(() =>
+          InvalidCursorError.make({ reason: "The cursor is not valid base64 JSON." }),
+        ),
+      ),
+    ),
     Effect.flatMap(
       Schema.decodeUnknownEffect(encodedCursorSchema, {
         onExcessProperty: "error",

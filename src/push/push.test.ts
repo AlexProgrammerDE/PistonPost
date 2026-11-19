@@ -3,14 +3,9 @@ import { describe, expect, it } from "bun:test"
 import { Result } from "effect"
 import { WebPushError } from "web-push"
 
-import {
-  classifyPushFailure,
-  commentPushJob,
-  decodePushDeliveryJob,
-  hashPushEndpoint,
-  isTrustedPushEndpoint,
-  replyPushJob,
-} from "@/push"
+import { commentPushJob, decodePushDeliveryJob, replyPushJob } from "@/push/jobs"
+import { hashPushEndpoint, isTrustedPushEndpoint } from "@/push/subscription"
+import { classifyPushFailure } from "@/push/transport"
 
 function providerFailure(statusCode: number, headers: Record<string, string> = {}) {
   return new WebPushError("provider response", statusCode, headers, "", "redacted")

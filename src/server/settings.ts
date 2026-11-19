@@ -4,7 +4,11 @@ import { Schema, Effect } from "effect"
 
 import * as schema from "@/db/schema"
 import { createUserSettingsRepository } from "@/db/user-settings-repository"
-import { notificationPreferenceSchema, profileWebsiteSchema, usernameSchema } from "@/domain"
+import {
+  notificationPreferenceSchema,
+  profileWebsiteSchema,
+  usernameSchema,
+} from "@/domain/validation"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"

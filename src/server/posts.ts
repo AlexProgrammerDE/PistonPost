@@ -11,7 +11,8 @@ import {
   getPublicTagRead,
   listPublicPostReads,
 } from "@/db/public-read-model"
-import { POST_VIEW_SURFACES, decodePublicPostCursor, encodePublicPostCursor } from "@/domain"
+import { decodePublicPostCursor, encodePublicPostCursor } from "@/domain/cursor"
+import { POST_VIEW_SURFACES } from "@/domain/post-view"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"

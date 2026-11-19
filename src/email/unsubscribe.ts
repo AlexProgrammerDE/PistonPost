@@ -1,7 +1,7 @@
-import { Effect, Result, Schema } from "effect"
+import { Clock, Effect, Result, Schema } from "effect"
 import { Base64Url } from "effect/encoding"
 
-import type { EmailNotificationPreference } from "@/domain"
+import type { EmailNotificationPreference } from "@/domain/validation"
 
 const claimsSchema = Schema.Struct({
   version: Schema.Literal(1),
@@ -9,6 +9,11 @@ const claimsSchema = Schema.Struct({
   preference: Schema.Literals(["comment-email", "reply-email", "product-email"]),
   expiresAt: Schema.Finite,
 })
+
+// JSON.stringify represents non-finite expiry values as null. Keep that wire format.
+const signingClaimsSchema = Schema.fromJsonString(
+  Schema.Struct({ ...claimsSchema.fields, expiresAt: Schema.NullOr(Schema.Finite) }),
+)
 
 export class UnsubscribeTokenError extends Schema.TaggedError<
   UnsubscribeTokenError,
@@ -35,10 +40,16 @@ export const signUnsubscribeToken = Effect.fn("Email.signUnsubscribeToken")(func
   secret: string,
   expiresAt?: number,
 ) {
-  const expiry = expiresAt ?? Date.now() + 180 * 24 * 60 * 60 * 1_000
-  const payload = Base64Url.encode(
-    JSON.stringify({ version: 1, userId, preference, expiresAt: expiry }),
+  const expiry = expiresAt ?? (yield* Clock.currentTimeMillis) + 180 * 24 * 60 * 60 * 1000
+  const json = yield* Schema.encodeEffect(signingClaimsSchema)({
+    version: 1,
+    userId,
+    preference,
+    expiresAt: Number.isFinite(expiry) ? expiry : null,
+  }).pipe(
+    Effect.mapError(() => new UnsubscribeTokenError({ message: "The token could not be signed." })),
   )
+  const payload = Base64Url.encode(json)
   const key = yield* signingKey(secret)
   const signature = yield* Effect.tryPromise({
     try: () => crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload)),
@@ -50,8 +61,9 @@ export const signUnsubscribeToken = Effect.fn("Email.signUnsubscribeToken")(func
 export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(function* (
   token: string,
   secret: string,
-  now = Date.now(),
+  now?: number,
 ) {
+  const currentTime = now ?? (yield* Clock.currentTimeMillis)
   const parts = token.split(".")
   if (parts.length !== 2) {
     return yield* new UnsubscribeTokenError({ message: "The link is invalid." })
@@ -83,7 +95,7 @@ export const verifyUnsubscribeToken = Effect.fn("Email.verifyUnsubscribeToken")(
       Effect.fail(new UnsubscribeTokenError({ message: "The link is invalid." })),
     ),
   )
-  if (claims.expiresAt <= now) {
+  if (claims.expiresAt <= currentTime) {
     return yield* new UnsubscribeTokenError({ message: "The link has expired." })
   }
   return claims

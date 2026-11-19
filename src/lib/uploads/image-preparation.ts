@@ -22,6 +22,7 @@ export type PreparedImageUpload = {
   metadata: ImageUploadMetadata & { mimeType: ImageUploadMimeType }
 }
 
+// oxlint-disable-next-line effecttsgo/extends-native-error -- This error crosses a browser Promise boundary outside Effect.
 export class ImagePreparationError extends Error {
   override name = "ImagePreparationError"
 }

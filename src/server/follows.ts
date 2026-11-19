@@ -4,13 +4,9 @@ import { Schema, Effect } from "effect"
 
 import { createFollowRepository } from "@/db/follow-repository"
 import { listPublicPostReads } from "@/db/public-read-model"
-import {
-  canFollowUser,
-  decodePublicPostCursor,
-  encodePublicPostCursor,
-  tagSchema,
-  usernameSchema,
-} from "@/domain"
+import { decodePublicPostCursor, encodePublicPostCursor } from "@/domain/cursor"
+import { canFollowUser } from "@/domain/policy"
+import { tagSchema, usernameSchema } from "@/domain/validation"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { createRequestAuthEffect } from "@/server/auth"
 import { bindingOperation } from "@/server/operation"

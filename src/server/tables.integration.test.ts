@@ -2,7 +2,9 @@ import { afterEach, describe, expect, test } from "bun:test"
 
 import { eq } from "drizzle-orm"
 
-import { createMigratedTestDatabase, createPost, createUser, schema } from "@/db"
+import { createPost, createUser } from "@/db/factories"
+import * as schema from "@/db/schema"
+import { createMigratedTestDatabase } from "@/db/test-database"
 
 import { cacheInvalidationJob, mediaCleanupJob, videoAccessJob } from "./jobs"
 import {
@@ -135,7 +137,7 @@ describe("administrator job retry", () => {
 
   test("recovers a job whose worker lease expired", () => {
     const db = setup()
-    seedJob(db, { leaseExpiresAt: new Date(Date.now() - 1_000), attempts: 2 })
+    seedJob(db, { leaseExpiresAt: new Date(Date.now() - 1000), attempts: 2 })
     expect(retry(db).at(-1)).toBe(1)
     expect(outboxRow(db, "job")).toMatchObject({ leaseExpiresAt: null, attempts: 2 })
   })

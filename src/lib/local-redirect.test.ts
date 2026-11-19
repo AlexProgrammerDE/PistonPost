@@ -25,7 +25,7 @@ describe("safeLocalRedirect", () => {
     expect(safeLocalRedirect("/following/../posts")).toBe("/posts")
     expect(safeLocalRedirect("https://example.com/settings")).toBeUndefined()
     expect(safeLocalRedirect("//example.com/settings")).toBeUndefined()
-    expect(safeLocalRedirect("/\\example.com/settings")).toBeUndefined()
+    expect(safeLocalRedirect(String.raw`/\example.com/settings`)).toBeUndefined()
     expect(safeLocalRedirect("/.//evil.com")).toBeUndefined()
     expect(safeLocalRedirect("/..//evil.com/settings")).toBeUndefined()
     expect(safeLocalRedirect("/posts/..//evil.com")).toBeUndefined()
