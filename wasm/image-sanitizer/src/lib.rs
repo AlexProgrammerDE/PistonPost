@@ -5,6 +5,7 @@ use std::io::Cursor;
 
 use gif::{DecodeOptions, Encoder as GifEncoder, Repeat};
 use img_parts::Bytes;
+use img_parts::jpeg::{Jpeg, JpegSegment, markers as jpeg_markers};
 use img_parts::png::{Png, PngChunk};
 use img_parts::riff::{RiffChunk, RiffContent};
 use img_parts::webp::WebP;
@@ -97,7 +98,7 @@ fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         .and_then(parse_orientation)
         .map_or(TransformOp::None, orientation_transform);
 
-    libjpeg_turbo_rs::transform_jpeg_with_options(
+    let transformed = libjpeg_turbo_rs::transform_jpeg_with_options(
         input,
         &TransformOptions {
             op: transform,
@@ -106,7 +107,17 @@ fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
             ..TransformOptions::default()
         },
     )
-    .map_err(SanitizeError::invalid_image_with_cause)
+    .map_err(SanitizeError::invalid_image_with_cause)?;
+
+    // `MarkerCopyMode::IccOnly` copies every APP2 segment, including MPF and FlashPix data.
+    let mut jpeg = Jpeg::from_bytes(Bytes::from(transformed))
+        .map_err(SanitizeError::invalid_image_with_cause)?;
+    jpeg.segments_mut().retain(is_preserved_jpeg_segment);
+    Ok(jpeg.encoder().bytes().to_vec())
+}
+
+fn is_preserved_jpeg_segment(segment: &JpegSegment) -> bool {
+    segment.marker() != jpeg_markers::APP2 || segment.contents().starts_with(b"ICC_PROFILE\0")
 }
 
 const PRESERVED_PNG_CHUNKS: &[[u8; 4]] = &[
@@ -366,6 +377,34 @@ mod tests {
                 .iter()
                 .all(|marker| matches!(marker.code, 0xe0 | 0xe2))
         );
+    }
+
+    #[test]
+    fn jpeg_drops_app2_segments_that_are_not_icc_profiles() {
+        // Fuzzer-minimized progressive grayscale JPEG whose APP2 segment holds "JFXX\0thumbnail"
+        // instead of an ICC profile. The marker reader accepts it without the 0xFF prefix.
+        let input: &[u8] = &[
+            0xff, 0xd8, 0xe2, 0x00, 0x11, 0x4a, 0x46, 0x58, 0x58, 0x00, 0x74, 0x68, 0x75, 0x6d,
+            0x62, 0x6e, 0x61, 0x69, 0x6c, 0xff, 0xc2, 0x00, 0x0b, 0x08, 0x00, 0x0b, 0x00, 0x09,
+            0x01, 0x01, 0x11, 0x00, 0xff, 0xc4, 0x00, 0x16, 0x00, 0x01, 0x01, 0x01, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x05, 0xff,
+            0xda, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x00, 0x10, 0xff, 0xd9,
+        ];
+
+        let output = sanitize_image_bytes(input, "image/jpeg").expect("sanitize jpeg");
+        let mut reader = MarkerReader::new(&output);
+        reader.set_marker_save_config(MarkerSaveConfig::All);
+        let metadata = reader.read_markers().expect("read sanitized markers");
+
+        assert!(
+            metadata
+                .saved_markers
+                .iter()
+                .all(|marker| marker.code != 0xe2),
+            "non-ICC APP2 segment survived"
+        );
+        assert!(!output.windows(9).any(|window| window == b"thumbnail"));
+        assert_eq!(sanitize_image_bytes(&output, "image/jpeg"), Ok(output));
     }
 
     #[test]
