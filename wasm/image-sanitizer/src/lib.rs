@@ -249,6 +249,10 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         {
             return Err(SanitizeError::InvalidImage);
         }
+        // The gif encoder writes zero-area frames that its own decoder rejects as truncated.
+        if frame.width == 0 || frame.height == 0 {
+            return Err(SanitizeError::InvalidImage);
+        }
         let mut frame = frame.clone();
         if frame.palette.is_none()
             && let Some(background) = background.filter(|index| *index != 0)
@@ -506,6 +510,22 @@ mod tests {
         let input: &[u8] = &[
             0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x00, 0x01, 0x01, 0x3b, 0x44, 0x00, 0x3b, 0x3b,
             0x3b,
+        ];
+
+        assert_eq!(
+            sanitize_image_bytes(input, "image/gif"),
+            Err(SanitizeError::InvalidImage)
+        );
+    }
+
+    #[test]
+    fn gif_with_zero_area_frame_is_rejected() {
+        // Fuzzer-minimized GIF with a 1027x4 canvas and one interlaced 3x0 frame.
+        // Its sanitized form used to be a GIF that the sanitizer itself could not read.
+        let input: &[u8] = &[
+            0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x03, 0x04, 0x04, 0x00, 0x00, 0x00, 0x00, 0x2c,
+            0x00, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00, 0xc0, 0x01, 0x02, 0x03, 0x7e, 0x7f,
+            0x06, 0x02, 0x02, 0x44, 0x50, 0x00, 0x3b,
         ];
 
         assert_eq!(
