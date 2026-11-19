@@ -264,6 +264,9 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
             .write_frame(&frame)
             .map_err(SanitizeError::invalid_image_with_cause)?;
     }
+    if frame_count == 0 {
+        return Err(SanitizeError::InvalidImage);
+    }
 
     encoder
         .into_inner()
@@ -494,6 +497,21 @@ mod tests {
             .and_then(|chunk| chunk.content().data())
             .and_then(|data| data.first());
         assert_eq!(flags, Some(&0x32));
+    }
+
+    #[test]
+    fn gif_without_frames_is_rejected() {
+        // Fuzzer-minimized GIF with a 256x15105 canvas, no global palette, and no frames.
+        // Its sanitized form used to be a GIF that the sanitizer itself could not read.
+        let input: &[u8] = &[
+            0x47, 0x49, 0x46, 0x38, 0x39, 0x61, 0x00, 0x01, 0x01, 0x3b, 0x44, 0x00, 0x3b, 0x3b,
+            0x3b,
+        ];
+
+        assert_eq!(
+            sanitize_image_bytes(input, "image/gif"),
+            Err(SanitizeError::InvalidImage)
+        );
     }
 
     #[test]
