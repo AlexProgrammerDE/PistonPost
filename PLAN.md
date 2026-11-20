@@ -1308,3 +1308,10 @@ Record future changes here with date, decision, reason, and affected phases.
   per-format limits, so a direct JPEG upload above 2 megapixels fails. A file-size term remains:
   a 15 MB file costs about 5 to 7 bytes of memory per file byte in the sanitizer and its buffers,
   so some files near 15 MB can still pass 96 MB. This affects Phases 6 and 9.
+
+- 2026-11-20: Bound the file-size cost of the image sanitizer. PNG and WebP reuse the WASM input
+  buffer. JPEG keeps ICC segments in the input until the codec finishes. GIF reuses one buffer for
+  frame pixels and LZW encoding, and caps the encoded file at the existing upload limit. Dense JPEG
+  data can still exceed the memory budget inside the codec. Limit coded JPEG data to 11.5 MB and
+  reject combinations of large files and padded coefficient arrays that exceed the measured budget.
+  Keep the existing per-format pixel limits and the 15 MiB upload limit.

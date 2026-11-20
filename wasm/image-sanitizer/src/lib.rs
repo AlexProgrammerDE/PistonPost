@@ -1,17 +1,13 @@
 #![warn(clippy::indexing_slicing, clippy::arithmetic_side_effects)]
 
+mod chunks;
+mod jpeg;
+
+use std::borrow::Cow;
 use std::fmt;
-use std::io::Cursor;
+use std::io::{self, Cursor, Write};
 
 use gif::{DecodeOptions, Encoder as GifEncoder, Repeat};
-use img_parts::Bytes;
-use img_parts::jpeg::{Jpeg, JpegSegment, markers as jpeg_markers};
-use img_parts::png::{Png, PngChunk};
-use img_parts::riff::{RiffChunk, RiffContent};
-use img_parts::webp::WebP;
-use libjpeg_turbo_rs::common::exif::parse_orientation;
-use libjpeg_turbo_rs::decode::marker::MarkerReader;
-use libjpeg_turbo_rs::{MarkerCopyMode, TransformOp, TransformOptions};
 use wasm_bindgen::prelude::{JsError, wasm_bindgen};
 
 // The upload route runs this sanitizer inside a Worker with a 128 MB memory limit. These limits keep
@@ -61,8 +57,9 @@ impl std::error::Error for SanitizeError {}
 ///
 /// Returns a JavaScript error if the image is invalid or requires transcoding.
 #[wasm_bindgen]
-pub fn sanitize_image(input: &[u8], mime_type: &str) -> Result<Vec<u8>, JsError> {
-    sanitize_image_bytes(input, mime_type).map_err(|error| JsError::new(&error.to_string()))
+pub fn sanitize_image(input: Vec<u8>, mime_type: &str) -> Result<Vec<u8>, JsError> {
+    sanitize_image_input(Cow::Owned(input), mime_type)
+        .map_err(|error| JsError::new(&error.to_string()))
 }
 
 /// Removes private metadata from a supported image.
@@ -71,194 +68,17 @@ pub fn sanitize_image(input: &[u8], mime_type: &str) -> Result<Vec<u8>, JsError>
 ///
 /// Returns a sanitization error if the image is invalid or requires transcoding.
 pub fn sanitize_image_bytes(input: &[u8], mime_type: &str) -> Result<Vec<u8>, SanitizeError> {
+    sanitize_image_input(Cow::Borrowed(input), mime_type)
+}
+
+fn sanitize_image_input(input: Cow<'_, [u8]>, mime_type: &str) -> Result<Vec<u8>, SanitizeError> {
     match mime_type {
-        "image/jpeg" => sanitize_jpeg(input),
-        "image/png" => sanitize_png(input),
-        "image/gif" => sanitize_gif(input),
-        "image/webp" => sanitize_webp(input),
+        "image/jpeg" => jpeg::sanitize(input.into_owned()),
+        "image/png" => chunks::sanitize_png(input.into_owned()),
+        "image/gif" => sanitize_gif(input.into_owned()),
+        "image/webp" => chunks::sanitize_webp(input.into_owned()),
         _ => Err(SanitizeError::UnsupportedFormat),
     }
-}
-
-const fn orientation_transform(orientation: u8) -> TransformOp {
-    match orientation {
-        2 => TransformOp::HFlip,
-        3 => TransformOp::Rot180,
-        4 => TransformOp::VFlip,
-        5 => TransformOp::Transpose,
-        6 => TransformOp::Rot90,
-        7 => TransformOp::Transverse,
-        8 => TransformOp::Rot270,
-        _ => TransformOp::None,
-    }
-}
-
-fn sanitize_jpeg(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
-    let metadata = MarkerReader::new(input)
-        .read_markers()
-        .map_err(SanitizeError::invalid_image_with_cause)?;
-    if !is_within_pixel_limit(
-        u32::from(metadata.frame.width),
-        u32::from(metadata.frame.height),
-        MAX_JPEG_PIXELS,
-    ) {
-        return Err(SanitizeError::InvalidImage);
-    }
-    let transform = metadata
-        .exif_data
-        .as_deref()
-        .and_then(parse_orientation)
-        .map_or(TransformOp::None, orientation_transform);
-
-    let transformed = libjpeg_turbo_rs::transform_jpeg_with_options(
-        input,
-        &TransformOptions {
-            op: transform,
-            optimize: true,
-            copy_markers: MarkerCopyMode::IccOnly,
-            ..TransformOptions::default()
-        },
-    )
-    .map_err(SanitizeError::invalid_image_with_cause)?;
-
-    // `MarkerCopyMode::IccOnly` copies every APP2 segment, including MPF and FlashPix data.
-    let mut jpeg = Jpeg::from_bytes(Bytes::from(transformed))
-        .map_err(SanitizeError::invalid_image_with_cause)?;
-    jpeg.segments_mut().retain(is_preserved_jpeg_segment);
-    Ok(jpeg.encoder().bytes().to_vec())
-}
-
-fn is_preserved_jpeg_segment(segment: &JpegSegment) -> bool {
-    segment.marker() != jpeg_markers::APP2 || segment.contents().starts_with(b"ICC_PROFILE\0")
-}
-
-const PRESERVED_PNG_CHUNKS: &[[u8; 4]] = &[
-    *b"IHDR", *b"PLTE", *b"IDAT", *b"IEND", *b"cHRM", *b"gAMA", *b"iCCP", *b"sBIT", *b"sRGB",
-    *b"cICP", *b"mDCv", *b"cLLi", *b"bKGD", *b"hIST", *b"sPLT", *b"tRNS", *b"acTL", *b"fcTL",
-    *b"fdAT",
-];
-
-fn sanitize_png(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
-    let mut png = Png::from_bytes(Bytes::copy_from_slice(input))
-        .map_err(SanitizeError::invalid_image_with_cause)?;
-    if png.chunks().first().map(PngChunk::kind) != Some(*b"IHDR")
-        || png.chunks().last().map(PngChunk::kind) != Some(*b"IEND")
-    {
-        return Err(SanitizeError::InvalidImage);
-    }
-    let [w0, w1, w2, w3, h0, h1, h2, h3] = *png
-        .chunks()
-        .first()
-        .and_then(|header| header.contents().first_chunk::<8>())
-        .ok_or(SanitizeError::InvalidImage)?;
-    if !is_within_pixel_limit(
-        u32::from_be_bytes([w0, w1, w2, w3]),
-        u32::from_be_bytes([h0, h1, h2, h3]),
-        MAX_IMAGE_PIXELS,
-    ) {
-        return Err(SanitizeError::InvalidImage);
-    }
-
-    png.chunks_mut()
-        .retain(|chunk| PRESERVED_PNG_CHUNKS.contains(&chunk.kind()));
-    Ok(png.encoder().bytes().to_vec())
-}
-
-const PRESERVED_WEBP_CHUNKS: &[[u8; 4]] = &[
-    *b"VP8 ", *b"VP8L", *b"VP8X", *b"ALPH", *b"ANIM", *b"ANMF", *b"ICCP",
-];
-
-fn sanitize_webp(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
-    let mut webp = WebP::from_bytes(Bytes::copy_from_slice(input))
-        .map_err(SanitizeError::invalid_image_with_cause)?;
-    if !webp
-        .chunks()
-        .iter()
-        .any(|chunk| matches!(&chunk.id(), b"VP8 " | b"VP8L" | b"ANMF"))
-    {
-        return Err(SanitizeError::InvalidImage);
-    }
-    if !is_webp_within_pixel_limit(&webp) {
-        return Err(SanitizeError::InvalidImage);
-    }
-
-    webp.chunks_mut()
-        .retain(|chunk| PRESERVED_WEBP_CHUNKS.contains(&chunk.id()));
-    for chunk in webp.chunks_mut() {
-        if chunk.id() != *b"VP8X" {
-            continue;
-        }
-        let mut contents = chunk
-            .content()
-            .data()
-            .filter(|contents| contents.len() == 10)
-            .ok_or(SanitizeError::InvalidImage)?
-            .to_vec();
-        *contents.first_mut().ok_or(SanitizeError::InvalidImage)? &= 0x32;
-        contents
-            .get_mut(1..4)
-            .ok_or(SanitizeError::InvalidImage)?
-            .fill(0);
-        *chunk = RiffChunk::new(*b"VP8X", RiffContent::Data(Bytes::from(contents)));
-    }
-    Ok(webp.encoder().bytes().to_vec())
-}
-
-fn read_u24_le(bytes: &[u8]) -> Option<u32> {
-    let [first, second, third] = *bytes.first_chunk::<3>()?;
-    Some(u32::from_le_bytes([first, second, third, 0]))
-}
-
-fn vp8x_canvas(contents: &[u8]) -> Option<(u32, u32)> {
-    let width = read_u24_le(contents.get(4..7)?)?.checked_add(1)?;
-    let height = read_u24_le(contents.get(7..10)?)?.checked_add(1)?;
-    Some((width, height))
-}
-
-fn vp8_frame(contents: &[u8]) -> Option<(u32, u32)> {
-    // A key frame starts with a 3-byte frame tag and the 9d 01 2a start code.
-    if contents.get(3..6)? != [0x9d, 0x01, 0x2a] {
-        return None;
-    }
-    let [width_low, width_high, height_low, height_high] = *contents.get(6..)?.first_chunk()?;
-    let width = u16::from_le_bytes([width_low, width_high]) & 0x3fff;
-    let height = u16::from_le_bytes([height_low, height_high]) & 0x3fff;
-    Some((u32::from(width), u32::from(height)))
-}
-
-fn vp8l_frame(contents: &[u8]) -> Option<(u32, u32)> {
-    let (signature, rest) = contents.split_first()?;
-    if *signature != 0x2f {
-        return None;
-    }
-    let bits = u32::from_le_bytes(*rest.first_chunk::<4>()?);
-    let width = (bits & 0x3fff).checked_add(1)?;
-    let height = ((bits >> 14) & 0x3fff).checked_add(1)?;
-    Some((width, height))
-}
-
-/// Checks every VP8X canvas of an extended WebP, or every frame header of a simple one.
-fn is_webp_within_pixel_limit(webp: &WebP) -> bool {
-    let has_canvas = webp.chunks().iter().any(|chunk| chunk.id() == *b"VP8X");
-    let sizes: Vec<Option<(u32, u32)>> = webp
-        .chunks()
-        .iter()
-        .filter_map(|chunk| {
-            let contents = chunk.content().data();
-            match (&chunk.id(), has_canvas) {
-                (b"VP8X", true) => Some(contents.and_then(|data| vp8x_canvas(data))),
-                (b"VP8 ", false) => Some(contents.and_then(|data| vp8_frame(data))),
-                (b"VP8L", false) => Some(contents.and_then(|data| vp8l_frame(data))),
-                _ => None,
-            }
-        })
-        .collect();
-    !sizes.is_empty()
-        && sizes.iter().all(|size| {
-            size.is_some_and(|(width, height)| {
-                is_within_pixel_limit(width, height, MAX_IMAGE_PIXELS)
-            })
-        })
 }
 
 const fn remap_palette_index(index: &mut u8, first: u8, second: u8) {
@@ -269,11 +89,90 @@ const fn remap_palette_index(index: &mut u8, first: u8, second: u8) {
     }
 }
 
-fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
+// Match MAX_IMAGE_UPLOAD_BYTES in src/lib/uploads/image-upload-policy.ts.
+const MAX_IMAGE_UPLOAD_BYTES: usize = 15 * 1024 * 1024;
+
+struct GifOutput(Vec<u8>);
+
+impl GifOutput {
+    fn new(input_len: usize) -> Self {
+        let capacity = if input_len > MAX_IMAGE_UPLOAD_BYTES / 2 {
+            MAX_IMAGE_UPLOAD_BYTES
+        } else {
+            input_len
+        };
+        Self(Vec::with_capacity(capacity))
+    }
+}
+
+impl Write for GifOutput {
+    fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
+        let len = self.0.len().saturating_add(bytes.len());
+        if len > MAX_IMAGE_UPLOAD_BYTES {
+            return Err(io::Error::other(
+                "The sanitized GIF must be no larger than 15 MB.",
+            ));
+        }
+        if len > self.0.capacity() {
+            let capacity = self
+                .0
+                .capacity()
+                .saturating_mul(2)
+                .clamp(len, MAX_IMAGE_UPLOAD_BYTES);
+            self.0
+                .try_reserve_exact(capacity.saturating_sub(self.0.len()))
+                .map_err(io::Error::other)?;
+        }
+        self.0.extend_from_slice(bytes);
+        Ok(bytes.len())
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+// The decoder only collects ICC and XMP before the first image. Treat those applications as
+// comments so the decoder skips their sub-blocks without allocating space for the profiles.
+fn ignore_gif_profiles(input: &mut [u8]) {
+    let Some(&packed) = input.get(10) else {
+        return;
+    };
+    let palette_size = if packed & 0x80 == 0 {
+        0
+    } else {
+        6_usize << (packed & 7)
+    };
+    let mut offset = 13_usize.saturating_add(palette_size);
+    while let Some([0x21, label, first_size, rest @ ..]) = input.get_mut(offset..) {
+        if *label == 0xff
+            && *first_size == 11
+            && matches!(
+                rest.first_chunk::<11>(),
+                Some(b"ICCRGBG1012" | b"XMP DataXMP")
+            )
+        {
+            *label = 0xfe;
+        }
+        offset = offset.saturating_add(2);
+        loop {
+            let Some(&size) = input.get(offset) else {
+                return;
+            };
+            offset = offset.saturating_add(1).saturating_add(usize::from(size));
+            if size == 0 {
+                break;
+            }
+        }
+    }
+}
+
+fn sanitize_gif(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
+    ignore_gif_profiles(&mut input);
     let mut options = DecodeOptions::new();
     options.check_frame_consistency(true);
     let mut decoder = options
-        .read_info(Cursor::new(input))
+        .read_info(Cursor::new(&input))
         .map_err(SanitizeError::invalid_image_with_cause)?;
     let width = decoder.width();
     let height = decoder.height();
@@ -305,22 +204,23 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
         std::mem::swap(first, background);
     }
 
-    let mut encoder = GifEncoder::new(
-        Vec::with_capacity(input.len()),
-        width,
-        height,
-        &global_palette,
-    )
-    .map_err(SanitizeError::invalid_image_with_cause)?;
+    let mut encoder = GifEncoder::new(GifOutput::new(input.len()), width, height, &global_palette)
+        .map_err(SanitizeError::invalid_image_with_cause)?;
     if repeat != Repeat::Finite(0) {
         encoder
             .set_repeat(repeat)
             .map_err(SanitizeError::invalid_image_with_cause)?;
     }
 
+    // The frame uses one byte per index. The encoder writes at most 12 bits per index,
+    // plus occasional dictionary clear codes and the terminator. Two bytes per index
+    // and 16 extra bytes cover that output, even when it grows across frames.
+    let canvas_size =
+        usize::try_from(canvas_pixels).map_err(SanitizeError::invalid_image_with_cause)?;
+    let mut frame_buffer = vec![0; canvas_size.saturating_mul(3).saturating_add(16)];
     let mut frame_count = 0_u64;
     while let Some(frame) = decoder
-        .read_next_frame()
+        .next_frame_info()
         .map_err(SanitizeError::invalid_image_with_cause)?
     {
         frame_count = frame_count
@@ -338,10 +238,18 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
             return Err(SanitizeError::InvalidImage);
         }
         let mut frame = frame.clone();
+        let (pixels, compressed) = frame_buffer
+            .split_at_mut_checked(decoder.buffer_size())
+            .ok_or(SanitizeError::InvalidImage)?;
+        decoder
+            .read_into_buffer(pixels)
+            .map_err(SanitizeError::invalid_image_with_cause)?;
+        // read_into_buffer deinterlaces the pixels.
+        frame.interlaced = false;
         if frame.palette.is_none()
             && let Some(background) = background.filter(|index| *index != 0)
         {
-            for index in frame.buffer.to_mut() {
+            for index in &mut *pixels {
                 remap_palette_index(index, 0, background);
             }
             if let Some(transparent) = &mut frame.transparent {
@@ -349,7 +257,10 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
             }
         }
         encoder
-            .write_frame(&frame)
+            .write_lzw_pre_encoded_frame(&gif::Frame {
+                buffer: Cow::Borrowed(encode_gif_frame(pixels, compressed)?),
+                ..frame
+            })
             .map_err(SanitizeError::invalid_image_with_cause)?;
     }
     if frame_count == 0 {
@@ -358,7 +269,52 @@ fn sanitize_gif(input: &[u8]) -> Result<Vec<u8>, SanitizeError> {
 
     encoder
         .into_inner()
+        .map(|writer| writer.0)
         .map_err(SanitizeError::invalid_image_with_cause)
+}
+
+fn encode_gif_frame<'a>(
+    pixels: &[u8],
+    compressed: &'a mut [u8],
+) -> Result<&'a [u8], SanitizeError> {
+    // Use the same minimum code size as gif::Encoder::write_frame.
+    let max_index = pixels
+        .iter()
+        .copied()
+        .max()
+        .ok_or(SanitizeError::InvalidImage)?;
+    let colors = u16::from(max_index).saturating_add(1).max(4);
+    let code_size = u8::try_from(colors.next_power_of_two().trailing_zeros())
+        .map_err(SanitizeError::invalid_image_with_cause)?;
+    *compressed.first_mut().ok_or(SanitizeError::InvalidImage)? = code_size;
+    let mut lzw = weezl::encode::Encoder::new(weezl::BitOrder::Lsb, code_size);
+    lzw.finish();
+
+    let mut remaining = pixels;
+    let mut written = 1_usize;
+    loop {
+        let output = compressed
+            .get_mut(written..)
+            .ok_or(SanitizeError::InvalidImage)?;
+        let result = lzw.encode_bytes(remaining, output);
+        written = written.saturating_add(result.consumed_out);
+        match result
+            .status
+            .map_err(SanitizeError::invalid_image_with_cause)?
+        {
+            weezl::LzwStatus::Done => {
+                return compressed.get(..written).ok_or(SanitizeError::InvalidImage);
+            }
+            weezl::LzwStatus::Ok if result.consumed_in != 0 || result.consumed_out != 0 => {
+                remaining = remaining
+                    .get(result.consumed_in..)
+                    .ok_or(SanitizeError::InvalidImage)?;
+            }
+            weezl::LzwStatus::Ok | weezl::LzwStatus::NoProgress => {
+                return Err(SanitizeError::InvalidImage);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -366,6 +322,11 @@ mod tests {
     use super::*;
     use crc32fast::Hasher;
     use gif::{AnyExtension, Extension};
+    use img_parts::Bytes;
+    use img_parts::png::Png;
+    use img_parts::riff::{RiffChunk, RiffContent};
+    use img_parts::webp::WebP;
+    use libjpeg_turbo_rs::decode::marker::MarkerReader;
     use libjpeg_turbo_rs::{Encoder as JpegEncoder, MarkerSaveConfig, PixelFormat, SavedMarker};
 
     #[test]
@@ -496,6 +457,41 @@ mod tests {
         );
         assert!(!output.windows(9).any(|window| window == b"thumbnail"));
         assert_eq!(sanitize_image_bytes(&output, "image/jpeg"), Ok(output));
+    }
+
+    #[test]
+    fn jpeg_preserves_large_icc_segments_in_order() {
+        let input = jpeg_declaring(16, 16);
+        let canonical = sanitize_image_bytes(&input, "image/jpeg").expect("sanitize seed");
+        let markers: Vec<_> = (1..=8)
+            .flat_map(|sequence| {
+                let mut icc = b"ICC_PROFILE\0".to_vec();
+                icc.extend_from_slice(&[sequence, 8]);
+                icc.resize(65_533, sequence);
+                [
+                    SavedMarker {
+                        code: 0xe2,
+                        data: icc,
+                    },
+                    SavedMarker {
+                        code: 0xe2,
+                        data: b"MPF\0private".to_vec(),
+                    },
+                ]
+            })
+            .collect();
+        let output_with = |markers: &[SavedMarker]| {
+            libjpeg_turbo_rs::encode::pipeline::inject_saved_markers(&canonical, markers)
+        };
+        let input = output_with(&markers);
+        let kept: Vec<_> = markers.into_iter().step_by(2).collect();
+        let expected = output_with(&kept);
+
+        assert_eq!(
+            sanitize_image_bytes(&input, "image/jpeg"),
+            Ok(expected.clone())
+        );
+        assert_eq!(sanitize_image_bytes(&expected, "image/jpeg"), Ok(expected));
     }
 
     #[test]
@@ -701,6 +697,31 @@ mod tests {
     }
 
     #[test]
+    fn png_validates_crc_even_for_removed_metadata() {
+        let mut input = png_declaring(1, 1);
+        let mut text = png_chunk(*b"tEXt", b"Author\0Private");
+        *text.last_mut().expect("PNG checksum") ^= 1;
+        let before_end = input.len().saturating_sub(12);
+        input.splice(before_end..before_end, text);
+
+        let error = sanitize_image_bytes(&input, "image/png").expect_err("reject bad checksum");
+        assert_eq!(
+            error,
+            SanitizeError::invalid_image_with_cause(img_parts::Error::BadCRC)
+        );
+    }
+
+    #[test]
+    fn webp_zeroes_odd_chunk_padding_and_ignores_trailing_bytes() {
+        let expected = lossless_webp_declaring(1, 1);
+        let mut input = expected.clone();
+        *input.last_mut().expect("RIFF padding") = 0xff;
+        input.extend_from_slice(b"ignored");
+
+        assert_eq!(sanitize_image_bytes(&input, "image/webp"), Ok(expected));
+    }
+
+    #[test]
     fn webp_removes_metadata_and_clears_extended_flags() {
         let chunks = vec![
             RiffChunk::new(
@@ -771,6 +792,49 @@ mod tests {
             sanitize_image_bytes(input, "image/gif"),
             Err(SanitizeError::InvalidImage)
         );
+    }
+
+    #[test]
+    fn gif_ignores_profiles_but_keeps_the_loop_extension() {
+        let mut encoder =
+            GifEncoder::new(Vec::new(), 1, 1, &[0, 0, 0, 255, 255, 255]).expect("create gif");
+        for identifier in [b"ICCRGBG1012", b"XMP DataXMP"] {
+            encoder
+                .write_raw_extension(
+                    AnyExtension(Extension::Application as u8),
+                    &[identifier, b"profile"],
+                )
+                .expect("write profile");
+        }
+        encoder
+            .set_repeat(Repeat::Infinite)
+            .expect("write loop count");
+        encoder
+            .write_frame(&gif::Frame {
+                width: 1,
+                height: 1,
+                buffer: Cow::Borrowed(&[0]),
+                ..gif::Frame::default()
+            })
+            .expect("write frame");
+        let input = encoder.into_inner().expect("finish gif");
+
+        let output = sanitize_image_bytes(&input, "image/gif").expect("sanitize gif");
+        let decoder = gif::Decoder::new(Cursor::new(&output)).expect("decode output");
+        assert_eq!(decoder.repeat(), Repeat::Infinite);
+        assert!(decoder.icc_profile().is_none());
+        assert!(decoder.xmp_metadata().is_none());
+        assert_eq!(sanitize_image_bytes(&output, "image/gif"), Ok(output));
+    }
+
+    #[test]
+    fn gif_output_stops_at_the_upload_limit() {
+        let mut writer = GifOutput::new(MAX_IMAGE_UPLOAD_BYTES.saturating_sub(1));
+        writer.0.resize(MAX_IMAGE_UPLOAD_BYTES.saturating_sub(1), 0);
+        writer.write_all(&[0x3b]).expect("trailer fits");
+        assert_eq!(writer.0.len(), MAX_IMAGE_UPLOAD_BYTES);
+        assert!(writer.write_all(&[0xff]).is_err());
+        assert_eq!(writer.0.len(), MAX_IMAGE_UPLOAD_BYTES);
     }
 
     #[test]
