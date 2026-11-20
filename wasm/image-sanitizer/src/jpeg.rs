@@ -11,6 +11,7 @@ use crate::{MAX_IMAGE_UPLOAD_BYTES, MAX_JPEG_PIXELS, SanitizeError, is_within_pi
 // when the input also carries a large profile. Metadata does not count as coded data.
 const MAX_JPEG_CODED_BYTES: usize = 11_500_000;
 const MAX_JPEG_INPUT_AND_COEFFICIENT_BYTES: u64 = 50_750_000;
+const MAX_ARITHMETIC_JPEG_WORKING_BYTES: u64 = 94_000_000;
 
 fn too_large() -> SanitizeError {
     SanitizeError::invalid_image_with_cause("The JPEG image data is too large to sanitize.")
@@ -34,10 +35,20 @@ fn coefficient_bytes(frame: &FrameHeader) -> u64 {
         .saturating_mul(128)
 }
 
-fn check_working_size(file_bytes: usize, coefficient_bytes: u64) -> Result<(), SanitizeError> {
+fn check_working_size(
+    file_bytes: usize,
+    coefficient_bytes: u64,
+    arithmetic: bool,
+) -> Result<(), SanitizeError> {
     // Count the JavaScript and WASM copies of the file.
     let input_bytes = (file_bytes as u64).saturating_mul(2);
-    if input_bytes.saturating_add(coefficient_bytes) > MAX_JPEG_INPUT_AND_COEFFICIENT_BYTES {
+    // Arithmetic streams can expand substantially during the Huffman rewrite. The dense
+    // arithmetic measurements put the codec's peak near five times the coefficient array.
+    if input_bytes.saturating_add(coefficient_bytes) > MAX_JPEG_INPUT_AND_COEFFICIENT_BYTES
+        || arithmetic
+            && input_bytes.saturating_add(coefficient_bytes.saturating_mul(5))
+                > MAX_ARITHMETIC_JPEG_WORKING_BYTES
+    {
         return Err(too_large());
     }
     Ok(())
@@ -69,7 +80,7 @@ pub(super) fn sanitize(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
         return Err(SanitizeError::InvalidImage);
     }
     let coefficient_bytes = coefficient_bytes(&metadata.frame);
-    check_working_size(input.len(), coefficient_bytes)?;
+    check_working_size(input.len(), coefficient_bytes, metadata.is_arithmetic)?;
     let transform = metadata
         .exif_data
         .as_deref()
@@ -103,7 +114,7 @@ pub(super) fn sanitize(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
     if capacity > MAX_IMAGE_UPLOAD_BYTES {
         return Err(too_large());
     }
-    check_working_size(capacity, coefficient_bytes)?;
+    check_working_size(capacity, coefficient_bytes, false)?;
     if icc_segments.is_empty() {
         return Ok(output);
     }
@@ -212,6 +223,22 @@ fn skip_jpeg_metadata(input: &mut [u8]) -> Result<Vec<Range<usize>>, SanitizeErr
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn jpeg_working_size_reserves_room_for_arithmetic_expansion() {
+        assert_eq!(
+            check_working_size(MAX_IMAGE_UPLOAD_BYTES, 6_000_000, true),
+            Ok(())
+        );
+        assert_eq!(
+            check_working_size(MAX_IMAGE_UPLOAD_BYTES, 16_000_000, false),
+            Ok(())
+        );
+        assert_eq!(
+            check_working_size(MAX_IMAGE_UPLOAD_BYTES, 16_000_000, true),
+            Err(too_large())
+        );
+    }
 
     #[test]
     fn jpeg_coded_size_cap_excludes_app_segments() {

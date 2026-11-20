@@ -1315,3 +1315,6 @@ Record future changes here with date, decision, reason, and affected phases.
   data can still exceed the memory budget inside the codec. Limit coded JPEG data to 11.5 MB and
   reject combinations of large files and padded coefficient arrays that exceed the measured budget.
   Keep the existing per-format pixel limits and the 15 MiB upload limit.
+
+- 2026-11-20: Reserve extra codec memory for arithmetic JPEGs. They can expand during the Huffman
+  rewrite even when their coded data fits the JPEG size limit.
