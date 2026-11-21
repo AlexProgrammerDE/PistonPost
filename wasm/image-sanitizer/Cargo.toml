@@ -8,12 +8,12 @@ publish = false
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-crc32fast = "=1.5.2"
+crc32fast = "=1.5.5"
 gif = { version = "=0.14.2", default-features = false, features = ["std", "raii_no_panic"] }
-img-parts = { version = "=0.4.0", default-features = false }
-libjpeg-turbo-rs = { version = "=0.8.0", default-features = false }
-wasm-bindgen = "=0.2.129"
-weezl = { version = "=0.1.12", default-features = false, features = ["alloc"] }
+img-parts = { version = "=0.4.2", default-features = false }
+libjpeg-turbo-rs = { version = "=0.9.0", default-features = false }
+wasm-bindgen = "=0.2.130"
+weezl = { version = "=0.2.1", default-features = false, features = ["alloc"] }
 
 [profile.release]
 codegen-units = 1
