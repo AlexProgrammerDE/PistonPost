@@ -29,6 +29,7 @@ import { MAX_POST_MARKDOWN_LENGTH } from "@/domain/validation"
 import { useAppForm } from "@/lib/forms/app-form"
 import { mediaImageUrl } from "@/lib/media-image"
 import { ownedRouteFailure } from "@/lib/owned-route-failure"
+import { refreshAfterPostChange } from "@/lib/queries/posts"
 import { ServerFunctionClientError } from "@/lib/server-function-error"
 import { uploadPostEditImages, type EditablePostImage } from "@/lib/uploads/post-edit-images"
 import { UploadClientError } from "@/lib/uploads/upload-client"
@@ -143,7 +144,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
           },
         })
         allowNavigationRef.current = true
-        await queryClient.invalidateQueries({ queryKey: ["posts"] })
+        await refreshAfterPostChange(queryClient, post.id)
         toast.success("Post updated")
         await navigate({ to: "/post/$postId", params: { postId: post.id } })
       } catch (saveError) {
@@ -166,7 +167,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
     try {
       await deletePost({ data: { id: post.id, version: post.version } })
       allowNavigationRef.current = true
-      await queryClient.invalidateQueries({ queryKey: ["posts"] })
+      await refreshAfterPostChange(queryClient, post.id)
       toast.success("Post deleted")
       await navigate({ to: "/" })
     } catch {

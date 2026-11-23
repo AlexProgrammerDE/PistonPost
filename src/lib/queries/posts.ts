@@ -128,6 +128,15 @@ export function setCachedPostHeartCount(
 }
 
 /**
+ * Refreshes post data after the owner edits or deletes a post. The detail loader returns cached
+ * data even when it is stale, so the post entry is dropped and the next visit loads it again.
+ */
+export function refreshAfterPostChange(queryClient: QueryClient, postId: string) {
+  queryClient.removeQueries({ queryKey: postQueryOptions(postId).queryKey, exact: true })
+  return queryClient.invalidateQueries({ queryKey: ["posts"] })
+}
+
+/**
  * Marks loaded feeds stale without refetching them now. Refetching would reload every loaded page,
  * so the feeds update the next time they mount or the window regains focus.
  */

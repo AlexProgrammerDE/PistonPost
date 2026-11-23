@@ -8,10 +8,12 @@ import {
   feedQueryOptions,
   followingFeedQueryOptions,
   ownedUnlistedPostsQueryOptions,
+  postQueryOptions,
+  refreshAfterPostChange,
   setCachedPostHeartCount,
 } from "./posts"
 
-function post(id: string, heartCount: number): PublicPostRead {
+function post(id: string, heartCount: number) {
   return {
     id,
     type: "text",
@@ -33,7 +35,8 @@ function post(id: string, heartCount: number): PublicPostRead {
     viewCount: 0,
     commentCount: 0,
     heartCount,
-  }
+    structuredComments: [],
+  } satisfies PublicPostRead
 }
 
 type Page = { readonly posts: readonly PublicPostRead[]; readonly nextCursor: string | null }
@@ -68,5 +71,31 @@ describe("setCachedPostHeartCount", () => {
         ["other", 4],
       ])
     }
+  })
+})
+
+describe("refreshAfterPostChange", () => {
+  test("drops the cached post so the detail loader cannot return the old copy", async () => {
+    const queryClient = new QueryClient()
+    const postKey = postQueryOptions("edited").queryKey
+    const otherKey = postQueryOptions("other").queryKey
+    queryClient.setQueryData(postKey, post("edited", 0))
+    queryClient.setQueryData(otherKey, post("other", 0))
+
+    await refreshAfterPostChange(queryClient, "edited")
+
+    // The detail loader uses ensureQueryData, which returns any cached data, even stale data.
+    expect(queryClient.getQueryState(postKey)).toBeUndefined()
+    expect(queryClient.getQueryData(otherKey)?.id).toBe("other")
+  })
+
+  test("marks loaded feeds stale", async () => {
+    const queryClient = new QueryClient()
+    const feedKey = feedQueryOptions().queryKey
+    queryClient.setQueryData(feedKey, feed([post("edited", 0)]))
+
+    await refreshAfterPostChange(queryClient, "edited")
+
+    expect(queryClient.getQueryState(feedKey)?.isInvalidated).toBe(true)
   })
 })
