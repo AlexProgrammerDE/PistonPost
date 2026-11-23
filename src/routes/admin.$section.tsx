@@ -1,5 +1,12 @@
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/react-query"
-import { Link, createFileRoute, notFound, useNavigate, useRouter } from "@tanstack/react-router"
+import {
+  Link,
+  createFileRoute,
+  notFound,
+  useHydrated,
+  useNavigate,
+  useRouter,
+} from "@tanstack/react-router"
 import { Schema, Effect, Option, Result } from "effect"
 import { Search } from "lucide-react"
 import { useEffect, useState } from "react"
@@ -364,12 +371,15 @@ function AdminTable() {
     ...adminRowsQueryOptions(input),
     placeholderData: keepPreviousData,
   })
+  // The server never waits for this query, so it always renders the skeleton. Rows that stream
+  // in before hydration must wait, or the first client render would not match the server HTML.
+  const hydrated = useHydrated()
   const { section } = Route.useParams()
   const search = Route.useSearch()
   const parsedSection = Schema.decodeUnknownResult(sectionSchema, { errors: "all" })(section)
   if (!Result.isSuccess(parsedSection)) throw notFound()
   if (result.error) throw result.error
-  if (!result.data) return <AdminTablePageSkeleton />
+  if (!result.data || !hydrated) return <AdminTablePageSkeleton />
   return (
     <AdminTableView
       key={parsedSection.success}

@@ -36,7 +36,7 @@ import {
   Video,
   ZoomIn,
 } from "lucide-react"
-import { lazy, Suspense, useEffect, useRef, useState, type KeyboardEvent } from "react"
+import { lazy, Suspense, useEffect, useId, useRef, useState, type KeyboardEvent } from "react"
 import { toast } from "sonner"
 
 import { AppImage } from "@/components/AppImage"
@@ -861,6 +861,9 @@ function MediaPicker({
   onAltText: (clientId: string, altText: string) => void
   onDragEnd: (event: DragEndEvent) => void
 }) {
+  // dnd-kit numbers its accessibility IDs with a module counter that differs between the
+  // server and the browser. A React ID keeps the server HTML and hydration in step.
+  const dndContextId = useId()
   const uploads = useSelector(uploadStore.pickerItems)
   const [selectedImageId, setSelectedImageId] = useState<string | null>(null)
   const accept = type === "images" ? IMAGE_UPLOAD_ACCEPT : "video/*"
@@ -926,7 +929,12 @@ function MediaPicker({
         </FileUploadDropzone>
 
         <FileUploadList>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+          <DndContext
+            id={dndContextId}
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={onDragEnd}
+          >
             <SortableContext
               items={uploads.map((item) => item.clientId)}
               strategy={verticalListSortingStrategy}

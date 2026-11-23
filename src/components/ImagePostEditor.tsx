@@ -15,7 +15,7 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import { GripVertical, Trash2, Upload } from "lucide-react"
-import { useEffect, useRef, type CSSProperties } from "react"
+import { useEffect, useId, useRef, type CSSProperties } from "react"
 import { toast } from "sonner"
 
 import { AppImage } from "@/components/AppImage"
@@ -67,6 +67,9 @@ export function ImagePostEditor({
   const previews = useRef(new Set<string>())
   const preparingRef = useRef(false)
   const mounted = useRef(true)
+  // dnd-kit numbers its accessibility IDs with a module counter that differs between the
+  // server and the browser. A React ID keeps the server HTML and hydration in step.
+  const dndContextId = useId()
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
@@ -157,6 +160,7 @@ export function ImagePostEditor({
         </FileUpload>
       </FieldSet>
       <DndContext
+        id={dndContextId}
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={({ active, over }) => {
