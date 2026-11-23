@@ -14,7 +14,7 @@
     "dev:web": "bun run dev",
     "db:check": "drizzle-kit check",
     "db:generate": "drizzle-kit generate",
-    "fix": "oxfmt . && oxlint --fix --fix-suggestions .",
+    "fix": "bun run cf:typegen && oxfmt . && oxlint --fix --fix-suggestions .",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "generated:check": "bun scripts/check-generated.ts",

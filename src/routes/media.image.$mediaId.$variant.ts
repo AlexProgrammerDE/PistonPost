@@ -21,6 +21,7 @@ import {
 } from "@/lib/media-image"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
+import { byteStream } from "@/server/byte-stream"
 import { cacheTagHeader, mediaCacheTag, ownerCacheTag, postCacheTag } from "@/server/cache-tags"
 import { requestValidatorsMatch } from "@/server/http-cache"
 import { canViewMedia, mediaAudience } from "@/server/media-access"
@@ -220,8 +221,7 @@ async function deliverImage(arguments_: ImageHandlerArguments) {
       : image.variant === "avatar"
         ? { width: image.requestedWidth, height: image.requestedWidth, fit: "cover" }
         : { width: image.requestedWidth, fit: "scale-down" }
-  // oxlint-disable-next-line typescript/no-unsafe-argument -- workers-types declares R2 bodies as ReadableStream<any>
-  const transformed = await arguments_.context.env.IMAGES.input(object.body)
+  const transformed = await arguments_.context.env.IMAGES.input(byteStream(object.body))
     .transform(transform)
     .output({
       format: image.variant === "og" ? "image/jpeg" : "image/webp",
