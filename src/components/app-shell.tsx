@@ -1,11 +1,14 @@
-import { Link } from "@tanstack/react-router"
+import { Link, useLocation } from "@tanstack/react-router"
+import { SquarePen } from "lucide-react"
 import { useSyncExternalStore, type PropsWithChildren } from "react"
 
 import { AppSidebar } from "@/components/AppSidebar"
+import { ButtonLink } from "@/components/ButtonLink"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { MAIN_CONTENT_ID } from "@/lib/route-announcement"
 
 export function AppShell({ children }: PropsWithChildren) {
+  const { pathname } = useLocation()
   const hydrated = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -29,12 +32,21 @@ export function AppShell({ children }: PropsWithChildren) {
           <SidebarTrigger aria-label="Open navigation" className="size-11" />
           <Link
             to="/"
-            className="font-heading text-lg font-extrabold tracking-brand"
+            className="inline-flex h-11 items-center font-heading text-lg font-extrabold tracking-brand"
             aria-label="PistonPost home"
             translate="no"
           >
             piston<span className="text-primary">post</span>
           </Link>
+          {pathname === "/posts/new" ? null : (
+            <ButtonLink
+              render={<Link to="/posts/new" viewTransition={false} />}
+              className="ml-auto h-11 px-4"
+            >
+              <SquarePen aria-hidden="true" data-icon="inline-start" />
+              Post
+            </ButtonLink>
+          )}
         </header>
 
         <div id={MAIN_CONTENT_ID} tabIndex={-1} className="min-w-0 flex-1 outline-none">

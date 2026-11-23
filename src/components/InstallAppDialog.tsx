@@ -16,12 +16,23 @@ import {
 import { SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar"
 import { useAppInstallation } from "@/lib/pwa/app-installation"
 
-export function InstallAppMenuItem({ onOpen }: { onOpen: () => void }) {
+export function InstallAppMenuItem({
+  className,
+  onOpen,
+}: {
+  className?: string
+  onOpen: () => void
+}) {
   const { installed } = useAppInstallation()
   if (installed) return null
   return (
     <SidebarMenuItem>
-      <SidebarMenuButton tooltip="Install app" aria-haspopup="dialog" onClick={onOpen}>
+      <SidebarMenuButton
+        tooltip="Install app"
+        aria-haspopup="dialog"
+        className={className}
+        onClick={onOpen}
+      >
         <Download aria-hidden="true" />
         <span>Install app</span>
       </SidebarMenuButton>

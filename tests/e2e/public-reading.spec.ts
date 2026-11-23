@@ -46,6 +46,10 @@ test.describe("public reading experience", () => {
 
     await expect(page.getByRole("heading", { level: 1, name: "Timeline" })).toBeVisible()
     await page.locator('[data-hydrated="true"]').waitFor()
+    // Posting stays one tap away on a phone without opening the navigation sheet.
+    const headerPostLink = page.getByRole("banner").getByRole("link", { name: "Post", exact: true })
+    await expect(headerPostLink).toHaveAttribute("href", "/posts/new")
+    expect((await headerPostLink.boundingBox())?.height).toBeGreaterThanOrEqual(44)
     await page.getByRole("button", { name: "Open navigation" }).click()
     await expect(page.getByRole("navigation", { name: "Main navigation" })).toBeVisible()
     await expect(page.getByRole("link", { name: "Post", exact: true })).toBeVisible()

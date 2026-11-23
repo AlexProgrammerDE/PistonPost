@@ -2,6 +2,7 @@ import { Link, useLocation } from "@tanstack/react-router"
 import { Newspaper, SquarePen, UsersRound } from "lucide-react"
 import { lazy, Suspense, useEffect, useState } from "react"
 
+import { ButtonLink } from "@/components/ButtonLink"
 import { InstallAppDialog, InstallAppMenuItem } from "@/components/InstallAppDialog"
 import {
   Sidebar,
@@ -29,8 +30,11 @@ const SidebarAccountMenu = lazy(() =>
 const navigationItems = [
   { to: "/", label: "Timeline", icon: Newspaper, exact: true },
   { to: "/following", label: "Following", icon: UsersRound, exact: false },
-  { to: "/posts/new", label: "Post", icon: SquarePen, exact: true },
 ] as const
+
+// The phone sheet uses 44px rows so links are easy to hit with a thumb. The desktop rail keeps the
+// compact upstream height.
+const touchRowClassName = "max-md:h-11"
 
 const legalLinks = [
   { to: "/privacy", label: "Privacy" },
@@ -68,6 +72,8 @@ export function AppSidebar() {
   // oxlint-disable-next-line react/hook-use-state -- The value is initialized once and remains stable for the mount.
   const [currentYear] = useState(() => new Date().getUTCFullYear())
   const [installOpen, setInstallOpen] = useState(false)
+  const postActive = pathname === "/posts/new"
+  const collapsed = state === "collapsed" && !isMobile
 
   useEffect(() => {
     if (pathname && isMobile) setOpenMobile(false)
@@ -124,6 +130,31 @@ export function AppSidebar() {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
+                  <SidebarMenuItem className="mb-2">
+                    {/* A filled button instead of a menu row, so the main action never looks like
+                        the active page marker. */}
+                    <Tooltip>
+                      <TooltipTrigger
+                        render={
+                          <ButtonLink
+                            render={
+                              <Link to="/posts/new" viewTransition={isMobile ? false : undefined} />
+                            }
+                            aria-current={postActive ? "page" : undefined}
+                            size={collapsed ? "icon-sm" : "default"}
+                            className={collapsed ? undefined : "w-full justify-start max-md:h-11"}
+                          />
+                        }
+                        onClick={closeMobileSidebar}
+                      >
+                        <SquarePen aria-hidden="true" data-icon="inline-start" />
+                        <span className={collapsed ? "sr-only" : undefined}>Post</span>
+                      </TooltipTrigger>
+                      <TooltipContent side="right" align="center" hidden={!collapsed}>
+                        Post
+                      </TooltipContent>
+                    </Tooltip>
+                  </SidebarMenuItem>
                   {navigationItems.map((item) => {
                     const active = isCurrentPath(pathname, item.to, item.exact)
                     const Icon = item.icon
@@ -132,9 +163,9 @@ export function AppSidebar() {
                       <SidebarMenuItem key={item.to}>
                         <SidebarMenuButton
                           tooltip={item.label}
-                          variant={item.to === "/posts/new" ? "outline" : "default"}
                           isActive={active}
                           aria-current={active ? "page" : undefined}
+                          className={touchRowClassName}
                           render={
                             <Link to={item.to} viewTransition={isMobile ? false : undefined} />
                           }
@@ -147,6 +178,7 @@ export function AppSidebar() {
                     )
                   })}
                   <InstallAppMenuItem
+                    className={touchRowClassName}
                     onOpen={() => {
                       closeMobileSidebar()
                       setInstallOpen(true)
@@ -168,7 +200,7 @@ export function AppSidebar() {
           <div className="flex flex-col gap-2 p-2 group-data-[collapsible=icon]:hidden">
             <nav
               aria-label="Legal"
-              className="flex flex-wrap items-center gap-x-3 gap-y-1 px-2 text-xs text-sidebar-foreground/70"
+              className="flex flex-wrap items-center gap-x-1 px-1 text-xs text-sidebar-foreground/70"
             >
               {legalLinks.map((item) => (
                 <Link
@@ -176,14 +208,14 @@ export function AppSidebar() {
                   to={item.to}
                   viewTransition={isMobile ? false : undefined}
                   aria-current={pathname === item.to ? "page" : undefined}
-                  className="underline-offset-2 hover:text-sidebar-foreground hover:underline aria-[current=page]:text-sidebar-foreground aria-[current=page]:underline"
+                  className="inline-flex items-center rounded-md px-1 underline-offset-2 outline-none hover:text-sidebar-foreground hover:underline focus-visible:ring-2 focus-visible:ring-sidebar-ring aria-[current=page]:text-sidebar-foreground aria-[current=page]:underline max-md:min-h-11 max-md:px-2 max-md:text-sm"
                   onClick={closeMobileSidebar}
                 >
                   {item.label}
                 </Link>
               ))}
             </nav>
-            <p className="px-2 text-xs text-sidebar-foreground/70">
+            <p className="px-2 text-xs text-sidebar-foreground/70 max-md:px-3">
               © <span suppressHydrationWarning>{currentYear}</span> PistonPost
             </p>
           </div>
