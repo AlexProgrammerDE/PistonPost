@@ -29,9 +29,9 @@ test.describe("authentication", () => {
     await page.goto("/auth/sign-in")
 
     const accountAccess = page.getByRole("region", { name: "Account access" })
-    await expect(accountAccess.getByLabel("Username")).toHaveAttribute(
+    await expect(accountAccess.getByLabel("Username or email")).toHaveAttribute(
       "placeholder",
-      "Username or email",
+      "your-name or you@example.com",
     )
     await expect(
       accountAccess.getByRole("textbox", { name: "Password", exact: true }),

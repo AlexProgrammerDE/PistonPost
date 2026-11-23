@@ -330,7 +330,8 @@ test.describe.serial("authenticated authoring", () => {
     const profileImage = profileAvatar.locator('[data-slot="avatar-image"]')
     const fallback = profileAvatar.locator('[data-slot="avatar-fallback"]')
     await expect(profileImage).toHaveAttribute("data-error", "")
-    await expect(fallback).toHaveText("MO")
+    // "Moss" is one word, so its initials are one letter.
+    await expect(fallback).toHaveText("M")
     const avatarBox = await profileAvatar.boundingBox()
     const fallbackBox = await fallback.boundingBox()
     expect(fallbackBox).toEqual(avatarBox)
@@ -826,7 +827,14 @@ https://youtu.be/dQw4w9WgXcQ`
       name: "two extremely important cats image collection",
     })
     await expect(imageCollection.getByRole("img")).toHaveCount(2)
-    await expect(imageCollection).toHaveCSS("column-count", "3")
+    // The masonry gallery is a grid with three columns at desktop width.
+    await expect
+      .poll(() =>
+        imageCollection.evaluate(
+          (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
+        ),
+      )
+      .toBe(3)
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
     await expect(page.getByText("2 images", { exact: true })).toBeVisible()
     await expect(page.getByRole("link", { name: "0 comments" })).toBeVisible()
@@ -884,7 +892,13 @@ https://youtu.be/dQw4w9WgXcQ`
     await expect(page.getByRole("navigation", { name: "Choose an image" })).toHaveCount(0)
 
     await page.setViewportSize({ width: 390, height: 844 })
-    await expect(imageCollection).toHaveCSS("column-count", "2")
+    await expect
+      .poll(() =>
+        imageCollection.evaluate(
+          (element) => getComputedStyle(element).gridTemplateColumns.split(" ").length,
+        ),
+      )
+      .toBe(2)
     await page.setViewportSize({ width: 1280, height: 720 })
 
     await page.goto(`${postUrl}?image=1`)
