@@ -1,4 +1,5 @@
 import { useSession } from "@better-auth-ui/react"
+import { useHydrated } from "@tanstack/react-router"
 
 import { authClient } from "@/auth/client"
 import { FeedPostActionsProvider } from "@/components/feed-post-actions"
@@ -23,6 +24,10 @@ export function PostTimeline({
   readonly surface: Exclude<PostViewSurface, "detail">
 }) {
   const session = useSession(authClient)
+  // The server renders without a session. Wait for hydration before showing author controls, or a
+  // session the client already loaded would not match the streamed server HTML.
+  const hydrated = useHydrated()
+  const viewer = hydrated ? session.data?.user : undefined
   const firstPostId = posts[0]?.id
   const postIdentity = posts.map((post) => post.id).join("\0")
   const timelineRef = usePostImpressionTracking({ postIdentity, surface })
@@ -66,9 +71,7 @@ export function PostTimeline({
                   post={post}
                   priority={post.id === firstPostId}
                   authorAvatar={null}
-                  canEdit={
-                    session.data?.user.id === post.author.id || session.data?.user.role === "admin"
-                  }
+                  canEdit={viewer?.id === post.author.id || viewer?.role === "admin"}
                   className="border-0 pb-0"
                 />
               </TimelineContent>
