@@ -374,6 +374,7 @@ export async function getPublicProfileRead(database: ReadDatabase, username: str
   ])
 
   return {
+    userId: profile.userId,
     username: profile.username,
     normalizedUsername: profile.normalizedUsername,
     name: profile.name,

@@ -241,6 +241,7 @@ function ProfileFeedContent({ normalizedUsername }: { readonly normalizedUsernam
             </Suspense>
             <ContentReportDialog
               target={{ type: "profile", id: profile.normalizedUsername }}
+              authorId={profile.userId}
               variant="outline"
             />
           </ButtonGroup>
