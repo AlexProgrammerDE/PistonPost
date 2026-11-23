@@ -329,7 +329,9 @@ mod tests {
     use img_parts::riff::{RiffChunk, RiffContent};
     use img_parts::webp::WebP;
     use libjpeg_turbo_rs::decode::marker::MarkerReader;
-    use libjpeg_turbo_rs::{Encoder as JpegEncoder, MarkerSaveConfig, PixelFormat, SavedMarker};
+    use libjpeg_turbo_rs::{
+        Encoder as JpegEncoder, MarkerSaveConfig, PixelFormat, SavedMarker, decompress,
+    };
 
     #[test]
     fn malformed_image_reports_parser_cause() {
@@ -431,6 +433,42 @@ mod tests {
                 .iter()
                 .all(|marker| matches!(marker.code, 0xe0 | 0xe2))
         );
+    }
+
+    #[test]
+    fn jpeg_keeps_the_adobe_color_transform_of_cmyk_and_ycck_images() {
+        let pixels = (0..=u8::MAX)
+            .flat_map(|index| [index, 30, 200, 10])
+            .collect::<Vec<_>>();
+        let cmyk = JpegEncoder::new(&pixels, 16, 16, PixelFormat::Cmyk)
+            .quality(90)
+            .encode()
+            .expect("encode jpeg");
+        // Photoshop saves CMYK JPEGs as YCCK. Only the Adobe transform tells decoders that.
+        let mut ycck = cmyk.clone();
+        let adobe = ycck
+            .windows(5)
+            .position(|window| window == b"Adobe")
+            .expect("CMYK JPEG has an Adobe segment");
+        *ycck
+            .get_mut(adobe.saturating_add(11))
+            .expect("Adobe transform byte") = 2;
+
+        for (input, transform) in [(cmyk, 0), (ycck, 2)] {
+            let output = sanitize_image_bytes(&input, "image/jpeg").expect("sanitize jpeg");
+            let metadata = MarkerReader::new(&output)
+                .read_markers()
+                .expect("read sanitized markers");
+
+            assert!(metadata.saw_adobe_marker);
+            assert!(!metadata.saw_jfif_marker);
+            assert_eq!(metadata.adobe_transform, transform);
+            assert_eq!(
+                decompress(&output).expect("decode output").data,
+                decompress(&input).expect("decode input").data
+            );
+            assert_eq!(sanitize_image_bytes(&output, "image/jpeg"), Ok(output));
+        }
     }
 
     #[test]

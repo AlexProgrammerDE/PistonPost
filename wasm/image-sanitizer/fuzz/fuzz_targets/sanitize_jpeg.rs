@@ -38,6 +38,14 @@ fuzz_target!(|data: &[u8]| {
                 marker.data.starts_with(b"ICC_PROFILE\0"),
                 "sanitized JPEG kept an APP2 segment that is not an ICC profile"
             ),
+            // Adobe color transform written for RGB, CMYK, and YCCK images, without flags.
+            0xee => assert!(
+                matches!(
+                    marker.data.as_slice(),
+                    [b'A', b'd', b'o', b'b', b'e', 0, 100, 0, 0, 0, 0, 0 | 2]
+                ),
+                "sanitized JPEG kept an APP14 segment other than a plain Adobe transform"
+            ),
             code => panic!("sanitized JPEG kept marker 0x{code:02x}"),
         }
     }

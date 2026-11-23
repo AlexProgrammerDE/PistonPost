@@ -2,7 +2,7 @@ use std::ops::Range;
 
 use libjpeg_turbo_rs::common::exif::parse_orientation;
 use libjpeg_turbo_rs::common::types::FrameHeader;
-use libjpeg_turbo_rs::decode::marker::MarkerReader;
+use libjpeg_turbo_rs::decode::marker::{JpegMetadata, MarkerReader};
 use libjpeg_turbo_rs::{MarkerCopyMode, TransformOp, TransformOptions};
 
 use crate::{MAX_IMAGE_UPLOAD_BYTES, MAX_JPEG_PIXELS, SanitizeError, is_within_pixel_limit};
@@ -67,6 +67,26 @@ const fn orientation_transform(orientation: u8) -> TransformOp {
     }
 }
 
+// The codec always writes a JFIF segment, which tells decoders the image is grayscale or YCbCr.
+// Return the Adobe transform that libjpeg writes instead for RGB, CMYK, and YCCK sources.
+fn adobe_transform(metadata: &JpegMetadata) -> Option<u8> {
+    // Follow the color space detection in libjpeg's jdapimin.c.
+    match metadata.frame.components.as_slice() {
+        [_, _, _] if metadata.saw_jfif_marker => None,
+        [_, _, _] if metadata.saw_adobe_marker => (metadata.adobe_transform == 0).then_some(0),
+        [red, green, blue] => (red.id == b'R' && green.id == b'G' && blue.id == b'B').then_some(0),
+        [_, _, _, _] if metadata.saw_adobe_marker && metadata.adobe_transform != 0 => Some(2),
+        [_, _, _, _] => Some(0),
+        _ => None,
+    }
+}
+
+fn adobe_segment(transform: u8) -> [u8; 16] {
+    [
+        0xff, 0xee, 0, 14, b'A', b'd', b'o', b'b', b'e', 0, 100, 0, 0, 0, 0, transform,
+    ]
+}
+
 pub(super) fn sanitize(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
     let icc_segments = skip_jpeg_metadata(&mut input)?;
     let metadata = MarkerReader::new(&input)
@@ -86,6 +106,7 @@ pub(super) fn sanitize(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
         .as_deref()
         .and_then(parse_orientation)
         .map_or(TransformOp::None, orientation_transform);
+    let color_segment = adobe_transform(&metadata).map(adobe_segment);
     drop(metadata);
 
     let output = libjpeg_turbo_rs::transform_jpeg_with_options(
@@ -104,27 +125,37 @@ pub(super) fn sanitize(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
     if output.len().saturating_sub(after_jfif.saturating_sub(2)) > MAX_JPEG_CODED_BYTES {
         return Err(too_large());
     }
-    let capacity = output.len().saturating_add(
-        icc_segments
-            .iter()
-            .map(|segment| segment.len().saturating_add(2))
-            .sum::<usize>(),
-    );
+    let jfif = output
+        .get(2..after_jfif)
+        .ok_or(SanitizeError::InvalidImage)?;
+    let color_segment = color_segment.as_ref().map_or(jfif, <[u8; 16]>::as_slice);
+    let capacity = output
+        .len()
+        .saturating_sub(jfif.len())
+        .saturating_add(color_segment.len())
+        .saturating_add(
+            icc_segments
+                .iter()
+                .map(|segment| segment.len().saturating_add(2))
+                .sum::<usize>(),
+        );
     // Apply the same bounds to the result so it also passes on the second call.
     if capacity > MAX_IMAGE_UPLOAD_BYTES {
         return Err(too_large());
     }
     check_working_size(capacity, coefficient_bytes, false)?;
-    if icc_segments.is_empty() {
+    if icc_segments.is_empty() && color_segment == jfif {
         return Ok(output);
     }
 
-    // Insert the original ICC segments after JFIF, as the codec's marker injection does.
-    let (header, scan) = output
-        .split_at_checked(after_jfif)
+    // Insert the original ICC segments after the color segment, as the codec's marker
+    // injection does after JFIF.
+    let scan = output
+        .get(after_jfif..)
         .ok_or(SanitizeError::InvalidImage)?;
     let mut with_icc = Vec::with_capacity(capacity);
-    with_icc.extend_from_slice(header);
+    with_icc.extend_from_slice(&[0xff, 0xd8]);
+    with_icc.extend_from_slice(color_segment);
     for segment in icc_segments {
         with_icc.extend_from_slice(&[0xff, 0xe2]);
         with_icc.extend_from_slice(input.get(segment).ok_or(SanitizeError::InvalidImage)?);
