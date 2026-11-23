@@ -11,7 +11,16 @@ import {
   Pencil,
   TriangleAlert,
 } from "lucide-react"
-import { lazy, Suspense, useEffect, useRef, useState, type MouseEvent, type ReactNode } from "react"
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+} from "react"
 
 import { ButtonLink } from "@/components/ButtonLink"
 import { DateTime } from "@/components/DateTime"
@@ -32,6 +41,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import type { PublicPostRead } from "@/db/public-read-model"
 import { avatarInitials } from "@/lib/avatar-initials"
 import { isGalleryLayout, resolveGalleryLayout, type GalleryLayout } from "@/lib/gallery-layout"
+import { createMasonryLayout } from "@/lib/masonry-layout"
 import { GALLERY_THUMBNAIL_WIDTHS } from "@/lib/media-image"
 import { cn } from "@/lib/utils"
 import {
@@ -470,41 +480,7 @@ function DetailPostImageMedia({
   return (
     <div className="grid gap-3">
       {galleryLayout === "masonry" ? (
-        <ul
-          className="m-0 list-none columns-2 gap-2 p-0 lg:columns-3"
-          aria-label={`${post.title} image collection`}
-        >
-          {post.media.map((image, index) => (
-            <li key={image.id} className="break-inside-avoid pb-2">
-              <button
-                type="button"
-                data-view-transition-part={
-                  index < 4 ? `post-media-${String(index + 1)}` : undefined
-                }
-                className="block w-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                aria-label={withAltText(
-                  `Expand image ${String(index + 1)} of ${String(post.media.length)}`,
-                  image.altText,
-                )}
-                onPointerEnter={preloadImageLightbox}
-                onFocus={preloadImageLightbox}
-                onClick={() => {
-                  openLightbox(index)
-                }}
-              >
-                <ResponsiveMediaImage
-                  image={image}
-                  variant="feed"
-                  sizes={masonryImageSizes}
-                  alt={image.altText ?? ""}
-                  className="w-full object-contain"
-                  loading={index === 0 ? "eager" : "lazy"}
-                  fetchPriority={index === 0 ? "high" : undefined}
-                />
-              </button>
-            </li>
-          ))}
-        </ul>
+        <MasonryGallery post={post} onOpen={openLightbox} />
       ) : (
         <ImageBrowser
           post={post}
@@ -513,6 +489,82 @@ function DetailPostImageMedia({
         />
       )}
       {lightboxViewer}
+    </div>
+  )
+}
+
+function MasonryGallery({
+  post,
+  onOpen,
+}: {
+  readonly post: PublicPostRead
+  readonly onOpen: (index: number) => void
+}) {
+  const layout = createMasonryLayout(post.media)
+  const listStyle: CSSProperties & Record<`--masonry-${string}`, number | string> = {
+    "--masonry-resolution": layout.rowsPerColumnWidth,
+    "--masonry-gap-rows": layout.gapRows,
+    // One row is a fixed fraction of the column width, so the precomputed row spans keep each
+    // image at its own aspect ratio at every container width.
+    "--masonry-row":
+      "calc(100cqw / (var(--masonry-columns) * var(--masonry-resolution) + (var(--masonry-columns) - 1) * var(--masonry-gap-rows)))",
+    "--masonry-gap": "calc(var(--masonry-row) * var(--masonry-gap-rows))",
+  }
+
+  return (
+    <div className="@container">
+      <ul
+        className="m-0 -mb-(--masonry-gap) grid list-none grid-flow-row-dense auto-rows-(--masonry-row) grid-cols-[repeat(var(--masonry-columns),minmax(0,1fr))] gap-x-(--masonry-gap) p-0 [--masonry-columns:2] lg:[--masonry-columns:3]"
+        style={listStyle}
+        aria-label={`${post.title} image collection`}
+      >
+        {post.media.map((image, index) => {
+          const tile = layout.tiles[index]
+          const tileStyle: CSSProperties & Record<`--masonry-${string}`, number> = {
+            "--masonry-column-2": tile?.columns[2] ?? 1,
+            "--masonry-column-3": tile?.columns[3] ?? 1,
+            "--masonry-span": tile?.rowSpan ?? 1,
+          }
+
+          return (
+            <li
+              key={image.id}
+              // Each image starts in its precomputed column. Dense placement stacks it at the
+              // top of that column, while the list keeps the post order for assistive technology.
+              className="col-start-(--masonry-column-2) row-span-(--masonry-span) pb-(--masonry-gap) lg:col-start-(--masonry-column-3)"
+              style={tileStyle}
+            >
+              <button
+                type="button"
+                data-view-transition-part={
+                  index < 4 ? `post-media-${String(index + 1)}` : undefined
+                }
+                className="block size-full cursor-zoom-in border-0 bg-muted p-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label={withAltText(
+                  `Expand image ${String(index + 1)} of ${String(post.media.length)}`,
+                  image.altText,
+                )}
+                onPointerEnter={preloadImageLightbox}
+                onFocus={preloadImageLightbox}
+                onClick={() => {
+                  onOpen(index)
+                }}
+              >
+                <ResponsiveMediaImage
+                  image={image}
+                  variant="feed"
+                  sizes={masonryImageSizes}
+                  alt={image.altText ?? ""}
+                  // Row spans round each height to a whole row, so cover the last pixel or two.
+                  className="size-full object-cover"
+                  loading={index === 0 ? "eager" : "lazy"}
+                  fetchPriority={index === 0 ? "high" : undefined}
+                />
+              </button>
+            </li>
+          )
+        })}
+      </ul>
     </div>
   )
 }

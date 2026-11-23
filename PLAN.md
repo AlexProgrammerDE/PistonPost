@@ -1427,3 +1427,9 @@ Record future changes here with date, decision, reason, and affected phases.
   when the count is above zero. The view count stays on the detail page only. "Read full post"
   appears only when the preview cuts text, either at the character limit or at the line clamp.
   This affects Phase 5.
+
+- 2026-11-23: Lay out detail-page masonry with a CSS grid placed from stored image dimensions
+  instead of CSS columns. Each image goes under the shortest column, and the last few images are
+  rearranged so the columns end level. The DOM keeps post order. Grid rows are a fraction of the
+  column width, so the server renders the final layout. Do not return to `columns-*`: it puts the
+  first images down one column and leaves a ragged bottom edge.
