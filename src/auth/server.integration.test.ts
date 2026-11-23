@@ -25,6 +25,7 @@ function setup(
 ) {
   const database = createMigratedTestDatabase()
   const emails: AuthenticationEmail[] = []
+  const deletionsStarted: string[] = []
   databases.push(database)
   const auth = createAuth({
     database,
@@ -37,12 +38,16 @@ function setup(
     infraEnabled: false,
     isManagedUserAvatar,
     initializeProfile: (user) => initializeUserProfile(database, user),
+    beforeDeleteUser: (userId) => {
+      deletionsStarted.push(userId)
+      return Promise.resolve()
+    },
     sendEmail: (email) => {
       emails.push(email)
       return Promise.resolve()
     },
   })
-  return { auth, database, emails }
+  return { auth, database, emails, deletionsStarted }
 }
 
 type TestAuth = ReturnType<typeof setup>
@@ -543,7 +548,7 @@ describe("request-scoped Better Auth", () => {
   })
 
   it("routes account deletion confirmation through the authenticated redirect view", async () => {
-    const { auth, database, emails } = setup()
+    const { auth, database, emails, deletionsStarted } = setup()
     await auth.handler(
       authRequest("/sign-up/email", {
         name: "Account Deletion Tester",
@@ -597,6 +602,35 @@ describe("request-scoped Better Auth", () => {
     expect(deletionResponse.status).toBe(302)
     expect(deletionResponse.headers.get("location")).toBe("/")
     expect(database.select().from(schema.user).all()).toHaveLength(0)
+    expect(deletionsStarted).toHaveLength(1)
+  })
+
+  it("starts the account purge when an admin removes a user", async () => {
+    const context = setup()
+    const { auth, database, deletionsStarted } = context
+    const adminCookie = await signUpAndSignIn(context, { email: "admin@example.com" })
+    await signUpAndSignIn(context, { email: "removed@example.com" })
+    database
+      .update(schema.user)
+      .set({ role: "admin" })
+      .where(eq(schema.user.email, "admin@example.com"))
+      .run()
+    const removed = database
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.email, "removed@example.com"))
+      .get()
+    if (!removed) throw new Error("The removed user was not created.")
+
+    const response = await auth.handler(
+      authRequest("/admin/remove-user", { userId: removed.id }, adminCookie),
+    )
+
+    expect(response.status).toBe(200)
+    expect(database.select({ id: schema.user.id }).from(schema.user).all()).not.toContainEqual({
+      id: removed.id,
+    })
+    expect(deletionsStarted).toEqual([removed.id])
   })
 
   it("rejects external profile images and accepts the user's managed avatar", async () => {

@@ -195,7 +195,6 @@ export function createAuth(runtime: AuthRuntime) {
             idempotencyKey: `account-deletion:${token}`,
           })
         },
-        beforeDelete: async (user) => runtime.beforeDeleteUser?.(user.id),
         afterDelete: async (user) => runtime.afterDeleteUser?.(user.id),
       },
     },
@@ -259,6 +258,13 @@ export function createAuth(runtime: AuthRuntime) {
             }
           },
           after: async (user) => runtime.initializeProfile?.(user),
+        },
+        // Self-service deletion and admin removal both delete the row here. Only the former runs
+        // `deleteUser.beforeDelete`, so the account purge starts from the database hook.
+        delete: {
+          before: async (user) => {
+            await runtime.beforeDeleteUser?.(user.id)
+          },
         },
         update: {
           before: async (user, context) => {
