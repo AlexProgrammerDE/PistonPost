@@ -339,8 +339,11 @@ export const Route = createFileRoute("/admin/$section")({
   validateSearch: Schema.toStandardSchemaV1(searchSchema, { parseOptions: { errors: "all" } }),
   loaderDeps: ({ search }) => search,
   loader: ({ context, params, deps }) => {
+    // An unknown section is a missing page, not a failed load.
+    const section = Schema.decodeUnknownOption(sectionSchema)(params.section)
+    if (Option.isNone(section)) throw notFound()
     const input = {
-      section: Schema.decodeUnknownSync(sectionSchema, { errors: "all" })(params.section),
+      section: section.value,
       query: deps.q,
       cursor: deps.cursor || undefined,
       direction: deps.direction,
