@@ -7,6 +7,8 @@ const RETURNING_AUTH_PATHS = new Set([
   "/auth/sign-in",
   "/auth/sign-up",
   "/auth/forgot-password",
+  // The email-code reset opens this view without a destination, then sends someone to sign in.
+  "/auth/reset-password",
   "/auth/email-otp",
   "/auth/magic-link",
   "/auth/two-factor",

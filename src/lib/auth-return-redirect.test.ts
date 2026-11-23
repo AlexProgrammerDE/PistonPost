@@ -18,6 +18,23 @@ describe("withAuthReturnRedirect", () => {
     )
   })
 
+  test("keeps the original destination through an email-code password reset", () => {
+    const forgotPassword = {
+      pathname: "/auth/forgot-password",
+      searchStr: "?redirectTo=%2Fpost%2Fabc",
+    }
+    const resetPath = withAuthReturnRedirect("/auth/reset-password", forgotPassword)
+    expect(resetPath).toBe("/auth/reset-password?redirectTo=%2Fpost%2Fabc")
+
+    const resetPassword = {
+      pathname: "/auth/reset-password",
+      searchStr: "?redirectTo=%2Fpost%2Fabc",
+    }
+    expect(withAuthReturnRedirect("/auth/sign-in", resetPassword)).toBe(
+      "/auth/sign-in?redirectTo=%2Fpost%2Fabc",
+    )
+  })
+
   test("leaves links alone when there is nowhere useful to return", () => {
     expect(withAuthReturnRedirect("/auth/sign-in", { pathname: "/", searchStr: "" })).toBe(
       "/auth/sign-in",
