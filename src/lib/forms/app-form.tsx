@@ -285,6 +285,7 @@ function SelectField({ label, description, options }: SelectFieldProps) {
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
   const selectedOption = options.find((option) => option.value === field.state.value)
   const SelectedIcon = selectedOption?.icon
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid}>
@@ -296,7 +297,12 @@ function SelectField({ label, description, options }: SelectFieldProps) {
           field.handleChange(value ?? "")
         }}
       >
-        <SelectTrigger id={field.name} className="w-full" aria-invalid={invalid}>
+        <SelectTrigger
+          id={field.name}
+          className="w-full"
+          aria-invalid={invalid}
+          aria-describedby={ids.describedBy}
+        >
           <SelectValue>
             {selectedOption ? (
               <>
@@ -320,8 +326,12 @@ function SelectField({ label, description, options }: SelectFieldProps) {
           </SelectGroup>
         </SelectContent>
       </Select>
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
@@ -329,6 +339,7 @@ function SelectField({ label, description, options }: SelectFieldProps) {
 function ChoiceField({ label, description, options }: SelectFieldProps) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
+  const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
     <Field data-invalid={invalid}>
@@ -342,6 +353,7 @@ function ChoiceField({ label, description, options }: SelectFieldProps) {
         variant="outline"
         className={cn("grid w-full", options.length === 2 ? "grid-cols-2" : "grid-cols-3")}
         aria-labelledby={`${field.name}-label`}
+        aria-describedby={ids.describedBy}
       >
         {options.map((option) => {
           const OptionIcon = option.icon
@@ -353,8 +365,12 @@ function ChoiceField({ label, description, options }: SelectFieldProps) {
           )
         })}
       </ToggleGroup>
-      {description ? <FieldDescription>{description}</FieldDescription> : null}
-      {invalid ? <FieldError errors={errorMessages(field.state.meta.errors)} /> : null}
+      {description ? (
+        <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
+      ) : null}
+      {invalid ? (
+        <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
+      ) : null}
     </Field>
   )
 }
