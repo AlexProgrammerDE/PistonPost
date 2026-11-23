@@ -183,8 +183,10 @@ fn sanitize_gif(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError> {
         return Err(SanitizeError::InvalidImage);
     }
     let repeat = decoder.repeat();
+    // The background index only refers to the global palette. GIFs without one must ignore it.
     let background = decoder
-        .bg_color()
+        .global_palette()
+        .and_then(|_| decoder.bg_color())
         .and_then(|index| u8::try_from(index).ok());
     let mut global_palette = decoder.global_palette().unwrap_or_default().to_vec();
 
@@ -761,6 +763,30 @@ mod tests {
             .and_then(|chunk| chunk.content().data())
             .and_then(|data| data.first());
         assert_eq!(flags, Some(&0x32));
+    }
+
+    #[test]
+    fn gif_ignores_background_index_without_global_palette() {
+        // A 1x1 GIF with no global color table and background index 3. The GIF spec
+        // says to ignore that index. The only frame has a local palette and pixel 1.
+        let input: &[u8] = &[
+            b'G', b'I', b'F', b'8', b'9', b'a', 1, 0, 1, 0, 0, 3, 0, 0x2c, 0, 0, 0, 0, 1, 0, 1, 0,
+            0x80, 0, 0, 0, 255, 255, 255, 2, 2, 0x4c, 0x01, 0, 0x3b,
+        ];
+
+        let output = sanitize_image_bytes(input, "image/gif").expect("sanitize gif");
+        let mut decoder = gif::Decoder::new(Cursor::new(&output)).expect("decode output");
+        let frame = decoder
+            .read_next_frame()
+            .expect("read sanitized frame")
+            .expect("sanitized frame exists");
+
+        assert_eq!(
+            frame.palette.as_deref(),
+            Some([0, 0, 0, 255, 255, 255].as_slice())
+        );
+        assert_eq!(frame.buffer.as_ref(), &[1]);
+        assert_eq!(sanitize_image_bytes(&output, "image/gif"), Ok(output));
     }
 
     #[test]
