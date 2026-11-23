@@ -578,13 +578,16 @@ export function SocialPanel({
                         </ItemMedia>
                         <ItemHeader className="col-start-2 min-w-0 basis-auto items-start">
                           <div className="min-w-0">
-                            <ItemTitle className="line-clamp-none min-w-0 flex-wrap">
-                              <bdi className="min-w-0 truncate">{comment.authorName}</bdi>
-                              {comment.authorUsername ? (
-                                <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
-                                  @{comment.authorUsername}
-                                </span>
-                              ) : null}
+                            <ItemTitle className="line-clamp-none min-w-0">
+                              {/* line-clamp-none makes the title a block, so the row needs its own flex. */}
+                              <span className="flex min-w-0 flex-wrap items-baseline gap-x-2">
+                                <bdi className="min-w-0 truncate">{comment.authorName}</bdi>
+                                {comment.authorUsername ? (
+                                  <span className="min-w-0 truncate text-xs font-normal text-muted-foreground">
+                                    @{comment.authorUsername}
+                                  </span>
+                                ) : null}
+                              </span>
                             </ItemTitle>
                             <ItemDescription className="line-clamp-none text-xs">
                               {comment.optimistic ? (

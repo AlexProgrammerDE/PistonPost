@@ -225,9 +225,12 @@ function EmailCampaigns() {
                 variant="outline"
               >
                 <ItemContent className="min-w-0">
-                  <ItemTitle className="line-clamp-none w-full flex-wrap">
-                    <span className="min-w-0 flex-1 truncate">{campaign.subject}</span>
-                    <Badge variant="outline">{campaign.status}</Badge>
+                  <ItemTitle className="line-clamp-none w-full">
+                    {/* line-clamp-none makes the title a block, so the row needs its own flex. */}
+                    <span className="flex w-full min-w-0 flex-wrap items-center gap-2">
+                      <span className="min-w-0 flex-1 truncate">{campaign.subject}</span>
+                      <Badge variant="outline">{campaign.status}</Badge>
+                    </span>
                   </ItemTitle>
                   <ItemDescription>{campaign.message}</ItemDescription>
                   <p className="text-xs text-muted-foreground tabular-nums">

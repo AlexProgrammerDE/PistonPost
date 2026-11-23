@@ -1056,19 +1056,22 @@ function UploadRow({
       )}
       <ItemContent className="min-w-0">
         <ItemTitle className="line-clamp-none w-full min-w-0">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="-ml-2 cursor-grab text-muted-foreground active:cursor-grabbing disabled:cursor-default"
-            aria-label={`Reorder ${item.filename}`}
-            disabled={dragDisabled}
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical aria-hidden="true" />
-          </Button>
-          <span className="min-w-0 truncate">{item.filename}</span>
+          {/* line-clamp-none makes the title a block, so the row needs its own flex. */}
+          <span className="flex w-full min-w-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              className="-ml-2 cursor-grab text-muted-foreground active:cursor-grabbing disabled:cursor-default"
+              aria-label={`Reorder ${item.filename}`}
+              disabled={dragDisabled}
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical aria-hidden="true" />
+            </Button>
+            <span className="min-w-0 truncate">{item.filename}</span>
+          </span>
         </ItemTitle>
         <ItemDescription className="line-clamp-none text-xs">
           {(item.file.size / 1024 / 1024).toFixed(1)} MB · {uploadStatusLabel(item)}
