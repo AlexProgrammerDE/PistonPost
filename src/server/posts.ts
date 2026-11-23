@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { Effect, Schema } from "effect"
+import { DateTime, Effect, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import { incrementPostViewCount } from "@/db/post-view-repository"
@@ -16,7 +16,9 @@ import { POST_VIEW_SURFACES } from "@/domain/post-view"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { bindingOperation } from "@/server/operation"
 import { runRequestEffect } from "@/server/request-effect"
+import { findRequestSession, requestActor } from "@/server/request-session"
 
+import { findModeratedPostTombstone } from "./post-tombstone"
 import { recordPostView } from "./post-view-tracking"
 
 const feedInput = Schema.Struct({
@@ -72,6 +74,36 @@ export const getPublishedPost = createServerFn({ method: "GET" })
       bindingOperation("getPublishedPost.operation", () =>
         getPublishedPostRead(createD1Database(context.env.DB), data.id),
       ),
+    ),
+  )
+
+/**
+ * The tombstone of a moderated post for its owner or an active administrator. Everyone else gets
+ * null, the same answer as a missing post. The response is private because it depends on the
+ * session. Server function responses never use the public cache.
+ */
+export const getModeratedPost = createServerFn({ method: "GET" })
+  .validator(
+    serverFunctionValidator(
+      Schema.Struct({ id: Schema.Trim.check(Schema.isMinLength(1)).check(Schema.isMaxLength(64)) }),
+    ),
+  )
+  .handler(({ context, data }) =>
+    runRequestEffect(
+      Effect.gen(function* () {
+        const session = yield* bindingOperation("getModeratedPost.session", () =>
+          findRequestSession(context),
+        )
+        const now = yield* DateTime.nowAsDate
+        return yield* bindingOperation("getModeratedPost.operation", () =>
+          findModeratedPostTombstone(
+            createD1Database(context.env.DB),
+            requestActor(session?.user, now),
+            data.id,
+            now,
+          ),
+        )
+      }),
     ),
   )
 

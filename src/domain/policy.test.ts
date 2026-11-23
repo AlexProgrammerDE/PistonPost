@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
 import type { Actor, Post } from "./model"
-import { canDeleteComment, canFollowUser, canManagePost, canViewPost } from "./policy"
+import { canDeleteComment, canFollowUser, canManagePost, postDetailAccess } from "./policy"
 
 const anonymous: Actor = { kind: "anonymous" }
 const owner: Actor = { kind: "authenticated", userId: "owner", roles: [] }
@@ -29,19 +29,47 @@ function post(overrides: Partial<Post> = {}): Post {
 }
 
 describe("post policy", () => {
-  it("shows published public and unlisted posts to direct viewers", () => {
-    expect(canViewPost(anonymous, post())).toBeTrue()
-    expect(canViewPost(anonymous, post({ visibility: "unlisted" }))).toBeTrue()
+  const actors = { anonymous, owner, admin, other } as const
+
+  it("shows published public and unlisted posts to every viewer", () => {
+    for (const visibility of ["public", "unlisted"] as const) {
+      for (const actor of Object.values(actors)) {
+        expect(postDetailAccess(actor, { ...post({ visibility }), authorBanned: false })).toBe(
+          "post",
+        )
+      }
+    }
   })
 
-  it("limits draft, failed, deleted, and moderated posts to owners and administrators", () => {
-    for (const status of ["draft", "failed", "deleted", "moderated"] as const) {
-      const record = post({ status })
-      expect(canViewPost(anonymous, record)).toBeFalse()
-      expect(canViewPost(other, record)).toBeFalse()
-      expect(canViewPost(owner, record)).toBeTrue()
-      expect(canViewPost(admin, record)).toBeTrue()
+  it("shows a moderated post as a tombstone to the owner and administrators only", () => {
+    const record = { ...post({ status: "moderated" }), authorBanned: false }
+    expect(postDetailAccess(anonymous, record)).toBe("not-found")
+    expect(postDetailAccess(other, record)).toBe("not-found")
+    expect(postDetailAccess(owner, record)).toBe("tombstone")
+    expect(postDetailAccess(admin, record)).toBe("tombstone")
+  })
+
+  it("keeps draft, processing, failed, and deleted posts off the post page", () => {
+    for (const status of ["draft", "processing", "failed", "deleted"] as const) {
+      for (const actor of Object.values(actors)) {
+        expect(postDetailAccess(actor, { ...post({ status }), authorBanned: false })).toBe(
+          "not-found",
+        )
+      }
     }
+  })
+
+  it("hides a banned author's published post from everyone", () => {
+    const record = { ...post(), authorBanned: true }
+    for (const actor of Object.values(actors)) {
+      expect(postDetailAccess(actor, record)).toBe("not-found")
+    }
+  })
+
+  it("still shows administrators the tombstone of a banned author's moderated post", () => {
+    const record = { ...post({ status: "moderated" }), authorBanned: true }
+    expect(postDetailAccess(admin, record)).toBe("tombstone")
+    expect(postDetailAccess(other, record)).toBe("not-found")
   })
 
   it("allows only owners and administrators to manage posts and delete comments", () => {

@@ -7,6 +7,7 @@ import { Suspense, useEffect, useRef } from "react"
 
 import { authClient } from "@/auth/client"
 import { DiscussionSkeleton, PostDetailSkeleton } from "@/components/LoadingStates"
+import { ModeratedPostTombstone } from "@/components/ModeratedPostTombstone"
 import { PostView } from "@/components/post-view"
 import { SocialPanel } from "@/components/social-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -16,7 +17,7 @@ import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
 import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
-import { trackPostViews } from "@/server/posts"
+import { getModeratedPost, trackPostViews } from "@/server/posts"
 
 const postSearchSchema = Schema.Struct({
   image: Schema.optional(
@@ -52,18 +53,26 @@ export const Route = createFileRoute("/post/$postId")({
     const postId = decodedPostId.value
     // oxlint-disable-next-line typescript/no-deprecated -- RouterQueryClient overrides ensureQueryData to stop loader retries; query() would skip that policy.
     const post = await context.queryClient.ensureQueryData(postQueryOptions(postId))
-    if (!post) throw notFound()
-    void context.queryClient.infiniteQuery(discussionQueryOptions(postId)).catch(() => undefined)
-    return post
+    if (post) {
+      void context.queryClient.infiniteQuery(discussionQueryOptions(postId)).catch(() => undefined)
+      return { kind: "post" as const, post }
+    }
+    // The tombstone depends on the session, so it stays out of the shared post query cache.
+    const tombstone = await getModeratedPost({ data: { id: postId } })
+    if (!tombstone) throw notFound()
+    return tombstone
   },
   headers: ({ loaderData }) => ({
-    "Cache-Control": loaderData?.visibility === "public" ? "no-cache" : "private, no-store",
+    "Cache-Control":
+      loaderData?.kind === "post" && loaderData.post.visibility === "public"
+        ? "no-cache"
+        : "private, no-store",
   }),
   head: ({ loaderData, match }) =>
-    loaderData
-      ? createPostSeoHead(loaderData, match.search.image)
+    loaderData?.kind === "post"
+      ? createPostSeoHead(loaderData.post, match.search.image)
       : createSeoHead({
-          title: "Post · PistonPost",
+          title: loaderData ? "Hidden post · PistonPost" : "Post · PistonPost",
           description: "A post on PistonPost.",
           path: match.pathname,
           twitterCard: "summary",
@@ -81,6 +90,18 @@ function PostTagMeta({ post }: { readonly post: PublicPostRead }) {
 }
 
 function PostDetail() {
+  const loaderData = Route.useLoaderData()
+  if (loaderData.kind === "moderated") {
+    return (
+      <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+        <ModeratedPostTombstone tombstone={loaderData} />
+      </main>
+    )
+  }
+  return <PublishedPostDetail />
+}
+
+function PublishedPostDetail() {
   const session = useSession(authClient)
   // The server renders without a session. Wait for hydration before showing author controls, or a
   // session the client already loaded would not match the server HTML.

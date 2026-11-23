@@ -1,6 +1,7 @@
 import { getRequestHeaders } from "@tanstack/react-start/server"
 
 import { isBannedUser } from "@/db/account-ban"
+import type { Actor } from "@/domain/model"
 import type { AppRequestContext } from "@/server"
 import { createRequestAuth } from "@/server/auth"
 
@@ -27,4 +28,28 @@ export function isActiveAdministrator(
   now = new Date(),
 ) {
   return user?.role === "admin" && !isBannedUser(user, now)
+}
+
+/**
+ * The policy actor for a session user. A banned account acts as an anonymous viewer, and only an
+ * active administrator carries the admin role.
+ */
+export function requestActor(
+  user:
+    | {
+        readonly id: string
+        readonly role?: string | null
+        readonly banned?: boolean | null
+        readonly banExpires?: Date | null
+      }
+    | null
+    | undefined,
+  now = new Date(),
+): Actor {
+  if (!user || isBannedUser(user, now)) return { kind: "anonymous" }
+  return {
+    kind: "authenticated",
+    userId: user.id,
+    roles: isActiveAdministrator(user, now) ? ["admin"] : [],
+  }
 }

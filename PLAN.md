@@ -542,6 +542,9 @@ Visibility rules:
 - Unlisted published posts resolve by direct ID but never appear in public feeds, sitemaps, tag pages, profile feeds, or shared cache.
 - Draft, processing, failed, and deleted posts are visible only to the owner and administrators.
 - Moderated posts show a controlled tombstone to the owner and administrators and a not-found response to other users unless policy later requires transparency.
+- `postDetailAccess` in src/domain/policy.ts decides what the post page shows. The tombstone names the post, its type, the reason, and the latest hide time from the audit log. Administrators also get a link to the admin posts table to restore it. It is served private and no-store and never enters the shared post query cache.
+- The post page shows drafts, processing, failed, and deleted posts as not found to everyone, including the owner. Owners and administrators reach them through the editor.
+- Media on a draft, moderated, deleted, or banned author's post loads for the owner and active administrators with private, no-store caching.
 - Comments inherit post visibility.
 
 ## Media workflows
