@@ -396,7 +396,14 @@ const handleDeadLetter = Effect.fn("handleDeadLetter")(function* (
               database
                 .update(schema.emailCampaignDeliveries)
                 .set({ status: "dead-lettered", completedAt: now })
-                .where(eq(schema.emailCampaignDeliveries.id, originalId)),
+                // A sent or skipped delivery is final. Its message can still reach the dead-letter
+                // queue when the queue lost the ack after the outbox row was settled.
+                .where(
+                  and(
+                    eq(schema.emailCampaignDeliveries.id, originalId),
+                    eq(schema.emailCampaignDeliveries.status, "queued"),
+                  ),
+                ),
             ]),
           )
         } else {
