@@ -237,11 +237,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
                   }}
                 >
                   {(field) => (
-                    <field.MarkdownField
-                      label="Text"
-                      description="GitHub-flavored Markdown is supported. Raw HTML is ignored."
-                      maxLength={MAX_POST_MARKDOWN_LENGTH}
-                    />
+                    <field.MarkdownField label="Text" maxLength={MAX_POST_MARKDOWN_LENGTH} />
                   )}
                 </form.AppField>
               ) : null}

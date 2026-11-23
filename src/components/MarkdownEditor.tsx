@@ -255,8 +255,9 @@ export function MarkdownEditor({
           </InputGroupAddon>
           <InputGroupAddon align="block-end" className="flex-wrap justify-between border-t">
             <InputGroupText className="min-w-0 flex-1 text-xs whitespace-normal">
-              GitHub-flavored Markdown is supported. The toolbar also adds spoilers, details, and
-              callouts. Paste a supported media link on an empty line to add an embed.
+              GitHub-flavored Markdown is supported, and raw HTML is ignored. The toolbar also adds
+              spoilers, details, and callouts. Paste a supported media link on an empty line to add
+              an embed.
             </InputGroupText>
             <InputGroupText className="text-xs tabular-nums">
               {value.length.toLocaleString()} / {maxLength?.toLocaleString() ?? "∞"}

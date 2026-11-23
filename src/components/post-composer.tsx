@@ -666,7 +666,6 @@ export function PostComposer({
               {(field) => (
                 <field.ChoiceField
                   label="Post type"
-                  description="Choose text, a set of pictures, or one video."
                   options={[
                     { icon: FileText, label: "Text", value: "text" },
                     { icon: Images, label: "Images", value: "images" },
@@ -695,11 +694,7 @@ export function PostComposer({
                     }}
                   >
                     {(field) => (
-                      <field.MarkdownField
-                        label="Text"
-                        description="Use Markdown for headings, lists, links, tables, task lists, quotes, and code. Raw HTML is ignored."
-                        maxLength={MAX_POST_MARKDOWN_LENGTH}
-                      />
+                      <field.MarkdownField label="Text" maxLength={MAX_POST_MARKDOWN_LENGTH} />
                     )}
                   </form.AppField>
                 ) : (
