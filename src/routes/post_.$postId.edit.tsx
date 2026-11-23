@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/credenza"
 import { Field, FieldGroup, FieldLegend, FieldSeparator, FieldSet } from "@/components/ui/field"
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { UnsavedChangesGuard } from "@/components/unsaved-changes-guard"
 import { MAX_POST_MARKDOWN_LENGTH } from "@/domain/validation"
@@ -181,16 +180,16 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
 
   return (
     <main className={readingPageClassName}>
-      <header className="typeset typeset-post mb-10 border-b pb-7">
-        <h1>Edit post</h1>
-        <p>
-          If this post changes in another session while you are editing, we will stop before
+      <header className="mb-6">
+        <h1 className="font-heading text-3xl font-bold tracking-tight">Edit post</h1>
+        <p className="mt-1 text-sm/6 text-muted-foreground">
+          If you change this post somewhere else while editing, saving here stops instead of
           overwriting it.
         </p>
       </header>
 
       <form
-        className="grid gap-8"
+        className="grid gap-6"
         onSubmit={(event) => {
           event.preventDefault()
           const formElement = event.currentTarget
@@ -351,7 +350,6 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
           </Field>
         </form.AppForm>
       </form>
-      <Separator className="mt-10" />
     </main>
   )
 }

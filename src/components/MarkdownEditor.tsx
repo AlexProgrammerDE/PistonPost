@@ -206,7 +206,7 @@ export function MarkdownEditor({
             value={value}
             maxLength={maxLength}
             disabled={disabled}
-            className={cn("min-h-72 resize-y", className)}
+            className={cn("min-h-48 resize-y", className)}
             onBlur={onBlur}
             onChange={(event) => {
               onValueChange(event.currentTarget.value)
@@ -255,9 +255,7 @@ export function MarkdownEditor({
           </InputGroupAddon>
           <InputGroupAddon align="block-end" className="flex-wrap justify-between border-t">
             <InputGroupText className="min-w-0 flex-1 text-xs whitespace-normal">
-              GitHub-flavored Markdown is supported, and raw HTML is ignored. The toolbar also adds
-              spoilers, details, and callouts. Paste a supported media link on an empty line to add
-              an embed.
+              Markdown works, raw HTML doesn’t. Paste a media link on its own line to embed it.
             </InputGroupText>
             <InputGroupText className="text-xs tabular-nums">
               {value.length.toLocaleString()} / {maxLength?.toLocaleString() ?? "∞"}
@@ -266,11 +264,11 @@ export function MarkdownEditor({
         </InputGroup>
       </TabsContent>
 
-      <TabsContent value="preview" className="min-h-72 border bg-background p-4">
+      <TabsContent value="preview" className="min-h-48 border bg-background p-4">
         {value.trim() ? (
           <MarkdownContent className="typeset-post">{value}</MarkdownContent>
         ) : (
-          <Empty className="min-h-64 p-6">
+          <Empty className="min-h-40 p-6">
             <EmptyHeader>
               <EmptyTitle>Nothing to preview yet</EmptyTitle>
               <EmptyDescription>Write some Markdown, then check it here.</EmptyDescription>

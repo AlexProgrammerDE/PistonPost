@@ -24,12 +24,12 @@ import {
   FileText,
   Globe2,
   GripVertical,
+  HardDrive,
   Images,
   Link2,
   LogIn,
   Send,
   Share2,
-  SquarePen,
   Trash2,
   TriangleAlert,
   Upload,
@@ -583,7 +583,7 @@ export function PostComposer({
 
   return (
     <form
-      className="grid gap-10"
+      className="grid gap-6"
       onSubmit={(event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -642,11 +642,6 @@ export function PostComposer({
             </AlertDescription>
           </Alert>
         )}
-        <p className="text-sm text-muted-foreground">
-          {localDraft.unavailable
-            ? "This browser could not save a recovery draft. Keep this page open until you post."
-            : "Text and post details are saved on this device for seven days. Files are not saved. Signing out clears the draft."}
-        </p>
         <form.Subscribe selector={(state) => state.isDirty}>
           {(isDirty) => (
             <UnsavedChangesGuard
@@ -656,71 +651,66 @@ export function PostComposer({
             />
           )}
         </form.Subscribe>
-        <FieldSet>
-          <FieldLegend className="flex items-center gap-2">
-            <SquarePen aria-hidden="true" className="size-4 text-muted-foreground" />
-            Post
-          </FieldLegend>
-          <FieldGroup>
-            <form.AppField name="type" listeners={{ onChange: clearMedia }}>
-              {(field) => (
-                <field.ChoiceField
-                  label="Post type"
-                  options={[
-                    { icon: FileText, label: "Text", value: "text" },
-                    { icon: Images, label: "Images", value: "images" },
-                    { icon: Video, label: "Video", value: "video" },
-                  ]}
+        {/* The page heading already names this part, so the main fields need no legend. */}
+        <FieldGroup>
+          <form.AppField name="type" listeners={{ onChange: clearMedia }}>
+            {(field) => (
+              <field.ChoiceField
+                label="Post type"
+                options={[
+                  { icon: FileText, label: "Text", value: "text" },
+                  { icon: Images, label: "Images", value: "images" },
+                  { icon: Video, label: "Video", value: "video" },
+                ]}
+              />
+            )}
+          </form.AppField>
+          <form.AppField
+            name="title"
+            validators={{
+              onBlur: Schema.toStandardSchemaV1(titleSchema, { parseOptions: { errors: "all" } }),
+            }}
+          >
+            {(field) => <field.TextField label="Title" maxLength={100} />}
+          </form.AppField>
+          <form.Subscribe selector={(state) => state.values.type}>
+            {(type) =>
+              type === "text" ? (
+                <form.AppField
+                  name="textContent"
+                  validators={{
+                    onBlur: Schema.toStandardSchemaV1(textSchema, {
+                      parseOptions: { errors: "all" },
+                    }),
+                  }}
+                >
+                  {(field) => (
+                    <field.MarkdownField label="Text" maxLength={MAX_POST_MARKDOWN_LENGTH} />
+                  )}
+                </form.AppField>
+              ) : (
+                <MediaPicker
+                  type={type}
+                  uploadStore={uploadStore}
+                  preparingImageCount={preparingImageCount}
+                  isInspectingVideo={isInspectingVideo}
+                  isSubmitting={isSubmitting}
+                  sensors={sensors}
+                  onFiles={async (files, kind) => {
+                    await selectFiles(files, kind)
+                  }}
+                  onRemove={(item) => {
+                    cancelUpload(item)
+                  }}
+                  onAltText={(clientId, altText) => {
+                    dispatch({ type: "alt-text", clientId, altText })
+                  }}
+                  onDragEnd={handleDragEnd}
                 />
-              )}
-            </form.AppField>
-            <form.AppField
-              name="title"
-              validators={{
-                onBlur: Schema.toStandardSchemaV1(titleSchema, { parseOptions: { errors: "all" } }),
-              }}
-            >
-              {(field) => <field.TextField label="Title" maxLength={100} />}
-            </form.AppField>
-            <form.Subscribe selector={(state) => state.values.type}>
-              {(type) =>
-                type === "text" ? (
-                  <form.AppField
-                    name="textContent"
-                    validators={{
-                      onBlur: Schema.toStandardSchemaV1(textSchema, {
-                        parseOptions: { errors: "all" },
-                      }),
-                    }}
-                  >
-                    {(field) => (
-                      <field.MarkdownField label="Text" maxLength={MAX_POST_MARKDOWN_LENGTH} />
-                    )}
-                  </form.AppField>
-                ) : (
-                  <MediaPicker
-                    type={type}
-                    uploadStore={uploadStore}
-                    preparingImageCount={preparingImageCount}
-                    isInspectingVideo={isInspectingVideo}
-                    isSubmitting={isSubmitting}
-                    sensors={sensors}
-                    onFiles={async (files, kind) => {
-                      await selectFiles(files, kind)
-                    }}
-                    onRemove={(item) => {
-                      cancelUpload(item)
-                    }}
-                    onAltText={(clientId, altText) => {
-                      dispatch({ type: "alt-text", clientId, altText })
-                    }}
-                    onDragEnd={handleDragEnd}
-                  />
-                )
-              }
-            </form.Subscribe>
-          </FieldGroup>
-        </FieldSet>
+              )
+            }
+          </form.Subscribe>
+        </FieldGroup>
 
         <Separator />
 
@@ -768,6 +758,16 @@ export function PostComposer({
 
         <FieldSeparator />
         <Field orientation="horizontal" className="flex-wrap justify-end">
+          <p className="mr-auto flex basis-full items-start gap-2 text-sm text-muted-foreground sm:grow sm:basis-0">
+            {localDraft.unavailable ? (
+              <TriangleAlert aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            ) : (
+              <HardDrive aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
+            )}
+            {localDraft.unavailable
+              ? "This browser can’t keep a backup draft. Keep this page open until you post."
+              : "Text and details stay on this device for 7 days. Files don’t, and signing out clears them."}
+          </p>
           <TurnstileChallenge
             ref={turnstile}
             action={TURNSTILE_ACTIONS.createPost}

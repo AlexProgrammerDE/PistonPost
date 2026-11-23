@@ -36,10 +36,10 @@ function NewPost() {
   const { shareId, shareError } = Route.useSearch()
   return (
     <main className={readingPageClassName}>
-      <header className="mb-10 border-b pb-6">
+      <header className="mb-6">
         <h1 className="font-heading text-3xl font-bold tracking-tight">Make a post</h1>
-        <p className="mt-2 text-sm/6 text-muted-foreground">
-          Add some text, a set of pictures, or a video. You can check everything before posting.
+        <p className="mt-1 text-sm/6 text-muted-foreground">
+          Words, a pile of pictures, or a video. Look it over, then post it.
         </p>
       </header>
       {shareError && (
