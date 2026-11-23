@@ -52,6 +52,17 @@ function setup(
   }
 }
 
+async function viewKey(address: string) {
+  const state = setup()
+  await Effect.runPromise(
+    recordPostView(state.dependencies, { address, postId: post.id, surface: "timeline" }),
+  )
+  expect(state.rateLimitKeys).toHaveLength(1)
+  const [key] = state.rateLimitKeys
+  expect(key).toMatch(/^post-view:[a-f0-9]{64}$/u)
+  return key
+}
+
 describe("post view tracking", () => {
   it("records a privacy-safe event for a published post", async () => {
     const state = setup()
@@ -177,5 +188,37 @@ describe("post view tracking", () => {
         doubles: [1],
       },
     ])
+  })
+
+  describe("viewer address keys", () => {
+    it("keeps distinct IPv4 addresses separate", async () => {
+      expect(await viewKey("203.0.113.42")).not.toBe(await viewKey("203.0.113.43"))
+    })
+
+    it("shares one limit across addresses in the same IPv6 /64", async () => {
+      const first = await viewKey("2001:db8:1234:5678::1")
+      expect(await viewKey("2001:db8:1234:5678:abcd:ef01:2345:6789")).toBe(first)
+      expect(await viewKey("2001:DB8:1234:5678:ffff::")).toBe(first)
+    })
+
+    it("treats compressed and expanded IPv6 forms as the same network", async () => {
+      expect(await viewKey("2001:0db8:0000:0000:0000:0000:0000:0001")).toBe(
+        await viewKey("2001:db8::1"),
+      )
+      expect(await viewKey("2001:db8:0:0:1::")).toBe(await viewKey("2001:db8::1:0:0:0"))
+    })
+
+    it("keeps different IPv6 /64 networks separate", async () => {
+      expect(await viewKey("2001:db8:1234:5678::1")).not.toBe(
+        await viewKey("2001:db8:1234:5679::1"),
+      )
+    })
+
+    it("keys IPv4-mapped IPv6 addresses as the IPv4 address", async () => {
+      const ipv4 = await viewKey("203.0.113.42")
+      expect(await viewKey("::ffff:203.0.113.42")).toBe(ipv4)
+      expect(await viewKey("::FFFF:cb00:712a")).toBe(ipv4)
+      expect(await viewKey("::ffff:203.0.113.43")).not.toBe(ipv4)
+    })
   })
 })
