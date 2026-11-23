@@ -12,6 +12,7 @@ import {
   ItemTitle,
 } from "@/components/ui/item"
 import { adminSections } from "@/lib/admin-sections"
+import { widePageClassName } from "@/lib/page-layout"
 import { getAdminOverview } from "@/server/tables"
 
 export const Route = createFileRoute("/admin/")({
@@ -24,7 +25,7 @@ export const Route = createFileRoute("/admin/")({
 function AdminOverview() {
   const counts = Route.useLoaderData()
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+    <main className={widePageClassName}>
       <header className="mb-8">
         <h1 className="font-heading text-3xl font-bold tracking-tight">Administration</h1>
         <p className="mt-2 text-sm text-muted-foreground">

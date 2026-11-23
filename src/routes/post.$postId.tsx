@@ -13,6 +13,7 @@ import { SocialPanel } from "@/components/social-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { PublicPostRead } from "@/db/public-read-model"
 import { galleryLayouts } from "@/lib/gallery-layout"
+import { mediaPageClassName } from "@/lib/page-layout"
 import { postQueryOptions } from "@/lib/queries/posts"
 import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
@@ -135,7 +136,7 @@ function PublishedPostDetail() {
   if (!post) return null
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={mediaPageClassName}>
       <PostTagMeta post={post} />
       {post.visibility === "unlisted" && (
         <Alert className="mb-8">

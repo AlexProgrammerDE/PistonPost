@@ -29,6 +29,7 @@ import { MAX_POST_MARKDOWN_LENGTH } from "@/domain/validation"
 import { useAppForm } from "@/lib/forms/app-form"
 import { mediaImageUrl } from "@/lib/media-image"
 import { ownedRouteFailure } from "@/lib/owned-route-failure"
+import { readingPageClassName } from "@/lib/page-layout"
 import { refreshAfterPostChange } from "@/lib/queries/posts"
 import { ServerFunctionClientError } from "@/lib/server-function-error"
 import { uploadPostEditImages, type EditablePostImage } from "@/lib/uploads/post-edit-images"
@@ -179,7 +180,7 @@ function EditPost({ post }: { post: Awaited<ReturnType<typeof getOwnedPostForEdi
   }
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-12 sm:px-6 sm:py-20">
+    <main className={readingPageClassName}>
       <header className="typeset typeset-post mb-10 border-b pb-7">
         <h1>Edit post</h1>
         <p>

@@ -11,6 +11,7 @@ import {
   TimelineItem,
 } from "@/components/ui/timeline"
 import { generateN } from "@/lib/generate-n"
+import { mediaPageClassName, readingPageClassName, widePageClassName } from "@/lib/page-layout"
 
 function LoadingRegion({
   children,
@@ -81,7 +82,7 @@ export function FeedItemsSkeleton() {
 
 export function FeedPageSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <LoadingRegion label="Loading feed…">
         <header className="mb-7">
           <Skeleton className="h-8 w-28" />
@@ -94,7 +95,7 @@ export function FeedPageSkeleton() {
 
 export function ProfilePageSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <LoadingRegion label="Loading profile…">
         <header className="mb-10 grid gap-5 border-b pb-7 sm:grid-cols-[auto_1fr] sm:items-center">
           <Skeleton className="size-20 rounded-full sm:size-24" />
@@ -151,7 +152,7 @@ function DiscussionPlaceholder() {
 
 export function PostDetailSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={mediaPageClassName}>
       <LoadingRegion label="Loading post…" className="grid gap-5">
         <div className="flex items-center gap-3">
           <Skeleton className="size-10 rounded-full" />
@@ -205,7 +206,7 @@ export function CommentComposerSkeleton() {
 
 export function FormPageSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+    <main className={readingPageClassName}>
       <LoadingRegion label="Loading form…">
         <header className="mb-10 grid gap-3 border-b pb-6">
           <Skeleton className="h-9 w-48" />
@@ -229,7 +230,7 @@ export function FormPageSkeleton() {
 
 export function SettingsLayoutSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+    <main className={readingPageClassName}>
       <LoadingRegion label="Loading account settings…">
         <header className="mb-8 grid gap-3 border-b pb-6">
           <Skeleton className="h-9 w-64 max-w-full" />
@@ -248,7 +249,7 @@ export function SettingsLayoutSkeleton() {
 
 function SettingsPanelPlaceholder() {
   return (
-    <div className="flex max-w-3xl flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <Skeleton className="h-7 w-40" />
       <FieldGroup className="gap-6">
         {generateN(3).map((identity) => (
@@ -272,7 +273,7 @@ export function SettingsPanelSkeleton() {
 
 export function AdminOverviewSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+    <main className={widePageClassName}>
       <LoadingRegion label="Loading administration overview…">
         <header className="mb-8 grid gap-3">
           <Skeleton className="h-9 w-56" />
@@ -303,7 +304,7 @@ export function AdminOverviewSkeleton() {
 
 export function AdminTablePageSkeleton() {
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
+    <main className={widePageClassName}>
       <LoadingRegion label="Loading administration data…">
         <header className="mb-6 grid gap-3 border-b pb-6">
           <Skeleton className="h-9 w-56" />

@@ -18,6 +18,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { feedPageHref } from "@/lib/feed-pagination"
+import { readingPageClassName } from "@/lib/page-layout"
 import { followingFeedQueryOptions } from "@/lib/queries/posts"
 import { getFollowingViewer } from "@/server/follows"
 
@@ -51,7 +52,7 @@ function FollowingFeed() {
   const { cursor } = Route.useSearch()
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <header className="mb-7 flex flex-col gap-1">
         <h1 className="font-heading text-2xl font-bold tracking-tight">Following</h1>
         {viewer && cursor ? (

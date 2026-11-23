@@ -7,6 +7,7 @@ import { FilteredFeed } from "@/components/filtered-feed"
 import { FeedItemsSkeleton, FeedPageSkeleton } from "@/components/LoadingStates"
 import { Skeleton } from "@/components/ui/skeleton"
 import { feedPageHref } from "@/lib/feed-pagination"
+import { readingPageClassName } from "@/lib/page-layout"
 import { feedQueryOptions, tagQueryOptions } from "@/lib/queries/posts"
 import { absoluteUrl, createSeoHead } from "@/lib/seo"
 import { activeSharedViewTransitionKind } from "@/lib/view-transitions"
@@ -88,7 +89,7 @@ function TagFeed() {
     tag: tag.normalizedName,
   })
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <header
         data-view-transition-active={activeTransition}
         className="mb-8 flex items-center justify-between gap-4 border-b pb-4"
@@ -134,7 +135,7 @@ function TagFeedError() {
   const { cursor } = Route.useSearch()
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <header className="mb-8 border-b pb-4">
         <h1 className="min-w-0 font-heading text-3xl font-bold tracking-tight wrap-anywhere">
           #{tag}

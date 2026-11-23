@@ -17,6 +17,7 @@ import { UserGeneratedLink, UserGeneratedLinkProvider } from "@/components/UserG
 import { avatarInitials } from "@/lib/avatar-initials"
 import { feedPageHref } from "@/lib/feed-pagination"
 import { AVATAR_IMAGE_SIZE } from "@/lib/media-image"
+import { readingPageClassName } from "@/lib/page-layout"
 import { feedQueryOptions, profileQueryOptions } from "@/lib/queries/posts"
 import {
   SITE_NAME,
@@ -176,7 +177,7 @@ function ProfileFeedContent({ normalizedUsername }: { readonly normalizedUsernam
   })
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <header
         data-view-transition-active={activeTransition}
         className="mb-10 grid min-w-0 gap-5 border-b pb-7 wrap-anywhere sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center"
@@ -278,7 +279,7 @@ function ProfileFeedError() {
   const { cursor } = Route.useSearch()
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <header className="mb-8 border-b pb-4">
         <h1 className="min-w-0 font-heading text-3xl font-bold tracking-tight wrap-anywhere">
           @{username}

@@ -1413,3 +1413,10 @@ Record future changes here with date, decision, reason, and affected phases.
   without a letter or number, keep one character for scripts without letter case such as CJK, and
   fall back to the first emoji when a name has no letters. The Better Auth UI `UserAvatar` keeps its
   upstream two-character rule because its consumers cannot pass a fallback through `UserButton`.
+
+- 2026-11-23: Use three route-level page widths from `src/lib/page-layout.ts` so content keeps
+  its left edge between pages. Reading width (`max-w-3xl`) covers feeds, profiles, the composer,
+  post editing, and settings. Media width (`max-w-5xl`) is only for the post detail page, because
+  its masonry gallery and image sizes are designed for it. Wide width (`max-w-7xl`) covers every
+  administration page, including the overview, so admin pages share one edge. All three use the
+  same horizontal and top padding. Legal, auth, and centered status pages keep their own layouts.

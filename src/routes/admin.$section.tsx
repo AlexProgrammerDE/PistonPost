@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { adminTableSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
+import { widePageClassName } from "@/lib/page-layout"
 import { adminRowsQueryOptions } from "@/lib/queries/admin"
 import { userFacingServerMessage } from "@/lib/server-function-error"
 import {
@@ -493,7 +494,7 @@ function AdminTableView({
   ])
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6">
+    <main className={widePageClassName}>
       <header className="mb-6 border-b pb-6">
         <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
           Administration

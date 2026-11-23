@@ -14,6 +14,7 @@ import { Activity, Bell, KeyRound, ShieldCheck, UserRound } from "lucide-react"
 
 import { authClient } from "@/auth/client"
 import { SettingsLayoutSkeleton } from "@/components/LoadingStates"
+import { readingPageClassName } from "@/lib/page-layout"
 import { getVisibleSettingsViews } from "@/lib/settings-views"
 import { getCurrentSession } from "@/server/session"
 
@@ -55,7 +56,7 @@ function SettingsLayout() {
   const { accountActivity } = useLoaderData({ from: rootRouteId })
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
+    <main className={readingPageClassName}>
       <header className="mb-8 border-b pb-6">
         <h1 className="font-heading text-3xl font-bold tracking-tight">Account settings</h1>
         <p className="mt-2 max-w-2xl text-sm/6 text-muted-foreground">
@@ -63,7 +64,7 @@ function SettingsLayout() {
         </p>
       </header>
       <nav
-        className="-mx-5 mb-8 flex overflow-x-auto border-b px-5 sm:mx-0 sm:px-0"
+        className="-mx-4 mb-8 flex overflow-x-auto border-b px-4 sm:mx-0 sm:px-0"
         aria-label="Account settings"
       >
         {getVisibleSettingsViews(accountActivity).map((view) => {
@@ -93,7 +94,7 @@ function SettingsLayout() {
           )
         })}
       </nav>
-      <div data-view-transition-settings-panel className="max-w-3xl">
+      <div data-view-transition-settings-panel>
         <Outlet />
       </div>
     </main>

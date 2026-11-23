@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { useAppForm } from "@/lib/forms/app-form"
 import { submitMutation } from "@/lib/forms/mutation-submit"
+import { widePageClassName } from "@/lib/page-layout"
 import {
   createEmailCampaign,
   getEmailCampaigns,
@@ -88,7 +89,7 @@ function EmailCampaigns() {
   })
 
   return (
-    <main className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+    <main className={widePageClassName}>
       <header className="mb-8 border-b pb-6">
         <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
           Administration

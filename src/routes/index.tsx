@@ -19,6 +19,7 @@ import {
   EmptyTitle,
 } from "@/components/ui/empty"
 import { feedPageHref } from "@/lib/feed-pagination"
+import { readingPageClassName } from "@/lib/page-layout"
 import { feedQueryOptions } from "@/lib/queries/posts"
 import { SITE_DESCRIPTION, SITE_NAME, absoluteUrl, createSeoHead } from "@/lib/seo"
 
@@ -76,7 +77,7 @@ function PublicFeedLayout({ children }: { readonly children: ReactNode }) {
   const { cursor } = Route.useSearch()
 
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+    <main className={readingPageClassName}>
       <header className="mb-7 flex flex-col gap-1">
         <h1 className="font-heading text-2xl font-bold tracking-tight">Timeline</h1>
         {cursor ? (
