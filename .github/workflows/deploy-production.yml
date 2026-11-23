@@ -130,7 +130,10 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         run: |
           bookmark="$(bun cf d1 time-travel get-bookmark "$PRODUCTION_D1_DATABASE_ID" | jq -r 'if type == "array" then .[0].bookmark else .bookmark end')"
-          test -n "$bookmark" && test "$bookmark" != "null"
+          if [ -z "$bookmark" ] || [ "$bookmark" = "null" ]; then
+            echo "Could not record a D1 Time Travel bookmark. Stopping before migrations."
+            exit 1
+          fi
           echo "bookmark=$bookmark" >> "$GITHUB_OUTPUT"
           echo "D1 bookmark before migration: $bookmark"
           echo "D1 bookmark before migration: $bookmark" >> "$GITHUB_STEP_SUMMARY"
