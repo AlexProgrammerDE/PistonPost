@@ -1,7 +1,8 @@
 import { and, eq } from "drizzle-orm"
-import { Context, Effect, Layer, Schema } from "effect"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
+import { Context, DateTime, Effect, Layer, Schema } from "effect"
 
-import type { createD1Database } from "@/db/d1-database"
+import { notBannedAccount } from "@/db/account-ban"
 import * as schema from "@/db/schema"
 import type { EmailNotificationPreference } from "@/domain/validation"
 import type { EmailContent } from "@/email/email"
@@ -15,7 +16,7 @@ import { signUnsubscribeToken } from "@/email/unsubscribe"
 
 import { notificationEnabled, optInNotificationEnabled } from "./notification-policy"
 
-type Database = ReturnType<typeof createD1Database>
+type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
 
 export type ResolvedEmail =
   | Readonly<{
@@ -51,8 +52,10 @@ function queryFailure() {
   return EmailResolutionError.make({ message: "Email delivery data could not be loaded." })
 }
 
-function promiseQuery<T>(query: () => Promise<T>) {
-  return Effect.tryPromise({ try: query, catch: queryFailure }).pipe(Effect.uninterruptible)
+function promiseQuery<T>(query: () => T | PromiseLike<T>) {
+  return Effect.tryPromise({ try: async () => query(), catch: queryFailure }).pipe(
+    Effect.uninterruptible,
+  )
 }
 
 function commentContent(
@@ -106,6 +109,7 @@ export function emailJobResolverLayer(
     resolve: Effect.fn("EmailJobResolver.resolve")(function* (job: EmailDeliveryJob) {
       const baseURL = new URL(config.baseURL)
       if (job.type === "email.comment" || job.type === "email.reply") {
+        const now = yield* DateTime.nowAsDate
         const comment = yield* promiseQuery(() =>
           database
             .select({
@@ -122,7 +126,14 @@ export function emailJobResolverLayer(
             .from(schema.comments)
             .innerJoin(schema.posts, eq(schema.posts.id, schema.comments.postId))
             .innerJoin(schema.user, eq(schema.user.id, schema.comments.authorId))
-            .where(eq(schema.comments.id, job.commentId))
+            .where(
+              and(
+                eq(schema.comments.id, job.commentId),
+                // A banned account's comments are hidden, so a queued or retried email must not
+                // point at one.
+                notBannedAccount(schema.comments.authorId, now),
+              ),
+            )
             .get(),
         )
         if (comment?.status !== "published" || comment.postStatus !== "published") {
