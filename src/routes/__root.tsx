@@ -5,6 +5,7 @@ import { ArrowLeft, FileQuestion } from "lucide-react"
 import { AppProviders } from "@/components/app-providers"
 import { AppShell } from "@/components/app-shell"
 import { ButtonLink } from "@/components/ButtonLink"
+import { RouteAnnouncer } from "@/components/RouteAnnouncer"
 import { RouteError } from "@/components/RouteError"
 import {
   Empty,
@@ -123,6 +124,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
           vapidPublicKey={vapidPublicKey}
         >
           <AppShell>{children}</AppShell>
+          <RouteAnnouncer />
         </AppProviders>
         <Scripts />
       </body>

@@ -3,6 +3,7 @@ import { useSyncExternalStore, type PropsWithChildren } from "react"
 
 import { AppSidebar } from "@/components/AppSidebar"
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
+import { MAIN_CONTENT_ID } from "@/lib/route-announcement"
 
 export function AppShell({ children }: PropsWithChildren) {
   const hydrated = useSyncExternalStore(
@@ -14,7 +15,7 @@ export function AppShell({ children }: PropsWithChildren) {
   return (
     <SidebarProvider data-hydrated={hydrated}>
       <a
-        href="#main-content"
+        href={`#${MAIN_CONTENT_ID}`}
         className="fixed top-3 left-3 z-50 bg-background px-3 py-2 text-sm font-medium shadow-sm not-focus:sr-only focus-visible:outline-2 focus-visible:outline-offset-2"
       >
         Skip to content
@@ -36,7 +37,7 @@ export function AppShell({ children }: PropsWithChildren) {
           </Link>
         </header>
 
-        <div id="main-content" tabIndex={-1} className="min-w-0 flex-1 outline-none">
+        <div id={MAIN_CONTENT_ID} tabIndex={-1} className="min-w-0 flex-1 outline-none">
           {children}
         </div>
       </div>
