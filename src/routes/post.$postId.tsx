@@ -1,6 +1,6 @@
 import { useSession } from "@better-auth-ui/react"
 import { useQueryClient, useSuspenseQuery } from "@tanstack/react-query"
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute, notFound, useHydrated } from "@tanstack/react-router"
 import { Schema, SchemaGetter, Effect, SchemaIssue, Option } from "effect"
 import { Link2 } from "lucide-react"
 import { Suspense, useEffect, useRef } from "react"
@@ -82,6 +82,10 @@ function PostTagMeta({ post }: { readonly post: PublicPostRead }) {
 
 function PostDetail() {
   const session = useSession(authClient)
+  // The server renders without a session. Wait for hydration before showing author controls, or a
+  // session the client already loaded would not match the server HTML.
+  const hydrated = useHydrated()
+  const viewer = hydrated ? session.data?.user : undefined
   const { postId } = Route.useParams()
   const { image, layout } = Route.useSearch()
   const post = useSuspenseQuery(postQueryOptions(postId)).data
@@ -126,7 +130,7 @@ function PostDetail() {
         detail
         selectedImageIndex={image}
         galleryLayout={layout}
-        canEdit={session.data?.user.id === post.author.id || session.data?.user.role === "admin"}
+        canEdit={viewer?.id === post.author.id || viewer?.role === "admin"}
       />
       <Suspense fallback={<DiscussionSkeleton />}>
         <SocialPanel
