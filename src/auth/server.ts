@@ -40,12 +40,14 @@ export type AuthenticationEmail = {
 export type AuthRuntime = {
   readonly database: D1DatabaseClient | SqliteDatabaseClient
   readonly baseURL: string
-  readonly betterAuthApiKey: string
+  /** Dash and Sentinel need the hosted Better Auth service and its API key. */
+  readonly betterAuthInfra:
+    | { readonly state: "enabled"; readonly apiKey: string }
+    | { readonly state: "disabled" }
   readonly secret: string
   readonly trustedOrigins: readonly string[]
   readonly turnstileSecret: string
   readonly production: boolean
-  readonly infraEnabled?: boolean
   readonly sendEmail: (message: AuthenticationEmail) => Promise<void>
   readonly backgroundTasks?: {
     readonly handler: (promise: Promise<unknown>) => void
@@ -371,15 +373,15 @@ export function createAuth(runtime: AuthRuntime) {
       }),
       haveIBeenPwned({ enabled: runtime.production }),
       emailHarmony(),
-      ...(runtime.infraEnabled === false
-        ? []
-        : [
+      ...(runtime.betterAuthInfra.state === "enabled"
+        ? [
             dash({
-              apiKey: runtime.betterAuthApiKey,
+              apiKey: runtime.betterAuthInfra.apiKey,
               activityTracking: { enabled: true },
             }),
-            sentinel({ apiKey: runtime.betterAuthApiKey }),
-          ]),
+            sentinel({ apiKey: runtime.betterAuthInfra.apiKey }),
+          ]
+        : []),
       openAPI(),
       ...(runtime.production
         ? [

@@ -30,12 +30,11 @@ function setup(
   const auth = createAuth({
     database,
     baseURL: "http://localhost:3000",
-    betterAuthApiKey: "test-only-better-auth-api-key",
+    betterAuthInfra: { state: "disabled" },
     secret: "test-only-auth-secret-at-least-32-characters",
     trustedOrigins: ["http://localhost:3000"],
     turnstileSecret: options.production ? "1x0000000000000000000000000000000AA" : "unused",
     production: options.production ?? false,
-    infraEnabled: false,
     isManagedUserAvatar,
     initializeProfile: (user) => initializeUserProfile(database, user),
     beforeDeleteUser: (userId) => {
@@ -130,7 +129,7 @@ describe("request-scoped Better Auth", () => {
     const auth = createAuth({
       database,
       baseURL: "http://localhost:3000",
-      betterAuthApiKey: "test-only-better-auth-api-key",
+      betterAuthInfra: { state: "enabled", apiKey: "test-only-better-auth-api-key" },
       secret: "test-only-auth-secret-at-least-32-characters",
       trustedOrigins: ["http://localhost:3000"],
       turnstileSecret: "not-used-in-this-test",
@@ -145,6 +144,19 @@ describe("request-scoped Better Auth", () => {
     expect(pluginIds).toContain("dash")
     expect(pluginIds).toContain("sentinel")
     expect(pluginIds).not.toContain("magic-link")
+  })
+
+  it("leaves out Dash and Sentinel when the hosted Better Auth service is disabled", async () => {
+    const { auth } = setup()
+
+    const pluginIds = auth.options.plugins.map((plugin) => plugin.id)
+    expect(pluginIds).not.toContain("dash")
+    expect(pluginIds).not.toContain("sentinel")
+    // The activity endpoint does not exist, so it cannot fail upstream with a 500.
+    const response = await auth.handler(
+      new Request("http://localhost:3000/api/auth/events/audit-logs"),
+    )
+    expect(response.status).toBe(404)
   })
 
   it("serves the Better Auth OpenAPI schema", async () => {
@@ -168,12 +180,11 @@ describe("request-scoped Better Auth", () => {
     const auth = createAuth({
       database,
       baseURL: "http://localhost:3000",
-      betterAuthApiKey: "test-only-better-auth-api-key",
+      betterAuthInfra: { state: "disabled" },
       secret: "test-only-auth-secret-at-least-32-characters",
       trustedOrigins: ["http://localhost:3000"],
       turnstileSecret: "not-used-in-this-test",
       production: false,
-      infraEnabled: false,
       isManagedUserAvatar: () => Promise.resolve(false),
       sendEmail: async () => {},
       backgroundTasks: { handler },
@@ -470,12 +481,11 @@ describe("request-scoped Better Auth", () => {
     const auth = createAuth({
       database,
       baseURL: "http://localhost:3000",
-      betterAuthApiKey: "test-only-better-auth-api-key",
+      betterAuthInfra: { state: "disabled" },
       secret: "test-only-auth-secret-at-least-32-characters",
       trustedOrigins: ["http://localhost:3000"],
       turnstileSecret: "1x0000000000000000000000000000000AA",
       production: true,
-      infraEnabled: false,
       isManagedUserAvatar: () => Promise.resolve(false),
       sendEmail: async () => {},
     })

@@ -62,11 +62,15 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
     () => import("./auth-background-tasks"),
   )
   const baseURL = runtime.config.PUBLIC_APP_URL.toString()
-  const [secret, turnstileSecret, betterAuthApiKey] = yield* Effect.all(
+  const [secret, turnstileSecret, betterAuthInfra] = yield* Effect.all(
     [
       readSecret(env.BETTER_AUTH_SECRET, "BETTER_AUTH_SECRET"),
       readSecret(env.TURNSTILE_SECRET, "TURNSTILE_SECRET"),
-      readSecret(env.BETTER_AUTH_API_KEY, "BETTER_AUTH_API_KEY"),
+      runtime.config.BETTER_AUTH_INFRA === "enabled"
+        ? readSecret(env.BETTER_AUTH_API_KEY, "BETTER_AUTH_API_KEY").pipe(
+            Effect.map((apiKey) => ({ state: "enabled" as const, apiKey })),
+          )
+        : Effect.succeed({ state: "disabled" as const }),
     ],
     { concurrency: 3 },
   )
@@ -105,7 +109,7 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
   return createAuth({
     database,
     baseURL,
-    betterAuthApiKey,
+    betterAuthInfra,
     secret,
     trustedOrigins: [baseURL],
     turnstileSecret,

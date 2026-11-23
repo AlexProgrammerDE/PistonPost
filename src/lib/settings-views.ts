@@ -3,6 +3,9 @@ import { dashPlugin } from "@better-auth-ui/core/plugins/dash"
 
 const dashSettingsPathSegment = dashPlugin({ organization: false }).viewPaths.settings.activity
 
+/** Needs the hosted Better Auth service. See the root loader's accountActivity flag. */
+export const accountActivitySettingsView = dashSettingsPathSegment
+
 const productSettingsPathSegments = {
   profile: "profile",
   notifications: "notifications",
@@ -22,3 +25,9 @@ export const settingsViews = [
   { value: productSettingsPathSegments.notifications, label: "Notifications" },
   { value: dashSettingsPathSegment, label: "Activity" },
 ] as const
+
+export function getVisibleSettingsViews(accountActivity: boolean) {
+  return settingsViews.filter(
+    (view) => accountActivity || view.value !== accountActivitySettingsView,
+  )
+}

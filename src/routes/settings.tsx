@@ -1,12 +1,20 @@
 import { authQueryKeys, ensureSession } from "@better-auth-ui/core"
 import type { QueryClient } from "@tanstack/react-query"
-import { Link, Outlet, createFileRoute, redirect, useLocation } from "@tanstack/react-router"
+import {
+  Link,
+  Outlet,
+  createFileRoute,
+  redirect,
+  rootRouteId,
+  useLoaderData,
+  useLocation,
+} from "@tanstack/react-router"
 import { createIsomorphicFn } from "@tanstack/react-start"
 import { Activity, Bell, KeyRound, ShieldCheck, UserRound } from "lucide-react"
 
 import { authClient } from "@/auth/client"
 import { SettingsLayoutSkeleton } from "@/components/LoadingStates"
-import { settingsViews } from "@/lib/settings-views"
+import { getVisibleSettingsViews } from "@/lib/settings-views"
 import { getCurrentSession } from "@/server/session"
 
 const ensureSettingsSession = createIsomorphicFn()
@@ -44,6 +52,7 @@ function keepTabVisible(node: HTMLAnchorElement | null) {
 
 function SettingsLayout() {
   const location = useLocation()
+  const { accountActivity } = useLoaderData({ from: rootRouteId })
 
   return (
     <main className="mx-auto w-full max-w-5xl px-5 py-10 sm:px-8 sm:py-14">
@@ -57,7 +66,7 @@ function SettingsLayout() {
         className="-mx-5 mb-8 flex overflow-x-auto border-b px-5 sm:mx-0 sm:px-0"
         aria-label="Account settings"
       >
-        {settingsViews.map((view) => {
+        {getVisibleSettingsViews(accountActivity).map((view) => {
           const active = location.pathname.endsWith(`/${view.value}`)
           const ViewIcon =
             view.value === "profile"

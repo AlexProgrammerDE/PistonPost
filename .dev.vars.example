@@ -4,7 +4,8 @@
 BETTER_AUTH_SECRET=
 # Signs category-scoped email unsubscribe links. Use a separate random value.
 EMAIL_UNSUBSCRIBE_SECRET=
-# Better Auth dashboard API key used by Dash and Sentinel.
+# Better Auth dashboard API key used by Dash and Sentinel. Read only when BETTER_AUTH_INFRA is
+# enabled. Local development disables it in cloudflare.config.ts.
 BETTER_AUTH_API_KEY=
 # Use Cloudflare's always-pass test secret for local development only.
 TURNSTILE_SECRET=1x0000000000000000000000000000000AA

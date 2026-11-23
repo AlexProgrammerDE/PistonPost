@@ -105,6 +105,13 @@ Production secrets belong in Cloudflare Secrets Store. PistonPost documents secr
 - `STREAM_API_TOKEN`
 - `VAPID_PRIVATE_KEY`
 
+`BETTER_AUTH_INFRA` is a plain text variable, not a secret. Preview and production set it to
+`enabled`, so the Worker loads the Better Auth Dash and Sentinel plugins with
+`BETTER_AUTH_API_KEY` and shows the account Activity tab. Local development sets it to `disabled`:
+the Worker skips both plugins, does not read the API key, and hides the Activity tab. To test Dash
+locally, set it to `enabled` in the local mode of `cloudflare.config.ts` and add a real key to
+`.dev.vars`.
+
 `STREAM_API_TOKEN` must be a dedicated token with Stream Write permission for the account in
 `STREAM_ACCOUNT_ID`. Do not reuse the broader token that deploys the Worker. The Worker reads these
 credentials only while creating a one-time TUS URL. They are never returned to the browser.

@@ -30,17 +30,23 @@ export function AppProviders({
   children,
   queryClient,
   turnstileSiteKey,
+  accountActivity,
   vapidPublicKey,
 }: PropsWithChildren<{
   readonly queryClient: QueryClient
   readonly turnstileSiteKey?: string
+  readonly accountActivity: boolean
   readonly vapidPublicKey: string | null
 }>) {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <ThemeColorSync />
-        <AuthenticationProvider queryClient={queryClient} turnstileSiteKey={turnstileSiteKey}>
+        <AuthenticationProvider
+          queryClient={queryClient}
+          turnstileSiteKey={turnstileSiteKey}
+          accountActivity={accountActivity}
+        >
           <PwaProvider>
             <PushSubscriptionSync vapidPublicKey={vapidPublicKey} />
             <CookieConsentProvider>

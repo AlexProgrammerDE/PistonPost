@@ -104,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   const { queryClient } = Route.useRouteContext()
-  const { turnstileSiteKey, vapidPublicKey } = Route.useLoaderData()
+  const { turnstileSiteKey, accountActivity, vapidPublicKey } = Route.useLoaderData()
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -118,6 +118,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <AppProviders
           queryClient={queryClient}
           turnstileSiteKey={turnstileSiteKey}
+          accountActivity={accountActivity}
           vapidPublicKey={vapidPublicKey}
         >
           <AppShell>{children}</AppShell>

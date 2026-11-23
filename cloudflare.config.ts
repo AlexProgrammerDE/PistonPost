@@ -85,6 +85,7 @@ export default defineConfig((ctx) => {
             STREAM_API_TOKEN: bindings.secret(),
             VAPID_PRIVATE_KEY: bindings.secret(),
             APP_ENV: bindings.text("preview"),
+            BETTER_AUTH_INFRA: bindings.text("enabled"),
             PUBLIC_APP_URL: bindings.text("https://staging.post.pistonmaster.net"),
             TURNSTILE_SITE_KEY: bindings.text("replace-with-preview-site-key"),
             AUTH_EMAIL_FROM: bindings.text(
@@ -310,6 +311,7 @@ export default defineConfig((ctx) => {
               secretName: "VAPID_PRIVATE_KEY",
             }),
             APP_ENV: bindings.text("production"),
+            BETTER_AUTH_INFRA: bindings.text("enabled"),
             PUBLIC_APP_URL: bindings.text(input.baseUrl),
             TURNSTILE_SITE_KEY: bindings.text(input.turnstileSiteKey),
             AUTH_EMAIL_FROM: bindings.text("PistonPost Auth <auth@transactional.pistonmaster.net>"),
@@ -506,6 +508,7 @@ export default defineConfig((ctx) => {
             STREAM_API_TOKEN: bindings.secret(),
             VAPID_PRIVATE_KEY: bindings.secret(),
             APP_ENV: bindings.text("development"),
+            BETTER_AUTH_INFRA: bindings.text("disabled"),
             PUBLIC_APP_URL: bindings.text("http://localhost:3000"),
             TURNSTILE_SITE_KEY: bindings.text("1x00000000000000000000AA"),
             AUTH_EMAIL_FROM: bindings.text("PistonPost Auth <auth@transactional.pistonmaster.net>"),

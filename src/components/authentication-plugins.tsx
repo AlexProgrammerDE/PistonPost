@@ -13,7 +13,16 @@ import { themePlugin } from "@/lib/auth/theme-plugin"
 import { twoFactorPlugin } from "@/lib/auth/two-factor-plugin"
 import { usernamePlugin } from "@/lib/auth/username-plugin"
 
-export function createAuthenticationPlugins(turnstileSiteKey?: string) {
+export type AuthenticationPluginOptions = {
+  readonly turnstileSiteKey?: string
+  /** Shows the Dash activity tabs. Turn it off when the hosted Better Auth service is disabled. */
+  readonly accountActivity?: boolean
+}
+
+export function createAuthenticationPlugins({
+  turnstileSiteKey,
+  accountActivity = false,
+}: AuthenticationPluginOptions = {}) {
   return [
     usernamePlugin({
       isUsernameAvailable: true,
@@ -37,7 +46,7 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
       localization: { switchAccount: "Switch account", addAccount: "Add account" },
     }),
     adminPlugin(),
-    dashPlugin({ organization: false }),
+    ...(accountActivity ? [dashPlugin({ organization: false })] : []),
     passkeyPlugin(),
     twoFactorPlugin({ localization: { twoFactor: "Two-factor authentication" } }),
     deleteUserPlugin({ sendDeleteAccountVerification: true }),

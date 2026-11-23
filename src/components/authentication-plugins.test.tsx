@@ -43,7 +43,9 @@ describe("global authentication plugins", () => {
   })
 
   test("adds personal Dash activity without organization surfaces", () => {
-    const dash = createAuthenticationPlugins().find((plugin) => plugin.id === coreDashPlugin.id)
+    const dash = createAuthenticationPlugins({ accountActivity: true }).find(
+      (plugin) => plugin.id === coreDashPlugin.id,
+    )
 
     expect(dash?.settingsTabs).toHaveLength(1)
     expect(dash?.settingsTabs?.[0]).toMatchObject({
@@ -53,9 +55,15 @@ describe("global authentication plugins", () => {
     expect(dash?.organizationTabs).toBeUndefined()
   })
 
+  test("leaves out Dash activity when the hosted Better Auth service is disabled", () => {
+    const plugins = createAuthenticationPlugins({ accountActivity: false })
+
+    expect(plugins.some((plugin) => plugin.id === coreDashPlugin.id)).toBe(false)
+  })
+
   test("registers captcha UI only when Turnstile is configured", () => {
     const withoutTurnstile = createAuthenticationPlugins()
-    const withTurnstile = createAuthenticationPlugins("site-key")
+    const withTurnstile = createAuthenticationPlugins({ turnstileSiteKey: "site-key" })
 
     expect(withoutTurnstile.some((plugin) => plugin.id === captchaPlugin.id)).toBe(false)
     expect(withTurnstile.some((plugin) => plugin.id === captchaPlugin.id)).toBe(true)

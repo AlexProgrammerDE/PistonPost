@@ -1,9 +1,15 @@
-import { createFileRoute, notFound } from "@tanstack/react-router"
+import { createFileRoute, notFound, rootRouteId, useLoaderData } from "@tanstack/react-router"
+import { Activity } from "lucide-react"
 
 import { Settings } from "@/components/auth/settings/settings"
 import { SettingsPanelSkeleton } from "@/components/LoadingStates"
 import { NotificationSettingsForm, ProfileSettingsForm } from "@/components/product-settings"
-import { settingsViews, validSettingsPathSegments } from "@/lib/settings-views"
+import { Empty, EmptyDescription, EmptyHeader, EmptyMedia, EmptyTitle } from "@/components/ui/empty"
+import {
+  accountActivitySettingsView,
+  settingsViews,
+  validSettingsPathSegments,
+} from "@/lib/settings-views"
 import { getMyProductSettings } from "@/server/settings"
 
 export const Route = createFileRoute("/settings/$settingsView")({
@@ -28,6 +34,10 @@ export const Route = createFileRoute("/settings/$settingsView")({
 function SettingsView() {
   const { settingsView } = Route.useParams()
   const productSettings = Route.useLoaderData()
+  const { accountActivity } = useLoaderData({ from: rootRouteId })
+  if (settingsView === accountActivitySettingsView && !accountActivity) {
+    return <AccountActivityUnavailable />
+  }
   if (settingsView === "profile" && productSettings) {
     return <ProfileSettingsForm settings={productSettings} />
   }
@@ -35,4 +45,22 @@ function SettingsView() {
     return <NotificationSettingsForm settings={productSettings} />
   }
   return <Settings path={settingsView} hideNav />
+}
+
+// The activity log lives in the hosted Better Auth service. Without it, keep old links working.
+function AccountActivityUnavailable() {
+  return (
+    <Empty className="border">
+      <EmptyHeader>
+        <EmptyMedia variant="icon">
+          <Activity />
+        </EmptyMedia>
+        <EmptyTitle>Activity is not available here</EmptyTitle>
+        <EmptyDescription>
+          This server does not keep a sign-in activity log. Your sessions and devices are still on
+          the Security tab.
+        </EmptyDescription>
+      </EmptyHeader>
+    </Empty>
+  )
 }

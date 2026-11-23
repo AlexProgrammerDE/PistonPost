@@ -1392,3 +1392,9 @@ Record future changes here with date, decision, reason, and affected phases.
   @better-auth/api-key and @better-auth/agent-auth because Better Auth UI lists them as required
   peers. Keep src/components/auth/organization because the upstream Dash activity view imports the
   organization plugin. Do not re-add these surfaces when updating Better Auth UI.
+
+- 2026-11-23: Gate Better Auth Dash and Sentinel behind the `BETTER_AUTH_INFRA` text variable.
+  Preview and production enable it. Local development disables it because it has no real API key,
+  and the Activity tab returned 500 errors there. When disabled, the server skips both plugins and
+  the API key, the settings nav hides Activity, and an old /settings/activity link shows an empty
+  state instead of an error.

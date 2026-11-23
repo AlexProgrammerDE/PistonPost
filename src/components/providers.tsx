@@ -42,9 +42,11 @@ export function AuthenticationProvider({
   children,
   queryClient,
   turnstileSiteKey,
+  accountActivity,
 }: PropsWithChildren<{
   readonly queryClient: QueryClient
   readonly turnstileSiteKey?: string
+  readonly accountActivity: boolean
 }>) {
   const navigate = useNavigate()
   const router = useRouter()
@@ -84,7 +86,7 @@ export function AuthenticationProvider({
       }}
       basePaths={{ admin: "/admin", auth: "/auth", settings: "/settings" }}
       localization={authLocalization}
-      plugins={createAuthenticationPlugins(turnstileSiteKey)}
+      plugins={createAuthenticationPlugins({ turnstileSiteKey, accountActivity })}
     >
       {children}
     </AuthProvider>
