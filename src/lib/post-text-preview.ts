@@ -1,4 +1,4 @@
-import { postMarkdownToPlainText } from "@/lib/markdown"
+import { postMarkdownToPlainTextLines } from "@/lib/markdown"
 
 export const POST_TEXT_PREVIEW_GRAPHEME_LIMIT = 800
 
@@ -7,7 +7,7 @@ const graphemeSegmenter = new Intl.Segmenter(undefined, {
 })
 
 export function createPostTextPreview(markdown: string) {
-  const plainText = postMarkdownToPlainText(markdown)
+  const plainText = postMarkdownToPlainTextLines(markdown)
   let preview = ""
   let graphemeCount = 0
 

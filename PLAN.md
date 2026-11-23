@@ -1398,3 +1398,9 @@ Record future changes here with date, decision, reason, and affected phases.
   and the Activity tab returned 500 errors there. When disabled, the server skips both plugins and
   the API key, the settings nav hides Activity, and an old /settings/activity link shows an empty
   state instead of an error.
+
+- 2026-11-23: Keep Markdown block boundaries in plain-text excerpts. Metadata, Atom summaries,
+  share cards, and structured data read headings, list items, paragraphs, and table rows as
+  separate sentences. A block without closing punctuation gets a period, or a colon after a heading,
+  and a block that ends in a URL gets no added punctuation. Feed text previews keep one block per
+  line with list bullets or numbers. Spoilers stay masked in every excerpt.

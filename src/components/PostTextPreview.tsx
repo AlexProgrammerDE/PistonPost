@@ -17,7 +17,10 @@ export function PostTextPreview({
   return (
     <div className="flex min-w-0 flex-col items-start gap-2">
       {text ? (
-        <p dir="auto" className="line-clamp-8 min-w-0 text-base/relaxed wrap-anywhere">
+        <p
+          dir="auto"
+          className="line-clamp-8 min-w-0 text-base/relaxed wrap-anywhere whitespace-pre-line"
+        >
           {text}
         </p>
       ) : null}

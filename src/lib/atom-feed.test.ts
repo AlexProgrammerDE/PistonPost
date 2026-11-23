@@ -44,6 +44,24 @@ describe("Atom feed", () => {
     expect(xml).not.toContain("Cats & <dogs>")
   })
 
+  it("separates Markdown blocks and keeps the summary length limit", () => {
+    const [first] = records
+    if (!first) throw new Error("Missing fixture")
+    const xml = buildAtomFeedXml("https://post.pistonmaster.net", [
+      {
+        ...first,
+        textContent: `## What I've tried\n\n- Talking to it nicely\n- Unplugging it\n\n${"Still haunted ".repeat(40)}`,
+      },
+    ])
+    const summary = /<summary type="text">(?<text>[^<]*)<\/summary>/u.exec(xml)?.groups?.["text"]
+
+    expect(summary).toStartWith("What I&apos;ve tried: Talking to it nicely. Unplugging it. Still")
+    expect(summary).toEndWith("…")
+    expect(
+      Array.from(new Intl.Segmenter().segment(summary?.replaceAll("&apos;", "'") ?? "")),
+    ).toHaveLength(400)
+  })
+
   it("uses the most recent modification as the feed timestamp", () => {
     const xml = buildAtomFeedXml("https://post.pistonmaster.net", records)
 

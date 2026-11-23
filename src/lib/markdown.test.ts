@@ -6,6 +6,7 @@ import {
   isProxyableExternalImageUrl,
   markdownContainsImageUrl,
   postMarkdownToPlainText,
+  postMarkdownToPlainTextLines,
 } from "./markdown"
 import { parseMarkdownEmbed } from "./markdown-embeds"
 
@@ -122,15 +123,105 @@ describe("Markdown boundaries", () => {
       postMarkdownToPlainText(
         "## Release notes\n\n- [x] **Safe Markdown**\n- [ ] [Embeds](https://example.com)",
       ),
-    ).toBe("Release notes Safe Markdown Embeds")
+    ).toBe("Release notes: Safe Markdown. Embeds")
+  })
+
+  test("separates headings, list items, and paragraphs in metadata", () => {
+    expect(
+      postMarkdownToPlainText(`My toaster is haunted
+
+## What I've tried
+
+- Talking to it nicely
+- Unplugging it
+  - Twice, just to be sure
+
+Nothing worked!`),
+    ).toBe(
+      "My toaster is haunted. What I've tried: Talking to it nicely. Unplugging it. Twice, just to be sure. Nothing worked!",
+    )
+  })
+
+  test("keeps existing punctuation and ends without adding any", () => {
+    expect(postMarkdownToPlainText('# Why?\n\n- "Done."\n- Maybe (later)\n- Last item')).toBe(
+      'Why? "Done." Maybe (later). Last item',
+    )
+  })
+
+  test("uses a period between consecutive headings", () => {
+    expect(postMarkdownToPlainText("# Part one\n\n## Setup\n\nPlug it in")).toBe(
+      "Part one. Setup: Plug it in",
+    )
+  })
+
+  test("reads blockquotes, code blocks, and tables as separate sentences", () => {
+    expect(
+      postMarkdownToPlainText(`> It *works*
+> fine
+
+\`\`\`
+rm -rf
+toast
+\`\`\`
+
+| Fix | Worked? |
+| --- | --- |
+| Reboot | No |
+| | Empty cell |`),
+    ).toBe("It works fine. rm -rf toast. Fix, Worked? Reboot, No. Empty cell")
+  })
+
+  test("separates comment blocks the same way", () => {
+    expect(commentMarkdownToPlainText("Agreed\n\n- First point\n- Second point")).toBe(
+      "Agreed. First point. Second point",
+    )
+  })
+
+  test("keeps one block per line with list markers for previews", () => {
+    expect(
+      postMarkdownToPlainTextLines(`## What I've tried
+
+- Talking to it nicely
+- Unplugging it
+
+3. Third
+4. Fourth
+
+> Quoted
+> text
+
+| Fix | Worked? |
+| --- | --- |
+| Reboot | No |
+
+Done :spoiler[it was a ghost]`),
+    ).toBe(
+      [
+        "What I've tried",
+        "• Talking to it nicely",
+        "• Unplugging it",
+        "3. Third",
+        "4. Fourth",
+        "Quoted text",
+        "Fix, Worked?",
+        "Reboot, No",
+        "Done Spoiler",
+      ].join("\n"),
+    )
+  })
+
+  test("puts a list marker only on the first block of a loose list item", () => {
+    expect(postMarkdownToPlainTextLines("- First paragraph\n\n  Second paragraph\n- Next")).toBe(
+      "• First paragraph\nSecond paragraph\n• Next",
+    )
   })
 
   test("uses directive labels and destinations in post metadata", () => {
     expect(
       postMarkdownToPlainText(
-        '::embed[Demo video]{url="https://youtu.be/M7lc1UVf-VE"}\n\n::card{url="https://example.com"}',
+        '::embed[Demo video]{url="https://youtu.be/M7lc1UVf-VE"}\n\n::card{url="https://example.com"}\n\nWorth a look',
       ),
-    ).toBe("Demo video https://example.com/")
+    ).toBe("Demo video. https://example.com/ Worth a look")
   })
 
   test("keeps spoiler text out of metadata while retaining container context", () => {
@@ -144,7 +235,7 @@ Supporting details.
 :::callout[Take care]{kind=warning}
 Read this first.
 :::`),
-    ).toBe("Before Spoiler after. More context Supporting details. Take care Read this first.")
+    ).toBe("Before Spoiler after. More context: Supporting details. Take care: Read this first.")
   })
 
   test("keeps directive syntax literal in comments", () => {

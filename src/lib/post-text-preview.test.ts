@@ -3,12 +3,12 @@ import { describe, expect, test } from "bun:test"
 import { createPostTextPreview, POST_TEXT_PREVIEW_GRAPHEME_LIMIT } from "./post-text-preview"
 
 describe("post text previews", () => {
-  test("turns short Markdown into readable plain text", () => {
+  test("turns short Markdown into readable plain text with one block per line", () => {
     expect(
       createPostTextPreview(
         "## Release notes\n\n- **Safer feeds**\n- [Full details](https://example.com)",
       ),
-    ).toBe("Release notes Safer feeds Full details")
+    ).toBe("Release notes\n• Safer feeds\n• Full details")
   })
 
   test("caps unusually wide Arabic presentation characters", () => {
