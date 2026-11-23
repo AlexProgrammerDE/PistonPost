@@ -38,6 +38,11 @@ describe("social card fallback fonts", () => {
     ["你好，世界", ["Noto Sans SC"]],
     ["こんにちは世界", ["Noto Sans JP", "Noto Sans SC"]],
     ["안녕하세요", ["Noto Sans KR"]],
+    ["Azərbaycan", ["Noto Sans Latin Extended"]],
+    ["ĉiuĵaŭde ŝi manĝas", ["Noto Sans Latin Extended"]],
+    ["Bucureşti, Timişoara, Constanţa", ["Noto Sans Latin Extended"]],
+    ["Price: ₹500", ["Noto Sans Latin Extended"]],
+    ["Issue № 5", ["Noto Sans Cyrillic"]],
   ])("loads only the matching script fonts for %s", (text, expected) => {
     expect(fontsFor(text)).toEqual(expected)
   })

@@ -24,10 +24,63 @@ const notoSans = (subset: string) =>
   `@fontsource-variable/noto-sans@5.3.0/files/noto-sans-${subset}-wght-normal.woff2`
 
 const fallbackFaces: readonly FallbackFace[] = [
+  // Outfit's Latin Extended file lacks many letters its subset name suggests, such as Azerbaijani
+  // ə, Esperanto ĉ ĝ ĥ ĵ ŝ ŭ, Romanian ţ and the rupee sign. These ranges are exactly the codepoints
+  // of the Noto Sans Latin Extended file that both Outfit files miss.
+  {
+    name: "Noto Sans Latin Extended",
+    file: notoSans("latin-ext"),
+    ranges: [
+      [0x01_08, 0x01_09],
+      [0x01_14, 0x01_15],
+      [0x01_1c, 0x01_1d],
+      [0x01_24, 0x01_25],
+      [0x01_28, 0x01_29],
+      [0x01_2c, 0x01_2d],
+      [0x01_34, 0x01_35],
+      [0x01_38, 0x01_38],
+      [0x01_3f, 0x01_40],
+      [0x01_49, 0x01_49],
+      [0x01_4e, 0x01_4f],
+      [0x01_5c, 0x01_5d],
+      [0x01_62, 0x01_63],
+      [0x01_66, 0x01_69],
+      [0x01_7f, 0x01_cc],
+      [0x01_cf, 0x02_17],
+      [0x02_1c, 0x02_36],
+      [0x02_38, 0x02_ba],
+      [0x02_bd, 0x02_c5],
+      [0x02_c8, 0x02_cc],
+      [0x02_ce, 0x02_d7],
+      [0x02_de, 0x02_ff],
+      [0x03_09, 0x03_09],
+      [0x03_23, 0x03_23],
+      [0x03_29, 0x03_29],
+      [0x1d_00, 0x1d_bf],
+      [0x1e_00, 0x1e_7f],
+      [0x1e_86, 0x1e_9d],
+      [0x1e_9f, 0x1e_9f],
+      [0x1e_f4, 0x1e_ff],
+      [0x20_20, 0x20_20],
+      [0x20_a0, 0x20_ab],
+      [0x20_ad, 0x20_c0],
+      [0x21_13, 0x21_13],
+      [0x2c_60, 0x2c_7f],
+      [0xa7_20, 0xa7_ca],
+      [0xa7_d0, 0xa7_d1],
+      [0xa7_d3, 0xa7_d3],
+      [0xa7_d5, 0xa7_d9],
+      [0xa7_f2, 0xa7_ff],
+    ],
+  },
   {
     name: "Noto Sans Cyrillic",
     file: notoSans("cyrillic"),
-    ranges: [[0x04_00, 0x04_5f]],
+    // Noto Sans ships the numero sign with its Cyrillic subset.
+    ranges: [
+      [0x04_00, 0x04_5f],
+      [0x21_16, 0x21_16],
+    ],
   },
   {
     name: "Noto Sans Cyrillic Extended",
