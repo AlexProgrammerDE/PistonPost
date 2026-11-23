@@ -4,7 +4,7 @@ import { createPost, createUser } from "@/db/factories"
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
 
-import { cacheInvalidationJob } from "./jobs"
+import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import {
   postDeleteStatements,
   postPublishStatements,
@@ -187,6 +187,24 @@ describe("atomic post publishing", () => {
     expect(
       count(database, "select count(*) as count from outbox where kind = 'cache.invalidate'"),
     ).toBe(1)
+  })
+
+  test("rejects a draft whose file has a cleanup queued", () => {
+    const { database, mediaId } = fixture("draft")
+    const cleanup = mediaCleanupJob(mediaId)
+    database
+      .insert(schema.outbox)
+      .values({ id: cleanup.idempotencyKey, kind: cleanup.type, payload: cleanup })
+      .run()
+    const before = database.$client.serialize()
+    expect(publish(database)).toBe(0)
+    expect(database.$client.serialize()).toEqual(before)
+  })
+
+  test("rejects a draft whose file is no longer ready", () => {
+    const { database } = fixture("draft")
+    database.$client.query("update media_assets set status = 'deleted'").run()
+    expect(publish(database)).toBe(0)
   })
 
   for (const [name, setup, options] of [

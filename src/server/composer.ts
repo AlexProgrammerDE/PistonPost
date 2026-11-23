@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start"
-import { and, count, eq, gte, ne } from "drizzle-orm"
+import { and, count, eq, gte, ne, sql } from "drizzle-orm"
 import { Clock, DateTime, Schema, Struct, Effect } from "effect"
 
 import type { D1DatabaseClient } from "@/db/d1-database"
@@ -116,7 +116,9 @@ function enforceRecentPostLimit(database: D1DatabaseClient, userId: string) {
 }
 
 function prepareStatements(database: D1DatabaseClient, statements: readonly Statement[]) {
-  return statements.map(({ sql, params }) => database.$client.prepare(sql).bind(...params))
+  return statements.map((statement) =>
+    database.$client.prepare(statement.sql).bind(...statement.params),
+  )
 }
 
 const tagId = Effect.fn("tagId")(function* (normalized: string) {
@@ -615,6 +617,7 @@ export const publishPost = createServerFn({ method: "POST" })
               status: schema.mediaAssets.status,
               kind: schema.mediaAssets.kind,
               streamUid: schema.mediaAssets.streamUid,
+              cleanupQueued: sql<number>`exists (select 1 from ${schema.outbox} where ${schema.outbox.id} = 'media.cleanup:' || ${schema.mediaAssets.id})`,
             })
             .from(schema.postMedia)
             .innerJoin(schema.mediaAssets, eq(schema.mediaAssets.id, schema.postMedia.mediaId))
@@ -632,6 +635,10 @@ export const publishPost = createServerFn({ method: "POST" })
         }
         if (post.type === "video" && media.length !== 1) {
           return yield* invalidInputFailure("A video post needs one ready video.")
+        }
+        // A cancelled upload can finish processing after its cleanup was queued.
+        if (media.some((asset) => asset.cleanupQueued)) {
+          return yield* conflictFailure("A file in this post was removed. Add it again to post.")
         }
         if (media.some((asset) => asset.status !== "ready")) {
           return yield* conflictFailure("Media is still processing.")

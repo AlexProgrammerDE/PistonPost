@@ -51,8 +51,15 @@ export function postPublishStatements(input: PostPublish, invalidate: InternalJo
   const now = Date.now()
   return [
     {
+      // Every attached file must still be ready and must not have a cleanup queued, which a
+      // cancelled upload can get after the check before this batch.
       sql: claimInvalidation(
-        "p.id = ? and p.author_id = ? and p.version = ? and p.status = 'draft'",
+        `p.id = ? and p.author_id = ? and p.version = ? and p.status = 'draft'
+          and not exists (
+            select 1 from post_media pm join media_assets m on m.id = pm.media_id
+            where pm.post_id = p.id and (m.status != 'ready'
+              or exists (select 1 from outbox where id = 'media.cleanup:' || m.id))
+          )`,
       ),
       params: [...invalidationParams(invalidate, now), input.id, input.authorId, input.version],
     },
