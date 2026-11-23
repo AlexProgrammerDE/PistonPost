@@ -81,3 +81,44 @@ export const resolveVideoPlaybackUrl = Effect.fn("resolveVideoPlaybackUrl")(func
   }
   return playbackUrl
 })
+
+type ThumbnailDetails = Pick<
+  StreamVideo,
+  "id" | "thumbnail" | "requireSignedURLs" | "duration" | "thumbnailTimestampPct"
+>
+
+type VideoThumbnailClient = {
+  details(): Promise<ThumbnailDetails>
+  generateToken(): Promise<string>
+}
+
+/** Resolves the Stream thumbnail source, signed when the video requires signed URLs. */
+export const resolveVideoThumbnailSource = Effect.fn("resolveVideoThumbnailSource")(function* (
+  client: VideoThumbnailClient,
+) {
+  const video = yield* Effect.tryPromise({
+    try: () => client.details(),
+    catch: (cause) => VideoPlaybackError.make({ operation: "details", cause }),
+  })
+
+  let source = cloudflarePlaybackUrl(video.thumbnail)
+  // Moderation and author bans require signed URLs, also for thumbnails.
+  if (source && video.requireSignedURLs) {
+    const token = yield* Effect.tryPromise({
+      try: () => client.generateToken(),
+      catch: (cause) => VideoPlaybackError.make({ operation: "sign", cause }),
+    })
+    source = signStreamDeliveryUrl(source, video.id, token)
+  }
+  if (!source) {
+    return yield* VideoPlaybackError.make({
+      operation: "validate",
+      cause: new Error("Cloudflare returned an invalid thumbnail URL."),
+    })
+  }
+  return {
+    source,
+    durationSeconds: video.duration,
+    timestampPct: video.thumbnailTimestampPct,
+  }
+})

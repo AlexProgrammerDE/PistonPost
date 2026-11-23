@@ -2,7 +2,11 @@ import { describe, expect, mock, test } from "bun:test"
 
 import { Effect, Result } from "effect"
 
-import { resolveVideoPlaybackUrl, signStreamDeliveryUrl } from "./video-playback"
+import {
+  resolveVideoPlaybackUrl,
+  resolveVideoThumbnailSource,
+  signStreamDeliveryUrl,
+} from "./video-playback"
 
 function videoClient({
   requireSignedURLs = false,
@@ -111,6 +115,74 @@ describe("video playback URLs", () => {
 
     expect(Result.isFailure(result)).toBeTrue()
     if (Result.isFailure(result)) expect(result.failure.operation).toBe("sign")
+  })
+})
+
+function thumbnailClient({
+  requireSignedURLs = false,
+  thumbnail = "https://customer-example.cloudflarestream.com/video-id/thumbnails/thumbnail.jpg",
+}: { requireSignedURLs?: boolean; thumbnail?: string } = {}) {
+  return {
+    details: mock(() =>
+      Promise.resolve({
+        id: "video-id",
+        thumbnail,
+        requireSignedURLs,
+        duration: 12,
+        thumbnailTimestampPct: 0.25,
+      }),
+    ),
+    generateToken: mock(() => Promise.resolve("signed.token-value")),
+  }
+}
+
+function thumbnailFailure(client: ReturnType<typeof thumbnailClient>) {
+  return Effect.runPromise(Effect.result(resolveVideoThumbnailSource(client))).then((result) =>
+    Result.isFailure(result) ? result.failure.operation : null,
+  )
+}
+
+describe("video thumbnail sources", () => {
+  test("returns the plain thumbnail with its timing details", async () => {
+    const client = thumbnailClient()
+
+    expect(await Effect.runPromise(resolveVideoThumbnailSource(client))).toEqual({
+      source: "https://customer-example.cloudflarestream.com/video-id/thumbnails/thumbnail.jpg",
+      durationSeconds: 12,
+      timestampPct: 0.25,
+    })
+    expect(client.generateToken).not.toHaveBeenCalled()
+  })
+
+  test("signs the thumbnail of a video that requires signed URLs", async () => {
+    const resolved = await Effect.runPromise(
+      resolveVideoThumbnailSource(thumbnailClient({ requireSignedURLs: true })),
+    )
+
+    expect(resolved.source).toBe(
+      "https://customer-example.cloudflarestream.com/signed.token-value/thumbnails/thumbnail.jpg",
+    )
+  })
+
+  test("maps a provider details failure to a typed error", async () => {
+    const client = thumbnailClient()
+    client.details.mockImplementation(() => Promise.reject(new Error("provider unavailable")))
+
+    expect(await thumbnailFailure(client)).toBe("details")
+  })
+
+  test("maps a token failure to a typed error", async () => {
+    const client = thumbnailClient({ requireSignedURLs: true })
+    client.generateToken.mockImplementation(() => Promise.reject(new Error("no signing key")))
+
+    expect(await thumbnailFailure(client)).toBe("sign")
+  })
+
+  test("rejects a missing or foreign thumbnail URL", async () => {
+    expect(await thumbnailFailure(thumbnailClient({ thumbnail: "" }))).toBe("validate")
+    expect(
+      await thumbnailFailure(thumbnailClient({ thumbnail: "https://example.com/thumbnail.jpg" })),
+    ).toBe("validate")
   })
 })
 

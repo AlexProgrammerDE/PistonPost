@@ -6,7 +6,7 @@ import { createStreamThumbnailUrl, SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE } from "@/lib
 import type { AppRequestContext } from "@/server"
 import { cacheTagHeader } from "@/server/cache-tags"
 import { getDeliverableVideo } from "@/server/video-delivery"
-import { signStreamDeliveryUrl } from "@/server/video-playback"
+import { resolveVideoThumbnailSource } from "@/server/video-playback"
 
 const thumbnailSearchSchema = Schema.Struct({
   time: Schema.optional(
@@ -83,22 +83,24 @@ async function videoThumbnail({
   })
   if (!Result.isSuccess(search)) return new Response("Invalid thumbnail request", { status: 400 })
 
-  const stream = context.env.STREAM.video(video.streamUid)
-  const details = await stream.details()
-  // Moderation and author bans require signed URLs, also for thumbnails.
-  const source = details.requireSignedURLs
-    ? signStreamDeliveryUrl(details.thumbnail, details.id, await stream.generateToken())
-    : details.thumbnail
-  if (!source) return new Response("Thumbnail unavailable", { status: 502 })
+  const thumbnailSource = await Effect.runPromise(
+    resolveVideoThumbnailSource(context.env.STREAM.video(video.streamUid)).pipe(
+      Effect.match({
+        onFailure: () => null,
+        onSuccess: (resolved) => resolved,
+      }),
+    ),
+  )
+  if (!thumbnailSource) return new Response("Thumbnail unavailable", { status: 502 })
   const defaultDimensions = fitMediaDimensions(
     video,
     SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
     SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE,
   ) ?? { width: SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE, height: SOCIAL_VIDEO_THUMBNAIL_MAX_SIZE }
   const thumbnail = createStreamThumbnailUrl({
-    source,
-    durationSeconds: details.duration,
-    timestampPct: details.thumbnailTimestampPct,
+    source: thumbnailSource.source,
+    durationSeconds: thumbnailSource.durationSeconds,
+    timestampPct: thumbnailSource.timestampPct,
     timeSeconds: search.success.time,
     width: search.success.width ?? defaultDimensions.width,
     height: search.success.height ?? defaultDimensions.height,
