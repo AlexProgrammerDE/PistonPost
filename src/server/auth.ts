@@ -20,6 +20,7 @@ import type { AppRequestContext } from "../server"
 import { startAccountDeletion } from "./account-deletion-steps"
 import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
+import { EMAIL_CHANGE_AUDIT_ACTION, emailChangeAuditMetadata } from "./email-change-audit"
 import { bindingOperation } from "./operation"
 
 class AuthSecretError extends Schema.TaggedError<
@@ -203,14 +204,20 @@ const enqueueSecurityNotificationEffect = Effect.fn("Auth.enqueueSecurityNotific
     | "auth.email-change-requested"
     | "auth.new-device",
   entityId: string,
+  previousEmail?: string,
 ) {
   const database = createD1Database(context.env.DB)
   const auditEventId = yield* randomUuid
   const subscriptions = yield* bindingOperation("auth.security-subscriptions", () =>
     listActivePushSubscriptionIds(database, userId),
   )
+  // An email change warns the previous address too, because the new address may be an attacker's.
+  const warnedEmail = action === EMAIL_CHANGE_AUDIT_ACTION ? previousEmail : undefined
   const jobs: (ReturnType<typeof securityEmailJob> | PushDeliveryJob)[] = [
     securityEmailJob(userId, auditEventId),
+    ...(warnedEmail === undefined
+      ? []
+      : [securityEmailJob(userId, auditEventId, "previous-email")]),
     ...subscriptions.map(({ subscriptionId }) =>
       securityPushJob({ recipientUserId: userId, subscriptionId }, auditEventId),
     ),
@@ -224,7 +231,7 @@ const enqueueSecurityNotificationEffect = Effect.fn("Auth.enqueueSecurityNotific
           action,
           entityType: "user",
           entityId,
-          metadata: {},
+          metadata: warnedEmail === undefined ? {} : emailChangeAuditMetadata(warnedEmail),
         }),
         ...jobs.map((job) =>
           database
@@ -249,8 +256,11 @@ export function enqueueSecurityNotification(
     | "auth.email-change-requested"
     | "auth.new-device",
   entityId: string,
+  previousEmail?: string,
 ) {
-  return Effect.runPromise(enqueueSecurityNotificationEffect(context, userId, action, entityId))
+  return Effect.runPromise(
+    enqueueSecurityNotificationEffect(context, userId, action, entityId, previousEmail),
+  )
 }
 
 export function privateAuthResponse(response: Response) {

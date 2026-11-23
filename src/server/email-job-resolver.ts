@@ -14,6 +14,7 @@ import {
 } from "@/email/messages"
 import { signUnsubscribeToken } from "@/email/unsubscribe"
 
+import { EMAIL_CHANGE_AUDIT_ACTION, previousEmailFrom } from "./email-change-audit"
 import { notificationEnabled, optInNotificationEnabled } from "./notification-policy"
 
 type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
@@ -280,6 +281,7 @@ export function emailJobResolverLayer(
             .select({
               action: schema.auditEvents.action,
               actorId: schema.auditEvents.actorId,
+              metadata: schema.auditEvents.metadata,
               createdAt: schema.auditEvents.createdAt,
             })
             .from(schema.auditEvents)
@@ -289,15 +291,6 @@ export function emailJobResolverLayer(
         if (!event || event.actorId !== job.recipientUserId) {
           return skip("event-unavailable")
         }
-        const template =
-          event.action === "auth.new-device"
-            ? "new-device"
-            : event.action === "auth.email-change-requested"
-              ? "email-changed"
-              : event.action === "auth.password-changed" || event.action === "auth.password-reset"
-                ? "password-changed"
-                : null
-        if (!template) return skip("event-unsupported")
         const recipient = yield* promiseQuery(() =>
           database
             .select({ email: schema.user.email })
@@ -306,13 +299,51 @@ export function emailJobResolverLayer(
             .get(),
         )
         if (!recipient) return skip("recipient-unavailable")
+        const secureAccountUrl = new URL("/settings/security", baseURL).toString()
+        if (event.action === EMAIL_CHANGE_AUDIT_ACTION) {
+          if (job.audience !== "previous-email") {
+            return ready({
+              to: recipient.email,
+              channel: "authentication",
+              content: securityNotificationMessage({
+                template: "email-changed",
+                audience: "new-email",
+                secureAccountUrl,
+              }),
+            })
+          }
+          // The audit event keeps the replaced address only for a limited time.
+          const previousEmail = previousEmailFrom(event.metadata)
+          if (!previousEmail) return skip("previous-email-unavailable")
+          // The account switched back to this address before the job ran.
+          if (previousEmail.toLowerCase() === recipient.email.toLowerCase()) {
+            return skip("previous-email-in-use")
+          }
+          return ready({
+            to: previousEmail,
+            channel: "authentication",
+            content: securityNotificationMessage({
+              template: "email-changed",
+              audience: "previous-email",
+              secureAccountUrl,
+            }),
+          })
+        }
+        if (job.audience) return skip("event-unsupported")
+        const template =
+          event.action === "auth.new-device"
+            ? "new-device"
+            : event.action === "auth.password-changed" || event.action === "auth.password-reset"
+              ? "password-changed"
+              : null
+        if (!template) return skip("event-unsupported")
         return ready({
           to: recipient.email,
           channel: "authentication",
           content: securityNotificationMessage({
             template,
             email: recipient.email,
-            secureAccountUrl: new URL("/settings/security", baseURL).toString(),
+            secureAccountUrl,
             timestamp: event.createdAt.toISOString(),
           }),
         })

@@ -71,34 +71,48 @@ export function authenticationMessage(input: AuthenticationMessageInput): EmailC
   }
 }
 
-type SecurityNotificationInput = Readonly<{
-  readonly template: "password-changed" | "email-changed" | "new-device"
-  readonly email: string
-  readonly secureAccountUrl: string
-  readonly timestamp?: string
-}>
+type SecurityNotificationInput =
+  | Readonly<{
+      readonly template: "password-changed" | "new-device"
+      readonly email: string
+      readonly secureAccountUrl: string
+      readonly timestamp?: string
+    }>
+  | Readonly<{
+      readonly template: "email-changed"
+      /** The previous address gets the warning. The new address gets a confirmation. */
+      readonly audience: "previous-email" | "new-email"
+      readonly secureAccountUrl: string
+    }>
 
 const securityCopy = {
   "password-changed": "Your PistonPost password changed",
-  "email-changed": "Your PistonPost email is changing",
+  "email-changed": "Your PistonPost email changed",
   "new-device": "New PistonPost sign-in",
+} as const
+
+const emailChangedCopy = {
+  "previous-email": {
+    preview: "Your account no longer uses this email address",
+    heading: "Your email address changed",
+    message:
+      "The email address on your PistonPost account was changed, so this address will no longer get account email. If this was not you, secure your account now.",
+  },
+  "new-email": {
+    preview: "This is now your PistonPost email",
+    heading: "This is now your PistonPost email",
+    message:
+      "Your PistonPost account now uses this email address for sign-in and account email. If this was not you, secure your account now.",
+  },
 } as const
 
 export function securityNotificationMessage(input: SecurityNotificationInput): EmailContent {
   switch (input.template) {
     case "password-changed": {
-      return {
-        ...input,
-        template: "password-changed",
-        subject: securityCopy[input.template],
-      }
+      return { ...input, template: "password-changed", subject: securityCopy[input.template] }
     }
     case "new-device": {
-      return {
-        ...input,
-        template: "new-device",
-        subject: securityCopy[input.template],
-      }
+      return { ...input, template: "new-device", subject: securityCopy[input.template] }
     }
     case "email-changed": {
       break
@@ -108,10 +122,7 @@ export function securityNotificationMessage(input: SecurityNotificationInput): E
   return {
     template: input.template,
     subject: securityCopy[input.template],
-    preview: "Email change requested",
-    heading: "Email change requested",
-    message:
-      "An email address change was requested for your account. If this was not you, secure your account now.",
+    ...emailChangedCopy[input.audience],
     action: {
       label: "Review account security",
       url: input.secureAccountUrl,

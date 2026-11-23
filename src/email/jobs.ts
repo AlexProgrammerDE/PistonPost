@@ -41,6 +41,11 @@ export class SecurityEmailJob extends Schema.Class<
   idempotencyKey: Schema.String,
   recipientUserId: Schema.String,
   auditEventId: Schema.String,
+  /**
+   * Which address of the recipient gets the message. Jobs without it, including jobs queued
+   * before this field existed, go to the account's current address.
+   */
+  audience: Schema.optionalKey(Schema.Literal("previous-email")),
 }) {}
 
 export class ProductEmailJob extends Schema.Class<
@@ -117,13 +122,20 @@ export function moderationEmailJob(recipientUserId: string, auditEventId: string
   })
 }
 
-export function securityEmailJob(recipientUserId: string, auditEventId: string) {
+export function securityEmailJob(
+  recipientUserId: string,
+  auditEventId: string,
+  audience?: "previous-email",
+) {
   return SecurityEmailJob.make({
     version: 2,
     type: "email.security",
-    idempotencyKey: `email.security:${recipientUserId}:${auditEventId}`,
+    idempotencyKey: audience
+      ? `email.security:${recipientUserId}:${auditEventId}:${audience}`
+      : `email.security:${recipientUserId}:${auditEventId}`,
     recipientUserId,
     auditEventId,
+    ...(audience ? { audience } : {}),
   })
 }
 

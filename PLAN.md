@@ -1363,3 +1363,12 @@ Record future changes here with date, decision, reason, and affected phases.
 - 2026-11-23: Collapse email subjects to one line at render time. Post titles, display names, and
   campaign subjects can contain line breaks, which are invalid in a subject header and would now
   fail permanently with a provider validation error. This affects Phase 4.
+- 2026-11-23: Send the email-change security notice to both addresses. Better Auth replaces the
+  address before the Queue job runs, so the auth route stores the previous address from the
+  pre-handler session in the `auth.email-change-requested` audit event metadata. That event gets
+  two ID-only security jobs: the default job confirms the change to the current address, and a
+  `previous-email` audience job warns the replaced address. Scheduled maintenance removes the
+  previous address from these audit events after 14 days, which covers Queue retries and a manual
+  dead-letter replay. A job that runs after removal, or after the account switched back to that
+  address, is skipped. Jobs queued before this change still decode and go to the current address.
+  This affects Phases 4 and 9.

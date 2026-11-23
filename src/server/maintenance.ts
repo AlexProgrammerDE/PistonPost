@@ -6,6 +6,7 @@ import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 
 import { missingProviderObject } from "./account-media-purge"
+import { redactExpiredPreviousEmails } from "./email-change-audit"
 import { mediaCleanupJob, mediaCleanupJobSchema } from "./jobs"
 import { runMaintenanceTasks } from "./maintenance-runner"
 import { bindingOperation } from "./operation"
@@ -66,6 +67,15 @@ const redactProcessedLegacyEmailJobs = Effect.fn("Maintenance.redactProcessedLeg
     )
   },
 )
+
+const redactEmailChangeAddresses = Effect.fn("Maintenance.redactEmailChangeAddresses")(function* (
+  env: Cloudflare.Env,
+) {
+  const now = yield* Clock.currentTimeMillis
+  yield* bindingOperation("maintenance.redactEmailChangeAddresses", () =>
+    redactExpiredPreviousEmails(createD1Database(env.DB), now),
+  )
+})
 
 const cleanExpiredPushSubscriptions = Effect.fn("Maintenance.cleanExpiredPushSubscriptions")(
   function* (env: Cloudflare.Env) {
@@ -415,6 +425,7 @@ const runMaintenance = Effect.fn("Maintenance.runMaintenance")(function* (env: C
   yield* runMaintenanceTasks([
     { name: "outbox", run: drainOutbox(env) },
     { name: "legacy-email", run: redactProcessedLegacyEmailJobs(env) },
+    { name: "email-change-addresses", run: redactEmailChangeAddresses(env) },
     { name: "push-subscriptions", run: cleanExpiredPushSubscriptions(env) },
     { name: "abandoned-media", run: queueAbandonedMedia(env) },
     { name: "abandoned-drafts", run: removeAbandonedDrafts(env) },

@@ -210,8 +210,17 @@ async function handleAuth({ request, context }: { request: Request; context: App
         ? "auth.email-change-requested"
         : undefined
   if (notificationAction && session?.user.id && response.ok) {
+    // The session was read before the handler ran, so it still holds the replaced address.
+    const previousEmail =
+      notificationAction === "auth.email-change-requested" ? session.user.email : undefined
     context.executionContext.waitUntil(
-      enqueueSecurityNotification(context, session.user.id, notificationAction, session.user.id),
+      enqueueSecurityNotification(
+        context,
+        session.user.id,
+        notificationAction,
+        session.user.id,
+        previousEmail,
+      ),
     )
   }
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test"
 
 import { Effect, Result, Exit, Layer } from "effect"
 
-import { decodeEmailDeliveryJob } from "./jobs"
+import { decodeEmailDeliveryJob, securityEmailJob } from "./jobs"
 import {
   authenticationMessage,
   productUpdateMessage,
@@ -207,7 +207,7 @@ describe("transactional email", () => {
     const emailChange = await renderEmail(
       securityNotificationMessage({
         template: "email-changed",
-        email: "recipient@example.com",
+        audience: "previous-email",
         secureAccountUrl: "https://post.pistonmaster.net/settings/security",
       }),
     )
@@ -365,6 +365,53 @@ describe("transactional email", () => {
     })
 
     expect(rendered.subject).toBe("Ann Bcc: someone@example.com commented on Cats and dogs")
+  })
+
+  it("words the email change notice for the previous and the new address", async () => {
+    const secureAccountUrl = "https://post.pistonmaster.net/settings/security"
+    const [previous, current] = await Promise.all([
+      renderEmail(
+        securityNotificationMessage({
+          template: "email-changed",
+          audience: "previous-email",
+          secureAccountUrl,
+        }),
+      ),
+      renderEmail(
+        securityNotificationMessage({
+          template: "email-changed",
+          audience: "new-email",
+          secureAccountUrl,
+        }),
+      ),
+    ])
+
+    expect(previous.text).toContain("this address will no longer get account email")
+    expect(current.text).toContain("now uses this email address")
+    for (const rendered of [previous, current]) {
+      expect(rendered.subject).toBe("Your PistonPost email changed")
+      expect(rendered.html).toContain(secureAccountUrl)
+    }
+  })
+
+  it("gives the previous-address security job its own idempotency key", () => {
+    const current = securityEmailJob("user-one", "event-one")
+    const previous = securityEmailJob("user-one", "event-one", "previous-email")
+
+    expect(previous.idempotencyKey).not.toBe(current.idempotencyKey)
+    expect(Result.isSuccess(decodeEmailDeliveryJob(previous))).toBeTrue()
+    // Jobs queued before the audience field existed still decode.
+    expect(
+      Result.isSuccess(
+        decodeEmailDeliveryJob({
+          version: 2,
+          type: "email.security",
+          idempotencyKey: "email.security:user-one:event-one",
+          recipientUserId: "user-one",
+          auditEventId: "event-one",
+        }),
+      ),
+    ).toBeTrue()
   })
 
   it("rejects expired and modified unsubscribe links", async () => {
