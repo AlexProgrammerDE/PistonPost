@@ -20,6 +20,8 @@ export const auditEvents = sqliteTable(
   },
   (table) => [
     index("audit_events_entity_created_idx").on(table.entityType, table.entityId, table.createdAt),
+    // Account deletion sets actor_id to null.
+    index("audit_events_actor_idx").on(table.actorId),
   ],
 )
 

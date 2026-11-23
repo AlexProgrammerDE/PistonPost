@@ -27,6 +27,8 @@ export const contentReports = sqliteTable(
     index("content_reports_status_created_idx").on(table.status, table.createdAt, table.id),
     index("content_reports_target_idx").on(table.targetType, table.targetId, table.createdAt),
     index("content_reports_reporter_created_idx").on(table.reporterId, table.createdAt),
+    // Account deletion sets resolved_by to null.
+    index("content_reports_resolved_by_idx").on(table.resolvedBy),
     // A reporter can hold one open report per target. Concurrent submissions cannot both insert.
     uniqueIndex("content_reports_open_reporter_target_idx")
       .on(table.reporterId, table.targetType, table.targetId)

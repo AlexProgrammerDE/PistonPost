@@ -85,6 +85,23 @@ describe("hot D1 query plans", () => {
     expect(followingPlan).toContain("sqlite_autoindex_tag_follows_1")
   })
 
+  test("finds rows that reference a deleted account through an index", () => {
+    // Deleting a user cascades or sets null through these columns. Without a leading index,
+    // SQLite scans the whole table once per deleted user.
+    expect(plan("SELECT 1 FROM comments WHERE author_id = 'user'")).toContain(
+      "SEARCH comments USING COVERING INDEX comments_author_idx",
+    )
+    expect(plan("SELECT 1 FROM reactions WHERE user_id = 'user'")).toContain(
+      "SEARCH reactions USING COVERING INDEX reactions_user_idx",
+    )
+    expect(plan("SELECT 1 FROM audit_events WHERE actor_id = 'user'")).toContain(
+      "SEARCH audit_events USING COVERING INDEX audit_events_actor_idx",
+    )
+    expect(plan("SELECT 1 FROM content_reports WHERE resolved_by = 'user'")).toContain(
+      "SEARCH content_reports USING COVERING INDEX content_reports_resolved_by_idx",
+    )
+  })
+
   test("looks up image attachments through the media index", () => {
     expect(plan("SELECT post_id FROM post_media WHERE media_id = 'image'")).toContain(
       "SEARCH post_media USING INDEX post_media_media_idx",

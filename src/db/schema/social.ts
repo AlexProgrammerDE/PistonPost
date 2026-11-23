@@ -38,6 +38,8 @@ export const comments = sqliteTable(
   (table) => [
     index("comments_post_status_created_idx").on(table.postId, table.status, table.createdAt),
     index("comments_parent_status_created_idx").on(table.parentId, table.status, table.createdAt),
+    // Account deletion cascades through author_id.
+    index("comments_author_idx").on(table.authorId),
     check("comments_content_length_check", sql`length(${table.content}) between 1 and 250`),
     check("comments_status_check", sql`${table.status} in ('published', 'moderated', 'deleted')`),
   ],
@@ -55,7 +57,11 @@ export const reactions = sqliteTable(
     createdAt: timestamp("created_at").notNull().default(now),
     updatedAt: timestamp("updated_at").notNull().default(now),
   },
-  (table) => [primaryKey({ columns: [table.postId, table.userId] })],
+  (table) => [
+    primaryKey({ columns: [table.postId, table.userId] }),
+    // Account deletion cascades through user_id, which the primary key does not lead with.
+    index("reactions_user_idx").on(table.userId),
+  ],
 )
 
 export const userFollows = sqliteTable(

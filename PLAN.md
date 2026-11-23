@@ -404,6 +404,8 @@ At minimum:
 - mediaAssets by ownerId, status, and createdAt.
 - outbox by processedAt and availableAt.
 - auditEvents by entityType, entityId, and createdAt.
+- Every foreign key to `user` that account deletion follows: comments by authorId, reactions by
+  userId, auditEvents by actorId, and contentReports by resolvedBy.
 
 Use cursor pagination based on publishedAt plus id or createdAt plus id. Do not use large offsets for feeds.
 
@@ -1327,3 +1329,8 @@ Record future changes here with date, decision, reason, and affected phases.
   the cookie expires. Minting new signed tokens requires a sign-in, which stays on the strict
   per-address auth budget. Unsigned bearer tokens, which the bearer plugin still accepts, share
   the address budget.
+
+- 2026-11-23: Index the account foreign keys that had no leading index: `comments.author_id`,
+  `reactions.user_id`, `audit_events.actor_id`, and `content_reports.resolved_by`. Deleting a user
+  cascades or sets null through these columns, and SQLite scanned each whole table once per
+  deleted account. Migration `0030_index-account-references` only creates indexes.
