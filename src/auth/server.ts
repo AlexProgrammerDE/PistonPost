@@ -24,7 +24,7 @@ import { Predicate } from "effect"
 import type { D1DatabaseClient } from "@/db/d1-database"
 import type { SqliteDatabaseClient } from "@/db/database"
 import * as schema from "@/db/schema"
-import { isValidUsername } from "@/domain/validation"
+import { isValidUsername, MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/domain/validation"
 import type { EmailContent } from "@/email/email"
 import { authenticationMessage } from "@/email/messages"
 
@@ -157,6 +157,9 @@ export function createAuth(runtime: AuthRuntime) {
     trustedOrigins: [...runtime.trustedOrigins],
     emailAndPassword: {
       enabled: true,
+      // Match the sign-up form so direct API calls cannot set a shorter password.
+      minPasswordLength: MIN_PASSWORD_LENGTH,
+      maxPasswordLength: MAX_PASSWORD_LENGTH,
       requireEmailVerification: true,
       revokeSessionsOnPasswordReset: true,
       sendResetPassword: async ({ user, url, token }) => {

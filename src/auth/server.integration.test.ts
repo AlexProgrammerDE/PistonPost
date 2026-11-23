@@ -183,6 +183,31 @@ describe("request-scoped Better Auth", () => {
     expect(scheduled).toHaveLength(1)
   })
 
+  it("rejects sign-up passwords shorter than the form allows", async () => {
+    const { auth, database } = setup()
+
+    const tooShort = await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Short Password",
+        email: "short@example.com",
+        password: "elevenchars",
+      }),
+    )
+    const longEnough = await auth.handler(
+      authRequest("/sign-up/email", {
+        name: "Long Password",
+        email: "long@example.com",
+        password: "twelve-chars",
+      }),
+    )
+
+    expect(tooShort.status).toBe(400)
+    expect(longEnough.status).toBe(200)
+    expect(database.select({ email: schema.user.email }).from(schema.user).all()).toEqual([
+      { email: "long@example.com" },
+    ])
+  })
+
   it("registers an unverified user and dispatches a verification code", async () => {
     const { auth, database, emails } = setup()
     const response = await auth.handler(

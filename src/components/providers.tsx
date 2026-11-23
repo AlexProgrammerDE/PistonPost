@@ -6,6 +6,7 @@ import type { ComponentPropsWithoutRef, PropsWithChildren } from "react"
 import { authClient } from "@/auth/client"
 import { AuthProvider } from "@/components/auth/auth-provider"
 import { createAuthenticationPlugins } from "@/components/authentication-plugins"
+import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH } from "@/domain/validation"
 import { withAuthReturnRedirect } from "@/lib/auth-return-redirect"
 import {
   preserveAvatarSource,
@@ -75,8 +76,8 @@ export function AuthenticationProvider({
         enabled: true,
         confirmPassword: true,
         forgotPassword: true,
-        minPasswordLength: 12,
-        maxPasswordLength: 128,
+        minPasswordLength: MIN_PASSWORD_LENGTH,
+        maxPasswordLength: MAX_PASSWORD_LENGTH,
         name: true,
         rememberMe: true,
         requireEmailVerification: true,
