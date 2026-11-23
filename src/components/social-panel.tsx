@@ -698,7 +698,10 @@ export function SocialPanel({
                         <MessageCircle aria-hidden="true" />
                       </EmptyMedia>
                       <EmptyTitle>No comments yet</EmptyTitle>
-                      <EmptyDescription>Start the conversation.</EmptyDescription>
+                      {/* Signed-out viewers already see the sign-in prompt above. */}
+                      {viewerId ? (
+                        <EmptyDescription>Start the conversation.</EmptyDescription>
+                      ) : null}
                     </EmptyHeader>
                   </Empty>
                 </m.div>

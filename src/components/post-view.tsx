@@ -178,7 +178,13 @@ function PostDetailMetadata({
   readonly onOpenTag: (event: MouseEvent<HTMLAnchorElement>, tag: string) => void
 }) {
   return (
-    <div className="mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-y py-3">
+    <div
+      className={cn(
+        "mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-t py-3",
+        // Text posts have no media here, so the action row's top rule closes this row.
+        post.type !== "text" && "border-b",
+      )}
+    >
       {post.tags.map((tag) => (
         <Badge
           key={tag.slug}
