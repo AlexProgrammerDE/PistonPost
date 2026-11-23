@@ -3,6 +3,20 @@ import { describe, expect, test } from "bun:test"
 import { allowRequest, requestCredential, routeClass } from "./request-rate-limit"
 
 const origin = "https://post.pistonmaster.net"
+const secret = "test-only-auth-secret-at-least-32-characters"
+
+/** Signs a session token the way Better Auth signs its session cookie. */
+async function signedToken(token: string, signingSecret = secret) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(signingSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  )
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(token))
+  return encodeURIComponent(`${token}.${btoa(String.fromCodePoint(...new Uint8Array(signature)))}`)
+}
 
 function limiter(allowed = true) {
   const keys: string[] = []
@@ -33,6 +47,7 @@ function limiters() {
       ANON_RATE_LIMITER: anon.binding,
       AUTH_RATE_LIMITER: auth.binding,
       USER_RATE_LIMITER: user.binding,
+      BETTER_AUTH_SECRET: secret,
     },
   }
 }
@@ -41,6 +56,10 @@ function request(path: string, init: RequestInit = {}) {
   const headers = new Headers(init.headers)
   headers.set("cf-connecting-ip", "203.0.113.7")
   return new Request(`${origin}${path}`, { ...init, headers })
+}
+
+function credential(headers: HeadersInit) {
+  return requestCredential(request("/", { headers }), secret)
 }
 
 describe("request rate limits", () => {
@@ -68,19 +87,77 @@ describe("request rate limits", () => {
 
   test("limits signed-in traffic per session without exposing the token", async () => {
     const { anon, user, env } = limiters()
+    const value = await signedToken("session-token")
     const secure = request("/", {
-      headers: { cookie: "sidebar_state=true; __Secure-pistonpost.session_token=secret.sig" },
+      headers: { cookie: `sidebar_state=true; __Secure-pistonpost.session_token=${value}` },
     })
-    const local = request("/", { headers: { cookie: "pistonpost.session_token=secret.sig" } })
+    const local = request("/", { headers: { cookie: `pistonpost.session_token=${value}` } })
+    const bearer = request("/", {
+      headers: { authorization: `Bearer ${decodeURIComponent(value)}` },
+    })
+    const encodedBearer = request("/", { headers: { authorization: `bearer ${value}` } })
 
     await allowRequest(secure, env)
     await allowRequest(local, env)
+    await allowRequest(bearer, env)
+    await allowRequest(encodedBearer, env)
 
     expect(anon.keys).toEqual([])
-    expect(user.keys).toHaveLength(2)
+    expect(user.keys).toHaveLength(4)
     expect(user.keys[0]).toStartWith("request:feed:")
-    expect(user.keys[0]).toBe(user.keys[1] ?? "")
-    expect(user.keys.join()).not.toContain("secret")
+    expect(new Set(user.keys).size).toBe(1)
+    expect(user.keys.join()).not.toContain("session-token")
+  })
+
+  test("keeps forged session cookies on the address budget", async () => {
+    const { anon, user, env } = limiters()
+    const otherSecret = await signedToken("session-token", "another-secret-at-least-32-characters")
+    const forgedCookies = [
+      "pistonpost.session_token=random-value",
+      "pistonpost.session_token=token.not-a-signature",
+      `__Secure-pistonpost.session_token=${otherSecret}`,
+      `pistonpost.session_token=other${await signedToken("session-token")}`,
+    ]
+
+    for (const cookie of forgedCookies) {
+      await allowRequest(request("/", { headers: { cookie } }), env)
+    }
+
+    expect(anon.keys).toEqual(forgedCookies.map(() => "203.0.113.7:feed"))
+    expect(user.keys).toEqual([])
+  })
+
+  test("keeps forged and unsigned bearer tokens on the address budget", async () => {
+    const { anon, user, env } = limiters()
+    const forged = [
+      "Bearer random-value",
+      "Bearer token.c2lnbmF0dXJlLXRoYXQtaXMtZm9ydHktZm91ci1jaGFycy0=",
+      `Bearer ${await signedToken("session-token", "another-secret-at-least-32-characters")}`,
+      "Basic dXNlcjpwYXNz",
+    ]
+
+    for (const authorization of forged) {
+      await allowRequest(request("/_serverFn/abc", { headers: { authorization } }), env)
+    }
+
+    expect(anon.keys).toEqual(forged.map(() => "203.0.113.7:server-function"))
+    expect(user.keys).toEqual([])
+  })
+
+  test("treats credentials as anonymous when the auth secret is unavailable", async () => {
+    const { anon, user, env } = limiters()
+    const cookie = `pistonpost.session_token=${await signedToken("session-token")}`
+    const failingSecret: SecretsStoreSecret = {
+      get: () => Promise.reject(new Error("secret unavailable")),
+    }
+
+    await allowRequest(request("/", { headers: { cookie } }), {
+      ...env,
+      BETTER_AUTH_SECRET: failingSecret,
+    })
+
+    expect(anon.keys).toEqual(["203.0.113.7:feed"])
+    expect(user.keys).toEqual([])
   })
 
   test("keeps public media on the address budget for signed-in visitors", async () => {
@@ -97,12 +174,13 @@ describe("request rate limits", () => {
 
   test("rejects the request when its budget is spent", async () => {
     const { env } = limiters()
+    const token = await signedToken("session-token")
 
     expect(
       await allowRequest(request("/"), { ...env, ANON_RATE_LIMITER: limiter(false).binding }),
     ).toBe(false)
     expect(
-      await allowRequest(request("/", { headers: { authorization: "Bearer token" } }), {
+      await allowRequest(request("/", { headers: { authorization: `Bearer ${token}` } }), {
         ...env,
         USER_RATE_LIMITER: limiter(false).binding,
       }),
@@ -132,6 +210,7 @@ describe("request rate limits", () => {
       ANON_RATE_LIMITER: failingLimiter(),
       AUTH_RATE_LIMITER: failingLimiter(),
       USER_RATE_LIMITER: failingLimiter(),
+      BETTER_AUTH_SECRET: secret,
     }
 
     expect(await allowRequest(request("/api/auth/sign-out", { method: "POST" }), env)).toBe(true)
@@ -140,17 +219,16 @@ describe("request rate limits", () => {
     ).toBe(true)
   })
 
-  test("reads credentials only from the session cookie or authorization header", () => {
-    expect(requestCredential(request("/"))).toBeNull()
-    expect(
-      requestCredential(request("/", { headers: { cookie: "pistonpost.session_token=" } })),
-    ).toBeNull()
-    expect(
-      requestCredential(request("/", { headers: { cookie: "pistonpost.session_data=cache" } })),
-    ).toBeNull()
-    expect(requestCredential(request("/", { headers: { authorization: "Bearer t" } }))).toBe(
-      "authorization:Bearer t",
+  test("reads credentials only from a signed session cookie or bearer token", async () => {
+    const value = await signedToken("session-token")
+
+    expect(await credential({})).toBeNull()
+    expect(await credential({ cookie: "pistonpost.session_token=" })).toBeNull()
+    expect(await credential({ cookie: `pistonpost.session_data=${value}` })).toBeNull()
+    expect(await credential({ cookie: `pistonpost.session_token=${value}` })).toBe(
+      "session:session-token",
     )
+    expect(await credential({ authorization: `Bearer ${value}` })).toBe("session:session-token")
   })
 
   test("classifies routes for keys and analytics without raw paths", () => {

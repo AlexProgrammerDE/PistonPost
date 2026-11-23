@@ -1318,3 +1318,12 @@ Record future changes here with date, decision, reason, and affected phases.
 
 - 2026-11-20: Reserve extra codec memory for arithmetic JPEGs. They can expand during the Huffman
   rewrite even when their coded data fits the JPEG size limit.
+
+- 2026-11-23: Give a request the per-session `USER_RATE_LIMITER` budget only when its session
+  cookie or bearer token carries a valid Better Auth HMAC signature for the request-scoped
+  `BETTER_AUTH_SECRET`. Forged, unsigned, and unverifiable credentials stay on the per-address
+  `ANON_RATE_LIMITER` budget, so random cookies or bearer values cannot open a new bucket on each
+  request. The check skips D1, so a signed token for a revoked session keeps its own budget until
+  the cookie expires. Minting new signed tokens requires a sign-in, which stays on the strict
+  per-address auth budget. Unsigned bearer tokens, which the bearer plugin still accepts, share
+  the address budget.
