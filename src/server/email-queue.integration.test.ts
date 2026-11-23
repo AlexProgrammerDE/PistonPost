@@ -2,16 +2,22 @@ import type { Database } from "bun:sqlite"
 import { afterEach, describe, expect, mock, test } from "bun:test"
 
 import { eq } from "drizzle-orm"
+import { Effect, Exit, Layer } from "effect"
 
 import { createUser } from "@/db/factories"
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
 import { productEmailJob } from "@/email/jobs"
+import { commentPushJob } from "@/push/jobs"
+import { PushTransport } from "@/push/transport"
+
+import { outboxRepositoryLayer } from "./outbox-repository"
+import { PushJobResolver } from "./push-job-resolver"
 
 void mock.module("cloudflare:workers", () => ({
   cache: { purge: () => Promise.resolve({ success: true }) },
 }))
-const { handleQueue } = await import("./email-queue")
+const { deliverPushJob, handleQueue } = await import("./email-queue")
 
 type Row = Record<string, unknown>
 
@@ -166,5 +172,86 @@ describe("dead-letter consumer", () => {
       .get()
     expect(outbox?.completedReason).toBe("dead-lettered")
     expect(outbox?.deadLetteredAt).toBeInstanceOf(Date)
+  })
+})
+
+describe("push delivery", () => {
+  test("does not send a push again when marking the subscription fails after the provider accepted it", async () => {
+    const { database, env } = setup()
+    const job = commentPushJob({ recipientUserId: "author", subscriptionId: "author-push" }, "c1")
+    database
+      .insert(schema.user)
+      .values(createUser({ id: "author", email: "author@example.com" }))
+      .run()
+    database
+      .insert(schema.session)
+      .values({
+        id: "author-session",
+        userId: "author",
+        token: "author-token",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+      })
+      .run()
+    database
+      .insert(schema.pushSubscriptions)
+      .values({
+        id: "author-push",
+        userId: "author",
+        sessionId: "author-session",
+        endpoint: "https://fcm.googleapis.com/fcm/send/author",
+        endpointHash: "a".repeat(64),
+        p256dh: "p".repeat(64),
+        auth: "a".repeat(24),
+      })
+      .run()
+    // A real D1 failure on the bookkeeping write that follows provider acceptance.
+    database.$client.run(
+      "create trigger fail_push_success before update on push_subscriptions begin select raise(abort, 'write failed'); end",
+    )
+    let sends = 0
+    const services = Layer.mergeAll(
+      outboxRepositoryLayer(database),
+      Layer.succeed(PushJobResolver, {
+        resolve: () =>
+          Effect.succeed({
+            _tag: "Ready",
+            target: {
+              endpoint: "https://fcm.googleapis.com/fcm/send/author",
+              expirationTime: null,
+              keys: { p256dh: "p", auth: "a" },
+            },
+            payload: { title: "Comment", body: "Hi", url: "/", tag: "comment" },
+          } as const),
+      }),
+      Layer.succeed(PushTransport, {
+        send: () =>
+          Effect.sync(() => {
+            sends += 1
+          }),
+      }),
+    )
+    const deliver = () =>
+      Effect.runPromiseExit(deliverPushJob(job, env).pipe(Effect.provide(services)))
+
+    const first = await deliver()
+    // A queue retry of the same message must not reach the provider again.
+    database
+      .update(schema.outbox)
+      .set({ availableAt: new Date(0) })
+      .where(eq(schema.outbox.id, job.idempotencyKey))
+      .run()
+    const second = await deliver()
+
+    expect(Exit.isSuccess(first)).toBe(true)
+    expect(Exit.isSuccess(second)).toBe(true)
+    expect(sends).toBe(1)
+    const outbox = database
+      .select()
+      .from(schema.outbox)
+      .where(eq(schema.outbox.id, job.idempotencyKey))
+      .get()
+    expect(outbox?.completedReason).toBe("provider-accepted")
   })
 })

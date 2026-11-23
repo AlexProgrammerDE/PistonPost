@@ -200,7 +200,7 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
   )
 })
 
-const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
+export const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
   job: PushDeliveryJob,
   env: Cloudflare.Env,
 ) {
@@ -251,14 +251,20 @@ const deliverPushJob = Effect.fn("Queue.deliverPushJob")(function* (
 
           if (outcome === "accepted") {
             const now = yield* DateTime.nowAsDate
-            yield* Effect.tryPromise({
-              try: () =>
-                createD1Database(env.DB)
-                  .update(schema.pushSubscriptions)
-                  .set({ lastSuccessAt: now, updatedAt: now })
-                  .where(eq(schema.pushSubscriptions.id, job.subscriptionId)),
-              catch: queueFailure("push-mark-success"),
-            })
+            // The provider already accepted the push. A retry would send it again, so this
+            // bookkeeping write must not fail the job.
+            yield* bindingOperation("push-mark-success", () =>
+              createD1Database(env.DB)
+                .update(schema.pushSubscriptions)
+                .set({ lastSuccessAt: now, updatedAt: now })
+                .where(eq(schema.pushSubscriptions.id, job.subscriptionId)),
+            ).pipe(
+              Effect.catch(() =>
+                Effect.sync(() => {
+                  logError("push.mark-success-failed", { jobType: job.type })
+                }),
+              ),
+            )
             yield* outbox.complete(job.idempotencyKey, claim.attempt, "provider-accepted")
           } else if (outcome === "expired") {
             yield* Effect.tryPromise({
