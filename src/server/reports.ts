@@ -80,34 +80,26 @@ export const createContentReport = createServerFn({ method: "POST" })
           return yield* forbiddenFailure("You can't report your own content.")
         }
 
-        const existing = yield* bindingOperation("createContentReport.existing", () =>
-          database
-            .select({ id: schema.contentReports.id })
-            .from(schema.contentReports)
-            .where(
-              and(
-                eq(schema.contentReports.reporterId, session.user.id),
-                eq(schema.contentReports.targetType, data.target.type),
-                eq(schema.contentReports.targetId, targetId),
-                eq(schema.contentReports.status, "open"),
-              ),
-            )
-            .get(),
-        )
-        if (existing) return yield* conflictFailure("You already reported this content.")
-
         const id = yield* randomUuid
         return yield* Effect.gen(function* () {
-          yield* bindingOperation("createContentReport.operation", () =>
-            database.insert(schema.contentReports).values({
-              id,
-              reporterId: session.user.id,
-              targetType: data.target.type,
-              targetId,
-              reason: data.reason,
-              details: data.details || null,
-            }),
+          // The open-report unique index turns a duplicate, including a concurrent one, into a no-op.
+          const inserted = yield* bindingOperation("createContentReport.operation", () =>
+            database
+              .insert(schema.contentReports)
+              .values({
+                id,
+                reporterId: session.user.id,
+                targetType: data.target.type,
+                targetId,
+                reason: data.reason,
+                details: data.details || null,
+              })
+              .onConflictDoNothing()
+              .returning({ id: schema.contentReports.id }),
           )
+          if (inserted.length === 0) {
+            return yield* conflictFailure("You already reported this content.")
+          }
           return { id }
         }).pipe(Effect.uninterruptible)
       }),

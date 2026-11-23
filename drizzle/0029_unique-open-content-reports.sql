@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `content_reports_open_reporter_target_idx` ON `content_reports` (`reporter_id`,`target_type`,`target_id`) WHERE status = 'open';

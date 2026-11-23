@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm"
-import { check, index, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { check, index, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 
 import { user } from "./auth.generated"
 import { now, timestamp } from "./common"
@@ -27,6 +27,10 @@ export const contentReports = sqliteTable(
     index("content_reports_status_created_idx").on(table.status, table.createdAt, table.id),
     index("content_reports_target_idx").on(table.targetType, table.targetId, table.createdAt),
     index("content_reports_reporter_created_idx").on(table.reporterId, table.createdAt),
+    // A reporter can hold one open report per target. Concurrent submissions cannot both insert.
+    uniqueIndex("content_reports_open_reporter_target_idx")
+      .on(table.reporterId, table.targetType, table.targetId)
+      .where(sql`status = 'open'`),
     check(
       "content_reports_target_type_check",
       sql`${table.targetType} in ('post', 'comment', 'profile')`,
