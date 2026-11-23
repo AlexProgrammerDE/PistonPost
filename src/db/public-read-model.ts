@@ -285,32 +285,35 @@ export async function getPublishedPostRead(database: ReadDatabase, id: string) {
     .get()
 
   if (!row?.publishedAt) return null
-  const hydrated = await hydratePublicPosts(database, [{ ...row, publishedAt: row.publishedAt }])
+  // The comment query needs only the post ID, so run it beside hydration to save a D1 round trip.
+  const [hydrated, structuredComments] = await Promise.all([
+    hydratePublicPosts(database, [{ ...row, publishedAt: row.publishedAt }]),
+    database
+      .select({
+        id: comments.id,
+        parentId: comments.parentId,
+        content: comments.content,
+        createdAt: comments.createdAt,
+        updatedAt: comments.updatedAt,
+        authorName: user.name,
+        authorUsername: profiles.username,
+        authorNormalizedUsername: profiles.normalizedUsername,
+      })
+      .from(comments)
+      .innerJoin(user, eq(user.id, comments.authorId))
+      .innerJoin(profiles, eq(profiles.userId, comments.authorId))
+      .where(
+        and(
+          eq(comments.postId, row.id),
+          eq(comments.status, "published"),
+          notBannedAccount(comments.authorId),
+        ),
+      )
+      .orderBy(desc(comments.createdAt), desc(comments.id))
+      .limit(25),
+  ])
   const post = hydrated[0]
   if (!post) return null
-  const structuredComments = await database
-    .select({
-      id: comments.id,
-      parentId: comments.parentId,
-      content: comments.content,
-      createdAt: comments.createdAt,
-      updatedAt: comments.updatedAt,
-      authorName: user.name,
-      authorUsername: profiles.username,
-      authorNormalizedUsername: profiles.normalizedUsername,
-    })
-    .from(comments)
-    .innerJoin(user, eq(user.id, comments.authorId))
-    .innerJoin(profiles, eq(profiles.userId, comments.authorId))
-    .where(
-      and(
-        eq(comments.postId, post.id),
-        eq(comments.status, "published"),
-        notBannedAccount(comments.authorId),
-      ),
-    )
-    .orderBy(desc(comments.createdAt), desc(comments.id))
-    .limit(25)
   return { ...post, structuredComments }
 }
 
