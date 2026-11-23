@@ -16,7 +16,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { type QueryClient, useQueryClient } from "@tanstack/react-query"
+import { useQueryClient } from "@tanstack/react-query"
 import { Link, useNavigate } from "@tanstack/react-router"
 import { useSelector } from "@tanstack/react-store"
 import { Schema, SchemaIssue } from "effect"
@@ -106,6 +106,7 @@ import {
 } from "@/lib/uploads/media-upload-state"
 import { createMediaUploadStore, type MediaUploadStore } from "@/lib/uploads/media-upload-store"
 import { UploadClientError, uploadImage, uploadVideo } from "@/lib/uploads/upload-client"
+import { waitForVideoProcessing } from "@/lib/uploads/video-processing"
 import {
   prepareVideoForUpload,
   VideoPreparationError,
@@ -233,22 +234,6 @@ function focusFirstInvalidField(formElement: HTMLFormElement) {
     ? invalid
     : invalid.querySelector<HTMLElement>("input, textarea, select, button")
   target?.focus()
-}
-
-async function waitForVideo(queryClient: QueryClient, assetId: string) {
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    // Polling must remain ordered so each check observes the latest Stream state.
-    const [asset] = await queryClient.query(ownedMediaStatusQueryOptions([assetId]))
-    if (asset?.status === "ready") return
-    if (asset?.status === "failed" || asset?.status === "deleted") {
-      throw new Error("The video could not be processed.")
-    }
-    // The delay is part of the bounded reconciliation protocol.
-    await new Promise((resolve) => {
-      setTimeout(resolve, 5000)
-    })
-  }
-  throw new Error("The video is still processing. Try posting again in a few minutes.")
 }
 
 export function PostComposer({
@@ -399,9 +384,14 @@ export function PostComposer({
               },
               controller.signal,
             )
-            uploadControllers.current.delete(item.clientId)
             dispatch({ type: "processing", clientId: item.clientId })
-            await waitForVideo(queryClient, intent.assetId)
+            // Keep the controller registered so canceling during processing stops the wait.
+            await waitForVideoProcessing(async () => {
+              const [asset] = await queryClient.query(
+                ownedMediaStatusQueryOptions([intent.assetId]),
+              )
+              return asset
+            }, controller.signal)
             dispatch({ type: "ready", clientId: item.clientId })
           } catch (error) {
             dispatch({ type: "failed", clientId: item.clientId, error: readableError(error) })
