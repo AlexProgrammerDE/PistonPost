@@ -1,10 +1,14 @@
 import { Effect, Schema } from "effect"
 
+type PlaybackDetails = Pick<
+  StreamVideo,
+  "id" | "allowedOrigins" | "dashPlaybackUrl" | "hlsPlaybackUrl" | "requireSignedURLs"
+>
+
 type VideoPlaybackClient = {
-  details(): Promise<Pick<StreamVideo, "allowedOrigins" | "dashPlaybackUrl" | "hlsPlaybackUrl">>
-  update(
-    params: Pick<StreamUpdateVideoParams, "allowedOrigins">,
-  ): Promise<Pick<StreamVideo, "allowedOrigins" | "dashPlaybackUrl" | "hlsPlaybackUrl">>
+  details(): Promise<PlaybackDetails>
+  update(params: Pick<StreamUpdateVideoParams, "allowedOrigins">): Promise<PlaybackDetails>
+  generateToken(): Promise<string>
 }
 
 export type VideoPlaybackFormat = "dash" | "hls"
@@ -13,7 +17,7 @@ export class VideoPlaybackError extends Schema.TaggedError<
   VideoPlaybackError,
   { readonly brand: unique symbol }
 >()("VideoPlaybackError", {
-  operation: Schema.Literals(["details", "update", "validate"]),
+  operation: Schema.Literals(["details", "update", "sign", "validate"]),
   cause: Schema.Defect(),
 }) {}
 
@@ -27,6 +31,18 @@ function cloudflarePlaybackUrl(value: string) {
   ) {
     return null
   }
+  return url.toString()
+}
+
+/**
+ * Puts a signed token in place of the video ID, which Stream requires for every manifest,
+ * thumbnail, and segment of a video with `requireSignedURLs`.
+ */
+export function signStreamDeliveryUrl(value: string, videoId: string, token: string) {
+  const url = new URL(value)
+  const [, firstSegment, ...rest] = url.pathname.split("/")
+  if (firstSegment !== videoId) return null
+  url.pathname = ["", token, ...rest].join("/")
   return url.toString()
 }
 
@@ -46,9 +62,17 @@ export const resolveVideoPlaybackUrl = Effect.fn("resolveVideoPlaybackUrl")(func
     })
   }
 
-  const playbackUrl = cloudflarePlaybackUrl(
+  let playbackUrl = cloudflarePlaybackUrl(
     format === "hls" ? video.hlsPlaybackUrl : video.dashPlaybackUrl,
   )
+  // Moderation and author bans require signed URLs. The owner and administrators keep playback.
+  if (playbackUrl && video.requireSignedURLs) {
+    const token = yield* Effect.tryPromise({
+      try: () => client.generateToken(),
+      catch: (cause) => VideoPlaybackError.make({ operation: "sign", cause }),
+    })
+    playbackUrl = signStreamDeliveryUrl(playbackUrl, video.id, token)
+  }
   if (!playbackUrl) {
     return yield* VideoPlaybackError.make({
       operation: "validate",
