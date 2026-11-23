@@ -1,4 +1,28 @@
-import { ButtonStyle, ComponentType, type APIContainerComponent } from "discord-api-types/v10"
+import type { APIContainerComponent, ButtonStyle, ComponentType } from "discord-api-types/v10"
+
+// The package ships its enums as CommonJS, so a value import puts all of discord-api-types (about
+// 90 KB) in the client entry: createSeoHead runs in route heads on the client too. TypeScript still
+// rejects any number here that differs from the upstream enum member.
+/* oxlint-disable typescript/no-unsafe-enum-assignment -- These literals are the enum values, checked by the annotations. */
+const componentType: {
+  readonly ActionRow: ComponentType.ActionRow
+  readonly Button: ComponentType.Button
+  readonly Section: ComponentType.Section
+  readonly TextDisplay: ComponentType.TextDisplay
+  readonly Thumbnail: ComponentType.Thumbnail
+  readonly MediaGallery: ComponentType.MediaGallery
+  readonly Container: ComponentType.Container
+} = {
+  ActionRow: 1,
+  Button: 2,
+  Section: 9,
+  TextDisplay: 10,
+  Thumbnail: 11,
+  MediaGallery: 12,
+  Container: 17,
+}
+const linkButtonStyle: ButtonStyle.Link = 5
+/* oxlint-enable typescript/no-unsafe-enum-assignment */
 
 export type DiscordEmbedOptions = {
   title: string
@@ -65,11 +89,11 @@ export function createDiscordEmbed(
     if (layout === "media" && images.length === 0) return undefined
     const heading = `[${markdown(title)}](${url})`
     const text = {
-      type: ComponentType.TextDisplay,
+      type: componentType.TextDisplay,
       content: `${layout === "compact" ? `**${heading}**` : `## ${heading}`}${description ? `\n${markdown(description)}` : ""}`,
     } as const
     const component: APIContainerComponent = {
-      type: ComponentType.Container,
+      type: componentType.Container,
       ...(options.color === undefined ? {} : { accent_color: options.color }),
       components: [
         ...(layout === "media"
@@ -77,10 +101,10 @@ export function createDiscordEmbed(
           : [
               thumbnail
                 ? {
-                    type: ComponentType.Section as const,
+                    type: componentType.Section,
                     components: [text],
                     accessory: {
-                      type: ComponentType.Thumbnail as const,
+                      type: componentType.Thumbnail,
                       media: { url: thumbnail },
                     },
                   }
@@ -89,7 +113,7 @@ export function createDiscordEmbed(
         ...(images.length > 0
           ? [
               {
-                type: ComponentType.MediaGallery as const,
+                type: componentType.MediaGallery,
                 items: images.map((image) => ({ media: { url: image } })),
               },
             ]
@@ -97,10 +121,10 @@ export function createDiscordEmbed(
         ...(layout === "default"
           ? [
               {
-                type: ComponentType.ActionRow as const,
+                type: componentType.ActionRow,
                 components: links.map((link) => ({
-                  type: ComponentType.Button as const,
-                  style: ButtonStyle.Link as const,
+                  type: componentType.Button,
+                  style: linkButtonStyle,
                   ...link,
                 })),
               },
