@@ -121,6 +121,10 @@ export function setCachedPostHeartCount(
     { queryKey: postFeedKeys.following },
     (current) => withPostHeartCount(current, postId, heartCount),
   )
+  queryClient.setQueriesData<InfiniteData<Awaited<ReturnType<typeof getOwnedUnlistedPosts>>>>(
+    { queryKey: postFeedKeys.ownedUnlisted },
+    (current) => withPostHeartCount(current, postId, heartCount),
+  )
 }
 
 /**
