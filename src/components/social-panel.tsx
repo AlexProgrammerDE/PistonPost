@@ -180,6 +180,30 @@ function HeartControl({
   )
 }
 
+/**
+ * The action dock's comments link. Narrow screens hide the word visually but keep it in the
+ * accessible name, so the link is not announced as a bare number.
+ */
+export function QuickCommentsLink({
+  postId,
+  commentCount,
+}: {
+  readonly postId: string
+  readonly commentCount: number
+}) {
+  return (
+    <ButtonLink
+      variant="ghost"
+      size="sm"
+      render={<Link to="/post/$postId" params={{ postId }} hash="discussion" />}
+    >
+      <MessageCircle aria-hidden="true" data-icon="inline-start" />
+      <span className="max-sm:sr-only">Comments</span>
+      <span className="tabular-nums">{commentCount}</span>
+    </ButtonLink>
+  )
+}
+
 function discussionRedirect(postId: string) {
   return `/post/${encodeURIComponent(postId)}#discussion`
 }
@@ -390,15 +414,7 @@ export function SocialPanel({
                   onPressedChange={updateHeart}
                   variant="default"
                 />
-                <ButtonLink
-                  variant="ghost"
-                  size="sm"
-                  render={<Link to="/post/$postId" params={{ postId }} hash="discussion" />}
-                >
-                  <MessageCircle aria-hidden="true" data-icon="inline-start" />
-                  <span className="hidden sm:inline">Comments</span>
-                  {commentCount}
-                </ButtonLink>
+                <QuickCommentsLink postId={postId} commentCount={commentCount} />
               </div>
             </m.nav>
           ) : null}
