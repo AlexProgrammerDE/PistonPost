@@ -20,7 +20,11 @@ export function createAuthenticationPlugins(turnstileSiteKey?: string) {
       minUsernameLength: 1,
       maxUsernameLength: 32,
       usernamePrefix: "@",
-      localization: { usernamePlaceholder: "your-name" },
+      signInLabel: "Username or email",
+      localization: {
+        usernamePlaceholder: "your-name",
+        usernameOrEmailPlaceholder: "your-name or you@example.com",
+      },
     }),
     emailOtpPlugin({
       emailVerification: true,

@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
 
+import { defaultAuthLocale, localizeAuthPlugins } from "@better-auth-ui/core"
 import { adminPlugin as coreAdminPlugin } from "@better-auth-ui/core/plugins/admin"
 import { dashPlugin as coreDashPlugin } from "@better-auth-ui/core/plugins/dash"
 import { emailOtpPlugin as coreEmailOtpPlugin } from "@better-auth-ui/core/plugins/email-otp"
@@ -21,6 +22,9 @@ import { Appearance } from "@/components/auth/theme/appearance"
 import { ThemeToggleItem } from "@/components/auth/theme/theme-toggle-item"
 import { TwoFactorChallenge } from "@/components/auth/two-factor/two-factor-challenge"
 import { TwoFactorSettings } from "@/components/auth/two-factor/two-factor-settings"
+import { SignInUsername } from "@/components/auth/username/sign-in-username"
+import { UsernameField } from "@/components/auth/username/username-field"
+import { usernamePlugin } from "@/lib/auth/username-plugin"
 
 import { createAuthenticationPlugins } from "./authentication-plugins"
 
@@ -73,5 +77,26 @@ describe("global authentication plugins", () => {
     expect(emailOtp).toMatchObject({ changeEmail: true, verifyCurrentEmail: true })
     expect(twoFactor?.views.auth).toEqual({ twoFactor: TwoFactorChallenge })
     expect(twoFactor?.securityCards).toEqual([TwoFactorSettings])
+  })
+
+  test("labels the sign-in identifier for both usernames and emails", () => {
+    const username = localizeAuthPlugins(createAuthenticationPlugins(), defaultAuthLocale).find(
+      (plugin) => plugin.id === usernamePlugin.id,
+    )
+
+    // The provider resolves localization before rendering, so check the resolved plugin.
+    expect(username?.views?.auth).toEqual({ signIn: SignInUsername })
+    expect(username?.localization).toMatchObject({
+      username: "Username or email",
+      usernameOrEmailPlaceholder: "your-name or you@example.com",
+    })
+    expect(username?.additionalFields).toEqual([
+      expect.objectContaining({
+        name: "username",
+        label: "Username",
+        placeholder: "your-name",
+        render: UsernameField,
+      }),
+    ])
   })
 })
