@@ -4,8 +4,14 @@ import { Base64Url } from "effect/encoding"
 import { InvalidCursorError } from "./errors"
 import type { PublicPostCursor } from "./model"
 
+// JavaScript dates cover 8.64e15 milliseconds on either side of the epoch. A larger value would
+// decode to an Invalid Date and silently match no posts instead of failing as a bad cursor.
+const MAX_DATE_MILLISECONDS = 8.64e15
+
 const encodedCursorSchema = Schema.Struct({
-  publishedAt: Schema.Finite,
+  publishedAt: Schema.Finite.check(Schema.isInt())
+    .check(Schema.isGreaterThanOrEqualTo(-MAX_DATE_MILLISECONDS))
+    .check(Schema.isLessThanOrEqualTo(MAX_DATE_MILLISECONDS)),
   id: Schema.String,
 })
 
