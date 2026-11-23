@@ -180,22 +180,17 @@ async function uploadImage({
     }
 
     let statements
-    let previousAvatarId: string | null = null
     if (asset.kind === "avatar") {
       const profile = await database
-        .select({
-          avatarMediaId: schema.profiles.avatarMediaId,
-        })
+        .select({ userId: schema.profiles.userId })
         .from(schema.profiles)
         .where(eq(schema.profiles.userId, session.user.id))
         .get()
       if (!profile) throw new Error("Profile missing")
-      previousAvatarId = profile.avatarMediaId === asset.id ? null : profile.avatarMediaId
       statements = finalizeImageUploadStatements(finalized, {
         kind: "avatar",
         userId: session.user.id,
         image: mediaImageUrl(asset.id, "avatar"),
-        previousAvatarId,
         auditEventId: crypto.randomUUID(),
       })
     } else {
@@ -229,7 +224,7 @@ async function uploadImage({
       )
     }
 
-    const results = await database.$client.batch(
+    const results = await database.$client.batch<{ mediaId: string }>(
       statements.map((statement) =>
         database.$client.prepare(statement.sql).bind(...statement.params),
       ),
@@ -251,9 +246,11 @@ async function uploadImage({
       await context.env.MEDIA.delete(key)
       return jsonError(usedUploadMessage, 409)
     }
-    if (previousAvatarId) {
-      const cleanup = mediaCleanupJob(previousAvatarId)
-      context.executionContext.waitUntil(context.env.JOBS.send(cleanup))
+    if (asset.kind === "avatar") {
+      // The second avatar statement queues cleanup for the avatar this upload replaced.
+      for (const { mediaId: replacedId } of results[1]?.results ?? []) {
+        context.executionContext.waitUntil(context.env.JOBS.send(mediaCleanupJob(replacedId)))
+      }
     }
 
     return Response.json(

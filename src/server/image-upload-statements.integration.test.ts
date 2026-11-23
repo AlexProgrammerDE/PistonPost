@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, test } from "bun:test"
 
+import { Schema } from "effect"
+
 import { createPost, createUser } from "@/db/factories"
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
@@ -8,6 +10,7 @@ import {
   finalizeImageUploadStatements,
   reserveImageUploadKeyStatement,
 } from "./image-upload-statements"
+import { mediaCleanupJob, mediaCleanupJobSchema } from "./jobs"
 import type { Statement } from "./post-lifecycle-statements"
 
 const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
@@ -64,6 +67,15 @@ function finalized(assetId: string, r2Key: string) {
     height: 32,
     checksum: "checksum",
     providerMetadata: { postId: "post", ordinal: 0, placeholderColor: null },
+  }
+}
+
+function avatarTarget(assetId: string) {
+  return {
+    kind: "avatar" as const,
+    userId: "test-user",
+    image: `/media/image/${assetId}/avatar`,
+    auditEventId: crypto.randomUUID(),
   }
 }
 
@@ -135,11 +147,13 @@ describe("image upload finalization", () => {
     const { database, assetId, r2Key } = fixture("avatar")
     run(database, [reserveImageUploadKeyStatement(assetId, r2Key)])
     const previousAvatarId = crypto.randomUUID()
+    database.$client.run("update profiles set avatar_media_id = ? where user_id = 'test-user'", [
+      previousAvatarId,
+    ])
     const avatar = (auditEventId: string) => ({
       kind: "avatar" as const,
       userId: "test-user",
       image: `/media/image/${assetId}/avatar`,
-      previousAvatarId,
       auditEventId,
     })
     expect(
@@ -162,5 +176,51 @@ describe("image upload finalization", () => {
       run(database, finalizeImageUploadStatements(finalized(assetId, r2Key), avatar("second"))),
     ).toEqual([0, 0, 0, 0, 0])
     expect(database.$client.serialize()).toEqual(before)
+  })
+
+  test("parallel avatar replacements queue cleanup for every replaced avatar", () => {
+    const { database, assetId: first, r2Key: firstKey } = fixture("avatar")
+    const second = crypto.randomUUID()
+    const secondKey = `users/test-user/avatars/${second}/checksum`
+    database
+      .insert(schema.mediaAssets)
+      .values({
+        id: second,
+        ownerId: "test-user",
+        kind: "avatar",
+        provider: "r2",
+        status: "pending",
+        originalFilename: "cat.png",
+        mimeType: "image/png",
+        byteSize: 10,
+        providerMetadata: {},
+      })
+      .run()
+    const original = crypto.randomUUID()
+    database.$client.run("update profiles set avatar_media_id = ? where user_id = 'test-user'", [
+      original,
+    ])
+    run(database, [reserveImageUploadKeyStatement(first, firstKey)])
+    run(database, [reserveImageUploadKeyStatement(second, secondKey)])
+    run(database, finalizeImageUploadStatements(finalized(first, firstKey), avatarTarget(first)))
+    run(database, finalizeImageUploadStatements(finalized(second, secondKey), avatarTarget(second)))
+
+    expect(
+      database.$client
+        .query("select avatar_media_id from profiles where user_id = 'test-user'")
+        .get(),
+    ).toEqual({ avatar_media_id: second })
+    expect(
+      database.$client
+        .query("select json_extract(payload, '$.mediaId') as mediaId from outbox order by rowid")
+        .all(),
+    ).toEqual([{ mediaId: original }, { mediaId: first }])
+    const payloads = database.$client
+      .query<{ payload: string }, []>("select payload from outbox order by rowid")
+      .all()
+      .map(({ payload }) =>
+        Schema.decodeSync(Schema.fromJsonString(mediaCleanupJobSchema))(payload),
+      )
+    expect(payloads).toEqual([mediaCleanupJob(original), mediaCleanupJob(first)])
   })
 })

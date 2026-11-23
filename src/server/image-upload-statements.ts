@@ -1,5 +1,3 @@
-import { mediaCleanupJob } from "@/server/jobs"
-
 import type { Statement } from "./post-lifecycle-statements"
 
 // An upload can finish only while it is pending and nobody has queued its cleanup.
@@ -34,7 +32,6 @@ type FinalizeTarget =
       kind: "avatar"
       userId: string
       image: string
-      previousAvatarId: string | null
       auditEventId: string
     }
 
@@ -80,7 +77,22 @@ export function finalizeImageUploadStatements(
   }
 
   if (target.kind === "avatar") {
+    // Read the replaced avatar inside the batch. A value read before the batch can be stale when
+    // two avatar uploads finish together, which would leave the overwritten avatar without cleanup.
+    // The statement returns the queued media ID so the caller can send the job right away.
     statements.push(
+      {
+        sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+          select 'media.cleanup:' || avatar_media_id, 'media.cleanup',
+            json_object('type', 'media.cleanup', 'idempotencyKey', 'media.cleanup:' || avatar_media_id,
+              'mediaId', avatar_media_id),
+            0, ?, ?
+          from profiles
+          where user_id = ? and avatar_media_id is not null and avatar_media_id <> ? and ${guard}
+          on conflict(id) do nothing
+          returning json_extract(payload, '$.mediaId') as mediaId`,
+        params: [now, now, target.userId, image.assetId, ...guardParams],
+      },
       {
         sql: `update profiles set avatar_media_id = ?, updated_at = ? where user_id = ? and ${guard}`,
         params: [image.assetId, now, target.userId, ...guardParams],
@@ -89,28 +101,12 @@ export function finalizeImageUploadStatements(
         sql: `update user set image = ? where id = ? and ${guard}`,
         params: [target.image, target.userId, ...guardParams],
       },
-    )
-    if (target.previousAvatarId && target.previousAvatarId !== image.assetId) {
-      const cleanup = mediaCleanupJob(target.previousAvatarId)
-      statements.push({
-        sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
-          select ?, ?, ?, 0, ?, ? where ${guard}
-          on conflict(id) do nothing`,
-        params: [
-          cleanup.idempotencyKey,
-          cleanup.type,
-          JSON.stringify(cleanup),
-          now,
-          now,
-          ...guardParams,
-        ],
-      })
-    }
-    statements.push({
-      sql: `insert into audit_events (id, actor_id, action, entity_type, entity_id, metadata, created_at)
+      {
+        sql: `insert into audit_events (id, actor_id, action, entity_type, entity_id, metadata, created_at)
         select ?, ?, 'avatar.updated', 'media', ?, '{}', ? where ${guard}`,
-      params: [target.auditEventId, target.userId, image.assetId, now, ...guardParams],
-    })
+        params: [target.auditEventId, target.userId, image.assetId, now, ...guardParams],
+      },
+    )
   }
 
   return statements
