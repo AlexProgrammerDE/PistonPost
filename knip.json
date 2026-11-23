@@ -3,44 +3,23 @@
   "ignoreExportsUsedInFile": true,
   "entry": [
     "auth-schema.config.ts",
-    "drizzle.config.ts",
-    "playwright.config.ts",
-    "vite.config.ts",
     "scripts/**/*.ts",
     "tests/e2e/**/*.ts",
-    "src/client.tsx",
     "src/lib/auth/auth-plugin.ts",
-    "src/router.tsx",
     "src/routes/**/*.{ts,tsx}",
     "src/styles/**/*.css",
     "cloudflare.config.ts"
   ],
   "project": ["*.ts", "scripts/**/*.ts", "tests/**/*.ts", "src/**/*.{ts,tsx}"],
-  "ignore": [
-    "src/routeTree.gen.ts",
-    "src/components/auth/**",
-    "src/components/ui/**",
-    "src/lib/auth/**",
-    "src/lib/uploads/image-sanitizer-wasm/**"
-  ],
+  "ignore": ["src/components/auth/**", "src/components/ui/**", "src/lib/auth/**"],
   "ignoreDependencies": [
-    "@tailwindcss/vite",
     "@tanstack/react-devtools",
     "@tanstack/react-router-devtools",
     "@tanstack/router-plugin",
-    "@tanstack/react-pacer",
     "@better-auth/scim",
     "cloudflare",
-    "drizzle-kit",
     "embla-carousel-react",
     "fscreen",
-    "oxfmt",
-    "oxlint",
-    "oxlint-tsgolint",
-    "shadcn",
-    "tailwindcss",
-    "tw-animate-css",
-    "wasm-pack",
-    "input-otp"
+    "wasm-pack"
   ]
 }
