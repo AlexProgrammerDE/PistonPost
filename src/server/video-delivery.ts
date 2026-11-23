@@ -61,6 +61,7 @@ const getDeliverableVideoEffect = Effect.fn("Video.getDeliverable")(function* (
     width: row.width,
     height: row.height,
     providerMetadata: row.providerMetadata,
+    audience,
     publiclyCacheable: audience === "public" && row.visibility === "public",
     cacheTags: [
       mediaCacheTag(mediaId),

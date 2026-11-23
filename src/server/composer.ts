@@ -30,6 +30,7 @@ import {
   MIN_VIDEO_THUMBNAIL_TIMESTAMP_PCT,
 } from "@/lib/video-thumbnail"
 import { bindingOperation } from "@/server/operation"
+import { readOptionalSecret } from "@/server/optional-secret"
 import { runRequestEffect } from "@/server/request-effect"
 import {
   conflictFailure,
@@ -359,16 +360,6 @@ const videoIntentInput = Schema.Struct({
   )
     .check(Schema.isLessThanOrEqualTo(MAX_VIDEO_THUMBNAIL_TIMESTAMP_PCT))
     .pipe(Schema.withDecodingDefaultType(Effect.sync(() => DEFAULT_VIDEO_THUMBNAIL_TIMESTAMP_PCT))),
-})
-
-const readOptionalSecret = Effect.fn("readOptionalSecret")(function* (
-  secret: string | SecretsStoreSecret | undefined,
-) {
-  const value =
-    typeof secret === "string"
-      ? secret
-      : yield* bindingOperation("readOptionalSecret.operation", () => secret?.get())
-  return value?.trim() || null
 })
 
 export const createVideoUploadIntent = createServerFn({ method: "POST" })

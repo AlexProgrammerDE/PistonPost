@@ -6,6 +6,7 @@ import * as schema from "@/db/schema"
 import type { MediaProviderMetadata } from "@/db/schema"
 
 import { bindingOperation } from "./operation"
+import { signStreamDeliveryUrl } from "./video-playback"
 
 type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
 
@@ -121,3 +122,114 @@ export function storeRefreshedVideoDownload(
       ),
   )
 }
+
+const STREAM_API_ORIGIN = "https://api.cloudflare.com"
+const STREAM_TOKEN_TIMEOUT_MS = 10_000
+// Without an `exp`, Stream expires the token one hour after it signs it.
+const DOWNLOADABLE_TOKEN_REQUEST = '{"downloadable":true}'
+
+export class VideoDownloadSigningError extends Schema.TaggedError<
+  VideoDownloadSigningError,
+  { readonly brand: unique symbol }
+>()("VideoDownloadSigningError", {
+  operation: Schema.Literals(["configure", "details", "token", "validate"]),
+  status: Schema.NullOr(Schema.Finite),
+  cause: Schema.optional(Schema.Defect()),
+}) {}
+
+const streamTokenResponse = Schema.Struct({
+  success: Schema.Literal(true),
+  result: Schema.Struct({ token: Schema.NonEmptyString }),
+})
+
+type SignVideoDownloadInput = {
+  readonly downloadUrl: string
+  readonly streamUid: string
+  readonly details: () => Promise<Pick<StreamVideo, "requireSignedURLs">>
+  readonly credentials: Effect.Effect<
+    { readonly accountId: string | null; readonly apiToken: string | null },
+    unknown
+  >
+  readonly fetch?: (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>
+}
+
+/**
+ * Creates a Stream token that allows MP4 downloads. The STREAM binding's `generateToken()` takes
+ * no options and its tokens lack the `downloadable` claim, so this uses the REST `/token` endpoint.
+ */
+const createDownloadToken = Effect.fn("createVideoDownloadToken")(function* (input: {
+  readonly accountId: string
+  readonly apiToken: string
+  readonly streamUid: string
+  readonly fetch: (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>
+}) {
+  const endpoint = new URL(
+    `/client/v4/accounts/${encodeURIComponent(input.accountId)}/stream/${encodeURIComponent(input.streamUid)}/token`,
+    STREAM_API_ORIGIN,
+  )
+  // Call fetch unbound. Workers reject a fetch call whose receiver is another object.
+  const requestFetch = input.fetch
+  const response = yield* Effect.tryPromise({
+    try: (signal) =>
+      requestFetch(endpoint, {
+        method: "POST",
+        signal: AbortSignal.any([signal, AbortSignal.timeout(STREAM_TOKEN_TIMEOUT_MS)]),
+        headers: {
+          Authorization: `Bearer ${input.apiToken}`,
+          "Content-Type": "application/json",
+        },
+        body: DOWNLOADABLE_TOKEN_REQUEST,
+      }),
+    catch: (cause) => VideoDownloadSigningError.make({ operation: "token", status: null, cause }),
+  })
+  if (!response.ok) {
+    return yield* VideoDownloadSigningError.make({ operation: "token", status: response.status })
+  }
+  const body = yield* Effect.tryPromise({
+    try: () => response.json(),
+    catch: () => VideoDownloadSigningError.make({ operation: "validate", status: response.status }),
+  })
+  // Drop the parse issue, because it can quote the response body and its token.
+  const decoded = yield* Schema.decodeUnknownEffect(streamTokenResponse)(body).pipe(
+    Effect.mapError(() =>
+      VideoDownloadSigningError.make({ operation: "validate", status: response.status }),
+    ),
+  )
+  return decoded.result.token
+})
+
+/**
+ * Returns the download URL for a viewer that already passed the access check. A video that
+ * requires signed URLs, because of moderation or an author ban, gets a downloadable token in place
+ * of its video ID. Other videos keep the stored URL.
+ */
+export const signVideoDownloadUrl = Effect.fn("signVideoDownloadUrl")(function* (
+  input: SignVideoDownloadInput,
+) {
+  const video = yield* Effect.tryPromise({
+    try: () => input.details(),
+    catch: (cause) => VideoDownloadSigningError.make({ operation: "details", status: null, cause }),
+  })
+  if (!video.requireSignedURLs) return input.downloadUrl
+
+  const { accountId, apiToken } = yield* input.credentials.pipe(
+    Effect.mapError((cause) =>
+      VideoDownloadSigningError.make({ operation: "configure", status: null, cause }),
+    ),
+  )
+  if (!accountId || !apiToken) {
+    return yield* VideoDownloadSigningError.make({ operation: "configure", status: null })
+  }
+
+  const token = yield* createDownloadToken({
+    accountId,
+    apiToken,
+    streamUid: input.streamUid,
+    fetch: input.fetch ?? globalThis.fetch,
+  })
+  const signed = signStreamDeliveryUrl(input.downloadUrl, input.streamUid, token)
+  if (!signed) {
+    return yield* VideoDownloadSigningError.make({ operation: "validate", status: null })
+  }
+  return signed
+})

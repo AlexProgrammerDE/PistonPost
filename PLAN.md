@@ -1372,3 +1372,16 @@ Record future changes here with date, decision, reason, and affected phases.
   dead-letter replay. A job that runs after removal, or after the account switched back to that
   address, is skipped. Jobs queued before this change still decode and go to the current address.
   This affects Phases 4 and 9.
+
+- 2026-11-23: Sign MP4 downloads for videos that require signed URLs. Stream serves the MP4 of
+  a moderated video or a banned author's video only with a token that has the `downloadable`
+  claim, and the STREAM binding's `generateToken()` takes no options. For non-public media, the
+  download route reads the video details through the binding. If Stream requires signed URLs, it
+  requests a token from the REST endpoint
+  `POST /accounts/{account_id}/stream/{video_uid}/token` with `{ "downloadable": true }`, using
+  the existing `STREAM_ACCOUNT_ID` and `STREAM_API_TOKEN` secrets, and puts the token in place of
+  the video ID in the stored download URL. The token expires after Stream's one-hour default.
+  `getDeliverableVideo` still does the access check first. Missing secrets, binding failures, and
+  REST failures return a private, uncached 502. Logs record the operation and HTTP status only,
+  never the token or the response body. Public media skips this step and keeps its cacheable
+  redirect. This affects Phase 6.

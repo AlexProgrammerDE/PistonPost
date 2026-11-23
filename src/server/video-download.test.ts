@@ -1,10 +1,11 @@
 import { describe, expect, test } from "bun:test"
 
-import { Effect } from "effect"
+import { Effect, Result } from "effect"
 
 import {
   readyVideoDownloadUrl,
   refreshVideoDownload,
+  signVideoDownloadUrl,
   synchronizeVideoDownload,
 } from "./video-download"
 
@@ -87,5 +88,103 @@ describe("Stream video downloads", () => {
         streamDownloadUrl: "https://example.com/video.mp4",
       }),
     ).toBeNull()
+  })
+})
+
+type FetchCall = { url: string; init: RequestInit | undefined }
+
+function stubFetch(response: () => Response) {
+  const calls: FetchCall[] = []
+  const fetch = (input: URL | RequestInfo, init?: RequestInit) => {
+    calls.push({
+      url: typeof input === "string" ? input : input instanceof URL ? input.href : input.url,
+      init,
+    })
+    return Promise.resolve(response())
+  }
+  return { calls, fetch }
+}
+
+function sign({
+  requireSignedURLs,
+  fetch,
+  accountId = "account/one",
+}: {
+  requireSignedURLs: boolean
+  fetch: (input: URL | RequestInfo, init?: RequestInit) => Promise<Response>
+  accountId?: string | null
+}) {
+  return Effect.runPromise(
+    Effect.result(
+      signVideoDownloadUrl({
+        downloadUrl,
+        streamUid: "video-one",
+        details: () => Promise.resolve({ requireSignedURLs }),
+        credentials: Effect.succeed({ accountId, apiToken: "api-token" }),
+        fetch,
+      }),
+    ),
+  )
+}
+
+describe("signed video downloads", () => {
+  test("keeps the stored URL when the video does not require signed URLs", async () => {
+    const stub = stubFetch(() => Response.json({}))
+    const result = await sign({ requireSignedURLs: false, fetch: stub.fetch })
+
+    expect(Result.isSuccess(result) && result.success).toBe(downloadUrl)
+    expect(stub.calls).toHaveLength(0)
+  })
+
+  test("requests a downloadable token and puts it in place of the video ID", async () => {
+    const stub = stubFetch(() =>
+      Response.json({ success: true, errors: [], messages: [], result: { token: "signed.jwt" } }),
+    )
+    const result = await sign({ requireSignedURLs: true, fetch: stub.fetch })
+
+    expect(Result.isSuccess(result) && result.success).toBe(
+      "https://customer-example.cloudflarestream.com/signed.jwt/downloads/default.mp4",
+    )
+    expect(stub.calls).toHaveLength(1)
+    const [call] = stub.calls
+    expect(call?.url).toBe(
+      "https://api.cloudflare.com/client/v4/accounts/account%2Fone/stream/video-one/token",
+    )
+    expect(call?.init?.method).toBe("POST")
+    expect(new Headers(call?.init?.headers).get("Authorization")).toBe("Bearer api-token")
+    expect(call?.init?.body).toBe('{"downloadable":true}')
+  })
+
+  test("fails with the status when Stream rejects the token request", async () => {
+    const stub = stubFetch(() => Response.json({ success: false }, { status: 403 }))
+    const result = await sign({ requireSignedURLs: true, fetch: stub.fetch })
+
+    expect(Result.isFailure(result) && result.failure.operation).toBe("token")
+    expect(Result.isFailure(result) && result.failure.status).toBe(403)
+  })
+
+  test("fails when Stream returns a body without a token", async () => {
+    const stub = stubFetch(() => Response.json({ success: true, result: {} }))
+    const result = await sign({ requireSignedURLs: true, fetch: stub.fetch })
+
+    expect(Result.isFailure(result) && result.failure.operation).toBe("validate")
+  })
+
+  test("fails when the network request fails", async () => {
+    const result = await sign({
+      requireSignedURLs: true,
+      fetch: () => Promise.reject(new TypeError("network down")),
+    })
+
+    expect(Result.isFailure(result) && result.failure.operation).toBe("token")
+    expect(Result.isFailure(result) && result.failure.status).toBeNull()
+  })
+
+  test("fails without calling Stream when the API credentials are missing", async () => {
+    const stub = stubFetch(() => Response.json({}))
+    const result = await sign({ requireSignedURLs: true, fetch: stub.fetch, accountId: null })
+
+    expect(Result.isFailure(result) && result.failure.operation).toBe("configure")
+    expect(stub.calls).toHaveLength(0)
   })
 })

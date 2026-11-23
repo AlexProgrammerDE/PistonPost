@@ -5,10 +5,12 @@ import { createD1Database } from "@/db/d1-database"
 import type { AppRequestContext } from "@/server"
 import { cacheTagHeader } from "@/server/cache-tags"
 import { logError } from "@/server/error-log"
+import { readOptionalSecret } from "@/server/optional-secret"
 import { getDeliverableVideo } from "@/server/video-delivery"
 import {
   readyVideoDownloadUrl,
   refreshVideoDownload,
+  signVideoDownloadUrl,
   storeRefreshedVideoDownload,
 } from "@/server/video-download"
 
@@ -64,6 +66,41 @@ async function videoDownload({
     )
   }
   if (!downloadUrl) return unavailableDownload()
+
+  // Only moderated, banned, or draft media can require signed URLs, and only its owner or an
+  // administrator reaches this point. Public media keeps the stored, cacheable URL.
+  if (video.audience !== "public") {
+    const streamVideo = context.env.STREAM.video(video.streamUid)
+    const signed = await Effect.runPromise(
+      Effect.result(
+        signVideoDownloadUrl({
+          downloadUrl,
+          streamUid: video.streamUid,
+          details: () => streamVideo.details(),
+          credentials: Effect.all(
+            {
+              accountId: readOptionalSecret(context.env.STREAM_ACCOUNT_ID),
+              apiToken: readOptionalSecret(context.env.STREAM_API_TOKEN),
+            },
+            { concurrency: 2 },
+          ),
+        }),
+      ),
+      { signal: request.signal },
+    )
+    if (Result.isFailure(signed)) {
+      logError("video-download.sign", {
+        mediaId: mediaId.success,
+        operation: signed.failure.operation,
+        status: signed.failure.status,
+      })
+      return new Response("Video download unavailable", {
+        status: 502,
+        headers: { "Cache-Control": "private, no-store" },
+      })
+    }
+    downloadUrl = signed.success
+  }
 
   return new Response(null, {
     status: 302,
