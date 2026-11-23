@@ -347,45 +347,55 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
   yield* reconcileStreamAssets(createD1Database(env.DB), (streamUid) => env.STREAM.video(streamUid))
 })
 
+/** Prepares MP4 downloads for ready videos that do not have one yet. */
+export const reconcileVideoDownloadAssets = Effect.fn("Maintenance.reconcileVideoDownloadAssets")(
+  function* (database: Database, streamVideo: StreamVideoLookup) {
+    const assets = yield* bindingOperation("maintenance.reconcileVideoDownloads", () =>
+      database
+        .select({
+          id: schema.mediaAssets.id,
+          streamUid: schema.mediaAssets.streamUid,
+          providerMetadata: schema.mediaAssets.providerMetadata,
+        })
+        .from(schema.mediaAssets)
+        .where(
+          and(
+            eq(schema.mediaAssets.kind, "video"),
+            eq(schema.mediaAssets.status, "ready"),
+            sql`coalesce(json_extract(${schema.mediaAssets.providerMetadata}, '$.streamDownloadStatus'), '') <> 'ready'`,
+          ),
+        )
+        .limit(25),
+    )
+
+    // One failing video must not stop the others. The task still reports each failure.
+    yield* runMaintenanceTasks(
+      assets.map((asset) => ({
+        name: `video-download:${asset.id}`,
+        run: Effect.gen(function* () {
+          const streamUid = asset.streamUid
+          if (!streamUid) return
+          const providerMetadata = yield* synchronizeVideoDownload(
+            streamVideo(streamUid).downloads,
+            asset.providerMetadata,
+          )
+          yield* bindingOperation("maintenance.reconcileVideoDownloads", () =>
+            database
+              .update(schema.mediaAssets)
+              .set({ providerMetadata })
+              .where(eq(schema.mediaAssets.id, asset.id)),
+          )
+        }),
+      })),
+    )
+  },
+)
+
 const reconcileVideoDownloads = Effect.fn("Maintenance.reconcileVideoDownloads")(function* (
   env: Cloudflare.Env,
 ) {
-  const database = createD1Database(env.DB)
-  const assets = yield* bindingOperation("maintenance.reconcileVideoDownloads", () =>
-    database
-      .select({
-        id: schema.mediaAssets.id,
-        streamUid: schema.mediaAssets.streamUid,
-        providerMetadata: schema.mediaAssets.providerMetadata,
-      })
-      .from(schema.mediaAssets)
-      .where(
-        and(
-          eq(schema.mediaAssets.kind, "video"),
-          eq(schema.mediaAssets.status, "ready"),
-          sql`coalesce(json_extract(${schema.mediaAssets.providerMetadata}, '$.streamDownloadStatus'), '') <> 'ready'`,
-        ),
-      )
-      .limit(25),
-  )
-
-  yield* Effect.forEach(
-    assets,
-    (asset) =>
-      Effect.gen(function* () {
-        if (!asset.streamUid) return
-        const providerMetadata = yield* synchronizeVideoDownload(
-          env.STREAM.video(asset.streamUid).downloads,
-          asset.providerMetadata,
-        )
-        yield* bindingOperation("maintenance.reconcileVideoDownloads", () =>
-          database
-            .update(schema.mediaAssets)
-            .set({ providerMetadata })
-            .where(eq(schema.mediaAssets.id, asset.id)),
-        )
-      }),
-    { concurrency: 4 },
+  yield* reconcileVideoDownloadAssets(createD1Database(env.DB), (streamUid) =>
+    env.STREAM.video(streamUid),
   )
 })
 

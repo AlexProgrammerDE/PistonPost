@@ -12,6 +12,7 @@ import {
   abandonedDraftStatements,
   type MaintenanceStatement,
   reconcileStreamAssets,
+  reconcileVideoDownloadAssets,
   type StreamVideoLookup,
   type StreamVideoState,
 } from "./maintenance"
@@ -238,5 +239,38 @@ describe("Stream reconciliation", () => {
     await Effect.runPromise(reconcileStreamAssets(db, lookup))
 
     expect(status(video.id)).toBe("deleted")
+  })
+})
+
+describe("video download reconciliation", () => {
+  test("prepares downloads for other ready videos when one download request fails", async () => {
+    const db = createMigratedTestDatabase()
+    databases.push(db)
+    db.insert(schema.user).values(createUser()).run()
+    const gone = { ...processingVideo("gone-video"), status: "ready" as const }
+    const healthy = { ...processingVideo("ready-video"), status: "ready" as const }
+    db.insert(schema.mediaAssets).values([gone, healthy]).run()
+    const pending = { status: "inprogress" as const, percentComplete: 0 }
+    const lookup: StreamVideoLookup = (streamUid) => ({
+      details: () => Promise.resolve(streamVideo()),
+      downloads: {
+        generate: () =>
+          streamUid === "gone-video"
+            ? Promise.reject(new Error("Video not found"))
+            : delay(10).then(() => ({ default: pending })),
+        get: () => Promise.resolve({}),
+      },
+    })
+
+    const exit = await Effect.runPromiseExit(reconcileVideoDownloadAssets(db, lookup))
+
+    // The failing video still fails the run so the cron reports it.
+    expect(Exit.isFailure(exit)).toBe(true)
+    const row = db
+      .select({ providerMetadata: schema.mediaAssets.providerMetadata })
+      .from(schema.mediaAssets)
+      .where(eq(schema.mediaAssets.id, healthy.id))
+      .get()
+    expect(row?.providerMetadata).toEqual({ streamDownloadStatus: "inprogress" })
   })
 })
