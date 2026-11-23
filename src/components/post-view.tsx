@@ -330,7 +330,7 @@ function FeedPostImageMedia({
         data-view-transition-part="post-media-1"
         onClick={onOpenPost}
         className="block"
-        aria-label={`Open ${post.title}`}
+        aria-label={withAltText(`Open ${post.title}`, image.altText)}
       >
         <ResponsiveMediaImage
           image={image}

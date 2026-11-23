@@ -40,7 +40,25 @@ const post: PublicPostRead = {
   heartCount: 0,
 }
 
-function renderBeforeHydration(queryClient: QueryClient) {
+const imagePost: PublicPostRead = {
+  ...post,
+  id: "image-post-id",
+  type: "images",
+  title: "Garden haul",
+  textContent: null,
+  media: [
+    {
+      id: "image-id",
+      kind: "image",
+      width: 800,
+      height: 600,
+      duration: null,
+      altText: "Three tomatoes on a wooden table",
+    },
+  ],
+}
+
+function renderBeforeHydration(queryClient: QueryClient, posts = [post]) {
   const router = createRouter({
     routeTree: createRootRoute(),
     history: createMemoryHistory({ initialEntries: ["/"] }),
@@ -48,7 +66,7 @@ function renderBeforeHydration(queryClient: QueryClient) {
   return renderToString(
     <QueryClientProvider client={queryClient}>
       <RouterContextProvider router={router}>
-        <PostTimeline posts={[post]} surface="timeline" />
+        <PostTimeline posts={posts} surface="timeline" />
       </RouterContextProvider>
     </QueryClientProvider>,
   )
@@ -67,5 +85,12 @@ describe("PostTimeline", () => {
 
     expect(signedOut).not.toContain("/post/post-id/edit")
     expect(renderBeforeHydration(signedIn)).toBe(signedOut)
+  })
+
+  test("keeps the alt text of a single feed image in the link name", () => {
+    // The link's own name replaces the image's alt text for screen readers.
+    const html = renderBeforeHydration(new QueryClient(), [imagePost])
+
+    expect(html).toContain('aria-label="Open Garden haul: Three tomatoes on a wooden table"')
   })
 })
