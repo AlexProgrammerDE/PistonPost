@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { eq } from "drizzle-orm"
 import { Effect, Result, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
-import * as schema from "@/db/schema"
 import type { AppRequestContext } from "@/server"
 import { cacheTagHeader } from "@/server/cache-tags"
+import { logError } from "@/server/error-log"
 import { getDeliverableVideo } from "@/server/video-delivery"
-import { readyVideoDownloadUrl, refreshVideoDownload } from "@/server/video-download"
+import {
+  readyVideoDownloadUrl,
+  refreshVideoDownload,
+  storeRefreshedVideoDownload,
+} from "@/server/video-download"
 
 function unavailableDownload() {
   return new Response("Video download is still processing", {
@@ -45,10 +48,19 @@ async function videoDownload({
     metadata = refreshed.success
     downloadUrl = readyVideoDownloadUrl(metadata)
     context.executionContext.waitUntil(
-      createD1Database(context.env.DB)
-        .update(schema.mediaAssets)
-        .set({ providerMetadata: metadata })
-        .where(eq(schema.mediaAssets.id, mediaId.success)),
+      Effect.runPromise(
+        storeRefreshedVideoDownload(
+          createD1Database(context.env.DB),
+          mediaId.success,
+          metadata,
+        ).pipe(
+          Effect.catchCause(() =>
+            Effect.sync(() => {
+              logError("video-download.store", { mediaId: mediaId.success })
+            }),
+          ),
+        ),
+      ),
     )
   }
   if (!downloadUrl) return unavailableDownload()

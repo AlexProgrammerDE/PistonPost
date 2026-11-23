@@ -1,6 +1,13 @@
+import { and, eq, sql } from "drizzle-orm"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Effect, Schema } from "effect"
 
+import * as schema from "@/db/schema"
 import type { MediaProviderMetadata } from "@/db/schema"
+
+import { bindingOperation } from "./operation"
+
+type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
 
 type VideoDownloadClient = Pick<StreamScopedDownloads, "generate" | "get">
 
@@ -84,3 +91,33 @@ export const refreshVideoDownload = Effect.fn("refreshVideoDownload")(function* 
   const downloads = yield* requestDownloads(client, "get")
   return updateDownloadMetadata(metadata, downloads.default)
 })
+
+/**
+ * Stores a download state refreshed from a read path. It writes only the download keys, so other
+ * metadata from a concurrent webhook or job stays intact, and it never replaces a stored ready
+ * download with an older in-progress or error state.
+ */
+export function storeRefreshedVideoDownload(
+  database: Database,
+  mediaId: string,
+  metadata: MediaProviderMetadata,
+) {
+  const status = storedDownloadStatus(metadata) ?? "error"
+  const url = cloudflareDownloadUrl(metadata[DOWNLOAD_URL_KEY])
+  const storedStatus = sql`json_extract(${schema.mediaAssets.providerMetadata}, '$.${sql.raw(DOWNLOAD_STATUS_KEY)}')`
+  return bindingOperation("video-download.store", () =>
+    database
+      .update(schema.mediaAssets)
+      .set({
+        providerMetadata: url
+          ? sql`json_set(${schema.mediaAssets.providerMetadata}, '$.${sql.raw(DOWNLOAD_STATUS_KEY)}', ${status}, '$.${sql.raw(DOWNLOAD_URL_KEY)}', ${url})`
+          : sql`json_set(${schema.mediaAssets.providerMetadata}, '$.${sql.raw(DOWNLOAD_STATUS_KEY)}', ${status})`,
+      })
+      .where(
+        and(
+          eq(schema.mediaAssets.id, mediaId),
+          status === "ready" ? undefined : sql`${storedStatus} is not 'ready'`,
+        ),
+      ),
+  )
+}
