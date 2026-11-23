@@ -72,12 +72,12 @@ function FollowingFeed() {
           <FollowingFeedResults viewerId={viewer.id} />
         </Suspense>
       ) : (
-        <Empty className="min-h-80">
+        <Empty className="min-h-80 border">
           <EmptyHeader>
             <EmptyMedia variant="icon">
               <UsersRound aria-hidden="true" />
             </EmptyMedia>
-            <EmptyTitle>Sign in to see your Following feed</EmptyTitle>
+            <EmptyTitle>Sign in to see posts you follow</EmptyTitle>
             <EmptyDescription>
               Follow people and tags to keep their posts together here.
             </EmptyDescription>
@@ -109,7 +109,7 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
 
   if (posts.length === 0 && cursor) {
     return (
-      <Empty className="min-h-80">
+      <Empty className="min-h-80 border">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <History aria-hidden="true" />
@@ -129,14 +129,14 @@ function FollowingFeedResults({ viewerId }: { readonly viewerId: string }) {
 
   if (posts.length === 0) {
     return (
-      <Empty className="min-h-80">
+      <Empty className="min-h-80 border">
         <EmptyHeader>
           <EmptyMedia variant="icon">
             <UsersRound aria-hidden="true" />
           </EmptyMedia>
-          <EmptyTitle>Your Following feed is empty</EmptyTitle>
+          <EmptyTitle>Nothing from your follows yet</EmptyTitle>
           <EmptyDescription>
-            Follow someone or a tag, then their public posts will appear here.
+            Follow people or tags, and their public posts will show up here.
           </EmptyDescription>
         </EmptyHeader>
         <EmptyContent>
