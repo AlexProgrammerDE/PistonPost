@@ -9,6 +9,7 @@ import { createMigratedTestDatabase } from "@/db/test-database"
 import { cacheInvalidationJob, mediaCleanupJob, videoAccessJob } from "./jobs"
 import {
   adminMediaCleanupStatements,
+  adminMediaPostHref,
   type AdminStatement,
   moderationStatements,
   retryJobStatements,
@@ -230,5 +231,38 @@ describe("administrator moderation", () => {
     expect(db.select().from(schema.posts).get()?.status).toBe("moderated")
     expect(db.select().from(schema.outbox).all()).toHaveLength(0)
     expect(db.select().from(schema.auditEvents).all()).toHaveLength(0)
+  })
+})
+
+function mediaHrefs(db: Database) {
+  return db
+    .select({ id: schema.mediaAssets.id, href: adminMediaPostHref })
+    .from(schema.mediaAssets)
+    .orderBy(schema.mediaAssets.id)
+    .all()
+}
+
+describe("administrator media rows", () => {
+  test("link attached media to its post and leave unattached media without a link", () => {
+    const db = setup()
+    seedPost(db, "published")
+    db.insert(schema.mediaAssets)
+      .values(
+        ["attached", "loose"].map((id) => ({
+          id,
+          kind: "image" as const,
+          provider: "images" as const,
+          originalFilename: `${id}.png`,
+          mimeType: "image/png",
+          byteSize: 1,
+        })),
+      )
+      .run()
+    db.insert(schema.postMedia).values({ postId: "post", mediaId: "attached", ordinal: 0 }).run()
+
+    expect(mediaHrefs(db)).toEqual([
+      { id: "attached", href: "/post/post" },
+      { id: "loose", href: null },
+    ])
   })
 })

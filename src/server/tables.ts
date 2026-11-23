@@ -266,6 +266,15 @@ export function moderationStatements(
   ]
 }
 
+/** Links a media row to the post that shows it, or to nothing while it is unattached. */
+export const adminMediaPostHref = sql<string | null>`(
+  select '/post/' || ${schema.postMedia.postId}
+  from ${schema.postMedia}
+  where ${schema.postMedia.mediaId} = ${schema.mediaAssets.id}
+  order by ${schema.postMedia.ordinal}
+  limit 1
+)`
+
 export const getAdminRows = createServerFn({ method: "GET" })
   .middleware([administratorServerFunctionMiddleware])
   .validator(
@@ -398,7 +407,7 @@ export const getAdminRows = createServerFn({ method: "GET" })
               database
                 .select({
                   id: schema.mediaAssets.id,
-                  href: sql<string | null>`null`,
+                  href: adminMediaPostHref,
                   primary: schema.mediaAssets.originalFilename,
                   secondary: schema.mediaAssets.kind,
                   status: schema.mediaAssets.status,
