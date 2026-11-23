@@ -1,8 +1,5 @@
+import { avatarInitials } from "@/lib/avatar-initials"
 import { truncateDescription, truncateTitle } from "@/lib/seo"
-
-const graphemeSegmenter = new Intl.Segmenter(undefined, {
-  granularity: "grapheme",
-})
 
 export type TextPostSocialCardProps = {
   readonly title: string
@@ -10,11 +7,6 @@ export type TextPostSocialCardProps = {
   readonly authorName: string
   readonly authorUsername: string
   readonly publishedAt: Date
-}
-
-function authorInitial(authorName: string) {
-  for (const { segment } of graphemeSegmenter.segment(authorName)) return segment
-  return "?"
 }
 
 export function TextPostSocialCard({
@@ -107,7 +99,7 @@ export function TextPostSocialCard({
             fontWeight: 700,
           }}
         >
-          {authorInitial(authorName)}
+          {avatarInitials(untrimmedAuthorName) || "?"}
         </div>
         <div style={{ display: "flex", flexDirection: "column", marginLeft: 18 }}>
           <div style={{ fontSize: 28, fontWeight: 650 }}>{authorName}</div>

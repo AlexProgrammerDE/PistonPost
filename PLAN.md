@@ -1404,3 +1404,9 @@ Record future changes here with date, decision, reason, and affected phases.
   separate sentences. A block without closing punctuation gets a period, or a colon after a heading,
   and a block that ends in a URL gets no added punctuation. Feed text previews keep one block per
   line with list bullets or numbers. Spoilers stay masked in every excerpt.
+
+- 2026-11-23: Use one avatar initials rule in the app and in generated share cards. Take the first
+  letter of the first and last words ("AM" for "Alice Moss", "A" for "alice"), skip words that start
+  without a letter or number, keep one character for scripts without letter case such as CJK, and
+  fall back to the first emoji when a name has no letters. The Better Auth UI `UserAvatar` keeps its
+  upstream two-character rule because its consumers cannot pass a fallback through `UserButton`.
