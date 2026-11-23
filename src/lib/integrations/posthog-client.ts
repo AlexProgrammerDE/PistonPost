@@ -1,11 +1,11 @@
 import * as Option from "effect/Option"
 import * as Schema from "effect/Schema"
-import {
+import type {
+  CaptureResult,
   posthog,
-  type CaptureResult,
-  type PostHog,
-  type PostHogConfig,
-  type Properties,
+  PostHog,
+  PostHogConfig,
+  Properties,
 } from "posthog-js/dist/module.slim"
 import { createContext, useContext } from "react"
 
@@ -150,11 +150,14 @@ export function usePostHogClient() {
 async function initializePostHog() {
   if (typeof window === "undefined" || !POSTHOG_KEY) return null
 
-  const { AnalyticsExtensions, ToolbarExtensions } =
-    await import("posthog-js/dist/extension-bundles")
+  // Load the SDK only when analytics is configured, and keep it out of the entry bundle either way.
+  const [{ posthog: client }, { AnalyticsExtensions, ToolbarExtensions }] = await Promise.all([
+    import("posthog-js/dist/module.slim"),
+    import("posthog-js/dist/extension-bundles"),
+  ])
 
   return initializePostHogWithConsent(
-    posthog,
+    client,
     POSTHOG_KEY,
     {
       __extensionClasses: {
