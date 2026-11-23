@@ -97,7 +97,11 @@ function truncateSeoText(value: string, maximumGraphemes: number, maximumCodePoi
   }
 
   if (!truncated) return accepted.join("")
-  if (accepted.length === maximumGraphemes) accepted.pop()
+  // The ellipsis takes one grapheme and one code point, so drop the last segment when either
+  // limit has no room left for it.
+  if (accepted.length === maximumGraphemes || codePointCount === maximumCodePoints) {
+    accepted.pop()
+  }
   const text = accepted.join("").trimEnd()
   return text ? `${text}…` : "…"
 }

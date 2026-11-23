@@ -75,6 +75,14 @@ describe("SEO metadata", () => {
     expect(truncateTitle(`A${"\u0301".repeat(500)}B`)).toBe("…")
   })
 
+  it("keeps the ellipsis within the code point limit", () => {
+    const grapheme = "x\u0301\u0302\u0303"
+    const title = truncateTitle(`${grapheme.repeat(60)}y`)
+
+    expect(Array.from(title).length).toBeLessThanOrEqual(240)
+    expect(title).toBe(`${grapheme.repeat(59)}…`)
+  })
+
   it("uses the selected gallery image for large social cards", () => {
     const post: PublicPostRead = {
       ...basePost,
