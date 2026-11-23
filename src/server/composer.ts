@@ -42,6 +42,7 @@ import { authenticatedServerFunctionMiddleware } from "@/server/server-function-
 import { createStreamDirectUpload, isStreamNotFoundError } from "@/server/stream-direct-upload"
 import { turnstileTokenSchema, verifyRequestTurnstile } from "@/server/turnstile"
 
+import { imageUploadIntentSlotsStatement } from "./image-upload-intent-statements"
 import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
 import {
   guardedAuditStatement,
@@ -273,21 +274,20 @@ export const createImageUploadIntents = createServerFn({ method: "POST" })
           return yield* notFoundFailure("The image draft was not found.")
         }
 
-        const postAssetCount = yield* bindingOperation(
-          "createImageUploadIntents.postAssetCount",
+        const slots = imageUploadIntentSlotsStatement(data.postId, session.user.id)
+        const postAssetSlots = yield* bindingOperation(
+          "createImageUploadIntents.postAssetSlots",
           () =>
             context.database.$client
-              .prepare(
-                `select count(*) as count from media_assets
-       where (json_extract(provider_metadata, '$.postId') = ?
-           or json_extract(provider_metadata, '$.editPostId') = ?)
-         and owner_id = ? and status not in ('failed', 'deleted')`,
-              )
-              .bind(data.postId, data.postId, session.user.id)
-              .first<{ count: number }>(),
+              .prepare(slots.sql)
+              .bind(...slots.params)
+              .first<{ count: number; nextOrdinal: number }>(),
         )
-        const firstOrdinal = postAssetCount?.count ?? 0
-        if (firstOrdinal + data.files.length > MAX_IMAGES_PER_POST * (data.editing ? 2 : 1)) {
+        const firstOrdinal = postAssetSlots?.nextOrdinal ?? 0
+        if (
+          (postAssetSlots?.count ?? 0) + data.files.length >
+          MAX_IMAGES_PER_POST * (data.editing ? 2 : 1)
+        ) {
           return yield* invalidInputFailure(
             `A new post can contain at most ${MAX_IMAGES_PER_POST.toString()} images.`,
           )
