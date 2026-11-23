@@ -832,7 +832,8 @@ export function PostView({
             Unlisted
           </Badge>
         ) : null}
-        {canEdit ? (
+        {/* Feed cards show Edit in their action row instead. */}
+        {canEdit && detail ? (
           <ButtonLink
             variant="outline"
             size="sm"
