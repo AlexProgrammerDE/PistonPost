@@ -1350,3 +1350,13 @@ Record future changes here with date, decision, reason, and affected phases.
   on the last page, because new posts, accounts that leave search probation, and new tags are
   recent. Removing an entry shifts later entries back by one, so a crawler can miss one entry until
   its next visit. Keyset pages would avoid that too, but they need cursors in sitemap URLs.
+
+- 2026-11-23: Treat Cloudflare Email Service errors caused by the message or its recipient as
+  final: `E_VALIDATION_ERROR`, `E_FIELD_MISSING`, `E_TOO_MANY_RECIPIENTS`,
+  `E_TOO_MANY_ATTACHMENTS`, `E_RECIPIENT_NOT_ALLOWED`, `E_RECIPIENT_SUPPRESSED`,
+  `E_CONTENT_TOO_LARGE`, and the `E_HEADER*` codes. A retry sends the same payload, so it can only
+  delay the dead letter. These complete the outbox row with a `provider-<code>` reason, and every
+  rejection except suppression writes an `email.delivery-rejected` error log without addresses.
+  Sender, account, quota, rate, delivery, internal, and unknown errors stay retryable because they
+  can clear without a code change, and the dead-letter queue keeps them for replay. This extends
+  the 2026-07-22 suppression decision and affects Phases 4 and 9.

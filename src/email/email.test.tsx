@@ -20,6 +20,26 @@ import {
 } from "./transport"
 import { signUnsubscribeToken, UnsubscribeTokenError, verifyUnsubscribeToken } from "./unsubscribe"
 
+/** Returns whether the Cloudflare transport marks a provider error code as retryable. */
+async function providerErrorIsRetryable(code: string) {
+  const transport = createCloudflareEmailTransport({
+    send: () => Promise.reject(Object.assign(new Error("Provider error"), { code })),
+  })
+  const result = await Effect.runPromise(
+    Effect.result(
+      transport.send({
+        subject: "Subject",
+        html: "<p>Body</p>",
+        text: "Body",
+        to: "recipient@example.com",
+        from: "auth@example.com",
+        idempotencyKey: `provider:${code}`,
+      }),
+    ),
+  )
+  return Result.isFailure(result) ? result.failure.retryable : undefined
+}
+
 describe("transactional email", () => {
   it("renders branded HTML and a plain-text fallback", async () => {
     const rendered = await renderEmail(
@@ -300,6 +320,37 @@ describe("transactional email", () => {
       expect(result.failure).toMatchObject({
         code: "E_RECIPIENT_SUPPRESSED",
         retryable: false,
+      })
+    }
+  })
+
+  it("treats payload and recipient rejections as final and other provider errors as retryable", async () => {
+    for (const code of [
+      "E_VALIDATION_ERROR",
+      "E_FIELD_MISSING",
+      "E_RECIPIENT_NOT_ALLOWED",
+      "E_RECIPIENT_SUPPRESSED",
+      "E_CONTENT_TOO_LARGE",
+      "E_HEADER_VALUE_INVALID",
+      "E_HEADERS_TOO_MANY",
+    ]) {
+      expect({ code, retryable: await providerErrorIsRetryable(code) }).toEqual({
+        code,
+        retryable: false,
+      })
+    }
+    for (const code of [
+      "E_RATE_LIMIT_EXCEEDED",
+      "E_DAILY_LIMIT_EXCEEDED",
+      "E_INTERNAL_SERVER_ERROR",
+      "E_DELIVERY_FAILED",
+      "E_SENDER_NOT_VERIFIED",
+      "E_ACCOUNT_SUSPENDED",
+      "E_UNKNOWN",
+    ]) {
+      expect({ code, retryable: await providerErrorIsRetryable(code) }).toEqual({
+        code,
+        retryable: true,
       })
     }
   })

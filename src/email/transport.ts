@@ -68,6 +68,34 @@ export type CloudflareEmailBinding = {
   }) => Promise<unknown>
 }
 
+/**
+ * Cloudflare Email Service codes that the same message will hit again on every retry. The
+ * payload, its headers, or the recipient is the problem, so retrying only delays the dead
+ * letter. Sender, account, quota, rate, and delivery errors stay retryable because they can
+ * clear without changing the message, and the dead-letter queue keeps them for replay.
+ * https://developers.cloudflare.com/email-service/api/send-emails/workers-api/#error-codes
+ */
+const permanentProviderErrorCodes: ReadonlySet<string> = new Set([
+  "E_VALIDATION_ERROR",
+  "E_FIELD_MISSING",
+  "E_TOO_MANY_RECIPIENTS",
+  "E_TOO_MANY_ATTACHMENTS",
+  "E_RECIPIENT_NOT_ALLOWED",
+  "E_RECIPIENT_SUPPRESSED",
+  "E_CONTENT_TOO_LARGE",
+  "E_HEADER_NOT_ALLOWED",
+  "E_HEADER_USE_API_FIELD",
+  "E_HEADER_VALUE_INVALID",
+  "E_HEADER_VALUE_TOO_LONG",
+  "E_HEADER_NAME_INVALID",
+  "E_HEADERS_TOO_LARGE",
+  "E_HEADERS_TOO_MANY",
+])
+
+export function isRetryableProviderError(code: string) {
+  return !permanentProviderErrorCodes.has(code)
+}
+
 function providerErrorCode(cause: unknown) {
   if (typeof cause !== "object" || cause === null || !("code" in cause)) return "E_UNKNOWN"
   const code = Reflect.get(cause, "code")
@@ -96,7 +124,7 @@ export function createCloudflareEmailTransport(
           return EmailDeliveryError.make({
             message: cause instanceof Error ? cause.message : "Email delivery failed.",
             code,
-            retryable: code !== "E_RECIPIENT_SUPPRESSED",
+            retryable: isRetryableProviderError(code),
           })
         },
       }),

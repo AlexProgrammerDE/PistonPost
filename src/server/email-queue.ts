@@ -170,11 +170,18 @@ const deliverEmailJob = Effect.fn("Queue.deliverEmailJob")(function* (
             Effect.catchTag("EmailDeliveryError", (error) =>
               error.retryable
                 ? Effect.fail(error)
-                : Effect.succeed({ _tag: "Suppressed", reason: error.code } as const),
+                : Effect.succeed({ _tag: "Rejected", reason: error.code } as const),
             ),
           )
-          if (Predicate.isTagged(delivery, "Suppressed")) {
+          if (Predicate.isTagged(delivery, "Rejected")) {
             const reason = `provider-${delivery.reason.toLowerCase()}`
+            // Suppression is an expected outcome. Any other permanent rejection points at a bad
+            // payload or sending setup, and it no longer reaches the dead-letter queue.
+            if (delivery.reason !== "E_RECIPIENT_SUPPRESSED") {
+              yield* Effect.sync(() => {
+                logError("email.delivery-rejected", { jobType: job.type, code: delivery.reason })
+              })
+            }
             if (job.type === "email.product") {
               yield* outbox.completeProduct(job.idempotencyKey, claim.attempt, reason, "skipped")
             } else {
