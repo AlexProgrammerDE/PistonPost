@@ -12,7 +12,10 @@ import {
   confirmAccountDeleted,
   deleteOwnedAccountMedia,
   scheduleAccountCachePurge,
+  startAccountDeletion,
   verifyAccountPurge,
+  type AccountDeletionParams,
+  type AccountDeletionWorkflowBinding,
 } from "./account-deletion-steps"
 import { accountMediaPurgeLayer } from "./account-media-purge"
 import type { InternalJob } from "./jobs"
@@ -194,5 +197,50 @@ describe("native account deletion steps", () => {
     expect(
       db.select({ ownerId: schema.mediaAssets.ownerId }).from(schema.mediaAssets).get(),
     ).toEqual({ ownerId: null })
+  })
+})
+
+function workflowBinding(statuses: Record<string, string>) {
+  const created: { id: string; params: AccountDeletionParams }[] = []
+  const binding: AccountDeletionWorkflowBinding = {
+    create: (options) => {
+      if (statuses[options.id] !== undefined)
+        return Promise.reject(new Error("instance.already_exists"))
+      statuses[options.id] = "queued"
+      created.push(options)
+      return Promise.resolve()
+    },
+    get: (id) =>
+      Promise.resolve({ status: () => Promise.resolve({ status: statuses[id] ?? "unknown" }) }),
+  }
+  return { binding, created }
+}
+
+describe("starting account deletion", () => {
+  test("uses the stable instance for the first attempt", async () => {
+    const { binding, created } = workflowBinding({})
+    const params = { userId: "test-user", mediaIds: ["first"] }
+    expect(await Effect.runPromise(startAccountDeletion(binding, params))).toBe(
+      "account-delete-test-user",
+    )
+    expect(created).toEqual([{ id: "account-delete-test-user", params }])
+  })
+
+  test("leaves a running attempt alone", async () => {
+    const { binding, created } = workflowBinding({ "account-delete-test-user": "waiting" })
+    await Effect.runPromise(
+      startAccountDeletion(binding, { userId: "test-user", mediaIds: ["first"] }),
+    )
+    expect(created).toEqual([])
+  })
+
+  test("purges uploads made after a stopped attempt", async () => {
+    for (const status of ["errored", "terminated"]) {
+      const { binding, created } = workflowBinding({ "account-delete-test-user": status })
+      const params = { userId: "test-user", mediaIds: ["first", "uploaded-later"] }
+      const id = await Effect.runPromise(startAccountDeletion(binding, params))
+      expect(id).toMatch(/^account-delete-test-user-[0-9a-f-]{36}$/u)
+      expect(created).toEqual([{ id, params }])
+    }
   })
 })

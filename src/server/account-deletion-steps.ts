@@ -12,6 +12,45 @@ import { bindingOperation, type OperationError } from "./operation"
 
 export type AccountDeletionParams = { userId: string; mediaIds: string[] }
 
+/** The parts of the `ACCOUNT_DELETION` Workflow binding that starting a deletion uses. */
+export type AccountDeletionWorkflowBinding = {
+  readonly create: (options: { id: string; params: AccountDeletionParams }) => Promise<unknown>
+  readonly get: (id: string) => Promise<{ status: () => Promise<{ status: string }> }>
+}
+
+/**
+ * Starts the purge for one deletion attempt. The first attempt uses a stable instance ID, so a
+ * repeated request while it still runs does not start a second purge. An instance that stopped
+ * keeps its original media snapshot, and a restart would reuse that payload. Uploads made after
+ * that attempt would then lose their owner on deletion and never be purged, so a later attempt
+ * starts a new instance with the current media.
+ */
+export const startAccountDeletion = Effect.fn("AccountDeletion.start")(function* (
+  workflow: AccountDeletionWorkflowBinding,
+  params: AccountDeletionParams,
+) {
+  const id = `account-delete-${params.userId}`
+  // get() throws for an unknown instance, so create directly and treat a duplicate ID as an
+  // earlier deletion request for the same account.
+  const created = yield* bindingOperation("account-deletion.create", async () => {
+    try {
+      await workflow.create({ id, params })
+      return true
+    } catch (error) {
+      if (!(error instanceof Error) || !/already.?exists/iu.test(error.message)) throw error
+      return false
+    }
+  })
+  if (created) return id
+  const { status } = yield* bindingOperation("account-deletion.status", async () =>
+    (await workflow.get(id)).status(),
+  )
+  if (status !== "errored" && status !== "terminated") return id
+  const retryId = `${id}-${yield* randomUuid}`
+  yield* bindingOperation("account-deletion.create", () => workflow.create({ id: retryId, params }))
+  return retryId
+})
+
 class AccountDeletionIncomplete extends Schema.TaggedError<
   AccountDeletionIncomplete,
   { readonly brand: unique symbol }

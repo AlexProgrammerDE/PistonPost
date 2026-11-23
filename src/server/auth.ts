@@ -17,6 +17,7 @@ import { securityPushJob, type PushDeliveryJob } from "@/push/jobs"
 import { logError } from "@/server/error-log"
 
 import type { AppRequestContext } from "../server"
+import { startAccountDeletion } from "./account-deletion-steps"
 import { isManagedUserAvatar } from "./avatar-policy"
 import { requireEmailBinding } from "./email-binding"
 import { bindingOperation } from "./operation"
@@ -94,22 +95,9 @@ export const createRequestAuthEffect = Effect.fn("Auth.createRequestAuth")(funct
         .from(schema.mediaAssets)
         .where(eq(schema.mediaAssets.ownerId, userId)),
     )
-    const id = `account-delete-${userId}`
-    // get() throws for an unknown instance, so create directly and treat a duplicate ID as an
-    // earlier deletion request for the same account.
-    yield* bindingOperation("auth.create-deletion", async () => {
-      try {
-        await env.ACCOUNT_DELETION.create({
-          id,
-          params: { userId, mediaIds: mediaIds.map(({ id: mediaId }) => mediaId) },
-        })
-      } catch (error) {
-        if (!(error instanceof Error) || !/already.?exists/iu.test(error.message)) throw error
-        const instance = await env.ACCOUNT_DELETION.get(id)
-        const { status } = await instance.status()
-        // An earlier attempt whose user row was never deleted stopped waiting, so run it again.
-        if (status === "errored" || status === "terminated") await instance.restart()
-      }
+    yield* startAccountDeletion(env.ACCOUNT_DELETION, {
+      userId,
+      mediaIds: mediaIds.map(({ id: mediaId }) => mediaId),
     })
   })
 
