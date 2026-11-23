@@ -57,13 +57,19 @@ function wrapSelection(
   )
 }
 
+// At offset 0 the line already starts there. Searching from index 0 would find a leading line
+// break and place the line start after it, past the caret.
+function lineStartAt(value: string, offset: number) {
+  return offset === 0 ? 0 : value.lastIndexOf("\n", offset - 1) + 1
+}
+
 function prefixSelectedLines(
   value: string,
   selectionStart: number,
   selectionEnd: number,
   prefix: (index: number) => string,
 ) {
-  const blockStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1
+  const blockStart = lineStartAt(value, selectionStart)
   const nextLine = value.indexOf("\n", selectionEnd)
   const blockEnd = nextLine === -1 ? value.length : nextLine
   const lines = value.slice(blockStart, blockEnd).split("\n")
@@ -108,7 +114,7 @@ export function applyMarkdownPaste(
 ): MarkdownEdit | null {
   if (selectionStart !== selectionEnd) return null
 
-  const lineStart = value.lastIndexOf("\n", Math.max(0, selectionStart - 1)) + 1
+  const lineStart = lineStartAt(value, selectionStart)
   const nextLine = value.indexOf("\n", selectionStart)
   const lineEnd = nextLine === -1 ? value.length : nextLine
   if (value.slice(lineStart, lineEnd).trim()) return null

@@ -27,6 +27,22 @@ describe("Markdown editor commands", () => {
     })
   })
 
+  test("prefixes an empty first line without repeating the next line break", () => {
+    expect(applyMarkdownCommand("\nfoo", 0, 0, "heading")).toEqual({
+      value: "## \nfoo",
+      selectionStart: 0,
+      selectionEnd: 3,
+    })
+  })
+
+  test("pastes a link card on an empty first line without repeating the next line break", () => {
+    expect(applyMarkdownPaste("\nfoo", 0, 0, "https://example.com/")).toEqual({
+      value: '::card{url="https://example.com/"}\nfoo',
+      selectionStart: 34,
+      selectionEnd: 34,
+    })
+  })
+
   test("separates inserted block content from adjacent prose", () => {
     expect(applyMarkdownCommand("beforeafter", 6, 6, "table")).toEqual({
       value: "before\n\n| Column 1 | Column 2 |\n| --- | --- |\n| Cell | Cell |\n\nafter",
