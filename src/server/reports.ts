@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start"
 import { and, eq } from "drizzle-orm"
 import { DateTime, Schema, Effect } from "effect"
 
+import { type ContentReportTarget, findReportTargetOwner } from "@/db/content-report-targets"
 import * as schema from "@/db/schema"
 import { serverFunctionValidator } from "@/lib/server-function-error"
 import { randomUuid } from "@/lib/server-uuid"
@@ -63,53 +64,22 @@ export const createContentReport = createServerFn({ method: "POST" })
           )
         yield* verifyRequestTurnstile(context, data.turnstileToken, TURNSTILE_ACTIONS.createReport)
 
-        const target =
-          data.target.type === "post"
-            ? yield* bindingOperation("createContentReport.operation", () =>
-                database
-                  .select({ ownerId: schema.posts.authorId })
-                  .from(schema.posts)
-                  .where(
-                    and(eq(schema.posts.id, data.target.id), eq(schema.posts.status, "published")),
-                  )
-                  .get(),
-              )
-            : data.target.type === "comment"
-              ? yield* bindingOperation("createContentReport.operation", () =>
-                  database
-                    .select({ ownerId: schema.comments.authorId })
-                    .from(schema.comments)
-                    .innerJoin(schema.posts, eq(schema.posts.id, schema.comments.postId))
-                    .where(
-                      and(
-                        eq(schema.comments.id, data.target.id),
-                        eq(schema.comments.status, "published"),
-                        eq(schema.posts.status, "published"),
-                      ),
-                    )
-                    .get(),
-                )
-              : yield* bindingOperation("createContentReport.operation", () =>
-                  database
-                    .select({ ownerId: schema.profiles.userId })
-                    .from(schema.profiles)
-                    .where(
-                      eq(
-                        schema.profiles.normalizedUsername,
-                        data.target.id.toLocaleLowerCase("en-US"),
-                      ),
-                    )
-                    .get(),
-                )
+        const targetId =
+          data.target.type === "profile"
+            ? data.target.id.toLocaleLowerCase("en-US")
+            : data.target.id
+        const reportTarget: ContentReportTarget =
+          data.target.type === "profile"
+            ? { type: "profile", normalizedUsername: targetId }
+            : { type: data.target.type, id: targetId }
+        const target = yield* bindingOperation("createContentReport.target", () =>
+          findReportTargetOwner(database, reportTarget),
+        )
         if (!target) return yield* notFoundFailure("The content could not be found.")
         if (target.ownerId === session.user.id) {
           return yield* forbiddenFailure("You can't report your own content.")
         }
 
-        const targetId =
-          data.target.type === "profile"
-            ? data.target.id.toLocaleLowerCase("en-US")
-            : data.target.id
         const existing = yield* bindingOperation("createContentReport.existing", () =>
           database
             .select({ id: schema.contentReports.id })
