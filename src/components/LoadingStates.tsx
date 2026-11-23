@@ -1,5 +1,5 @@
 import { Field, FieldGroup } from "@/components/ui/field"
-import { Item, ItemActions, ItemContent, ItemGroup, ItemMedia } from "@/components/ui/item"
+import { Item, ItemContent, ItemGroup, ItemMedia } from "@/components/ui/item"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table"
@@ -11,7 +11,7 @@ import {
   TimelineItem,
 } from "@/components/ui/timeline"
 import { generateN } from "@/lib/generate-n"
-import { mediaPageClassName, readingPageClassName, widePageClassName } from "@/lib/page-layout"
+import { mediaPageClassName, readingPageClassName } from "@/lib/page-layout"
 
 function LoadingRegion({
   children,
@@ -271,68 +271,27 @@ export function SettingsPanelSkeleton() {
   )
 }
 
-export function AdminOverviewSkeleton() {
+/** Placeholder for the search box and rows of an admin table. The page heading stays mounted. */
+export function AdminTableSkeleton() {
   return (
-    <main className={widePageClassName}>
-      <LoadingRegion label="Loading administration overview…">
-        <header className="mb-8 grid gap-3">
-          <Skeleton className="h-9 w-56" />
-          <Skeleton className="h-4 w-96 max-w-full" />
-        </header>
-        <ItemGroup className="gap-0 border-y">
-          {generateN(6).map((identity) => (
-            <Item
-              key={identity}
-              role="listitem"
-              variant="outline"
-              className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
-            >
-              <ItemContent className="min-w-0 gap-2">
-                <Skeleton className="h-5 w-36" />
-                <Skeleton className="h-4 w-80 max-w-full" />
-              </ItemContent>
-              <ItemActions>
-                <Skeleton className="h-5 w-10" />
-              </ItemActions>
-            </Item>
-          ))}
-        </ItemGroup>
-      </LoadingRegion>
-    </main>
-  )
-}
-
-export function AdminTablePageSkeleton() {
-  return (
-    <main className={widePageClassName}>
-      <LoadingRegion label="Loading administration data…">
-        <header className="mb-6 grid gap-3 border-b pb-6">
-          <Skeleton className="h-9 w-56" />
-          <Skeleton className="h-4 w-96 max-w-full" />
-        </header>
-        <div className="mb-6 flex gap-5 overflow-hidden border-b pb-3">
-          {generateN(7).map((identity) => (
-            <Skeleton key={identity} className="h-5 w-20 shrink-0" />
-          ))}
-        </div>
-        <Skeleton className="mb-5 h-10 w-full max-w-sm" />
-        <div className="border-y">
-          <Table>
-            <TableBody>
-              {generateN(7).map((rowIdentity) => (
-                <TableRow key={rowIdentity}>
-                  {generateN(4).map((cellIdentity) => (
-                    <TableCell key={cellIdentity}>
-                      <Skeleton className="h-4 w-full" />
-                    </TableCell>
-                  ))}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </LoadingRegion>
-    </main>
+    <LoadingRegion label="Loading administration data…" className="flex flex-col gap-5">
+      <Skeleton className="h-8 w-full max-w-sm" />
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableBody>
+            {generateN(7).map((rowIdentity) => (
+              <TableRow key={rowIdentity}>
+                {generateN(4).map((cellIdentity) => (
+                  <TableCell key={cellIdentity}>
+                    <Skeleton className="h-4 w-full" />
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </LoadingRegion>
   )
 }
 

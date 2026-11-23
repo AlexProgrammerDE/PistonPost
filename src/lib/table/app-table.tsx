@@ -209,7 +209,7 @@ export function DataTable<TData extends RowData>({
           </DropdownMenu>
         </div>
       ) : null}
-      <div className="border-y">
+      <div className="overflow-hidden rounded-lg border">
         <Table>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (

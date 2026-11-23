@@ -1,8 +1,7 @@
-import { Link, createFileRoute } from "@tanstack/react-router"
+import { createFileRoute } from "@tanstack/react-router"
 
-import { AdminSectionNav } from "@/components/AdminSectionNav"
+import { AdminPage } from "@/components/AdminPage"
 import { Admin } from "@/components/auth/admin/admin"
-import { widePageClassName } from "@/lib/page-layout"
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({ meta: [{ title: "Users · PistonPost" }] }),
@@ -11,15 +10,9 @@ export const Route = createFileRoute("/admin/users")({
 
 function AdminUsersPage() {
   return (
-    <main className={widePageClassName}>
-      <Link
-        to="/admin"
-        className="mb-6 inline-flex text-sm text-muted-foreground hover:text-foreground"
-      >
-        Administration
-      </Link>
-      <AdminSectionNav className="mb-6" current="users" />
+    // The upstream users screen renders its own heading in the AdminPageHeader position.
+    <AdminPage current="users">
       <Admin hideNav view="users" />
-    </main>
+    </AdminPage>
   )
 }

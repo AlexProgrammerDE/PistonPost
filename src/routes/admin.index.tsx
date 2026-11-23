@@ -1,92 +1,115 @@
 import { Link, createFileRoute } from "@tanstack/react-router"
-import { ChevronRight, Mail } from "lucide-react"
+import { ChevronRight } from "lucide-react"
+import type { ReactElement, ReactNode } from "react"
 
-import { AdminOverviewSkeleton } from "@/components/LoadingStates"
+import { AdminPage, AdminPageHeader, AdminRouteError } from "@/components/AdminPage"
 import {
   Item,
   ItemActions,
   ItemContent,
   ItemDescription,
   ItemGroup,
-  ItemMedia,
   ItemTitle,
 } from "@/components/ui/item"
-import { adminSections } from "@/lib/admin-sections"
-import { widePageClassName } from "@/lib/page-layout"
+import { Skeleton } from "@/components/ui/skeleton"
+import {
+  adminEmailCampaignsDestination,
+  adminOverviewDestination,
+  adminSections,
+} from "@/lib/admin-sections"
 import { getAdminOverview } from "@/server/tables"
 
 export const Route = createFileRoute("/admin/")({
   loader: () => getAdminOverview(),
   head: () => ({ meta: [{ title: "Administration · PistonPost" }] }),
   component: AdminOverview,
-  pendingComponent: AdminOverviewSkeleton,
+  pendingComponent: () => <AdminOverviewContent />,
+  errorComponent: () => (
+    <AdminRouteError
+      current="overview"
+      title="Administration"
+      description={adminOverviewDestination.description}
+    />
+  ),
 })
 
-function AdminOverview() {
-  const counts = Route.useLoaderData()
+const itemClassName = "rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
+
+function OverviewItem({
+  render,
+  title,
+  description,
+  count,
+}: {
+  render: ReactElement
+  title: string
+  description: string
+  count?: ReactNode
+}) {
   return (
-    <main className={widePageClassName}>
-      <header className="mb-8">
-        <h1 className="font-heading text-3xl font-bold tracking-tight">Administration</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Moderate content, manage access, and inspect operational problems.
-        </p>
-      </header>
-      <ItemGroup role="presentation" className="mb-6 gap-0 border-y">
-        <Item
+    <Item render={render} className={itemClassName} variant="outline">
+      <ItemContent className="min-w-0">
+        <ItemTitle>{title}</ItemTitle>
+        <ItemDescription>{description}</ItemDescription>
+      </ItemContent>
+      <ItemActions className="text-sm whitespace-nowrap text-muted-foreground tabular-nums">
+        {count}
+        <ChevronRight aria-hidden="true" />
+      </ItemActions>
+    </Item>
+  )
+}
+
+type AdminOverviewCounts = Awaited<ReturnType<typeof getAdminOverview>>
+
+function AdminOverview() {
+  return <AdminOverviewContent counts={Route.useLoaderData()} />
+}
+
+/** Section links stay usable while the counts load. */
+function AdminOverviewContent({ counts }: { counts?: AdminOverviewCounts }) {
+  return (
+    <AdminPage current="overview">
+      <AdminPageHeader title="Administration" description={adminOverviewDestination.description} />
+      <ItemGroup role="presentation" className="gap-0 border-y">
+        {adminSections.map((section) => (
+          <OverviewItem
+            key={section.value}
+            render={
+              section.value === "users" ? (
+                <Link to="/admin/users" />
+              ) : (
+                <Link
+                  to="/admin/$section"
+                  params={{ section: section.value }}
+                  search={{
+                    q: "",
+                    sort: "createdAt",
+                    direction: "desc",
+                    cursor: "",
+                    trail: "",
+                    hidden: "",
+                  }}
+                />
+              )
+            }
+            title={section.label}
+            description={section.description}
+            count={
+              counts ? (
+                `${counts[section.value].toLocaleString("en-US")} ${section.countLabel}`
+              ) : (
+                <Skeleton className="h-4 w-16" />
+              )
+            }
+          />
+        ))}
+        <OverviewItem
           render={<Link to="/admin/email-campaigns" />}
-          className="rounded-none px-1 py-5 sm:px-3"
-        >
-          <ItemMedia variant="icon">
-            <Mail aria-hidden="true" />
-          </ItemMedia>
-          <ItemContent>
-            <ItemTitle>Email campaigns</ItemTitle>
-            <ItemDescription>Draft, preview, and queue optional product updates.</ItemDescription>
-          </ItemContent>
-          <ItemActions className="text-muted-foreground">
-            <ChevronRight aria-hidden="true" />
-          </ItemActions>
-        </Item>
+          title={adminEmailCampaignsDestination.label}
+          description={adminEmailCampaignsDestination.description}
+        />
       </ItemGroup>
-      <nav aria-label="Administration sections">
-        <ItemGroup role="presentation" className="gap-0 border-y">
-          {adminSections.map((section) => (
-            <Item
-              key={section.value}
-              render={
-                section.value === "users" ? (
-                  <Link to="/admin/users" />
-                ) : (
-                  <Link
-                    to="/admin/$section"
-                    params={{ section: section.value }}
-                    search={{
-                      q: "",
-                      sort: "createdAt",
-                      direction: "desc",
-                      cursor: "",
-                      trail: "",
-                      hidden: "",
-                    }}
-                  />
-                )
-              }
-              className="rounded-none border-x-0 border-t-0 px-1 py-5 last:border-b-0 sm:px-3"
-              variant="outline"
-            >
-              <ItemContent className="min-w-0">
-                <ItemTitle>{section.label}</ItemTitle>
-                <ItemDescription>{section.description}</ItemDescription>
-              </ItemContent>
-              <ItemActions className="text-sm text-muted-foreground tabular-nums">
-                {counts[section.value]}
-                <ChevronRight aria-hidden="true" />
-              </ItemActions>
-            </Item>
-          ))}
-        </ItemGroup>
-      </nav>
-    </main>
+    </AdminPage>
   )
 }

@@ -1,10 +1,11 @@
 "use client"
 
 import { useMutation } from "@tanstack/react-query"
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
+import { createFileRoute, useRouter } from "@tanstack/react-router"
 import { CircleAlert, Eye, Mail, Send } from "lucide-react"
 import { toast } from "sonner"
 
+import { AdminPage, AdminPageHeader, AdminRouteError } from "@/components/AdminPage"
 import { DateTime } from "@/components/DateTime"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -32,9 +33,9 @@ import {
 } from "@/components/ui/item"
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
+import { adminEmailCampaignsDestination } from "@/lib/admin-sections"
 import { useAppForm } from "@/lib/forms/app-form"
 import { submitMutation } from "@/lib/forms/mutation-submit"
-import { widePageClassName } from "@/lib/page-layout"
 import {
   createEmailCampaign,
   getEmailCampaigns,
@@ -47,7 +48,19 @@ export const Route = createFileRoute("/admin/email-campaigns")({
   loader: () => getEmailCampaigns(),
   head: () => ({ meta: [{ title: "Email campaigns · PistonPost" }] }),
   component: EmailCampaigns,
+  errorComponent: () => (
+    <AdminRouteError
+      current="email-campaigns"
+      title={adminEmailCampaignsDestination.label}
+      description={emailCampaignsDescription}
+    />
+  ),
 })
+
+const campaignStatusLabels = { draft: "Draft", sending: "Sending", sent: "Sent" } as const
+
+const emailCampaignsDescription =
+  "Prepare an optional product update, review the rendered email, then queue it deliberately. Only people who have product emails enabled at delivery time receive it."
 
 const emptyCampaign: EmailCampaignInput = {
   subject: "",
@@ -89,19 +102,13 @@ function EmailCampaigns() {
   })
 
   return (
-    <main className={widePageClassName}>
-      <header className="mb-8 border-b pb-6">
-        <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
-          Administration
-        </Link>
-        <h1 className="mt-3 font-heading text-3xl font-bold tracking-tight">Email campaigns</h1>
-        <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          Prepare an optional product update, review the rendered email, then queue it deliberately.
-          Only people who have product emails enabled at delivery time receive it.
-        </p>
-      </header>
+    <AdminPage current="email-campaigns">
+      <AdminPageHeader
+        title={adminEmailCampaignsDestination.label}
+        description={emailCampaignsDescription}
+      />
 
-      <Alert className="mb-8">
+      <Alert>
         <CircleAlert aria-hidden="true" />
         <AlertTitle>Service updates only</AlertTitle>
         <AlertDescription>
@@ -111,7 +118,7 @@ function EmailCampaigns() {
       </Alert>
 
       <section aria-labelledby="new-campaign-title" className="border-b pb-10">
-        <h2 id="new-campaign-title" className="text-lg font-semibold">
+        <h2 id="new-campaign-title" className="font-semibold">
           New draft
         </h2>
         <form
@@ -201,8 +208,8 @@ function EmailCampaigns() {
         ) : null}
       </section>
 
-      <section aria-labelledby="campaign-history-title" className="pt-10">
-        <h2 id="campaign-history-title" className="text-lg font-semibold">
+      <section aria-labelledby="campaign-history-title">
+        <h2 id="campaign-history-title" className="font-semibold">
           Saved campaigns
         </h2>
         {campaigns.length === 0 ? (
@@ -230,7 +237,7 @@ function EmailCampaigns() {
                     {/* line-clamp-none makes the title a block, so the row needs its own flex. */}
                     <span className="flex w-full min-w-0 flex-wrap items-center gap-2">
                       <span className="min-w-0 flex-1 truncate">{campaign.subject}</span>
-                      <Badge variant="outline">{campaign.status}</Badge>
+                      <Badge variant="outline">{campaignStatusLabels[campaign.status]}</Badge>
                     </span>
                   </ItemTitle>
                   <ItemDescription>{campaign.message}</ItemDescription>
@@ -290,6 +297,6 @@ function EmailCampaigns() {
           </ItemGroup>
         )}
       </section>
-    </main>
+    </AdminPage>
   )
 }

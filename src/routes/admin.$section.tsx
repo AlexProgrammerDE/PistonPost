@@ -9,12 +9,12 @@ import {
 } from "@tanstack/react-router"
 import { Schema, Effect, Option, Result } from "effect"
 import { Search } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useEffect, useState, type ReactNode } from "react"
 import { toast } from "sonner"
 
-import { AdminSectionNav } from "@/components/AdminSectionNav"
+import { AdminLoadError, AdminPage, AdminPageHeader } from "@/components/AdminPage"
 import { DateTime } from "@/components/DateTime"
-import { AdminTablePageSkeleton } from "@/components/LoadingStates"
+import { AdminTableSkeleton } from "@/components/LoadingStates"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { ButtonGroup } from "@/components/ui/button-group"
@@ -39,7 +39,6 @@ import {
 } from "@/components/ui/input-group"
 import { Spinner } from "@/components/ui/spinner"
 import { adminTableSections, getAdminSection, type AdminSection } from "@/lib/admin-sections"
-import { widePageClassName } from "@/lib/page-layout"
 import { adminRowsQueryOptions } from "@/lib/queries/admin"
 import { userFacingServerMessage } from "@/lib/server-function-error"
 import {
@@ -363,8 +362,30 @@ export const Route = createFileRoute("/admin/$section")({
     meta: [{ title: `${getAdminSection(params.section)?.label ?? "Administration"} · PistonPost` }],
   }),
   component: AdminTable,
-  pendingComponent: AdminTablePageSkeleton,
+  pendingComponent: AdminTablePending,
 })
+
+function AdminTableFrame({ section, children }: { section: AdminSection; children: ReactNode }) {
+  const details = getAdminSection(section)
+  if (!details) throw notFound()
+  return (
+    <AdminPage current={section}>
+      <AdminPageHeader title={details.label} description={details.description} />
+      {children}
+    </AdminPage>
+  )
+}
+
+function AdminTablePending() {
+  const { section } = Route.useParams()
+  const parsedSection = Schema.decodeUnknownOption(sectionSchema)(section)
+  if (Option.isNone(parsedSection)) return null
+  return (
+    <AdminTableFrame section={parsedSection.value}>
+      <AdminTableSkeleton />
+    </AdminTableFrame>
+  )
+}
 
 function AdminTable() {
   const input = Route.useLoaderData()
@@ -379,16 +400,28 @@ function AdminTable() {
   const search = Route.useSearch()
   const parsedSection = Schema.decodeUnknownResult(sectionSchema, { errors: "all" })(section)
   if (!Result.isSuccess(parsedSection)) throw notFound()
-  if (result.error) throw result.error
-  if (!result.data || !hydrated) return <AdminTablePageSkeleton />
   return (
-    <AdminTableView
-      key={parsedSection.success}
-      result={result.data}
-      refreshing={result.isFetching}
-      section={parsedSection.success}
-      search={search}
-    />
+    <AdminTableFrame section={parsedSection.success}>
+      {result.error ? (
+        <AdminLoadError
+          onRetry={() => {
+            void result.refetch()
+          }}
+        />
+      ) : null}
+      {/* After a failed search, the previous rows stay visible below the error. */}
+      {result.error && !result.data ? null : !result.data || !hydrated ? (
+        <AdminTableSkeleton />
+      ) : (
+        <AdminTableView
+          key={parsedSection.success}
+          result={result.data}
+          refreshing={result.isFetching}
+          section={parsedSection.success}
+          search={search}
+        />
+      )}
+    </AdminTableFrame>
   )
 }
 
@@ -494,16 +527,8 @@ function AdminTableView({
   ])
 
   return (
-    <main className={widePageClassName}>
-      <header className="mb-6 border-b pb-6">
-        <Link to="/admin" className="text-sm text-muted-foreground hover:text-foreground">
-          Administration
-        </Link>
-        <h1 className="mt-3 font-heading text-3xl font-bold tracking-tight">{details.label}</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{details.description}</p>
-      </header>
-      <AdminSectionNav className="mb-6" current={section} />
-      <div className="mb-5 max-w-sm">
+    <div className="flex flex-col gap-5">
+      <div className="max-w-sm">
         <InputGroup>
           <InputGroupAddon>
             <Search aria-hidden="true" />
@@ -588,6 +613,6 @@ function AdminTableView({
           }}
         />
       </div>
-    </main>
+    </div>
   )
 }

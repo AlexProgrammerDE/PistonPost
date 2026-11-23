@@ -1,6 +1,7 @@
 export const adminSections = [
   {
     value: "posts",
+    countLabel: "total",
     label: "Posts",
     description: "Review published and hidden posts.",
     primaryLabel: "Post",
@@ -10,6 +11,7 @@ export const adminSections = [
   },
   {
     value: "comments",
+    countLabel: "total",
     label: "Comments",
     description: "Review discussions and moderation history.",
     primaryLabel: "Comment",
@@ -19,6 +21,7 @@ export const adminSections = [
   },
   {
     value: "reports",
+    countLabel: "open",
     label: "Reports",
     description: "Review content flagged by community members.",
     primaryLabel: "Reason",
@@ -28,6 +31,7 @@ export const adminSections = [
   },
   {
     value: "users",
+    countLabel: "total",
     label: "Users",
     description: "Manage accounts, access, sessions, and impersonation.",
     primaryLabel: "User",
@@ -37,6 +41,7 @@ export const adminSections = [
   },
   {
     value: "media",
+    countLabel: "failed",
     label: "Media",
     description: "Find failed uploads and remove abandoned files.",
     primaryLabel: "File",
@@ -46,6 +51,7 @@ export const adminSections = [
   },
   {
     value: "jobs",
+    countLabel: "unfinished",
     label: "Jobs",
     description: "Inspect queue delivery and retry unfinished work.",
     primaryLabel: "Job",
@@ -55,6 +61,7 @@ export const adminSections = [
   },
   {
     value: "audit",
+    countLabel: "events",
     label: "Audit",
     description: "Trace administrator and security-sensitive changes.",
     primaryLabel: "Action",
@@ -71,6 +78,27 @@ export const adminTableSections = adminSections.filter(
 )
 
 export type AdminSection = AdminTableSection["value"]
+
+export const adminOverviewDestination = {
+  value: "overview",
+  label: "Overview",
+  description: "Moderate content, manage access, and inspect operational problems.",
+} as const
+
+export const adminEmailCampaignsDestination = {
+  value: "email-campaigns",
+  label: "Email campaigns",
+  description: "Draft, preview, and queue optional product updates.",
+} as const
+
+/** Every destination in the administration area, in navigation order. */
+export const adminDestinations = [
+  adminOverviewDestination,
+  ...adminSections,
+  adminEmailCampaignsDestination,
+] as const
+
+export type AdminDestination = (typeof adminDestinations)[number]["value"]
 
 export function getAdminSection(value: string) {
   return adminSections.find((section) => section.value === value)
