@@ -166,6 +166,7 @@ export function generateN(count: number) {
 - Reuse the Better Auth UI architecture proven in EnderDash through @better-auth-ui/core and @better-auth-ui/react, adapted to this Base UI project.
 - Do not copy EnderDash organizations, subscriptions, API keys, OAuth provider, or Minecraft-specific behavior.
 - Do not use Better Auth active organizations. PistonPost has no organization domain.
+- Do not re-add the upstream API key, OAuth provider, or agent auth UI folders or their src/lib/auth plugin wrappers. They were deleted because PistonPost excludes those features.
 - Create the auth instance from request-scoped Cloudflare bindings. Do not capture request bindings in module-global mutable state.
 - Keep authorization separate from authentication. Domain services must still check ownership, role, visibility, and moderation policy.
 - Use short-lived encrypted cookie cache only after tests prove revocation and role changes behave correctly.

@@ -1385,3 +1385,10 @@ Record future changes here with date, decision, reason, and affected phases.
   REST failures return a private, uncached 502. Logs record the operation and HTTP status only,
   never the token or the response body. Public media skips this step and keeps its cacheable
   redirect. This affects Phase 6.
+
+- 2026-11-23: Delete the unused upstream Better Auth UI folders for API keys, the OAuth provider,
+  and agent auth, plus their plugin wrappers in src/lib/auth. Remove the unused
+  @better-auth/oauth-provider, @better-auth/scim, and @better-auth/sso packages. Keep
+  @better-auth/api-key and @better-auth/agent-auth because Better Auth UI lists them as required
+  peers. Keep src/components/auth/organization because the upstream Dash activity view imports the
+  organization plugin. Do not re-add these surfaces when updating Better Auth UI.

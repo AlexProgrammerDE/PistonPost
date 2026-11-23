@@ -16,7 +16,6 @@
     "@tanstack/react-devtools",
     "@tanstack/react-router-devtools",
     "@tanstack/router-plugin",
-    "@better-auth/scim",
     "cloudflare",
     "embla-carousel-react",
     "fscreen",
