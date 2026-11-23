@@ -8,7 +8,7 @@ describe("post text previews", () => {
       createPostTextPreview(
         "## Release notes\n\n- **Safer feeds**\n- [Full details](https://example.com)",
       ),
-    ).toBe("Release notes\n• Safer feeds\n• Full details")
+    ).toEqual({ text: "Release notes\n• Safer feeds\n• Full details", shortened: false })
   })
 
   test("caps unusually wide Arabic presentation characters", () => {
@@ -17,13 +17,28 @@ describe("post text previews", () => {
       wideArabicLigature.repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT + 1),
     )
 
-    expect(preview).toBe(`${wideArabicLigature.repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT)}…`)
+    expect(preview).toEqual({
+      text: `${wideArabicLigature.repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT)}…`,
+      shortened: true,
+    })
   })
 
   test("does not split multi-code-point graphemes", () => {
     const familyEmoji = "👨‍👩‍👧‍👦"
     const preview = createPostTextPreview(familyEmoji.repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT + 1))
 
-    expect(preview).toBe(`${familyEmoji.repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT)}…`)
+    expect(preview).toEqual({
+      text: `${familyEmoji.repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT)}…`,
+      shortened: true,
+    })
+  })
+
+  test("keeps text at the limit whole", () => {
+    const preview = createPostTextPreview("a".repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT))
+
+    expect(preview).toEqual({
+      text: "a".repeat(POST_TEXT_PREVIEW_GRAPHEME_LIMIT),
+      shortened: false,
+    })
   })
 })
