@@ -1,9 +1,11 @@
 import { and, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm"
-import { DateTime, Clock, Effect, Schema } from "effect"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
+import { DateTime, Cause, Clock, Effect, Exit, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 
+import { missingProviderObject } from "./account-media-purge"
 import { mediaCleanupJob, mediaCleanupJobSchema } from "./jobs"
 import { runMaintenanceTasks } from "./maintenance-runner"
 import { bindingOperation } from "./operation"
@@ -230,8 +232,31 @@ const removeAbandonedDrafts = Effect.fn("Maintenance.removeAbandonedDrafts")(fun
   }
 })
 
-const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env: Cloudflare.Env) {
-  const database = createD1Database(env.DB)
+type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
+
+/** The parts of a Stream video that reconciliation reads. */
+export type StreamVideoState = Pick<StreamVideo, "readyToStream" | "duration" | "size"> & {
+  status: Pick<StreamVideoStatus, "state">
+  input: Pick<StreamVideoInput, "width" | "height">
+}
+
+export type StreamVideoLookup = (streamUid: string) => {
+  details: () => Promise<StreamVideoState>
+  downloads: Pick<StreamScopedDownloads, "generate" | "get">
+}
+
+// Only an unfinished upload may change. Cleanup can delete the asset while Stream answers.
+function unfinishedVideo(id: string) {
+  return and(
+    eq(schema.mediaAssets.id, id),
+    inArray(schema.mediaAssets.status, ["uploading", "processing"]),
+  )
+}
+
+export const reconcileStreamAssets = Effect.fn("Maintenance.reconcileStreamAssets")(function* (
+  database: Database,
+  streamVideo: StreamVideoLookup,
+) {
   const pending = yield* bindingOperation("maintenance.reconcileStream", () =>
     database
       .select({ id: schema.mediaAssets.id, streamUid: schema.mediaAssets.streamUid })
@@ -248,18 +273,33 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
       .limit(25),
   )
 
-  yield* Effect.forEach(
+  const outcomes = yield* Effect.forEach(
     pending,
     (asset) =>
       Effect.gen(function* () {
         const streamUid = asset.streamUid
         if (!streamUid) return
         const video = yield* bindingOperation("maintenance.reconcileStream", () =>
-          env.STREAM.video(streamUid).details(),
+          streamVideo(streamUid).details(),
+        ).pipe(
+          Effect.catchIf(
+            (error) => missingProviderObject(error.cause),
+            () => Effect.undefined,
+          ),
         )
+        if (!video) {
+          // Stream no longer has this video, so it can never finish processing.
+          yield* bindingOperation("maintenance.reconcileStream", () =>
+            database
+              .update(schema.mediaAssets)
+              .set({ status: "failed" })
+              .where(unfinishedVideo(asset.id)),
+          )
+          return
+        }
         const finalizedAt = video.readyToStream ? yield* DateTime.nowAsDate : undefined
         const failed = video.status.state.toLocaleLowerCase("en-US").includes("error")
-        yield* bindingOperation("maintenance.reconcileStream", () =>
+        const updated = yield* bindingOperation("maintenance.reconcileStream", () =>
           database
             .update(schema.mediaAssets)
             .set({
@@ -270,33 +310,41 @@ const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env:
               byteSize: video.size > 0 ? video.size : undefined,
               finalizedAt,
             })
-            .where(eq(schema.mediaAssets.id, asset.id)),
+            .where(unfinishedVideo(asset.id))
+            .returning({ providerMetadata: schema.mediaAssets.providerMetadata }),
         )
-
-        if (video.readyToStream) {
-          const row = yield* bindingOperation("maintenance.reconcileStream", () =>
-            database
-              .select({ providerMetadata: schema.mediaAssets.providerMetadata })
-              .from(schema.mediaAssets)
-              .where(eq(schema.mediaAssets.id, asset.id))
-              .get(),
+        const row = updated[0]
+        if (video.readyToStream && row) {
+          const providerMetadata = yield* synchronizeVideoDownload(
+            streamVideo(streamUid).downloads,
+            row.providerMetadata,
           )
-          if (row) {
-            const providerMetadata = yield* synchronizeVideoDownload(
-              env.STREAM.video(streamUid).downloads,
-              row.providerMetadata,
-            )
-            yield* bindingOperation("maintenance.reconcileStream", () =>
-              database
-                .update(schema.mediaAssets)
-                .set({ providerMetadata })
-                .where(eq(schema.mediaAssets.id, asset.id)),
-            )
-          }
+          yield* bindingOperation("maintenance.reconcileStream", () =>
+            database
+              .update(schema.mediaAssets)
+              .set({ providerMetadata })
+              .where(eq(schema.mediaAssets.id, asset.id)),
+          )
         }
-      }),
+      }).pipe(Effect.exit),
     { concurrency: 4 },
   )
+  // One failing video must not stop the others. Report all failures after the batch.
+  const failure = outcomes.reduce<Cause.Cause<unknown> | undefined>(
+    (cause, outcome) =>
+      Exit.isFailure(outcome)
+        ? cause
+          ? Cause.combine(cause, outcome.cause)
+          : outcome.cause
+        : cause,
+    undefined,
+  )
+  if (failure) return yield* Effect.failCause(failure)
+  return undefined
+})
+
+const reconcileStream = Effect.fn("Maintenance.reconcileStream")(function* (env: Cloudflare.Env) {
+  yield* reconcileStreamAssets(createD1Database(env.DB), (streamUid) => env.STREAM.video(streamUid))
 })
 
 const reconcileVideoDownloads = Effect.fn("Maintenance.reconcileVideoDownloads")(function* (
