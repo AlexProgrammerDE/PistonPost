@@ -28,7 +28,12 @@ export function ResponsiveAvatarImage({ src, sizes, ...props }: ResponsiveAvatar
           height={256}
           sizes={sizes}
           sources={sources}
-          className={cn(imageProps.className, "data-error:invisible data-loading:invisible")}
+          className={cn(
+            imageProps.className,
+            // keepMounted renders the image next to the fallback while it loads or fails.
+            // Overlay it so the fallback keeps the full avatar box.
+            "absolute inset-0 data-error:invisible data-loading:invisible",
+          )}
         />
       )}
     />
