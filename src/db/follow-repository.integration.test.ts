@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
+import { eq } from "drizzle-orm"
 import { Effect } from "effect"
 
 import { createUser } from "./factories"
@@ -66,5 +67,36 @@ describe("follow repository", () => {
     expect((await Effect.runPromise(repository.findTagFollow("viewer", "art")))?.following).toBe(
       false,
     )
+  })
+  it("hides banned accounts from follow lookups until the ban expires", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => {
+      database.$client.close()
+    }
+    database
+      .insert(user)
+      .values([
+        createUser({ id: "viewer", email: "viewer@example.com" }),
+        createUser({ id: "banned", email: "banned@example.com", banned: true }),
+      ])
+      .run()
+    database
+      .insert(profiles)
+      .values({ userId: "banned", username: "Banned", normalizedUsername: "banned" })
+      .run()
+    const repository = createFollowRepository(database)
+
+    expect(await Effect.runPromise(repository.findUserFollow("viewer", "banned"))).toBeNull()
+
+    database
+      .update(user)
+      .set({ banExpires: new Date(Date.now() - 60_000) })
+      .where(eq(user.id, "banned"))
+      .run()
+
+    expect(await Effect.runPromise(repository.findUserFollow("viewer", "banned"))).toEqual({
+      targetId: "banned",
+      following: false,
+    })
   })
 })

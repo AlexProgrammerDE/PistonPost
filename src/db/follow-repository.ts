@@ -4,6 +4,7 @@ import { Effect } from "effect"
 
 import { RepositoryError } from "@/domain/errors"
 
+import { notBannedAccount } from "./account-ban"
 import * as schema from "./schema"
 
 type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
@@ -36,7 +37,13 @@ export function createFollowRepository(database: Database) {
                 eq(schema.userFollows.followerId, viewerId),
               ),
             )
-            .where(eq(schema.profiles.normalizedUsername, normalizedUsername))
+            // A banned account's profile is hidden, so it cannot be followed either.
+            .where(
+              and(
+                eq(schema.profiles.normalizedUsername, normalizedUsername),
+                notBannedAccount(schema.profiles.userId),
+              ),
+            )
             .get()
 
           return row ? { targetId: row.targetId, following: row.followedId !== null } : null
