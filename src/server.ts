@@ -3,6 +3,7 @@ import handler from "@tanstack/react-start/server-entry"
 import { allowRequest, routeClass } from "./request-rate-limit"
 import { applyResponseCachePolicy } from "./server/cache-policy"
 import { handleQueue } from "./server/email-queue"
+import { healthResponse } from "./server/health"
 import { handleScheduled } from "./server/maintenance"
 import { writeOperationalEvent } from "./server/operational-events"
 import { permanentRedirect } from "./server/permanent-redirects"
@@ -25,18 +26,6 @@ declare module "@tanstack/react-router" {
       requestContext: AppRequestContext
     }
   }
-}
-
-function healthResponse() {
-  return Response.json(
-    { status: "ok" },
-    {
-      headers: {
-        "Cache-Control": "no-store",
-        "Content-Type": "application/json; charset=utf-8",
-      },
-    },
-  )
 }
 
 function rateLimitResponse() {
@@ -65,8 +54,8 @@ export function createWorkerFetch(handlerFetch: typeof handler.fetch) {
     const startedAt = performance.now()
     const secure = (response: Response) =>
       applySecurityHeaders(request, response, runtime.config.APP_ENV === "production")
-    if (request.method === "GET" && url.pathname === "/health") {
-      return secure(healthResponse())
+    if (url.pathname === "/health") {
+      return secure(healthResponse(request.method))
     }
 
     const redirect = permanentRedirect(request)
