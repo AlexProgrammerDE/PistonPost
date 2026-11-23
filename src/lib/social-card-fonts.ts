@@ -139,6 +139,50 @@ const fallbackFaces: readonly FallbackFace[] = [
     file: "@fontsource-variable/noto-sans-thai@5.3.0/files/noto-sans-thai-thai-wght-normal.woff2",
     ranges: [[0x0e_01, 0x0e_5b]],
   },
+  // Each script file below also lists shared marks such as the dotted circle, joiners, Devanagari
+  // dandas and the rupee sign. Their ranges leave those out, so a card loads a script font only for
+  // letters of that script.
+  scriptFace("Armenian", [
+    [0x05_30, 0x05_8f],
+    [0xfb_13, 0xfb_17],
+  ]),
+  scriptFace("Georgian", [
+    [0x10_a0, 0x10_ff],
+    [0x1c_90, 0x1c_ba],
+    [0x1c_bd, 0x1c_bf],
+    [0x2d_00, 0x2d_2f],
+  ]),
+  scriptFace("Bengali", [[0x09_80, 0x09_fe]]),
+  scriptFace("Gurmukhi", [[0x0a_01, 0x0a_76]]),
+  scriptFace("Gujarati", [[0x0a_80, 0x0a_ff]]),
+  scriptFace("Tamil", [[0x0b_82, 0x0b_fa]]),
+  scriptFace("Telugu", [[0x0c_00, 0x0c_7f]]),
+  scriptFace("Kannada", [[0x0c_80, 0x0c_f3]]),
+  scriptFace("Malayalam", [[0x0d_00, 0x0d_7f]]),
+  scriptFace("Sinhala", [
+    [0x0d_81, 0x0d_f4],
+    [0x1_11_e1, 0x1_11_f4],
+  ]),
+  scriptFace("Lao", [[0x0e_81, 0x0e_df]]),
+  scriptFace("Myanmar", [
+    [0x10_00, 0x10_9f],
+    [0xa9_e0, 0xa9_fe],
+    [0xaa_60, 0xaa_7f],
+    [0x1_16_d0, 0x1_16_e3],
+  ]),
+  scriptFace("Khmer", [
+    [0x17_80, 0x17_ff],
+    [0x19_e0, 0x19_ff],
+  ]),
+  scriptFace("Ethiopic", [
+    [0x12_00, 0x13_99],
+    [0x2d_80, 0x2d_de],
+    [0xab_01, 0xab_2e],
+    [0x1_e7_e0, 0x1_e7_e6],
+    [0x1_e7_e8, 0x1_e7_eb],
+    [0x1_e7_ed, 0x1_e7_ee],
+    [0x1_e7_f0, 0x1_e7_fe],
+  ]),
   // Kana marks Japanese text. Ranking Japanese before Chinese lets that text take its Han glyphs
   // from the Japanese font too, so one card does not mix two CJK designs.
   ...cjkFaces("Noto Sans JP", "@fontsource/noto-sans-jp@5.3.1/files/noto-sans-jp-japanese", [
@@ -163,6 +207,16 @@ const fallbackFaces: readonly FallbackFace[] = [
     ],
   ),
 ]
+
+/** A script-only Noto Sans variable file, named like `noto-sans-khmer-khmer-wght-normal.woff2`. */
+function scriptFace(script: string, ranges: CodepointRange[]): FallbackFace {
+  const slug = script.toLowerCase()
+  return {
+    name: `Noto Sans ${script}`,
+    file: `@fontsource-variable/noto-sans-${slug}@5.3.0/files/noto-sans-${slug}-${slug}-wght-normal.woff2`,
+    ranges,
+  }
+}
 
 /** fontsource has no variable CJK file, so load the regular and bold weights the card uses. */
 function cjkFaces(name: string, path: string, ranges: CodepointRange[]): FallbackFace[] {

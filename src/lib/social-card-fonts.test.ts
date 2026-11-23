@@ -43,8 +43,32 @@ describe("social card fallback fonts", () => {
     ["Bucureşti, Timişoara, Constanţa", ["Noto Sans Latin Extended"]],
     ["Price: ₹500", ["Noto Sans Latin Extended"]],
     ["Issue № 5", ["Noto Sans Cyrillic"]],
+    ["Բարեւ աշխարհ", ["Noto Sans Armenian"]],
+    ["გამარჯობა", ["Noto Sans Georgian"]],
+    ["ᲒᲐᲛᲐᲠᲯᲝᲑᲐ", ["Noto Sans Georgian"]],
+    ["নমস্কার", ["Noto Sans Bengali"]],
+    ["ਸਤ ਸ੍ਰੀ ਅਕਾਲ", ["Noto Sans Gurmukhi"]],
+    ["નમસ્તે", ["Noto Sans Gujarati"]],
+    ["வணக்கம்", ["Noto Sans Tamil"]],
+    ["నమస్కారం", ["Noto Sans Telugu"]],
+    ["ನಮಸ್ಕಾರ", ["Noto Sans Kannada"]],
+    ["നമസ്കാരം", ["Noto Sans Malayalam"]],
+    ["ආයුබෝවන්", ["Noto Sans Sinhala"]],
+    ["ສະບາຍດີ", ["Noto Sans Lao"]],
+    ["မင်္ဂလာပါ", ["Noto Sans Myanmar"]],
+    ["សួស្តី", ["Noto Sans Khmer"]],
+    ["ሰላም ልዑል", ["Noto Sans Ethiopic"]],
+    // Bengali shares the Devanagari danda, which the Devanagari file covers.
+    ["আমি ভাত খাই।", ["Noto Sans Devanagari", "Noto Sans Bengali"]],
   ])("loads only the matching script fonts for %s", (text, expected) => {
     expect(fontsFor(text)).toEqual(expected)
+  })
+
+  test("loads each script file from its own fontsource package", () => {
+    const khmer = fonts.find((font) => font.name === "Noto Sans Khmer")
+    expect(khmer?.key).toBe(
+      "https://cdn.jsdelivr.net/npm/@fontsource-variable/noto-sans-khmer@5.3.0/files/noto-sans-khmer-khmer-wght-normal.woff2",
+    )
   })
 
   test("ranks every fallback after the Outfit subsets, with Japanese before Chinese", () => {
