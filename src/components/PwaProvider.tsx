@@ -4,6 +4,7 @@ import { useEffect, useState, type PropsWithChildren } from "react"
 import { authClient } from "@/auth/client"
 import { FileLaunchHandler } from "@/components/FileLaunchHandler"
 import { PwaContext, type InstallPrompt, type InstallState } from "@/lib/pwa/app-installation"
+import { knownLocalAccount } from "@/lib/pwa/local-account"
 import { reconcileDraftAccount } from "@/lib/pwa/local-draft"
 import { reconcileLocalAccount } from "@/lib/pwa/local-store"
 import { registerAppWorker } from "@/lib/pwa/registration"
@@ -13,8 +14,8 @@ function isInstallPrompt(event: Event): event is InstallPrompt {
 }
 
 export function PwaProvider({ children }: PropsWithChildren) {
-  const { data: session, isPending } = useSession(authClient)
-  const userId = session?.user.id ?? null
+  const session = useSession(authClient)
+  const localAccount = knownLocalAccount(session)
   const [installation, setInstallation] = useState<InstallState>({ installed: false, prompt: null })
 
   useEffect(() => {
@@ -63,16 +64,16 @@ export function PwaProvider({ children }: PropsWithChildren) {
   }, [])
 
   useEffect(() => {
-    if (isPending) return
+    if (localAccount === undefined) return
     try {
-      reconcileDraftAccount(userId)
+      reconcileDraftAccount(localAccount)
     } catch {
       /* Composing still works without local storage. */
     }
-    void reconcileLocalAccount(userId).catch(() => undefined)
-    if (!userId && "clearAppBadge" in navigator)
+    void reconcileLocalAccount(localAccount).catch(() => undefined)
+    if (!localAccount && "clearAppBadge" in navigator)
       void navigator.clearAppBadge().catch(() => undefined)
-  }, [isPending, userId])
+  }, [localAccount])
 
   return (
     <PwaContext value={installation}>
