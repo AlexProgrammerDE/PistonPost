@@ -431,9 +431,45 @@ function MarkdownSpan({ node, children, ...props }: ComponentProps<"span"> & Ext
   if (directive?.kind === "spoiler") {
     // A button cannot sit inside a link, and a click would also open the link. Keep the spoiler
     // covered there instead of revealing it as plain text.
-    return insideLink ? <MaskedSpoiler /> : <MarkdownSpoiler label={directive.label} />
+    return insideLink ? (
+      <MaskedSpoiler label={directive.label} />
+    ) : (
+      <MarkdownSpoiler label={directive.label} />
+    )
   }
   return <span {...props}>{children}</span>
+}
+
+const spoilerGraphemes = new Intl.Segmenter("en-US", { granularity: "grapheme" })
+
+// The cover bar hints at the hidden text's length without putting the text in the page.
+function spoilerBarClassName(label: string) {
+  let length = 0
+  for (const _ of spoilerGraphemes.segment(label)) length += 1
+  if (length <= 4) return "w-3"
+  if (length <= 12) return "w-6"
+  if (length <= 24) return "w-10"
+  if (length <= 60) return "w-16"
+  return "w-24"
+}
+
+const spoilerCoverClassName =
+  "inline-flex items-center gap-1 rounded-sm border border-dashed border-primary/50 bg-primary/10 px-1.5 align-baseline leading-snug font-medium text-primary"
+
+function SpoilerCover({ label }: { label: string }) {
+  return (
+    <>
+      <EyeOff aria-hidden="true" className="size-[1em] shrink-0" />
+      <span aria-hidden="true">spoiler</span>
+      <span
+        aria-hidden="true"
+        className={cn(
+          "inline-block h-[0.65em] shrink-0 rounded-xs bg-primary/30 group-hover/spoiler:bg-primary/45 motion-safe:transition-colors",
+          spoilerBarClassName(label),
+        )}
+      />
+    </>
+  )
 }
 
 function MarkdownSpoiler({ label }: { label: string }) {
@@ -444,30 +480,26 @@ function MarkdownSpoiler({ label }: { label: string }) {
       aria-pressed={revealed}
       title={revealed ? "Hide spoiler" : "Reveal spoiler"}
       className={cn(
-        "inline border px-1 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        "group/spoiler cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring motion-safe:transition-colors",
         revealed
-          ? "border-border bg-muted/35 text-foreground"
-          : "border-foreground/70 bg-foreground text-background",
+          ? "inline rounded-sm bg-primary/10 px-1 text-left text-foreground underline decoration-primary/50 decoration-dashed underline-offset-4 hover:bg-primary/15"
+          : cn(spoilerCoverClassName, "hover:border-primary hover:bg-primary/15"),
       )}
       onClick={() => {
         setRevealed((current) => !current)
       }}
     >
       <span className="sr-only">{revealed ? "Spoiler: " : "Reveal spoiler"}</span>
-      {revealed ? (
-        label
-      ) : (
-        <EyeOff aria-hidden="true" className="inline size-[1em] align-[-0.125em]" />
-      )}
+      {revealed ? label : <SpoilerCover label={label} />}
     </button>
   )
 }
 
-function MaskedSpoiler() {
+function MaskedSpoiler({ label }: { label: string }) {
   return (
-    <span className="inline border border-foreground/70 bg-foreground px-1 text-background">
+    <span className={spoilerCoverClassName}>
       <span className="sr-only">Hidden spoiler</span>
-      <EyeOff aria-hidden="true" className="inline size-[1em] align-[-0.125em]" />
+      <SpoilerCover label={label} />
     </span>
   )
 }

@@ -13,6 +13,15 @@ describe("MarkdownContent", () => {
     expect(html).not.toContain("aria-label")
   })
 
+  test("labels a hidden spoiler visibly without exposing its text", () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent>Before :spoiler[the butler did it] after</MarkdownContent>,
+    )
+
+    expect(html).not.toContain("the butler did it")
+    expect(html).toContain('<span aria-hidden="true">spoiler</span>')
+  })
+
   test("does not promise proxying for external images on saved posts", () => {
     const html = renderToStaticMarkup(
       <MarkdownContent postId="saved-post">![cat](http://example.com/cat.png)</MarkdownContent>,
@@ -65,6 +74,7 @@ describe("MarkdownContent", () => {
     expect(html).not.toContain("<button")
     expect(html).not.toContain("the ending")
     expect(html).toContain("Hidden spoiler")
+    expect(html).toContain('<span aria-hidden="true">spoiler</span>')
   })
 
   test("links footnote references to their targets", () => {
