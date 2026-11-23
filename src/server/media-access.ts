@@ -1,18 +1,18 @@
 import { isActiveAdministrator } from "@/server/request-session"
 
 /**
- * Who may load a media file. Public media can be cached publicly. Media on an unpublished post
- * stays with its owner. Media of a banned author stays hidden from the public, while the owner
- * and active administrators keep private, uncached access.
+ * Who may load a media file. Public media can be cached publicly. Media on an unpublished post,
+ * such as a draft or a post hidden by moderation, and media of a banned author stay with the
+ * owner and active administrators. Administrators can edit and moderate other users' posts, so
+ * they need to see the media too. Those responses are private and uncached.
  */
-export type MediaAudience = "public" | "owner" | "owner-or-admin"
+export type MediaAudience = "public" | "owner-or-admin"
 
 export function mediaAudience(media: {
   readonly published: boolean
   readonly authorBanned: boolean
 }): MediaAudience {
-  if (!media.published) return "owner"
-  return media.authorBanned ? "owner-or-admin" : "public"
+  return media.published && !media.authorBanned ? "public" : "owner-or-admin"
 }
 
 type MediaViewer = {
@@ -31,5 +31,5 @@ export function canViewMedia(
   if (audience === "public") return true
   if (!viewer) return false
   if (ownerId !== null && viewer.id === ownerId) return true
-  return audience === "owner-or-admin" && isActiveAdministrator(viewer, now)
+  return isActiveAdministrator(viewer, now)
 }

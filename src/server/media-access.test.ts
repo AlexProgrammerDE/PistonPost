@@ -14,11 +14,12 @@ describe("media access", () => {
     expect(canViewMedia(audience, "owner", null, now)).toBeTrue()
   })
 
-  test("keeps unpublished media with its owner", () => {
+  test("limits media on a draft or moderated post to its owner and administrators", () => {
     const audience = mediaAudience({ published: false, authorBanned: false })
-    expect(audience).toBe("owner")
+    expect(audience).toBe("owner-or-admin")
     expect(canViewMedia(audience, "owner", owner, now)).toBeTrue()
-    expect(canViewMedia(audience, "owner", admin, now)).toBeFalse()
+    expect(canViewMedia(audience, "owner", admin, now)).toBeTrue()
+    expect(canViewMedia(audience, "owner", stranger, now)).toBeFalse()
     expect(canViewMedia(audience, "owner", null, now)).toBeFalse()
   })
 
