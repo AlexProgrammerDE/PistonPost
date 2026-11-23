@@ -9,7 +9,7 @@ import { missingProviderObject } from "./account-media-purge"
 import { mediaCleanupJob, mediaCleanupJobSchema } from "./jobs"
 import { runMaintenanceTasks } from "./maintenance-runner"
 import { bindingOperation } from "./operation"
-import { synchronizeVideoDownload } from "./video-download"
+import { storeRefreshedVideoDownload, synchronizeVideoDownload } from "./video-download"
 
 const drainOutbox = Effect.fn("Maintenance.drainOutbox")(function* (env: Cloudflare.Env) {
   const database = createD1Database(env.DB)
@@ -319,12 +319,7 @@ export const reconcileStreamAssets = Effect.fn("Maintenance.reconcileStreamAsset
             streamVideo(streamUid).downloads,
             row.providerMetadata,
           )
-          yield* bindingOperation("maintenance.reconcileStream", () =>
-            database
-              .update(schema.mediaAssets)
-              .set({ providerMetadata })
-              .where(eq(schema.mediaAssets.id, asset.id)),
-          )
+          yield* storeRefreshedVideoDownload(database, asset.id, providerMetadata)
         }
       }).pipe(Effect.exit),
     { concurrency: 4 },
@@ -379,12 +374,7 @@ export const reconcileVideoDownloadAssets = Effect.fn("Maintenance.reconcileVide
             streamVideo(streamUid).downloads,
             asset.providerMetadata,
           )
-          yield* bindingOperation("maintenance.reconcileVideoDownloads", () =>
-            database
-              .update(schema.mediaAssets)
-              .set({ providerMetadata })
-              .where(eq(schema.mediaAssets.id, asset.id)),
-          )
+          yield* storeRefreshedVideoDownload(database, asset.id, providerMetadata)
         }),
       })),
     )

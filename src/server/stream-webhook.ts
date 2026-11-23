@@ -1,12 +1,13 @@
-import { eq } from "drizzle-orm"
+import { and, eq, sql } from "drizzle-orm"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { Clock, DateTime, Effect, Result, Schema } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
-import { transitionMediaStatus } from "@/domain/media-state"
+import { transitionMediaStatus, type MediaStatus } from "@/domain/media-state"
 import type { AppRequestContext } from "@/server"
 import { logError } from "@/server/error-log"
-import { synchronizeVideoDownload } from "@/server/video-download"
+import { storeRefreshedVideoDownload, synchronizeVideoDownload } from "@/server/video-download"
 
 import { bindingOperation } from "./operation"
 
@@ -96,6 +97,38 @@ export async function verifyStreamWebhook(
   return received !== null && constantTimeEqual(expected, received)
 }
 
+type StreamWebhookPayload = NonNullable<ReturnType<typeof decodeStreamWebhookPayload>>
+
+/** Stores a webhook's result if the asset still has the status the webhook checked. */
+export function storeStreamWebhookState(
+  database: BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>,
+  asset: Readonly<{ id: string; status: MediaStatus }>,
+  payload: StreamWebhookPayload,
+  status: MediaStatus,
+  finalizedAt: Date | undefined,
+) {
+  const streamError = payload.errorReasonText?.slice(0, 200)
+  return bindingOperation("processStreamWebhook", () =>
+    database
+      .update(schema.mediaAssets)
+      .set({
+        status,
+        width: payload.width,
+        height: payload.height,
+        duration: payload.durationMilliseconds,
+        byteSize: payload.byteSize,
+        finalizedAt,
+        // Set only the Stream keys, so a download link written meanwhile is kept.
+        providerMetadata: streamError
+          ? sql`json_set(${schema.mediaAssets.providerMetadata}, '$.streamState', ${payload.state}, '$.streamError', ${streamError})`
+          : sql`json_set(${schema.mediaAssets.providerMetadata}, '$.streamState', ${payload.state})`,
+      })
+      // Cleanup can delete the asset after the webhook read it. Apply only to the checked status.
+      .where(and(eq(schema.mediaAssets.id, asset.id), eq(schema.mediaAssets.status, asset.status)))
+      .returning({ providerMetadata: schema.mediaAssets.providerMetadata }),
+  )
+}
+
 async function readSecret(secret: string | SecretsStoreSecret) {
   return typeof secret === "string" ? secret : secret.get()
 }
@@ -140,40 +173,25 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
   const nextStatus = payload.readyToStream ? "ready" : failed ? "failed" : "processing"
   const transition = yield* Effect.result(transitionMediaStatus(asset.status, nextStatus))
   if (Result.isFailure(transition)) return new Response("OK", { status: 200 })
-  const providerMetadata = {
-    ...asset.providerMetadata,
-    streamState: payload.state,
-    ...(payload.errorReasonText ? { streamError: payload.errorReasonText.slice(0, 200) } : {}),
-  }
   return yield* Effect.gen(function* () {
     const finalizedAt = payload.readyToStream ? yield* DateTime.nowAsDate : undefined
-    yield* bindingOperation("processStreamWebhook", () =>
-      database
-        .update(schema.mediaAssets)
-        .set({
-          status: transition.success,
-          width: payload.width,
-          height: payload.height,
-          duration: payload.durationMilliseconds,
-          byteSize: payload.byteSize,
-          finalizedAt,
-          providerMetadata,
-        })
-        .where(eq(schema.mediaAssets.id, asset.id)),
+    const updated = yield* storeStreamWebhookState(
+      database,
+      asset,
+      payload,
+      transition.success,
+      finalizedAt,
     )
+    const row = updated[0]
+    if (!row) return new Response("OK", { status: 200 })
 
     if (payload.readyToStream) {
       const generateDownload = Effect.gen(function* () {
         const downloadMetadata = yield* synchronizeVideoDownload(
           context.env.STREAM.video(payload.uid).downloads,
-          providerMetadata,
+          row.providerMetadata,
         )
-        yield* bindingOperation("stream-webhook.download-metadata", () =>
-          database
-            .update(schema.mediaAssets)
-            .set({ providerMetadata: downloadMetadata })
-            .where(eq(schema.mediaAssets.id, asset.id)),
-        )
+        yield* storeRefreshedVideoDownload(database, asset.id, downloadMetadata)
       }).pipe(
         Effect.catchCause(() =>
           Effect.sync(() => {
