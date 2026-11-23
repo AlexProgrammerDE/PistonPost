@@ -13,7 +13,6 @@ import { SocialPanel } from "@/components/social-panel"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import type { PublicPostRead } from "@/db/public-read-model"
 import { galleryLayouts } from "@/lib/gallery-layout"
-import { createPostSeoHead } from "@/lib/post-seo"
 import { postQueryOptions } from "@/lib/queries/posts"
 import { discussionQueryOptions } from "@/lib/queries/social"
 import { createSeoHead } from "@/lib/seo"
@@ -68,9 +67,11 @@ export const Route = createFileRoute("/post/$postId")({
         ? "no-cache"
         : "private, no-store",
   }),
-  head: ({ loaderData, match }) =>
+  // Route heads ship in the client entry. Import the post helper here so its Markdown parser loads
+  // with the post page instead of on every route.
+  head: async ({ loaderData, match }) =>
     loaderData?.kind === "post"
-      ? createPostSeoHead(loaderData.post, match.search.image)
+      ? (await import("@/lib/post-seo")).createPostSeoHead(loaderData.post, match.search.image)
       : createSeoHead({
           title: loaderData ? "Hidden post · PistonPost" : "Post · PistonPost",
           description: "A post on PistonPost.",
