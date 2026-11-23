@@ -110,7 +110,7 @@ async function createVerifiedSession(context: BrowserContext) {
 
 async function selectFormat(page: Page, format: "Text" | "Images" | "Video") {
   await page.locator('[data-hydrated="true"]').waitFor()
-  await page.getByRole("button", { name: format, exact: true }).click()
+  await page.getByRole("radio", { name: format, exact: true }).check()
 }
 
 async function fillPost(page: Page, title: string, tag: string) {

@@ -52,7 +52,7 @@ describe("app form fields", () => {
   test("a choice field describes its options with the field description", () => {
     const html = renderToString(<ChoiceForm />)
 
-    expect(html).toContain('role="group"')
+    expect(html).toContain('role="radiogroup"')
     expect(describedControl(html, "div")).toBe(visibilityDescription)
   })
 

@@ -6,7 +6,15 @@ import { lazy, Suspense, useState, type ComponentProps, type ReactNode } from "r
 
 import { Button } from "@/components/ui/button"
 import { Combobox, ComboboxChip, ComboboxChips, ComboboxChipsInput } from "@/components/ui/combobox"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import {
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+  FieldTitle,
+} from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   InputGroup,
@@ -15,6 +23,7 @@ import {
   InputGroupText,
   InputGroupTextarea,
 } from "@/components/ui/input-group"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import {
   Select,
   SelectContent,
@@ -26,7 +35,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Spinner } from "@/components/ui/spinner"
 import { Textarea } from "@/components/ui/textarea"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { cn } from "@/lib/utils"
 
 import { addTagInputValues } from "./tag-input-state"
@@ -248,7 +256,7 @@ function MarkdownField({
   return (
     <Field data-invalid={invalid}>
       <FieldLabel htmlFor={field.name}>{label}</FieldLabel>
-      <Suspense fallback={<Skeleton className="min-h-80 w-full" />}>
+      <Suspense fallback={<Skeleton className="min-h-64 w-full" />}>
         <MarkdownEditor
           id={field.name}
           name={field.name}
@@ -336,42 +344,58 @@ function SelectField({ label, description, options }: SelectFieldProps) {
   )
 }
 
+/**
+ * One-of-several choice shown as radio cards, so the chosen option reads clearly at a glance.
+ */
 function ChoiceField({ label, description, options }: SelectFieldProps) {
   const field = useFieldContext<string>()
   const invalid = field.state.meta.isTouched && !field.state.meta.isValid
   const ids = fieldDescriptionIds(field.name, Boolean(description), invalid)
 
   return (
-    <Field data-invalid={invalid}>
-      <FieldLabel id={`${field.name}-label`}>{label}</FieldLabel>
-      <ToggleGroup
-        value={[field.state.value]}
-        onValueChange={(values) => {
-          const value = values[0]
-          if (value) field.handleChange(value)
+    <FieldSet data-invalid={invalid}>
+      <FieldLegend id={`${field.name}-label`} variant="label">
+        {label}
+      </FieldLegend>
+      <RadioGroup
+        value={field.state.value}
+        onValueChange={(value) => {
+          if (typeof value === "string") field.handleChange(value)
         }}
-        variant="outline"
-        className={cn("grid w-full", options.length === 2 ? "grid-cols-2" : "grid-cols-3")}
+        className={options.length === 2 ? "grid-cols-2" : "grid-cols-3"}
         aria-labelledby={`${field.name}-label`}
         aria-describedby={ids.describedBy}
+        aria-invalid={invalid}
       >
         {options.map((option) => {
           const OptionIcon = option.icon
+          const id = `${field.name}-${option.value}`
           return (
-            <ToggleGroupItem key={option.value} value={option.value} className="w-full">
-              {OptionIcon ? <OptionIcon aria-hidden="true" data-icon="inline-start" /> : null}
-              {option.label}
-            </ToggleGroupItem>
+            <FieldLabel key={option.value} htmlFor={id}>
+              <Field orientation="horizontal">
+                <RadioGroupItem id={id} value={option.value} aria-invalid={invalid} />
+                <FieldTitle>
+                  {/* FieldTitle does not size icons. Phones drop them so three cards fit in one row. */}
+                  {OptionIcon ? (
+                    <OptionIcon
+                      aria-hidden="true"
+                      className="hidden size-4 text-primary sm:block"
+                    />
+                  ) : null}
+                  {option.label}
+                </FieldTitle>
+              </Field>
+            </FieldLabel>
           )
         })}
-      </ToggleGroup>
+      </RadioGroup>
       {description ? (
         <FieldDescription id={ids.descriptionId}>{description}</FieldDescription>
       ) : null}
       {invalid ? (
         <FieldError id={ids.errorId} errors={errorMessages(field.state.meta.errors)} />
       ) : null}
-    </Field>
+    </FieldSet>
   )
 }
 
