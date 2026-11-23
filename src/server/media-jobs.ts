@@ -7,6 +7,7 @@ import * as schema from "@/db/schema"
 
 import { missingProviderObject } from "./account-media-purge"
 import { bindingOperation } from "./operation"
+import { outboxOwnerCondition } from "./outbox-repository"
 
 type Database = BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>
 
@@ -76,6 +77,18 @@ export function mediaAttachedToLivePost(database: Database, mediaId: string) {
       )
       .get(),
   ).pipe(Effect.map((row) => row !== undefined))
+}
+
+/**
+ * Settles a cleanup that found its media on a live post by removing its outbox row. Every media
+ * item has one fixed cleanup key and every enqueue skips an existing row, so a completed row would
+ * make the cleanup that a later post deletion or edit queues look done. Only the claiming attempt
+ * may remove the row.
+ */
+export function settleMediaCleanupInUse(database: Database, id: string, attempt: number) {
+  return bindingOperation("media-cleanup.in-use", () =>
+    database.delete(schema.outbox).where(outboxOwnerCondition(id, attempt)),
+  ).pipe(Effect.asVoid)
 }
 
 /** Posts by this author whose Stream videos follow the author's ban state. */

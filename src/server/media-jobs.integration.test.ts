@@ -7,7 +7,15 @@ import { createPost, createUser } from "@/db/factories"
 import * as schema from "@/db/schema"
 import { createMigratedTestDatabase } from "@/db/test-database"
 
-import { authorVideoPostIds, mediaAttachedToLivePost, syncPostVideoAccess } from "./media-jobs"
+import { cacheInvalidationJob, mediaCleanupJob } from "./jobs"
+import {
+  authorVideoPostIds,
+  mediaAttachedToLivePost,
+  settleMediaCleanupInUse,
+  syncPostVideoAccess,
+} from "./media-jobs"
+import { createOutboxRepository } from "./outbox-repository"
+import { postDeleteStatements } from "./post-lifecycle-statements"
 
 const databases: ReturnType<typeof createMigratedTestDatabase>[] = []
 afterEach(() => {
@@ -120,5 +128,56 @@ describe("media cleanup guard", () => {
   test("does not protect media attached only to a draft", async () => {
     const { db, mediaId } = setup("draft")
     expect(await Effect.runPromise(mediaAttachedToLivePost(db, mediaId))).toBe(false)
+  })
+})
+
+describe("media cleanup that found its media in use", () => {
+  test("lets the post deletion queue a fresh cleanup for the same media", async () => {
+    const { db, mediaId } = setup("published")
+    const job = mediaCleanupJob(mediaId)
+    const outbox = createOutboxRepository(db)
+    // A cleanup queued earlier, for example by a canceled upload, runs after the post went live.
+    await Effect.runPromise(outbox.ensure(job.idempotencyKey, job.type, job))
+    const claim = await Effect.runPromise(outbox.claim(job.idempotencyKey))
+    if (claim._tag !== "Claimed") throw new Error("The cleanup was not claimed.")
+    await Effect.runPromise(settleMediaCleanupInUse(db, job.idempotencyKey, claim.attempt))
+
+    const statements = postDeleteStatements(
+      { id: "post", version: 1, actorId: "test-user", mediaIds: [mediaId], audit: null },
+      cacheInvalidationJob("post"),
+    )
+    db.$client.transaction(() => {
+      for (const { sql, params } of statements) db.$client.query(sql).run(...params)
+    })()
+
+    expect(
+      db
+        .select({ status: schema.posts.status })
+        .from(schema.posts)
+        .where(eq(schema.posts.id, "post"))
+        .get(),
+    ).toEqual({ status: "deleted" })
+    expect(await Effect.runPromise(outbox.claim(job.idempotencyKey))).toMatchObject({
+      _tag: "Claimed",
+    })
+  })
+
+  test("leaves a successor's claim alone", async () => {
+    const { db, mediaId } = setup("published")
+    const job = mediaCleanupJob(mediaId)
+    const outbox = createOutboxRepository(db)
+    await Effect.runPromise(outbox.ensure(job.idempotencyKey, job.type, job))
+    const claim = await Effect.runPromise(outbox.claim(job.idempotencyKey))
+    if (claim._tag !== "Claimed") throw new Error("The cleanup was not claimed.")
+
+    await Effect.runPromise(settleMediaCleanupInUse(db, job.idempotencyKey, claim.attempt + 1))
+
+    expect(
+      db
+        .select({ attempts: schema.outbox.attempts, processedAt: schema.outbox.processedAt })
+        .from(schema.outbox)
+        .where(eq(schema.outbox.id, job.idempotencyKey))
+        .get(),
+    ).toEqual({ attempts: claim.attempt, processedAt: null })
   })
 })

@@ -62,7 +62,7 @@ export function outboxClaimCondition(id: string, now: Date) {
   )
 }
 
-function outboxOwnerCondition(id: string, attempt: number) {
+export function outboxOwnerCondition(id: string, attempt: number) {
   return and(
     eq(schema.outbox.id, id),
     eq(schema.outbox.attempts, attempt),

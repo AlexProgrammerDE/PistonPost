@@ -17,7 +17,7 @@ import { requireEmailBinding } from "./email-binding"
 import { readUnsubscribeKeyring } from "./email-config"
 import { EmailJobResolver, emailJobResolverLayer } from "./email-job-resolver"
 import { internalJobSchema, type InternalJob } from "./jobs"
-import { mediaAttachedToLivePost, syncPostVideoAccess } from "./media-jobs"
+import { mediaAttachedToLivePost, settleMediaCleanupInUse, syncPostVideoAccess } from "./media-jobs"
 import { bindingOperation } from "./operation"
 import { writeOperationalEvent } from "./operational-events"
 import { OutboxRepository, outboxRepositoryLayer } from "./outbox-repository"
@@ -84,7 +84,7 @@ const deliverInternalJob = Effect.fn("Queue.deliverInternalJob")(function* (
         asset.status !== "deleted" &&
         (yield* mediaAttachedToLivePost(database, asset.id))
       ) {
-        yield* outbox.complete(job.idempotencyKey, claim.attempt, "media-in-use")
+        yield* settleMediaCleanupInUse(database, job.idempotencyKey, claim.attempt)
         return undefined
       }
       return yield* Effect.gen(function* () {
