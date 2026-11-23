@@ -355,6 +355,18 @@ describe("transactional email", () => {
     }
   })
 
+  it("puts subjects built from titles and names on one line", async () => {
+    const rendered = await renderEmail({
+      template: "comment-notification",
+      subject: "Ann\r\nBcc: someone@example.com commented on Cats\n\u2028and dogs\t",
+      preview: "A new comment was posted.",
+      heading: "New comment on your post",
+      message: "Ann left a comment.",
+    })
+
+    expect(rendered.subject).toBe("Ann Bcc: someone@example.com commented on Cats and dogs")
+  })
+
   it("rejects expired and modified unsubscribe links", async () => {
     const secret = "test-only-unsubscribe-secret-at-least-32-characters"
     const expired = await Effect.runPromise(

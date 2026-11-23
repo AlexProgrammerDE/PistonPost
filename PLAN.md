@@ -1360,3 +1360,6 @@ Record future changes here with date, decision, reason, and affected phases.
   Sender, account, quota, rate, delivery, internal, and unknown errors stay retryable because they
   can clear without a code change, and the dead-letter queue keeps them for replay. This extends
   the 2026-07-22 suppression decision and affects Phases 4 and 9.
+- 2026-11-23: Collapse email subjects to one line at render time. Post titles, display names, and
+  campaign subjects can contain line breaks, which are invalid in a subject header and would now
+  fail permanently with a provider validation error. This affects Phase 4.
