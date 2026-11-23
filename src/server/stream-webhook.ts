@@ -10,6 +10,10 @@ import { synchronizeVideoDownload } from "@/server/video-download"
 
 import { bindingOperation } from "./operation"
 
+/** Stream reports `-1` for a duration or input dimension that it does not know yet. */
+const streamMeasurement = Schema.Finite.check(Schema.isGreaterThanOrEqualTo(-1))
+const streamInteger = streamMeasurement.check(Schema.isInt())
+
 const streamPayload = Schema.Struct({
   uid: Schema.String.check(Schema.isMinLength(1)),
   readyToStream: Schema.Boolean,
@@ -17,17 +21,33 @@ const streamPayload = Schema.Struct({
     state: Schema.String,
     errorReasonText: Schema.optional(Schema.String),
   }),
-  duration: Schema.optional(Schema.Finite.check(Schema.isGreaterThanOrEqualTo(0))),
+  duration: Schema.optional(streamMeasurement),
   size: Schema.optional(
     Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThanOrEqualTo(0)),
   ),
-  input: Schema.optional(
-    Schema.Struct({
-      width: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
-      height: Schema.Finite.check(Schema.isInt()).check(Schema.isGreaterThan(0)),
-    }),
-  ),
+  input: Schema.optional(Schema.Struct({ width: streamInteger, height: streamInteger })),
 })
+
+/** Parses a webhook body. Unknown values become undefined so they never overwrite stored data. */
+export function decodeStreamWebhookPayload(body: string) {
+  const decoded = Schema.decodeResult(Schema.fromJsonString(streamPayload), {
+    errors: "all",
+  })(body)
+  if (!Result.isSuccess(decoded)) return null
+  const { uid, readyToStream, status, duration, size, input } = decoded.success
+  const dimensions = input && input.width > 0 && input.height > 0 ? input : undefined
+  return {
+    uid,
+    readyToStream,
+    state: status.state,
+    errorReasonText: status.errorReasonText,
+    durationMilliseconds:
+      duration === undefined || duration < 0 ? undefined : Math.round(duration * 1000),
+    byteSize: size,
+    width: dimensions?.width,
+    height: dimensions?.height,
+  }
+}
 
 function decodeHex(value: string) {
   if (!/^[a-f0-9]+$/iu.test(value) || value.length % 2 !== 0) return null
@@ -100,11 +120,8 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
   )
   if (!valid) return new Response("Invalid signature", { status: 403 })
 
-  const decoded = Schema.decodeResult(Schema.fromJsonString(streamPayload), {
-    errors: "all",
-  })(body)
-  if (!Result.isSuccess(decoded)) return new Response("Invalid payload", { status: 400 })
-  const payload = decoded.success
+  const payload = decodeStreamWebhookPayload(body)
+  if (!payload) return new Response("Invalid payload", { status: 400 })
   const database = createD1Database(context.env.DB)
   const asset = yield* bindingOperation("processStreamWebhook", () =>
     database
@@ -119,16 +136,14 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
   )
   if (!asset) return new Response("OK", { status: 200 })
 
-  const failed = payload.status.state.toLocaleLowerCase("en-US").includes("error")
+  const failed = payload.state.toLocaleLowerCase("en-US").includes("error")
   const nextStatus = payload.readyToStream ? "ready" : failed ? "failed" : "processing"
   const transition = yield* Effect.result(transitionMediaStatus(asset.status, nextStatus))
   if (Result.isFailure(transition)) return new Response("OK", { status: 200 })
   const providerMetadata = {
     ...asset.providerMetadata,
-    streamState: payload.status.state,
-    ...(payload.status.errorReasonText
-      ? { streamError: payload.status.errorReasonText.slice(0, 200) }
-      : {}),
+    streamState: payload.state,
+    ...(payload.errorReasonText ? { streamError: payload.errorReasonText.slice(0, 200) } : {}),
   }
   return yield* Effect.gen(function* () {
     const finalizedAt = payload.readyToStream ? yield* DateTime.nowAsDate : undefined
@@ -137,11 +152,10 @@ const processStreamWebhook = Effect.fn("processStreamWebhook")(function* (
         .update(schema.mediaAssets)
         .set({
           status: transition.success,
-          width: payload.input?.width,
-          height: payload.input?.height,
-          duration:
-            payload.duration === undefined ? undefined : Math.round(payload.duration * 1000),
-          byteSize: payload.size,
+          width: payload.width,
+          height: payload.height,
+          duration: payload.durationMilliseconds,
+          byteSize: payload.byteSize,
           finalizedAt,
           providerMetadata,
         })
