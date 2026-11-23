@@ -455,6 +455,17 @@ function sitemapProfileCondition() {
   )
 }
 
+function sitemapTagCondition() {
+  return and(
+    eq(posts.status, "published"),
+    eq(posts.visibility, "public"),
+    searchIndexingTrustCondition(),
+    notBannedAccount(posts.authorId),
+    // Legacy tags made only of dots resolve to another path, such as /tag/ or /.
+    sql`trim(${tags.normalizedName}, '.') <> ''`,
+  )
+}
+
 export async function getPublicSitemapCounts(database: ReadDatabase) {
   const [postCount, profileCount, tagCount] = await Promise.all([
     database
@@ -482,14 +493,7 @@ export async function getPublicSitemapCounts(database: ReadDatabase) {
       .innerJoin(postTags, eq(postTags.tagId, tags.id))
       .innerJoin(posts, eq(posts.id, postTags.postId))
       .innerJoin(user, eq(user.id, posts.authorId))
-      .where(
-        and(
-          eq(posts.status, "published"),
-          eq(posts.visibility, "public"),
-          searchIndexingTrustCondition(),
-          notBannedAccount(posts.authorId),
-        ),
-      )
+      .where(sitemapTagCondition())
       .get(),
   ])
   return {
@@ -612,14 +616,7 @@ export async function listPublicTagSitemapRecords(
     .innerJoin(postTags, eq(postTags.tagId, tags.id))
     .innerJoin(posts, eq(posts.id, postTags.postId))
     .innerJoin(user, eq(user.id, posts.authorId))
-    .where(
-      and(
-        eq(posts.status, "published"),
-        eq(posts.visibility, "public"),
-        searchIndexingTrustCondition(),
-        notBannedAccount(posts.authorId),
-      ),
-    )
+    .where(sitemapTagCondition())
     .groupBy(tags.id, tags.normalizedName)
     .orderBy(desc(lastModified), desc(tags.id))
     .limit(limit)

@@ -7,6 +7,7 @@ import {
   listPublicPostReads,
   listPublicPostSitemapRecords,
   listPublicProfileSitemapRecords,
+  listPublicTagSitemapRecords,
   listViewerFeedHeartPostIds,
 } from "./public-read-model"
 import {
@@ -426,5 +427,54 @@ describe("public sitemap read model", () => {
       { username: "author", updatedAt: new Date("2026-01-03T00:00:00.000Z") },
     ])
     expect((await getPublicSitemapCounts(database)).profiles).toBe(1)
+  })
+
+  it("skips legacy dot-only tags because their URLs collapse to other pages", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => {
+      database.$client.close()
+    }
+    database
+      .insert(user)
+      .values(createUser({ id: "author", email: "author@example.com" }))
+      .run()
+    database
+      .insert(profiles)
+      .values({ userId: "author", username: "author", normalizedUsername: "author" })
+      .run()
+    database
+      .insert(posts)
+      .values(
+        createPost({
+          id: "tagged-post",
+          authorId: "author",
+          status: "published",
+          publishedAt: new Date("2026-01-02T00:00:00.000Z"),
+          updatedAt: new Date("2026-01-03T00:00:00.000Z"),
+        }),
+      )
+      .run()
+    // These tags predate the dot-only rule. /tag/. and /tag/.. resolve to /tag/ and /.
+    database
+      .insert(tags)
+      .values([
+        { id: "art", displayName: "Art", normalizedName: "art" },
+        { id: "dot", displayName: ".", normalizedName: "." },
+        { id: "dots", displayName: "..", normalizedName: ".." },
+      ])
+      .run()
+    database
+      .insert(postTags)
+      .values([
+        { postId: "tagged-post", tagId: "art", ordinal: 0 },
+        { postId: "tagged-post", tagId: "dot", ordinal: 1 },
+        { postId: "tagged-post", tagId: "dots", ordinal: 2 },
+      ])
+      .run()
+
+    expect(await listPublicTagSitemapRecords(database, 0, 10)).toEqual([
+      { tag: "art", updatedAt: new Date("2026-01-03T00:00:00.000Z") },
+    ])
+    expect((await getPublicSitemapCounts(database)).tags).toBe(1)
   })
 })
