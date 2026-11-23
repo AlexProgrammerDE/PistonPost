@@ -12,6 +12,7 @@ import {
   useMemo,
   useOptimistic,
   type MouseEvent,
+  type ReactElement,
   type ReactNode,
 } from "react"
 import { toast } from "sonner"
@@ -20,6 +21,7 @@ import { authClient } from "@/auth/client"
 import { ButtonLink } from "@/components/ButtonLink"
 import { PostLinkActions } from "@/components/post-share-actions"
 import { Toggle } from "@/components/ui/toggle"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { batchFeedPostIds } from "@/lib/feed-heart-state"
 import {
   applyConfirmedHeart,
@@ -27,7 +29,7 @@ import {
   feedHeartStatesQueryOptions,
 } from "@/lib/queries/social"
 import { userFacingServerMessage } from "@/lib/server-function-error"
-import { heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
+import { commentCountLabel, heartCountLabel, optimisticHeartCount } from "@/lib/social-state"
 import { cn } from "@/lib/utils"
 import { setHeart } from "@/server/social"
 
@@ -45,8 +47,36 @@ const anonymousFeedHeartState: FeedHeartState = {
 }
 
 const FeedHeartStateContext = createContext<FeedHeartState>(anonymousFeedHeartState)
+// Icon buttons keep a 44px touch target on phones and a quieter 32px target with a pointer.
 const feedActionClassName =
-  "h-11 w-full min-w-0 overflow-hidden rounded-md px-1 text-muted-foreground hover:text-foreground sm:h-8 sm:w-auto sm:px-3"
+  "h-11 min-w-11 rounded-md text-muted-foreground hover:text-foreground sm:h-8 sm:min-w-8"
+
+/** An icon marked as inline-start gets less padding, which only suits an icon followed by a count. */
+function feedActionIcon(count: number) {
+  return count > 0 ? "inline-start" : undefined
+}
+
+/** Shows a count next to an action icon. A zero count adds noise, so it shows only the icon. */
+function FeedActionCount({ count }: { readonly count: number }) {
+  return count > 0 ? <span className="tabular-nums">{count}</span> : null
+}
+
+function FeedActionTooltip({
+  label,
+  trigger,
+  children,
+}: {
+  readonly label: string
+  readonly trigger: ReactElement
+  readonly children: ReactNode
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger render={trigger}>{children}</TooltipTrigger>
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
 
 export function FeedPostActionsProvider({
   postIds,
@@ -136,33 +166,37 @@ function FeedHeartControl({
     <>
       <Heart
         aria-hidden="true"
-        data-icon="inline-start"
+        data-icon={feedActionIcon(displayedHeartCount)}
         className={cn(optimisticHasHeart ? "fill-current" : undefined)}
       />
-      <span className="max-[359px]:sr-only">Heart</span>
-      <span className="tabular-nums">{displayedHeartCount}</span>
+      <FeedActionCount count={displayedHeartCount} />
     </>
   )
 
   if (!pending && !viewerId) {
     return (
-      <ButtonLink
-        variant="ghost"
-        size="sm"
-        className={feedActionClassName}
-        render={
-          <Link
-            to="/auth/$authView"
-            params={{ authView: "sign-in" }}
-            search={{ redirectTo: currentHref }}
-            aria-label={`Sign in to heart ${postTitle}`}
-            aria-describedby={countId}
+      <FeedActionTooltip
+        label="Sign in to heart"
+        trigger={
+          <ButtonLink
+            variant="ghost"
+            size="sm"
+            className={feedActionClassName}
+            render={
+              <Link
+                to="/auth/$authView"
+                params={{ authView: "sign-in" }}
+                search={{ redirectTo: currentHref }}
+                aria-label={`Sign in to heart ${postTitle}`}
+                aria-describedby={countId}
+              />
+            }
           />
         }
       >
         {content}
         {countDescription}
-      </ButtonLink>
+      </FeedActionTooltip>
     )
   }
 
@@ -181,23 +215,28 @@ function FeedHeartControl({
   }
 
   return (
-    <Toggle
-      pressed={optimisticHasHeart}
-      onPressedChange={updateHeart}
-      variant="default"
-      size="sm"
-      className={cn(
-        feedActionClassName,
-        "aria-pressed:bg-primary/10 aria-pressed:text-primary dark:aria-pressed:bg-primary/15",
-      )}
-      aria-label="Heart"
-      aria-describedby={countId}
-      aria-busy={mutation.isPending}
-      disabled={pending}
+    <FeedActionTooltip
+      label={optimisticHasHeart ? "Remove heart" : "Heart"}
+      trigger={
+        <Toggle
+          pressed={optimisticHasHeart}
+          onPressedChange={updateHeart}
+          variant="default"
+          size="sm"
+          className={cn(
+            feedActionClassName,
+            "aria-pressed:bg-primary/10 aria-pressed:text-primary dark:aria-pressed:bg-primary/15",
+          )}
+          aria-label="Heart"
+          aria-describedby={countId}
+          aria-busy={mutation.isPending}
+          disabled={pending}
+        />
+      }
     >
       {content}
       {countDescription}
-    </Toggle>
+    </FeedActionTooltip>
   )
 }
 
@@ -216,32 +255,52 @@ export function FeedPostActions({
   readonly onOpenPost: (event: MouseEvent<HTMLAnchorElement>) => void
   readonly canEdit?: boolean
 }) {
+  const commentCountId = useId()
+
   return (
     <>
       <FeedHeartControl postId={postId} postTitle={postTitle} heartCount={heartCount} />
-      <ButtonLink
-        variant="ghost"
-        size="sm"
-        className={feedActionClassName}
-        render={
-          <Link to="/post/$postId" params={{ postId }} hash="discussion" onClick={onOpenPost} />
+      <FeedActionTooltip
+        label="Comments"
+        trigger={
+          <ButtonLink
+            variant="ghost"
+            size="sm"
+            className={feedActionClassName}
+            render={
+              <Link
+                to="/post/$postId"
+                params={{ postId }}
+                hash="discussion"
+                onClick={onOpenPost}
+                aria-label="Comments"
+                aria-describedby={commentCountId}
+              />
+            }
+          />
         }
       >
-        <MessageCircle aria-hidden="true" data-icon="inline-start" />
-        <span className="max-[359px]:sr-only">Comments</span>
-        <span className="tabular-nums">{commentCount}</span>
-      </ButtonLink>
-      <PostLinkActions postId={postId} compactOnNarrowScreens className={feedActionClassName} />
+        <MessageCircle aria-hidden="true" data-icon={feedActionIcon(commentCount)} />
+        <FeedActionCount count={commentCount} />
+        <span id={commentCountId} hidden>
+          {commentCountLabel(commentCount)}
+        </span>
+      </FeedActionTooltip>
+      <PostLinkActions postId={postId} iconOnly className={feedActionClassName} />
       {canEdit ? (
-        <ButtonLink
-          variant="ghost"
-          size="sm"
-          className={feedActionClassName}
-          render={<Link to="/post/$postId/edit" params={{ postId }} />}
+        <FeedActionTooltip
+          label="Edit post"
+          trigger={
+            <ButtonLink
+              variant="ghost"
+              size="sm"
+              className={feedActionClassName}
+              render={<Link to="/post/$postId/edit" params={{ postId }} aria-label="Edit post" />}
+            />
+          }
         >
-          <Pencil aria-hidden="true" data-icon="inline-start" />
-          Edit
-        </ButtonLink>
+          <Pencil aria-hidden="true" />
+        </FeedActionTooltip>
       ) : null}
     </>
   )

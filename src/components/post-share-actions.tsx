@@ -1,7 +1,7 @@
 "use client"
 
 import { Check, Copy, Link2, Share2 } from "lucide-react"
-import { type ComponentProps, useEffect, useState } from "react"
+import { type ComponentProps, type ReactElement, useEffect, useState } from "react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useNativeSharing } from "@/hooks/use-native-sharing"
 import { createPostShareLinks } from "@/lib/post-share-links"
 import { shareNatively } from "@/lib/pwa/native-share"
@@ -107,21 +108,43 @@ function NativeShareMenuItem({ postId }: { postId: string }) {
   ) : null
 }
 
+/** Shows only the icon, with the label in a tooltip and in the accessible name. */
+function IconOnlyTooltip({
+  iconOnly,
+  label,
+  children,
+}: {
+  readonly iconOnly: boolean
+  readonly label: string
+  readonly children: ReactElement
+}) {
+  if (!iconOnly) return children
+  return (
+    <Tooltip>
+      <TooltipTrigger render={children} />
+      <TooltipContent>{label}</TooltipContent>
+    </Tooltip>
+  )
+}
+
 export function PostLinkActions(props: ComponentProps<typeof CopyPostLinkButton>) {
   const supported = useNativeSharing()
+  const iconOnly = props.iconOnly ?? false
   return (
     <div className="inline-flex items-center gap-1">
       {supported && (
-        <Button
-          type="button"
-          variant={props.variant ?? "ghost"}
-          size="sm"
-          className={props.className}
-          onClick={() => void sharePost(props.postId)}
-        >
-          <Share2 aria-hidden="true" data-icon="inline-start" />
-          <span>Share</span>
-        </Button>
+        <IconOnlyTooltip iconOnly={iconOnly} label="Share">
+          <Button
+            type="button"
+            variant={props.variant ?? "ghost"}
+            size="sm"
+            className={props.className}
+            onClick={() => void sharePost(props.postId)}
+          >
+            <Share2 aria-hidden="true" data-icon={iconOnly ? undefined : "inline-start"} />
+            <span className={cn(iconOnly && "sr-only")}>Share</span>
+          </Button>
+        </IconOnlyTooltip>
       )}
       <CopyPostLinkButton {...props} />
     </div>
@@ -131,12 +154,12 @@ export function PostLinkActions(props: ComponentProps<typeof CopyPostLinkButton>
 function CopyPostLinkButton({
   postId,
   className,
-  compactOnNarrowScreens = false,
+  iconOnly = false,
   variant = "ghost",
 }: {
   readonly postId: string
   readonly className?: string
-  readonly compactOnNarrowScreens?: boolean
+  readonly iconOnly?: boolean
   readonly variant?: ComponentProps<typeof Button>["variant"]
 }) {
   const [copyConfirmationVersion, setCopyConfirmationVersion] = useState(0)
@@ -162,23 +185,23 @@ function CopyPostLinkButton({
 
   return (
     <>
-      <Button
-        type="button"
-        variant={variant}
-        size="sm"
-        className={cn("rounded-md", className)}
-        data-copied={copied ? "true" : undefined}
-        onClick={() => void copyPostLink()}
-      >
-        {copied ? (
-          <Check aria-hidden="true" data-icon="inline-start" />
-        ) : (
-          <Link2 aria-hidden="true" data-icon="inline-start" />
-        )}
-        <span className={cn(compactOnNarrowScreens ? "max-[359px]:sr-only" : undefined)}>
-          Copy link
-        </span>
-      </Button>
+      <IconOnlyTooltip iconOnly={iconOnly} label={copied ? "Link copied" : "Copy link"}>
+        <Button
+          type="button"
+          variant={variant}
+          size="sm"
+          className={cn("rounded-md", className)}
+          data-copied={copied ? "true" : undefined}
+          onClick={() => void copyPostLink()}
+        >
+          {copied ? (
+            <Check aria-hidden="true" data-icon={iconOnly ? undefined : "inline-start"} />
+          ) : (
+            <Link2 aria-hidden="true" data-icon={iconOnly ? undefined : "inline-start"} />
+          )}
+          <span className={cn(iconOnly && "sr-only")}>Copy link</span>
+        </Button>
+      </IconOnlyTooltip>
       <span className="sr-only" role="status">
         {copied ? "Link copied." : ""}
       </span>

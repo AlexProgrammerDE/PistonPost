@@ -10,3 +10,8 @@ export function optimisticHeartCount(
 export function heartCountLabel(count: number) {
   return count === 1 ? "1 heart" : `${count} hearts`
 }
+
+/** Describes a comment count for screen readers, since the visible count is only a number. */
+export function commentCountLabel(count: number) {
+  return count === 1 ? "1 comment" : `${count} comments`
+}

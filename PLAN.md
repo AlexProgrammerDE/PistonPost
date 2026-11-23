@@ -1420,3 +1420,10 @@ Record future changes here with date, decision, reason, and affected phases.
   its masonry gallery and image sizes are designed for it. Wide width (`max-w-7xl`) covers every
   administration page, including the overview, so admin pages share one edge. All three use the
   same horizontal and top padding. Legal, auth, and centered status pages keep their own layouts.
+
+- 2026-11-23: Keep feed cards content-first. Cards show the author on one line, leave the author
+  out on profile feeds, and use smaller titles than the page heading. Heart, comment, copy-link,
+  and edit actions are icon buttons with accessible names and tooltips, and they show counts only
+  when the count is above zero. The view count stays on the detail page only. "Read full post"
+  appears only when the preview cuts text, either at the character limit or at the line clamp.
+  This affects Phase 5.

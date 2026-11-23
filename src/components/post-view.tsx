@@ -756,6 +756,7 @@ export function PostView({
   selectedImageIndex,
   galleryLayout,
   authorAvatar,
+  showAuthor = true,
   canEdit = false,
   className,
 }: {
@@ -765,6 +766,8 @@ export function PostView({
   readonly selectedImageIndex?: number | undefined
   readonly galleryLayout?: GalleryLayout | undefined
   readonly authorAvatar?: ReactNode
+  /** Feed cards on a profile page leave out the author, since the page header already names them. */
+  readonly showAuthor?: boolean
   readonly canEdit?: boolean
   readonly className?: string
 }) {
@@ -814,44 +817,79 @@ export function PostView({
         className,
       )}
     >
-      <header className="mb-4 flex items-center gap-3">
-        {authorAvatar === undefined ? <PostAuthorAvatar post={post} /> : authorAvatar}
-        <div className="min-w-0 flex-1">
-          <Link
-            to="/user/$username"
-            params={{ username: post.author.normalizedUsername }}
-            dir="auto"
-            data-view-transition-part="profile-name"
-            onClick={openProfile}
-            className="block truncate text-sm font-semibold hover:underline"
-          >
-            {post.author.name}
-          </Link>
-          <p className="truncate text-xs text-muted-foreground">
-            @{post.author.username} ·{" "}
-            <DateTime value={post.publishedAt} presentation={detail ? "absolute" : "relative"} />
-          </p>
-        </div>
-        {post.visibility === "unlisted" ? (
-          <Badge variant="outline">
-            <Link2 aria-hidden="true" data-icon="inline-start" />
-            Unlisted
-          </Badge>
-        ) : null}
-        {/* Feed cards show Edit in their action row instead. */}
-        {canEdit && detail ? (
-          <ButtonLink
-            variant="outline"
-            size="sm"
-            render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
-          >
-            <Pencil aria-hidden="true" data-icon="inline-start" />
-            Edit
-          </ButtonLink>
-        ) : null}
-      </header>
+      {detail ? (
+        <header className="mb-4 flex items-center gap-3">
+          {authorAvatar === undefined ? <PostAuthorAvatar post={post} /> : authorAvatar}
+          <div className="min-w-0 flex-1">
+            <Link
+              to="/user/$username"
+              params={{ username: post.author.normalizedUsername }}
+              dir="auto"
+              data-view-transition-part="profile-name"
+              onClick={openProfile}
+              className="block truncate text-sm font-semibold hover:underline"
+            >
+              {post.author.name}
+            </Link>
+            <p className="truncate text-xs text-muted-foreground">
+              @{post.author.username} ·{" "}
+              <DateTime value={post.publishedAt} presentation="absolute" />
+            </p>
+          </div>
+          {post.visibility === "unlisted" ? (
+            <Badge variant="outline">
+              <Link2 aria-hidden="true" data-icon="inline-start" />
+              Unlisted
+            </Badge>
+          ) : null}
+          {canEdit ? (
+            <ButtonLink
+              variant="outline"
+              size="sm"
+              render={<Link to="/post/$postId/edit" params={{ postId: post.id }} />}
+            >
+              <Pencil aria-hidden="true" data-icon="inline-start" />
+              Edit
+            </ButtonLink>
+          ) : null}
+        </header>
+      ) : (
+        <header className="mb-1.5 flex min-h-6 min-w-0 items-center gap-1.5 text-sm">
+          {showAuthor ? (
+            <>
+              <Link
+                to="/user/$username"
+                params={{ username: post.author.normalizedUsername }}
+                dir="auto"
+                data-view-transition-part="profile-name"
+                onClick={openProfile}
+                className="min-w-0 shrink truncate font-semibold hover:underline"
+              >
+                {post.author.name}
+              </Link>
+              <span className="min-w-0 shrink-2 truncate text-muted-foreground">
+                {`@${post.author.username}`}
+              </span>
+              <span aria-hidden="true" className="text-muted-foreground">
+                ·
+              </span>
+            </>
+          ) : null}
+          <DateTime
+            value={post.publishedAt}
+            presentation="relative"
+            className="shrink-0 text-muted-foreground"
+          />
+          {post.visibility === "unlisted" ? (
+            <Badge variant="outline" className="ml-auto shrink-0">
+              <Link2 aria-hidden="true" data-icon="inline-start" />
+              Unlisted
+            </Badge>
+          ) : null}
+        </header>
+      )}
 
-      <div className="mb-4 flex flex-col gap-3">
+      <div className={cn("flex flex-col", detail ? "mb-4 gap-3" : "mb-3 gap-1.5")}>
         {detail ? (
           <h1
             dir="auto"
@@ -864,7 +902,7 @@ export function PostView({
           <h2
             dir="auto"
             data-view-transition-part="post-title"
-            className="overflow-hidden font-heading text-2xl font-bold tracking-tight text-balance"
+            className="overflow-hidden font-heading text-xl/snug font-bold tracking-tight text-balance"
           >
             <Link
               to="/post/$postId"
@@ -912,43 +950,42 @@ export function PostView({
       />
 
       {!detail ? (
-        <footer className="mt-4">
-          <div className="flex min-h-6 flex-wrap items-center gap-2">
-            {post.tags.map((tag) => (
-              <Badge
-                key={tag.slug}
-                variant="secondary"
-                className="max-w-full min-w-0"
-                title={`#${tag.name}`}
-                render={
-                  <Link
-                    to="/tag/$tag"
-                    params={{ tag: tag.slug }}
-                    data-view-transition-active={activeSharedViewTransitionKind({
-                      kind: "tag",
-                      sourcePostId: post.id,
-                      tag: tag.slug,
-                    })}
-                    data-view-transition-part="tag-name"
-                    onClick={(event) => {
-                      openTag(event, tag.slug)
-                    }}
-                  />
-                }
-              >
-                <span className="min-w-0 truncate">#{tag.name}</span>
-              </Badge>
-            ))}
-            <div className="ml-auto px-1">
-              <PostViewCount count={post.viewCount} />
-            </div>
-          </div>
-          <ButtonGroup
-            className={cn(
-              "mt-2 grid w-full items-center border-t pt-2 sm:flex sm:w-fit sm:flex-wrap",
-              canEdit ? "grid-cols-4" : "grid-cols-3",
-            )}
+        <footer className="mt-3 flex flex-col gap-1">
+          {post.tags.length > 0 ? (
+            <ul className="flex min-w-0 flex-wrap gap-1.5" aria-label="Tags">
+              {post.tags.map((tag) => (
+                <li key={tag.slug} className="max-w-full min-w-0">
+                  <Badge
+                    variant="secondary"
+                    className="max-w-full min-w-0"
+                    title={`#${tag.name}`}
+                    render={
+                      <Link
+                        to="/tag/$tag"
+                        params={{ tag: tag.slug }}
+                        data-view-transition-active={activeSharedViewTransitionKind({
+                          kind: "tag",
+                          sourcePostId: post.id,
+                          tag: tag.slug,
+                        })}
+                        data-view-transition-part="tag-name"
+                        onClick={(event) => {
+                          openTag(event, tag.slug)
+                        }}
+                      />
+                    }
+                  >
+                    <span className="min-w-0 truncate">#{tag.name}</span>
+                  </Badge>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {/* Line the first icon up with the text above instead of its button padding. */}
+          <div
+            role="group"
             aria-label={`Actions for ${post.title}`}
+            className="-ms-2.5 flex flex-wrap items-center gap-1 sm:-ms-2"
           >
             <FeedPostActions
               postId={post.id}
@@ -958,7 +995,7 @@ export function PostView({
               onOpenPost={openPost}
               canEdit={canEdit}
             />
-          </ButtonGroup>
+          </div>
         </footer>
       ) : null}
     </article>
