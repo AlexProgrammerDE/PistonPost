@@ -213,8 +213,8 @@ const visibleView = {
   artTag: "art",
   soloTag: "solo",
   sitemapCounts: { posts: 2, profiles: 2, tags: 2 },
-  sitemapPosts: ["banned-post", "author-post"],
-  sitemapProfiles: ["banned", "author"],
+  sitemapPosts: ["author-post", "banned-post"],
+  sitemapProfiles: ["author", "banned"],
   sitemapTags: ["art", "solo"],
   atom: ["banned-post", "author-post"],
 }

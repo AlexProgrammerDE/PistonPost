@@ -1341,3 +1341,12 @@ Record future changes here with date, decision, reason, and affected phases.
   counts skip banned followers. Comment counts already did this. No row is deleted, so the counts
   return when the ban is lifted or expires. A ban purges only the banned user's own cache tags, so
   cached pages of other users can show the old count until their cache expires.
+
+- 2026-11-23: Sort sitemap pages by values that do not change after an entry joins the list. The
+  sitemap index advertises numbered pages, and pages use OFFSET, so sorting by `updatedAt` let an
+  edit between page fetches skip a post or list it twice. Posts now sort oldest first by
+  `publishedAt` and id, profiles by account creation and user id, and tags by tag creation and id.
+  Page URLs stay the same, and `lastmod` still reports the latest change. New entries mostly land
+  on the last page, because new posts, accounts that leave search probation, and new tags are
+  recent. Removing an entry shifts later entries back by one, so a crawler can miss one entry until
+  its next visit. Keyset pages would avoid that too, but they need cursors in sitemap URLs.

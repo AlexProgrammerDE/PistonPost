@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test"
 
+import { eq } from "drizzle-orm"
+
 import { createPost, createUser } from "./factories"
 import {
   getPublicSitemapCounts,
@@ -355,12 +357,53 @@ describe("public sitemap read model", () => {
     const records = await listPublicPostSitemapRecords(database, 10, 110)
 
     expect(records).toHaveLength(110)
-    expect(records[0]?.id).toBe("sitemap-post-114")
-    expect(records.at(-1)?.id).toBe("sitemap-post-005")
+    expect(records[0]?.id).toBe("sitemap-post-010")
+    expect(records.at(-1)?.id).toBe("sitemap-post-119")
     expect(records[0]?.media.map((asset) => asset.id)).toEqual([
-      "sitemap-post-114-media-0",
-      "sitemap-post-114-media-1",
+      "sitemap-post-010-media-0",
+      "sitemap-post-010-media-1",
     ])
+  })
+
+  it("keeps posts on their sitemap page when a post is edited between page fetches", async () => {
+    const database = createMigratedTestDatabase()
+    close = () => {
+      database.$client.close()
+    }
+    database
+      .insert(user)
+      .values(createUser({ id: "sitemap-author", email: "sitemap@example.com" }))
+      .run()
+    const postIds = ["post-a", "post-b", "post-c", "post-d"]
+    database
+      .insert(posts)
+      .values(
+        postIds.map((id, index) => {
+          const publishedAt = new Date(Date.UTC(2026, 0, index + 1))
+          return createPost({
+            id,
+            authorId: "sitemap-author",
+            status: "published",
+            publishedAt,
+            updatedAt: publishedAt,
+          })
+        }),
+      )
+      .run()
+
+    const firstPage = await listPublicPostSitemapRecords(database, 0, 2)
+    // An edit between the two page fetches must not move a post across pages.
+    database
+      .update(posts)
+      .set({ updatedAt: new Date("2026-02-01T00:00:00.000Z") })
+      .where(eq(posts.id, "post-b"))
+      .run()
+    const secondPage = await listPublicPostSitemapRecords(database, 2, 2)
+
+    expect([...firstPage, ...secondPage].map((record) => record.id)).toEqual(postIds)
+    expect((await listPublicPostSitemapRecords(database, 0, 2))[1]?.updatedAt).toEqual(
+      new Date("2026-02-01T00:00:00.000Z"),
+    )
   })
 
   it("dates profiles by their latest public post and skips dot-only usernames", async () => {

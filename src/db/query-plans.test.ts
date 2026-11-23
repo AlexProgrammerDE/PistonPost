@@ -102,6 +102,16 @@ describe("hot D1 query plans", () => {
     )
   })
 
+  test("pages the post sitemap through the discovery index without sorting", () => {
+    const sitemapPlan = plan(`SELECT posts.id FROM posts
+      INNER JOIN user ON user.id = posts.author_id
+      WHERE posts.status = 'published' AND posts.visibility = 'public'
+      ORDER BY posts.published_at ASC, posts.id ASC LIMIT 1000 OFFSET 1000`)
+
+    expect(sitemapPlan).toContain("posts_discovery_idx")
+    expect(sitemapPlan).not.toContain("TEMP B-TREE")
+  })
+
   test("looks up image attachments through the media index", () => {
     expect(plan("SELECT post_id FROM post_media WHERE media_id = 'image'")).toContain(
       "SEARCH post_media USING INDEX post_media_media_idx",

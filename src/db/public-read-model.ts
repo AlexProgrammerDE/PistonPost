@@ -1,4 +1,4 @@
-import { and, count, countDistinct, desc, eq, inArray, lt, ne, or, sql } from "drizzle-orm"
+import { and, asc, count, countDistinct, desc, eq, inArray, lt, ne, or, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 
 import type { PublicPostCursor } from "@/domain/model"
@@ -522,6 +522,13 @@ export async function getPublicSitemapCounts(database: ReadDatabase) {
   }
 }
 
+/*
+ * Sitemap pages are numbered and use OFFSET, so each list sorts by values that do not change after
+ * an entry joins it: oldest first by publish time, account creation, or tag creation. Edits only
+ * change `lastmod`, so they never move an entry to another page. New entries mostly join the last
+ * page, because posts, accounts that leave search probation, and new tags are recent. Removing an
+ * entry shifts later entries back by one, so a crawler can miss one until its next visit.
+ */
 export async function listPublicPostSitemapRecords(
   database: ReadDatabase,
   offset: number,
@@ -545,7 +552,7 @@ export async function listPublicPostSitemapRecords(
         notBannedAccount(posts.authorId),
       ),
     )
-    .orderBy(desc(posts.updatedAt), desc(posts.id))
+    .orderBy(asc(posts.publishedAt), asc(posts.id))
     .limit(limit)
     .offset(offset)
     .as("sitemap_posts_page")
@@ -566,7 +573,7 @@ export async function listPublicPostSitemapRecords(
       mediaAssets,
       and(eq(mediaAssets.id, postMedia.mediaId), eq(mediaAssets.status, "ready")),
     )
-    .orderBy(desc(sitemapPosts.updatedAt), desc(sitemapPosts.id), postMedia.ordinal)
+    .orderBy(asc(sitemapPosts.publishedAt), asc(sitemapPosts.id), postMedia.ordinal)
 
   const records = new Map<string, MutablePublicPostSitemapRecord>()
   for (const row of rows) {
@@ -617,7 +624,7 @@ export async function listPublicProfileSitemapRecords(
     .from(profiles)
     .innerJoin(user, eq(user.id, profiles.userId))
     .where(sitemapProfileCondition())
-    .orderBy(desc(lastModified), desc(profiles.userId))
+    .orderBy(asc(user.createdAt), asc(profiles.userId))
     .limit(limit)
     .offset(offset)
   return rows.map((row) => ({ username: row.username, updatedAt: new Date(row.updatedAt) }))
@@ -636,8 +643,8 @@ export async function listPublicTagSitemapRecords(
     .innerJoin(posts, eq(posts.id, postTags.postId))
     .innerJoin(user, eq(user.id, posts.authorId))
     .where(sitemapTagCondition())
-    .groupBy(tags.id, tags.normalizedName)
-    .orderBy(desc(lastModified), desc(tags.id))
+    .groupBy(tags.id, tags.normalizedName, tags.createdAt)
+    .orderBy(asc(tags.createdAt), asc(tags.id))
     .limit(limit)
     .offset(offset)
   return rows.map((row) => ({ tag: row.tag, updatedAt: new Date(row.updatedAt) }))
