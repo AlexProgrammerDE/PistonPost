@@ -132,4 +132,31 @@ describe("PostTimeline", () => {
     expect(busy).toContain('<span class="tabular-nums">1</span>')
     expect(busy).toContain("1 comment<")
   })
+
+  test("keeps each preview image's alt text outside a short gallery link name", () => {
+    const galleryPost: PublicPostRead = {
+      ...imagePost,
+      id: "gallery-post-id",
+      title: "Sketch dump",
+      media: ["Fox", "Owl", "Crow", "Moth", "Hare"].map((animal) => ({
+        id: `${animal.toLowerCase()}-id`,
+        kind: "image" as const,
+        width: 800,
+        height: 600,
+        duration: null,
+        altText: `A pencil sketch of a ${animal.toLowerCase()}`,
+      })),
+    }
+    const html = renderBeforeHydration(new QueryClient(), [galleryPost])
+
+    expect(html).toContain('aria-label="Open Sketch dump, 5 images"')
+    expect(html).toContain('aria-label="First 4 of 5 images"')
+    for (const animal of ["fox", "owl", "crow", "moth"]) {
+      expect(html).toContain(`alt="A pencil sketch of a ${animal}"`)
+    }
+    // The fifth image is summarized by the +1 tile and the link name.
+    expect(html).not.toContain("A pencil sketch of a hare")
+    const link = /<a [^>]*aria-label="Open Sketch dump, 5 images"[^>]*>(.*?)<\/a>/su.exec(html)
+    expect(link?.[1]).toBe("")
+  })
 })

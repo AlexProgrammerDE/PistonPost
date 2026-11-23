@@ -365,39 +365,66 @@ function FeedPostImageMedia({
   const priorityImage = preview[0]
   const finalPreviewImage = preview.at(-1)
   const hiddenImageCount = post.media.length - preview.length
+  // Three images would leave an empty cell in a 2x2 grid, so the first one fills the left column.
+  const leadSpansRows = preview.length === 3
 
+  // The images stay outside the link, so screen readers still reach each author's alt text and
+  // the link name stays short. The link covers the preview so every image still opens the post.
   return (
-    <Link
-      to="/post/$postId"
-      params={{ postId: post.id }}
-      onClick={onOpenPost}
-      className="grid grid-cols-2 gap-1 overflow-hidden bg-muted"
-      aria-label={`Open ${post.title}, ${post.media.length.toString()} images`}
-    >
-      {preview.map((image, index) => (
-        <span
-          key={image.id}
-          data-view-transition-part={`post-media-${String(index + 1)}`}
-          className="relative block"
-        >
-          <ResponsiveMediaImage
-            image={image}
-            variant="feed"
-            sizes={feedPreviewImageSizes}
-            alt={image.altText ?? ""}
-            className="aspect-square w-full object-cover"
-            loading={priority && image.id === priorityImage?.id ? "eager" : "lazy"}
-            fetchPriority={priority && image.id === priorityImage?.id ? "high" : undefined}
-          />
-          {hiddenImageCount > 0 && image.id === finalPreviewImage?.id ? (
-            <span className="absolute inset-0 grid place-items-center bg-foreground/70 text-2xl font-bold text-background">
-              +{hiddenImageCount}
-            </span>
-          ) : null}
-        </span>
-      ))}
-    </Link>
+    <div className="relative">
+      <ul
+        className="m-0 grid list-none grid-cols-2 gap-1 overflow-hidden bg-muted p-0"
+        aria-label={imagePreviewLabel(preview.length, post.media.length)}
+      >
+        {preview.map((image, index) => {
+          const spansRows = leadSpansRows && index === 0
+
+          return (
+            <li
+              key={image.id}
+              data-view-transition-part={`post-media-${String(index + 1)}`}
+              className={cn("relative", spansRows && "row-span-2")}
+            >
+              <ResponsiveMediaImage
+                image={image}
+                variant="feed"
+                sizes={feedPreviewImageSizes}
+                alt={image.altText ?? ""}
+                className={cn(
+                  "w-full object-cover",
+                  // Fill the two rows without letting a tall image stretch them.
+                  spansRows ? "absolute inset-0 h-full" : "aspect-square",
+                )}
+                loading={priority && image.id === priorityImage?.id ? "eager" : "lazy"}
+                fetchPriority={priority && image.id === priorityImage?.id ? "high" : undefined}
+              />
+              {hiddenImageCount > 0 && image.id === finalPreviewImage?.id ? (
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 grid place-items-center bg-foreground/70 text-2xl font-bold text-background"
+                >
+                  +{hiddenImageCount}
+                </span>
+              ) : null}
+            </li>
+          )
+        })}
+      </ul>
+      <Link
+        to="/post/$postId"
+        params={{ postId: post.id }}
+        onClick={onOpenPost}
+        className="absolute inset-0 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        aria-label={`Open ${post.title}, ${exactNumberFormat.format(post.media.length)} images`}
+      />
+    </div>
   )
+}
+
+function imagePreviewLabel(shown: number, total: number) {
+  return shown === total
+    ? `${exactNumberFormat.format(total)} images`
+    : `First ${exactNumberFormat.format(shown)} of ${exactNumberFormat.format(total)} images`
 }
 
 function DetailPostImageMedia({
