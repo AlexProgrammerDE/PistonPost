@@ -48,11 +48,17 @@ export function finalizeImageUploadStatements(
   const guard = `exists (select 1 from media_assets where id = ?
     and status = 'ready' and json_extract(provider_metadata, '$.finalizeToken') = ?)`
   const guardParams = [image.assetId, image.finalizeToken]
+  // A draft image may join only a post that is still a draft. Publishing checks the attached media
+  // once, so an upload that finishes after the post went live must not attach itself afterwards.
+  const draftCondition =
+    target.kind === "draft-image"
+      ? "and exists (select 1 from posts where id = ? and status = 'draft' and type = 'images')"
+      : ""
   const statements: Statement[] = [
     {
       sql: `update media_assets set status = 'ready', mime_type = ?, byte_size = ?, width = ?, height = ?,
           checksum = ?, provider_metadata = ?, finalized_at = ?
-        where id = ? and r2_key = ? and ${uploadable}`,
+        where id = ? and r2_key = ? and ${uploadable} ${draftCondition}`,
       params: [
         image.mimeType,
         image.byteSize,
@@ -63,6 +69,7 @@ export function finalizeImageUploadStatements(
         now,
         image.assetId,
         image.r2Key,
+        ...(target.kind === "draft-image" ? [target.postId] : []),
       ],
     },
   ]

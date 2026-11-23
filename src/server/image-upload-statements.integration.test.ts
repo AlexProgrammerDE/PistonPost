@@ -131,6 +131,27 @@ describe("image upload finalization", () => {
     expect(database.$client.serialize()).toEqual(before)
   })
 
+  test("an upload that finishes after the draft was posted stays off the post", () => {
+    const { database, assetId, r2Key } = fixture("image")
+    run(database, [reserveImageUploadKeyStatement(assetId, r2Key)])
+    database.$client.run(
+      "update posts set status = 'published', published_at = 1 where id = 'post'",
+    )
+    const changes = run(
+      database,
+      finalizeImageUploadStatements(finalized(assetId, r2Key), {
+        kind: "draft-image",
+        postId: "post",
+        ordinal: 0,
+      }),
+    )
+    expect(changes).toEqual([0, 0])
+    expect(
+      database.$client.query("select status from media_assets where id = ?").get(assetId),
+    ).toEqual({ status: "pending" })
+    expect(database.$client.query("select post_id from post_media").all()).toEqual([])
+  })
+
   test("a failed upload cannot become ready", () => {
     const { database, assetId, r2Key } = fixture("image")
     run(database, [reserveImageUploadKeyStatement(assetId, r2Key)])
