@@ -1130,7 +1130,9 @@ function UploadRow({
             ) : null}
             {item.status !== "queued" ? (
               <Progress value={item.progress} className="gap-1">
-                <ProgressLabel className="sr-only">Upload progress</ProgressLabel>
+                <ProgressLabel className="sr-only">
+                  Upload progress for {item.filename}
+                </ProgressLabel>
                 <ProgressValue />
               </Progress>
             ) : null}
