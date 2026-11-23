@@ -135,6 +135,19 @@ export async function listViewerFeedHeartPostIds(
   return hearts.map((heart) => heart.postId)
 }
 
+/**
+ * Counts the hearts on a post. Hearts from banned accounts do not count while the ban applies,
+ * matching comment and follower counts.
+ */
+export async function countPostHearts(database: ReadDatabase, postId: string) {
+  const aggregate = await database
+    .select({ value: count() })
+    .from(reactions)
+    .where(and(eq(reactions.postId, postId), notBannedAccount(reactions.userId)))
+    .get()
+  return aggregate?.value ?? 0
+}
+
 type BasePostRow = {
   readonly id: string
   readonly type: "text" | "images" | "video"
@@ -357,7 +370,12 @@ export async function getPublicProfileRead(database: ReadDatabase, username: str
     database
       .select({ value: count() })
       .from(userFollows)
-      .where(eq(userFollows.followedUserId, profile.userId))
+      .where(
+        and(
+          eq(userFollows.followedUserId, profile.userId),
+          notBannedAccount(userFollows.followerId),
+        ),
+      )
       .get(),
     database
       .select({ id: posts.id, title: posts.title, publishedAt: posts.publishedAt })
@@ -660,7 +678,7 @@ async function hydratePublicPosts(database: ReadDatabase, postRows: readonly Bas
     database
       .select({ postId: reactions.postId, count: sql<number>`count(*)` })
       .from(reactions)
-      .where(inArray(reactions.postId, postIds))
+      .where(and(inArray(reactions.postId, postIds), notBannedAccount(reactions.userId)))
       .groupBy(reactions.postId),
     database
       .select({ postId: comments.postId, count: sql<number>`count(*)` })

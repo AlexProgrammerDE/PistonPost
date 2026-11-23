@@ -118,7 +118,7 @@ export async function listOwnedUnlistedPostReads(
     database
       .select({ postId: reactions.postId, count: sql<number>`count(*)` })
       .from(reactions)
-      .where(inArray(reactions.postId, postIds))
+      .where(and(inArray(reactions.postId, postIds), notBannedAccount(reactions.userId)))
       .groupBy(reactions.postId),
     database
       .select({ postId: comments.postId, count: sql<number>`count(*)` })

@@ -1334,3 +1334,10 @@ Record future changes here with date, decision, reason, and affected phases.
   `reactions.user_id`, `audit_events.actor_id`, and `content_reports.resolved_by`. Deleting a user
   cascades or sets null through these columns, and SQLite scanned each whole table once per
   deleted account. Migration `0030_index-account-references` only creates indexes.
+
+- 2026-11-23: Leave banned accounts out of every public count while the ban applies, using the
+  same `notBannedAccount` rule as posts and comments. Heart counts in feeds, post detail, the
+  owner's unlisted list, and the `setHeart` reply skip hearts from banned accounts. Profile follower
+  counts skip banned followers. Comment counts already did this. No row is deleted, so the counts
+  return when the ban is lifted or expires. A ban purges only the banned user's own cache tags, so
+  cached pages of other users can show the old count until their cache expires.

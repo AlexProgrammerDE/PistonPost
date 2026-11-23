@@ -1,11 +1,11 @@
 import { createServerFn } from "@tanstack/react-start"
 import { getRequestHeaders } from "@tanstack/react-start/server"
-import { and, count, desc, eq, lt, or } from "drizzle-orm"
+import { and, desc, eq, lt, or } from "drizzle-orm"
 import { DateTime, Schema, Effect } from "effect"
 
 import { notBannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
-import { listViewerFeedHeartPostIds } from "@/db/public-read-model"
+import { countPostHearts, listViewerFeedHeartPostIds } from "@/db/public-read-model"
 import { listActivePushSubscriptionIds } from "@/db/push-subscription-queries"
 import * as schema from "@/db/schema"
 import { commentInputSchema } from "@/domain/validation"
@@ -262,14 +262,10 @@ export const setHeart = createServerFn({ method: "POST" })
                 ),
             )
           }
-          const aggregate = yield* bindingOperation("setHeart.aggregate", () =>
-            database
-              .select({ heartCount: count() })
-              .from(schema.reactions)
-              .where(eq(schema.reactions.postId, post.id))
-              .get(),
+          const heartCount = yield* bindingOperation("setHeart.aggregate", () =>
+            countPostHearts(database, post.id),
           )
-          return { heartCount: aggregate?.heartCount ?? 0 }
+          return { heartCount }
         }).pipe(Effect.uninterruptible)
       }),
     ),
