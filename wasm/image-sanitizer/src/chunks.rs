@@ -75,6 +75,8 @@ fn png_chunk(bytes: &[u8]) -> Result<([u8; 4], &[u8], usize), Error> {
 const PRESERVED_WEBP_CHUNKS: &[[u8; 4]] = &[
     *b"VP8 ", *b"VP8L", *b"VP8X", *b"ALPH", *b"ANIM", *b"ANMF", *b"ICCP",
 ];
+const PRESERVED_FRAME_CHUNKS: &[[u8; 4]] = &[*b"ALPH", *b"VP8 ", *b"VP8L"];
+const ANMF_HEADER_BYTES: usize = 24;
 
 fn riff_chunk(bytes: &[u8]) -> Result<([u8; 4], &[u8], usize), Error> {
     let (id, rest) = bytes.split_first_chunk::<4>().ok_or(Error::Truncated)?;
@@ -158,7 +160,11 @@ pub(super) fn sanitize_webp(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError
         }
 
         let end = read.saturating_add(size);
-        if PRESERVED_WEBP_CHUNKS.contains(&id) {
+        if id == *b"ANMF" {
+            let body_end = read.saturating_add(8).saturating_add(contents.len());
+            write =
+                write.saturating_add(compact_animation_frame(&mut input, read, body_end, write)?);
+        } else if PRESERVED_WEBP_CHUNKS.contains(&id) {
             let padded = !contents.len().is_multiple_of(2);
             input.copy_within(read..end, write);
             if id == *b"VP8X" {
@@ -190,6 +196,51 @@ pub(super) fn sanitize_webp(mut input: Vec<u8>) -> Result<Vec<u8>, SanitizeError
         .copy_from_slice(&riff_length.to_le_bytes());
     input.truncate(write);
     Ok(input)
+}
+
+// An animation frame can carry unknown chunks after its bitstream. Copy the chunk and frame
+// headers, keep only the alpha and bitstream chunks, and write the new frame length.
+fn compact_animation_frame(
+    input: &mut [u8],
+    read: usize,
+    body_end: usize,
+    write: usize,
+) -> Result<usize, SanitizeError> {
+    let header_end = read
+        .checked_add(ANMF_HEADER_BYTES)
+        .filter(|end| *end <= body_end)
+        .ok_or(SanitizeError::InvalidImage)?;
+    input.copy_within(read..header_end, write);
+    let mut sub_read = header_end;
+    let mut sub_write = write.saturating_add(ANMF_HEADER_BYTES);
+    while sub_read < body_end {
+        let (id, contents, size) = riff_chunk(
+            input
+                .get(sub_read..body_end)
+                .ok_or(SanitizeError::InvalidImage)?,
+        )
+        .map_err(SanitizeError::invalid_image_with_cause)?;
+        let padded = !contents.len().is_multiple_of(2);
+        let sub_end = sub_read.saturating_add(size);
+        if PRESERVED_FRAME_CHUNKS.contains(&id) {
+            input.copy_within(sub_read..sub_end, sub_write);
+            sub_write = sub_write.saturating_add(size);
+            if padded {
+                *input
+                    .get_mut(sub_write.saturating_sub(1))
+                    .ok_or(SanitizeError::InvalidImage)? = 0;
+            }
+        }
+        sub_read = sub_end;
+    }
+    let size = sub_write.saturating_sub(write);
+    let length =
+        u32::try_from(size.saturating_sub(8)).map_err(SanitizeError::invalid_image_with_cause)?;
+    input
+        .get_mut(write.saturating_add(4)..write.saturating_add(8))
+        .ok_or(SanitizeError::InvalidImage)?
+        .copy_from_slice(&length.to_le_bytes());
+    Ok(size)
 }
 
 fn valid_dimensions(size: Option<(u32, u32)>) -> bool {

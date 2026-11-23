@@ -69,13 +69,31 @@ fuzz_target!(|data: &[u8]| {
         );
     }
 
-    // Every chunk except VP8X is copied unchanged and in its original order.
+    for chunk in webp.chunks_by_id(*b"ANMF") {
+        let contents = chunk.content().data().expect("ANMF must hold data");
+        let mut frame = contents.get(16..).expect("ANMF must hold a frame header");
+        while let Some((id, rest)) = frame.split_first_chunk::<4>() {
+            assert!(
+                matches!(id, b"ALPH" | b"VP8 " | b"VP8L"),
+                "sanitized ANMF kept chunk {:?}",
+                String::from_utf8_lossy(id)
+            );
+            let (size, rest) = rest.split_first_chunk::<4>().expect("ANMF chunk size");
+            let size = u32::from_le_bytes(*size) as usize;
+            frame = rest
+                .get(size + size % 2..)
+                .expect("ANMF chunk must fit in the frame");
+        }
+        assert!(frame.is_empty(), "sanitized ANMF has trailing bytes");
+    }
+
+    // Every chunk except VP8X is kept in its original order. Only VP8X and ANMF change.
     let mut kept = webp.chunks().iter().filter(|chunk| chunk.id() != *b"VP8X");
     let mut next = kept.next();
     for chunk in input.chunks() {
         if let Some(candidate) = next
             && candidate.id() == chunk.id()
-            && candidate.content().data() == chunk.content().data()
+            && (candidate.id() == *b"ANMF" || candidate.content().data() == chunk.content().data())
             && candidate
                 .content()
                 .list()

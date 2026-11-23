@@ -766,6 +766,58 @@ mod tests {
     }
 
     #[test]
+    fn webp_removes_metadata_inside_animation_frames() {
+        let mut frame = vec![0; 16];
+        frame.extend(
+            [
+                data_chunk(*b"ALPH", vec![0]),
+                data_chunk(*b"VP8L", vec![0x2f, 0, 0, 0, 0]),
+                data_chunk(*b"EXIF", b"private".to_vec()),
+                data_chunk(*b"XMP ", b"secret".to_vec()),
+            ]
+            .into_iter()
+            .flat_map(|chunk| chunk.encoder().bytes())
+            .collect::<Vec<_>>(),
+        );
+        let input = webp_with(vec![
+            data_chunk(*b"VP8X", vec![0x12, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            data_chunk(*b"ANIM", vec![0; 6]),
+            data_chunk(*b"ANMF", frame),
+        ]);
+
+        let output = sanitize_image_bytes(&input, "image/webp").expect("sanitize webp");
+        let parsed = WebP::from_bytes(Bytes::from(output.clone())).expect("parse output");
+        let anmf = parsed
+            .chunk_by_id(*b"ANMF")
+            .and_then(|chunk| chunk.content().data())
+            .expect("keep the animation frame");
+        let mut expected = vec![0; 16];
+        expected.extend(
+            [
+                data_chunk(*b"ALPH", vec![0]),
+                data_chunk(*b"VP8L", vec![0x2f, 0, 0, 0, 0]),
+            ]
+            .into_iter()
+            .flat_map(|chunk| chunk.encoder().bytes())
+            .collect::<Vec<_>>(),
+        );
+
+        assert_eq!(anmf.as_ref(), expected.as_slice());
+        assert!(!output.windows(7).any(|window| window == b"private"));
+        assert!(!output.windows(6).any(|window| window == b"secret"));
+        assert_eq!(sanitize_image_bytes(&output, "image/webp"), Ok(output));
+
+        let truncated_frame = webp_with(vec![
+            data_chunk(*b"VP8X", vec![0x02, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+            data_chunk(*b"ANMF", vec![0; 15]),
+        ]);
+        assert_eq!(
+            sanitize_image_bytes(&truncated_frame, "image/webp"),
+            Err(SanitizeError::InvalidImage)
+        );
+    }
+
+    #[test]
     fn gif_ignores_background_index_without_global_palette() {
         // A 1x1 GIF with no global color table and background index 3. The GIF spec
         // says to ignore that index. The only frame has a local palette and pixel 1.
