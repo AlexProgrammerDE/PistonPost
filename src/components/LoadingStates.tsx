@@ -115,12 +115,13 @@ export function ProfilePageSkeleton() {
 function DiscussionPlaceholder() {
   return (
     <div className="mx-auto mt-5 max-w-5xl">
-      <div className="flex items-center justify-between gap-3 border-y py-3">
-        <Skeleton className="h-8 w-28" />
+      <div className="flex items-center gap-1 border-y py-2">
         <Skeleton className="h-8 w-16" />
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="ml-auto h-8 w-28" />
       </div>
-      <div className="mt-10 grid gap-8">
-        <Skeleton className="h-8 w-32" />
+      <div className="mt-6 grid gap-5">
+        <Skeleton className="h-6 w-32" />
         <FieldGroup className="gap-3">
           <Field>
             <Skeleton className="h-4 w-28" />
@@ -136,7 +137,7 @@ function DiscussionPlaceholder() {
               className="items-start rounded-none border-x-0 border-t-0 px-0 py-5 last:border-b-0"
             >
               <ItemMedia>
-                <Skeleton className="size-10 rounded-full" />
+                <Skeleton className="size-8 rounded-full" />
               </ItemMedia>
               <ItemContent className="min-w-0 gap-2">
                 <Skeleton className="h-4 w-40" />

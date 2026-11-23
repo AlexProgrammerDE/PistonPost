@@ -190,9 +190,10 @@ function PostDetailMetadata({
   return (
     <div
       className={cn(
-        "mb-5 flex flex-wrap items-center gap-x-4 gap-y-3 border-t py-3",
-        // Text posts have no media here, so the action row's top rule closes this row.
-        post.type !== "text" && "border-b",
+        "flex flex-wrap items-center gap-x-4 gap-y-3 border-t py-3",
+        // Text posts have no media here, so the action row sits right below and its top rule closes
+        // this row. SocialPanel drops its top margin for text posts to match.
+        post.type !== "text" && "mb-5 border-b",
       )}
     >
       {post.tags.map((tag) => (
