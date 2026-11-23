@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { and, eq } from "drizzle-orm"
 import { Schema, Result } from "effect"
 
-import { bannedAccount } from "@/db/account-ban"
 import { createD1Database } from "@/db/d1-database"
-import * as schema from "@/db/schema"
+import { imageDeliveryQuery } from "@/db/media-read-model"
+import type * as schema from "@/db/schema"
 import {
   AVATAR_IMAGE_SIZE,
   isMediaImageVariantAllowed,
@@ -93,26 +92,7 @@ async function resolveImageRequest({
   }
 
   const database = createD1Database(context.env.DB)
-  const rows = await database
-    .select({
-      asset: schema.mediaAssets,
-      postStatus: schema.posts.status,
-      postId: schema.posts.id,
-      postAuthorId: schema.posts.authorId,
-      visibility: schema.posts.visibility,
-      avatarOwnerId: schema.profiles.userId,
-      // Post media follows the post author. An avatar follows its profile owner.
-      postAuthorBanned: bannedAccount(schema.posts.authorId),
-      avatarOwnerBanned: bannedAccount(schema.profiles.userId),
-    })
-    .from(schema.mediaAssets)
-    .leftJoin(schema.postMedia, eq(schema.postMedia.mediaId, schema.mediaAssets.id))
-    .leftJoin(schema.posts, eq(schema.posts.id, schema.postMedia.postId))
-    .leftJoin(schema.profiles, eq(schema.profiles.avatarMediaId, schema.mediaAssets.id))
-    .where(
-      and(eq(schema.mediaAssets.id, input.success.mediaId), eq(schema.mediaAssets.status, "ready")),
-    )
-  const row = rows[0]
+  const [row] = await imageDeliveryQuery(database, input.success.mediaId)
   if (!row?.asset.r2Key) return new Response("Not found", { status: 404 })
   const avatarRequest = input.success.variant === "avatar"
   if (
