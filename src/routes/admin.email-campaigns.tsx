@@ -33,6 +33,7 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Spinner } from "@/components/ui/spinner"
 import { useAppForm } from "@/lib/forms/app-form"
+import { submitMutation } from "@/lib/forms/mutation-submit"
 import {
   createEmailCampaign,
   getEmailCampaigns,
@@ -83,7 +84,7 @@ function EmailCampaigns() {
   })
   const form = useAppForm({
     defaultValues: emptyCampaign,
-    onSubmit: async ({ value }) => create.mutateAsync(value),
+    onSubmit: ({ value }) => submitMutation(create.mutateAsync, value),
   })
 
   return (
