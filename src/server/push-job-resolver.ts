@@ -1,7 +1,8 @@
 import { and, eq, gt, isNull, or } from "drizzle-orm"
+import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
 import { DateTime, Context, Effect, Layer, Schema } from "effect"
 
-import type { D1DatabaseClient } from "@/db/d1-database"
+import { notBannedAccount } from "@/db/account-ban"
 import * as schema from "@/db/schema"
 import type { PushDeliveryJob } from "@/push/jobs"
 import type { PushNotificationPayload, PushTarget } from "@/push/transport"
@@ -35,8 +36,10 @@ function queryFailure() {
   return PushResolutionError.make({ operation: "query" })
 }
 
-function query<T>(run: () => Promise<T>) {
-  return Effect.tryPromise({ try: run, catch: queryFailure }).pipe(Effect.uninterruptible)
+function query<T>(run: () => T | PromiseLike<T>) {
+  return Effect.tryPromise({ try: async () => run(), catch: queryFailure }).pipe(
+    Effect.uninterruptible,
+  )
 }
 
 function skip(reason: string): ResolvedPush {
@@ -47,7 +50,9 @@ function ready(target: PushTarget, payload: PushNotificationPayload): ResolvedPu
   return { _tag: "Ready", target, payload }
 }
 
-export function pushJobResolverLayer(database: D1DatabaseClient) {
+export function pushJobResolverLayer(
+  database: BaseSQLiteDatabase<"sync" | "async", unknown, typeof schema>,
+) {
   return Layer.succeed(PushJobResolver, {
     resolve: Effect.fn("PushJobResolver.resolve")(function* (job: PushDeliveryJob) {
       const now = yield* DateTime.nowAsDate
@@ -99,6 +104,9 @@ export function pushJobResolverLayer(database: D1DatabaseClient) {
                 eq(schema.comments.id, job.commentId),
                 eq(schema.comments.status, "published"),
                 eq(schema.posts.status, "published"),
+                // A banned account's comments are hidden, so a queued or retried push must not
+                // point at one.
+                notBannedAccount(schema.comments.authorId, now),
               ),
             )
             .get(),
