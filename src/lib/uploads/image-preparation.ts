@@ -39,6 +39,12 @@ function rejectPendingPreparations(error: Error) {
   pendingPreparations.clear()
 }
 
+function discardWorker(worker: Worker, error: Error) {
+  worker.terminate()
+  if (imagePreparationWorker === worker) imagePreparationWorker = null
+  rejectPendingPreparations(error)
+}
+
 function getImagePreparationWorker() {
   if (imagePreparationWorker) return imagePreparationWorker
 
@@ -54,9 +60,8 @@ function getImagePreparationWorker() {
     pending.resolve(event.data)
   })
   worker.addEventListener("error", () => {
-    worker.terminate()
-    if (imagePreparationWorker === worker) imagePreparationWorker = null
-    rejectPendingPreparations(
+    discardWorker(
+      worker,
       new ImagePreparationError("The image cleaner stopped unexpectedly. Try again."),
     )
   })
@@ -73,8 +78,11 @@ function runPreparation(
 
   return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
-      pendingPreparations.delete(id)
-      reject(new ImagePreparationError("Cleaning this image took too long. Try a smaller file."))
+      // The worker is still busy with this image, so later images would queue behind it.
+      discardWorker(
+        worker,
+        new ImagePreparationError("Cleaning this image took too long. Try a smaller file."),
+      )
     }, IMAGE_PREPARATION_TIMEOUT_MS)
     pendingPreparations.set(id, { resolve, reject, timeout })
     const request: PrepareImageRequest = { type: "prepare", id, bytes, mimeType }
