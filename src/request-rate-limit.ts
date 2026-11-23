@@ -1,5 +1,7 @@
 import { Effect } from "effect"
 
+import { clientNetworkKey } from "@/server/client-network"
+
 type RateLimitBindings = Pick<
   Cloudflare.Env,
   "ANON_RATE_LIMITER" | "AUTH_RATE_LIMITER" | "USER_RATE_LIMITER"
@@ -153,7 +155,8 @@ function isSessionRead(request: Request, pathname: string) {
  */
 export async function allowRequest(request: Request, env: RateLimitBindings) {
   const { pathname } = new URL(request.url)
-  const address = request.headers.get("cf-connecting-ip") ?? "local"
+  // IPv6 clients share one budget per /64, so rotating addresses inside it gains nothing.
+  const address = clientNetworkKey(request.headers.get("cf-connecting-ip") ?? "local")
   const route = routeClass(pathname)
 
   if (

@@ -58,6 +58,13 @@ function request(path: string, init: RequestInit = {}) {
   return new Request(`${origin}${path}`, { ...init, headers })
 }
 
+function requestFrom(address: string, path: string) {
+  return new Request(`${origin}${path}`, {
+    method: path.startsWith("/api/auth") ? "POST" : "GET",
+    headers: { "cf-connecting-ip": address },
+  })
+}
+
 function credential(headers: HeadersInit) {
   return requestCredential(request("/", { headers }), secret)
 }
@@ -71,6 +78,21 @@ describe("request rate limits", () => {
     await allowRequest(request("/tag/memes"), env)
 
     expect(anon.keys).toEqual(["203.0.113.7:post", "203.0.113.7:post", "203.0.113.7:other"])
+  })
+
+  test("shares one anonymous and auth budget across an IPv6 /64", async () => {
+    const { anon, auth, env } = limiters()
+    await allowRequest(requestFrom("2001:db8:1:2::1", "/"), env)
+    await allowRequest(requestFrom("2001:0db8:0001:0002:ffff:aaaa:bbbb:cccc", "/"), env)
+    await allowRequest(requestFrom("2001:db8:1:3::1", "/"), env)
+    await allowRequest(requestFrom("2001:db8:1:2::9", "/api/auth/sign-in/email"), env)
+
+    expect(anon.keys.slice(0, 3)).toEqual([
+      "2001:db8:1:2::/64:feed",
+      "2001:db8:1:2::/64:feed",
+      "2001:db8:1:3::/64:feed",
+    ])
+    expect(auth.keys).toEqual(["auth:2001:db8:1:2::/64"])
   })
 
   test("treats unrelated cookies as anonymous", async () => {
