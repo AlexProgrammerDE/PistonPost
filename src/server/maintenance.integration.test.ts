@@ -10,6 +10,7 @@ import { createMigratedTestDatabase } from "@/db/test-database"
 import { mediaCleanupJob } from "./jobs"
 import {
   abandonedDraftStatements,
+  abandonedMediaStatement,
   type MaintenanceStatement,
   reconcileStreamAssets,
   reconcileVideoDownloadAssets,
@@ -106,6 +107,112 @@ describe("abandoned draft cleanup", () => {
     expect(db.select().from(schema.posts).all()).toHaveLength(1)
     expect(db.select().from(schema.postMedia).all()).toHaveLength(1)
     expect(db.select().from(schema.outbox).all()).toHaveLength(0)
+  })
+})
+
+type Asset = typeof schema.mediaAssets.$inferInsert
+
+function asset(overrides: Partial<Asset> = {}): Asset {
+  const id = crypto.randomUUID()
+  return {
+    ...image(id, {}),
+    createdAt: new Date(now - day - 1),
+    ...overrides,
+  }
+}
+
+function setupMedia() {
+  const db = createMigratedTestDatabase()
+  databases.push(db)
+  db.insert(schema.user).values(createUser()).run()
+  db.insert(schema.profiles)
+    .values({ userId: "test-user", username: "test", normalizedUsername: "test" })
+    .run()
+  db.insert(schema.posts)
+    .values(
+      createPost({
+        id: "posted",
+        type: "images",
+        textContent: null,
+        status: "published",
+        publishedAt: new Date(now - 2 * day),
+      }),
+    )
+    .run()
+  const queue = () => run(db, [abandonedMediaStatement(now)])[0]
+  return { db, queue }
+}
+
+describe("abandoned media cleanup", () => {
+  test("queues failed avatars and failed images left behind by a posted draft", () => {
+    const { db, queue } = setupMedia()
+    const failedAvatar = asset({ kind: "avatar", status: "failed", providerMetadata: {} })
+    const failedDraftImage = asset({ status: "failed", providerMetadata: { postId: "posted" } })
+    db.insert(schema.mediaAssets).values([failedAvatar, failedDraftImage]).run()
+
+    const queued = queue()
+    expect(queued).toHaveLength(2)
+    expect(queued).toEqual(
+      expect.arrayContaining([{ mediaId: failedAvatar.id }, { mediaId: failedDraftImage.id }]),
+    )
+    expect(
+      db
+        .select({ payload: schema.outbox.payload })
+        .from(schema.outbox)
+        .all()
+        .map(({ payload }) => payload),
+    ).toEqual(
+      expect.arrayContaining([
+        mediaCleanupJob(failedAvatar.id),
+        mediaCleanupJob(failedDraftImage.id),
+      ]),
+    )
+  })
+
+  test("keeps media that a post or profile still uses and recent failures", () => {
+    const { db, queue } = setupMedia()
+    const posted = asset()
+    // A failed avatar never becomes current. The check still guards a profile that points at one.
+    const avatar = asset({ kind: "avatar", status: "failed" })
+    const failedVideo = asset({ kind: "video", provider: "stream", status: "failed", r2Key: null })
+    const recentFailure = asset({ status: "failed", createdAt: new Date(now - day + 60_000) })
+    db.insert(schema.mediaAssets).values([posted, avatar, failedVideo, recentFailure]).run()
+    db.insert(schema.postMedia)
+      .values([
+        { postId: "posted", mediaId: posted.id, ordinal: 0 },
+        { postId: "posted", mediaId: failedVideo.id, ordinal: 1 },
+      ])
+      .run()
+    db.update(schema.profiles)
+      .set({ avatarMediaId: avatar.id })
+      .where(eq(schema.profiles.userId, "test-user"))
+      .run()
+
+    expect(queue()).toEqual([])
+    expect(db.select().from(schema.outbox).all()).toHaveLength(0)
+  })
+
+  test("skips media whose cleanup is already queued so newer leftovers get a slot", () => {
+    const { db, queue } = setupMedia()
+    const queued = Array.from({ length: 100 }, (_, index) =>
+      asset({ status: "failed", createdAt: new Date(now - 3 * day + index) }),
+    )
+    const waiting = asset({ status: "failed" })
+    db.insert(schema.mediaAssets)
+      .values([...queued, waiting])
+      .run()
+    for (const { id } of queued) {
+      db.insert(schema.outbox)
+        .values({
+          id: `media.cleanup:${id}`,
+          kind: "media.cleanup",
+          payload: mediaCleanupJob(id),
+          processedAt: new Date(now),
+        })
+        .run()
+    }
+
+    expect(queue()).toEqual([{ mediaId: waiting.id }])
   })
 })
 
@@ -222,6 +329,26 @@ describe("Stream reconciliation", () => {
       "ready",
       "ready",
     ])
+  })
+
+  test("checks videos that waited longest first, so a full batch cannot starve the rest", async () => {
+    const { db, videos } = setupVideos(Array.from({ length: 26 }, (_, index) => `uid-${index}`))
+    const checked: string[] = []
+    const lookup = streamLookup((uid) => {
+      checked.push(uid)
+      return Promise.resolve(streamVideo({ readyToStream: false, status: { state: "inprogress" } }))
+    })
+
+    await Effect.runPromise(reconcileStreamAssets(db, lookup))
+    const firstRun = checked.splice(0)
+    await Effect.runPromise(reconcileStreamAssets(db, lookup))
+
+    expect(firstRun).toHaveLength(25)
+    const skipped = videos
+      .map(({ streamUid }) => streamUid)
+      .filter((uid) => !firstRun.includes(uid))
+    expect(skipped).toHaveLength(1)
+    expect(checked).toEqual(expect.arrayContaining(skipped))
   })
 
   test("does not revive a video that cleanup deleted during the Stream lookup", async () => {

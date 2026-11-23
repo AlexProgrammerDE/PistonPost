@@ -1,13 +1,13 @@
 import { and, eq, inArray, isNotNull, isNull, lt, lte, or, sql } from "drizzle-orm"
 import type { BaseSQLiteDatabase } from "drizzle-orm/sqlite-core"
-import { DateTime, Cause, Clock, Effect, Exit, Schema } from "effect"
+import { DateTime, Cause, Clock, Effect, Exit } from "effect"
 
 import { createD1Database } from "@/db/d1-database"
 import * as schema from "@/db/schema"
 
 import { missingProviderObject } from "./account-media-purge"
 import { redactExpiredPreviousEmails } from "./email-change-audit"
-import { mediaCleanupJob, mediaCleanupJobSchema } from "./jobs"
+import { mediaCleanupJob } from "./jobs"
 import { runMaintenanceTasks } from "./maintenance-runner"
 import { bindingOperation } from "./operation"
 import { storeRefreshedVideoDownload, synchronizeVideoDownload } from "./video-download"
@@ -109,66 +109,63 @@ const cleanExpiredPushSubscriptions = Effect.fn("Maintenance.cleanExpiredPushSub
   },
 )
 
+export type MaintenanceStatement = { sql: string; params: (string | number | null)[] }
+
+const ABANDONED_MEDIA_AGE_MS = 24 * 60 * 60 * 1000
+
+/**
+ * Queues cleanup for day-old uploads that no post or profile will use:
+ * - uploads that never finished,
+ * - edit uploads that the edit did not keep,
+ * - failed uploads, such as a rejected avatar or a failed image in a draft that was posted later.
+ * Rows that already have a cleanup job are skipped, so they cannot fill the batch on every run.
+ * The statement returns the queued media IDs.
+ */
+export function abandonedMediaStatement(now: number): MaintenanceStatement {
+  return {
+    sql: `insert into outbox (id, kind, payload, attempts, available_at, created_at)
+      select 'media.cleanup:' || m.id, 'media.cleanup',
+        json_object('type', 'media.cleanup', 'idempotencyKey', 'media.cleanup:' || m.id, 'mediaId', m.id),
+        0, ?, ?
+      from media_assets m
+      where m.created_at < ?
+        and not exists (select 1 from outbox where id = 'media.cleanup:' || m.id)
+        and (m.status in ('pending', 'uploading')
+          or (m.status in ('ready', 'failed')
+            and json_type(m.provider_metadata, '$.editPostId') = 'text'
+            and not exists (select 1 from post_media where media_id = m.id))
+          -- A failed upload can never become ready, so nothing can attach it later.
+          or (m.status = 'failed'
+            and not exists (select 1 from post_media where media_id = m.id)
+            and not exists (select 1 from profiles where avatar_media_id = m.id)))
+      order by m.created_at, m.id
+      limit 100
+      on conflict(id) do nothing
+      returning json_extract(payload, '$.mediaId') as mediaId`,
+    params: [now, now, now - ABANDONED_MEDIA_AGE_MS],
+  }
+}
+
 const queueAbandonedMedia = Effect.fn("Maintenance.queueAbandonedMedia")(function* (
   env: Cloudflare.Env,
 ) {
   const database = createD1Database(env.DB)
-  const cutoff = DateTime.toDateUtc(
-    DateTime.makeUnsafe((yield* Clock.currentTimeMillis) - 24 * 60 * 60 * 1000),
-  )
-  const abandoned = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
-    database
-      .select({ id: schema.mediaAssets.id })
-      .from(schema.mediaAssets)
-      .where(
-        and(
-          or(
-            inArray(schema.mediaAssets.status, ["pending", "uploading"]),
-            and(
-              inArray(schema.mediaAssets.status, ["ready", "failed"]),
-              sql`json_type(${schema.mediaAssets.providerMetadata}, '$.editPostId') = 'text'`,
-              sql`not exists (select 1 from post_media where media_id = ${schema.mediaAssets.id})`,
-            ),
-          ),
-          lt(schema.mediaAssets.createdAt, cutoff),
-        ),
-      )
-      .limit(100),
-  )
-  const jobs = abandoned.map(({ id }) => mediaCleanupJob(id))
-  const [firstJob, ...remainingJobs] = jobs
-  if (!firstJob) return
   const now = yield* Clock.currentTimeMillis
-  const encodeJob = (job: (typeof jobs)[number]) =>
-    Schema.encodeEffect(Schema.fromJsonString(mediaCleanupJobSchema))(job).pipe(Effect.orDie)
-  const insertJob = (job: (typeof jobs)[number], payload: string) =>
+  const { sql: query, params } = abandonedMediaStatement(now)
+  const queued = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
     database.$client
-      .prepare(
-        `insert into outbox (id, kind, payload, attempts, available_at, created_at)
-     select ?, ?, ?, 0, ?, ? from media_assets m where m.id = ?
-       and (json_type(m.provider_metadata, '$.editPostId') is not 'text'
-         or not exists (select 1 from post_media where media_id = m.id))
-     on conflict(id) do nothing`,
-      )
-      .bind(job.idempotencyKey, job.type, payload, now, now, job.mediaId)
-  const firstPayload = yield* encodeJob(firstJob)
-  const firstStatement = insertJob(firstJob, firstPayload)
-  const remainingStatements = yield* Effect.forEach(
-    remainingJobs,
-    (job) => encodeJob(job).pipe(Effect.map((payload) => insertJob(job, payload))),
-    { concurrency: 1 },
+      .prepare(query)
+      .bind(...params)
+      .all<{ mediaId: string }>(),
   )
-  const inserted = yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
-    database.$client.batch([firstStatement, ...remainingStatements]),
-  )
-  yield* Effect.forEach(
-    jobs.filter((_, index) => (inserted[index]?.meta.changes ?? 0) > 0),
-    (job) => bindingOperation("maintenance.queueAbandonedMedia", () => env.JOBS.send(job)),
-    { concurrency: 4 },
-  )
+  const jobs = queued.results.map(({ mediaId }) => mediaCleanupJob(mediaId))
+  // Unsent rows stay pending for the outbox drain.
+  if (jobs.length > 0) {
+    yield* bindingOperation("maintenance.queueAbandonedMedia", () =>
+      env.JOBS.sendBatch(jobs.map((job) => ({ body: job }))),
+    )
+  }
 })
-
-export type MaintenanceStatement = { sql: string; params: (string | number | null)[] }
 
 const ABANDONED_DRAFT_AGE_MS = 24 * 60 * 60 * 1000
 
@@ -263,10 +260,14 @@ function unfinishedVideo(id: string) {
   )
 }
 
+const STREAM_CHECKED_AT = sql`json_extract(${schema.mediaAssets.providerMetadata}, '$.streamCheckedAt')`
+
 export const reconcileStreamAssets = Effect.fn("Maintenance.reconcileStreamAssets")(function* (
   database: Database,
   streamVideo: StreamVideoLookup,
 ) {
+  // Check the videos that waited longest since their last check first. A video that keeps
+  // failing moves to the back, so it cannot hold a slot on every run.
   const pending = yield* bindingOperation("maintenance.reconcileStream", () =>
     database
       .select({ id: schema.mediaAssets.id, streamUid: schema.mediaAssets.streamUid })
@@ -280,7 +281,31 @@ export const reconcileStreamAssets = Effect.fn("Maintenance.reconcileStreamAsset
           ),
         ),
       )
+      .orderBy(
+        sql`coalesce(${STREAM_CHECKED_AT}, 0)`,
+        schema.mediaAssets.createdAt,
+        schema.mediaAssets.id,
+      )
       .limit(25),
+  )
+  if (pending.length === 0) return undefined
+  const checkedAt = yield* Clock.currentTimeMillis
+  // Only the check time changes, so a Stream webhook that lands meanwhile keeps its state.
+  yield* bindingOperation("maintenance.reconcileStream", () =>
+    database
+      .update(schema.mediaAssets)
+      .set({
+        providerMetadata: sql`json_set(${schema.mediaAssets.providerMetadata}, '$.streamCheckedAt', ${checkedAt})`,
+      })
+      .where(
+        and(
+          inArray(
+            schema.mediaAssets.id,
+            pending.map(({ id }) => id),
+          ),
+          inArray(schema.mediaAssets.status, ["uploading", "processing"]),
+        ),
+      ),
   )
 
   const outcomes = yield* Effect.forEach(
