@@ -30,6 +30,7 @@ jobs:
         run: |
           rustup toolchain install stable --profile minimal --component clippy --component rustfmt
           cargo fmt --check
+          cargo fmt --check --manifest-path fuzz/Cargo.toml
           cargo clippy --all-targets --locked -- -D warnings
 
       - name: Set up Node.js

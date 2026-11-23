@@ -16,7 +16,10 @@ pre-commit:
         - "wasm/image-sanitizer/**/*.rs"
         - "wasm/image-sanitizer/{Cargo.toml,Cargo.lock,clippy.toml,rust-toolchain,rust-toolchain.toml}"
         - "{rust-toolchain,rust-toolchain.toml}"
-      run: RUSTUP_TOOLCHAIN=stable cargo fmt --manifest-path wasm/image-sanitizer/Cargo.toml --check
+      # The fuzz crate is its own workspace, so the sanitizer manifest does not cover it.
+      run: >-
+        RUSTUP_TOOLCHAIN=stable cargo fmt --manifest-path wasm/image-sanitizer/Cargo.toml --check &&
+        RUSTUP_TOOLCHAIN=stable cargo fmt --manifest-path wasm/image-sanitizer/fuzz/Cargo.toml --check
 
 pre-push:
   commands:
