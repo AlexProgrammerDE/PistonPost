@@ -6,30 +6,19 @@ const graphemeSegmenter = new Intl.Segmenter(undefined, {
   granularity: "grapheme",
 })
 
-type PostTextPreviewResult = {
-  readonly text: string
-  readonly truncated: boolean
-}
-
-export function createPostTextPreview(markdown: string): PostTextPreviewResult {
+export function createPostTextPreview(markdown: string) {
   const plainText = postMarkdownToPlainText(markdown)
   let preview = ""
   let graphemeCount = 0
 
   for (const { segment } of graphemeSegmenter.segment(plainText)) {
     if (graphemeCount === POST_TEXT_PREVIEW_GRAPHEME_LIMIT) {
-      return {
-        text: `${preview.trimEnd()}…`,
-        truncated: true,
-      }
+      return `${preview.trimEnd()}…`
     }
 
     preview += segment
     graphemeCount += 1
   }
 
-  return {
-    text: plainText,
-    truncated: false,
-  }
+  return plainText
 }

@@ -12,7 +12,7 @@ export function PostTextPreview({
   readonly markdown: string
   readonly onOpen?: MouseEventHandler<HTMLAnchorElement>
 }) {
-  const { text } = createPostTextPreview(markdown)
+  const text = createPostTextPreview(markdown)
 
   return (
     <div className="flex min-w-0 flex-col items-start gap-2">
