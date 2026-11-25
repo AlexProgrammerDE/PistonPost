@@ -674,6 +674,7 @@
         "src/domain/media-state.ts",
         "src/email/transport.ts",
         "src/email/unsubscribe.ts",
+        "src/lib/push-device-atoms.ts",
         "src/push/transport.ts",
         "src/server/account-deletion-steps.ts",
         "src/server/account-media-purge.ts",
@@ -758,9 +759,15 @@
     {
       // Effect atoms and their React hooks are marked unstable in Effect 4.
       "files": [
+        "src/components/MarkdownContent.tsx",
+        "src/components/push-device-settings.tsx",
         "src/components/SharedContentIntake.tsx",
         "src/components/SharedContentIntake.test.tsx",
-        "src/lib/pwa/shared-content-atom.ts"
+        "src/lib/push-device-atoms.ts",
+        "src/lib/push-device-atoms.test.ts",
+        "src/lib/pwa/shared-content-atom.ts",
+        "src/lib/tumblr-embed-atom.ts",
+        "src/lib/tumblr-embed-atom.test.ts"
       ],
       "rules": { "effecttsgo/unstable-api-usage": "off" }
     },

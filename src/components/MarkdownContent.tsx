@@ -1,5 +1,7 @@
 "use client"
 
+import { useAtomValue } from "@effect/atom-react"
+import { AsyncResult } from "effect/reactivity"
 import type { Root as HastRoot } from "hast"
 import {
   ExternalLink,
@@ -53,9 +55,9 @@ import {
   type MarkdownCalloutKind,
 } from "@/lib/markdown-directives"
 import { markdownEmbedProviderName, type MarkdownEmbed } from "@/lib/markdown-embeds"
+import { tumblrEmbedAtom } from "@/lib/tumblr-embed-atom"
 import { externalLinkDestination, safeUserGeneratedUrl } from "@/lib/user-generated-link"
 import { cn } from "@/lib/utils"
-import { getTumblrEmbed } from "@/server/external-embeds"
 
 type MarkdownContextValue = {
   readonly postId?: string
@@ -100,11 +102,6 @@ type XWindow = Window & {
     }
   }
 }
-
-type TumblrEmbedState =
-  | { readonly status: "loading" }
-  | { readonly status: "ready"; readonly href: string }
-  | { readonly status: "unavailable" }
 
 function useMarkdownContext() {
   const context = useContext(MarkdownContext)
@@ -270,27 +267,9 @@ function TumblrWidget({
 }
 
 function TumblrEmbed({ embed }: { embed: Extract<MarkdownEmbed, { provider: "tumblr" }> }) {
-  const [state, setState] = useState<TumblrEmbedState>({ status: "loading" })
-
-  useEffect(() => {
-    const controller = new AbortController()
-    void (async () => {
-      const result = await getTumblrEmbed({ data: { url: embed.url } })
-      if (controller.signal.aborted) return
-      setState(
-        result.status === "ready"
-          ? { status: "ready", href: result.href }
-          : { status: "unavailable" },
-      )
-    })().catch(() => {
-      if (!controller.signal.aborted) setState({ status: "unavailable" })
-    })
-    return () => {
-      controller.abort()
-    }
-  }, [embed.url])
-
-  if (state.status === "loading") return <ExternalEmbedLoading providerName="Tumblr" />
+  const result = useAtomValue(tumblrEmbedAtom(embed.url))
+  if (!AsyncResult.isSuccess(result)) return <ExternalEmbedLoading providerName="Tumblr" />
+  const state = result.value
   if (state.status === "unavailable") {
     return <ExternalLinkCard href={embed.url} label="View this post on Tumblr" />
   }
