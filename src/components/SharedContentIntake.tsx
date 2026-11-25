@@ -1,10 +1,13 @@
-import { useEffect, useState } from "react"
+import { useAtomValue } from "@effect/atom-react"
+import { AsyncResult } from "effect/reactivity"
+import { useState } from "react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
-import { readSharedContent, removeSharedContent } from "@/lib/pwa/local-store"
-import type { PendingShare, SharedContent } from "@/lib/pwa/share-intake"
+import { removeSharedContent } from "@/lib/pwa/local-store"
+import type { SharedContent } from "@/lib/pwa/share-intake"
+import { sharedContentAtom } from "@/lib/pwa/shared-content-atom"
 
 export function SharedContentIntake({
   shareId,
@@ -15,35 +18,18 @@ export function SharedContentIntake({
   userId: string
   onImport: (content: SharedContent) => Promise<void>
 }) {
-  const [state, setState] = useState<
-    | { status: "loading" }
-    | { status: "missing" }
-    | { status: "ready"; share: PendingShare }
-    | { status: "done" }
-  >({ status: "loading" })
+  const result = useAtomValue(sharedContentAtom({ shareId, userId }))
+  const [done, setDone] = useState(false)
   const [busy, setBusy] = useState(false)
-  useEffect(() => {
-    const controller = new AbortController()
-    void (async () => {
-      const share = await readSharedContent(shareId, userId)
-      if (!controller.signal.aborted) {
-        setState(share ? { status: "ready", share } : { status: "missing" })
-      }
-    })().catch(() => {
-      if (!controller.signal.aborted) setState({ status: "missing" })
-    })
-    return () => {
-      controller.abort()
-    }
-  }, [shareId, userId])
+  const share = AsyncResult.isSuccess(result) ? result.value : null
 
   async function accept() {
-    if (state.status !== "ready") return
+    if (!share) return
     setBusy(true)
     try {
-      await onImport(state.share.content)
+      await onImport(share.content)
       await removeSharedContent(shareId)
-      setState({ status: "done" })
+      setDone(true)
     } catch {
       toast.error("The shared content could not be added. Try again.")
     } finally {
@@ -55,7 +41,7 @@ export function SharedContentIntake({
     setBusy(true)
     try {
       await removeSharedContent(shareId)
-      setState({ status: "done" })
+      setDone(true)
     } catch {
       toast.error("The shared content could not be discarded. Try again.")
     } finally {
@@ -63,36 +49,38 @@ export function SharedContentIntake({
     }
   }
 
-  if (state.status === "done") return null
+  if (done) return null
+  const loading = AsyncResult.isInitial(result)
   return (
     <Alert>
       <AlertTitle>
-        {state.status === "loading"
+        {loading
           ? "Checking shared content"
-          : state.status === "missing"
+          : !share
             ? "This share is no longer available"
             : "Add your shared content?"}
       </AlertTitle>
       <AlertDescription className="flex flex-col gap-3">
-        {state.status === "missing" ? (
+        {loading ? (
+          <p>Loading what you shared…</p>
+        ) : !share ? (
           <p>
             Shares expire after one hour and can belong to another account. Share again to continue.
           </p>
-        ) : state.status === "ready" ? (
+        ) : (
           <>
             <p>
-              {state.share.content.files.length === 1
+              {share.content.files.length === 1
                 ? "1 shared image. "
-                : state.share.content.files.length > 1
-                  ? `${state.share.content.files.length} shared images. `
+                : share.content.files.length > 1
+                  ? `${share.content.files.length} shared images. `
                   : "Shared text or link. "}
               Adding this replaces the current composer contents. Nothing is posted until you choose
               Post it.
             </p>
-            {state.share.content.files.length > 0 &&
-              (state.share.content.text || state.share.content.url) && (
-                <p>Image posts use a title, so accompanying text and links will not be included.</p>
-              )}
+            {share.content.files.length > 0 && (share.content.text || share.content.url) && (
+              <p>Image posts use a title, so accompanying text and links will not be included.</p>
+            )}
             <div className="flex flex-wrap gap-2">
               <Button type="button" disabled={busy} onClick={() => void accept()}>
                 Add to post
@@ -107,8 +95,6 @@ export function SharedContentIntake({
               </Button>
             </div>
           </>
-        ) : (
-          <p>Loading what you shared…</p>
         )}
       </AlertDescription>
     </Alert>

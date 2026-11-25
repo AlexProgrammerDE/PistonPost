@@ -756,6 +756,15 @@
       }
     },
     {
+      // Effect atoms and their React hooks are marked unstable in Effect 4.
+      "files": [
+        "src/components/SharedContentIntake.tsx",
+        "src/components/SharedContentIntake.test.tsx",
+        "src/lib/pwa/shared-content-atom.ts"
+      ],
+      "rules": { "effecttsgo/unstable-api-usage": "off" }
+    },
+    {
       // createFormHook and createTableHook files export the generated hooks with their components.
       "files": ["src/lib/forms/app-form.tsx", "src/lib/table/app-table.tsx"],
       "rules": {
