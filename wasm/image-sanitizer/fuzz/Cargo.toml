@@ -9,9 +9,9 @@ cargo-fuzz = true
 
 [dependencies]
 gif = { version = "=0.14.2", default-features = false, features = ["std"] }
-img-parts = { version = "=0.4.0", default-features = false }
+img-parts = { version = "=0.4.2", default-features = false }
 libfuzzer-sys = "0.4"
-libjpeg-turbo-rs = { version = "=0.8.0", default-features = false }
+libjpeg-turbo-rs = { version = "=0.9.0", default-features = false }
 pistonpost-image-sanitizer = { path = ".." }
 
 # Keep the fuzz crate out of any parent workspace.
